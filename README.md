@@ -67,14 +67,14 @@ npx prisma db push
 ## Development
 
 ### Backend
-- **Port**: 5000
+- **Port**: 5001
 - **Scripts**: 
   - `npm run dev` - Start development server
   - `npm run build` - Build for production
   - `npm start` - Start production server
 
 ### Frontend
-- **Port**: 3000
+- **Port**: 3002
 - **Scripts**:
   - `npm run dev` - Start development server
   - `npm run build` - Build for production
@@ -130,7 +130,7 @@ npm run build
 
 ### Environment Variables
 - `DATABASE_URL` - PostgreSQL connection string
-- `PORT` - Server port (default: 5000)
+- `PORT` - Server port (default: 5001)
 - `NODE_ENV` - Environment (development/production)
 
 ## Contributing
