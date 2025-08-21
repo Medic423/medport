@@ -98,15 +98,30 @@ npx prisma db push
 ## Database Models
 
 ### User
-- Basic user information
-- Authentication data
-- Timestamps
+- **id**: Unique identifier (CUID)
+- **email**: Unique email address
+- **password**: Hashed password (bcrypt)
+- **name**: Optional display name
+- **role**: User role (ADMIN, DOCTOR, NURSE, USER)
+- **isActive**: Account status
+- **createdAt/updatedAt**: Timestamps
 
 ## API Endpoints
 
 ### Health Check
 - `GET /` - API status
 - `GET /health` - Health check with timestamp
+
+### Authentication
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
+- `GET /api/auth/profile` - Get user profile (protected)
+- `PUT /api/auth/profile` - Update user profile (protected)
+
+### Protected Routes
+- `GET /api/protected/dashboard` - User dashboard (protected)
+- `GET /api/protected/admin` - Admin access (ADMIN role only)
+- `GET /api/protected/medical` - Medical staff access (DOCTOR, NURSE, ADMIN)
 
 ## Development Workflow
 
@@ -132,6 +147,7 @@ npm run build
 - `DATABASE_URL` - PostgreSQL connection string
 - `PORT` - Server port (default: 5001)
 - `NODE_ENV` - Environment (development/production)
+- `JWT_SECRET` - Secret key for JWT token generation
 
 ## Contributing
 
