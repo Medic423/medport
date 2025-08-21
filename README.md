@@ -1,165 +1,180 @@
-# MedPort - Medical Portal
+# MedPort - Medical Transport Coordination System
 
-## Description
-MedPort is a comprehensive medical portal application built with modern web technologies, designed to provide secure and efficient medical information management.
+A Progressive Web App (PWA) designed to coordinate interfacility EMS transfers, optimizing ambulance availability, loaded miles, and routing efficiency across hospital service areas.
 
-## Project Structure
-```
-medport/
-├── backend/          # Express.js + TypeScript + Prisma backend
-├── frontend/         # React + TypeScript + Vite frontend
-├── docs/            # Project documentation
-├── scripts/         # Development and deployment scripts
-└── README.md        # This file
-```
+## 🚀 Features
 
-## Prerequisites
-- Node.js (v16 or higher)
-- npm or yarn
-- PostgreSQL database
+- **Transport Request Management**: HIPAA-compliant patient transfer coordination
+- **Route Optimization**: Advanced algorithms for minimizing empty miles and maximizing revenue
+- **Agency Portal**: Public-facing interface for transport agencies to bid on routes
+- **Real-time Tracking**: GPS integration for transport units
+- **PWA Capabilities**: Offline functionality, installable on any device
+- **Revenue Optimization**: Chained trip suggestions to maximize transport agency profits
+
+## 🏗️ Architecture
+
+- **Frontend**: React-based PWA with TypeScript
+- **Backend**: Node.js/Express API with Prisma ORM
+- **Database**: PostgreSQL with comprehensive schema
+- **Deployment**: Render for production
+- **Offline Support**: Service workers with localStorage persistence
+
+## 📋 Prerequisites
+
+- Node.js 18+ and npm
+- PostgreSQL 14+
 - Git
 
-## Quick Start
+## 🚀 Quick Start
 
-### 1. Clone and Setup
+### 1. Clone and Install Dependencies
+
 ```bash
 git clone <repository-url>
 cd medport
+npm install
+cd backend && npm install
+cd ../frontend && npm install
 ```
 
-### 2. Install Dependencies
-```bash
-# Backend dependencies
-cd backend
-npm install
+### 2. Database Setup
 
-# Frontend dependencies
-cd ../frontend
-npm install
+```bash
+# Start PostgreSQL service
+brew services start postgresql  # macOS
+# or
+sudo systemctl start postgresql  # Linux
+
+# Run database setup script
+cd backend
+./scripts/setup-db.sh
 ```
 
 ### 3. Environment Configuration
+
 ```bash
 # Backend
 cd backend
-cp .env.example .env
-# Edit .env with your database credentials
+cp env.example .env
+# Edit .env with your database credentials and API keys
 
 # Frontend
 cd ../frontend
-cp .env.example .env
+cp env.example .env
 # Edit .env with your API configuration
 ```
 
-### 4. Database Setup
-```bash
-cd backend
-npx prisma generate
-npx prisma db push
-```
+### 4. Start Development Servers
 
-### 5. Start Development Environment
 ```bash
 # From project root
-./scripts/start-dev-complete.sh
+npm run dev
+
+# Or start individually
+npm run dev:backend    # Backend on port 5000
+npm run dev:frontend   # Frontend on port 3000
 ```
 
-## Development
+## 🔧 Development Scripts
+
+### Root Level
+- `npm run dev` - Start both frontend and backend
+- `npm run build` - Build both frontend and backend
+- `npm run lint` - Lint both frontend and backend
+- `npm run format` - Format code with Prettier
 
 ### Backend
-- **Port**: 5001
-- **Scripts**: 
-  - `npm run dev` - Start development server
-  - `npm run build` - Build for production
-  - `npm start` - Start production server
+- `npm run dev` - Start development server with nodemon
+- `npm run build` - Build TypeScript to JavaScript
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
+- `npm run format` - Format with Prettier
 
 ### Frontend
-- **Port**: 3002
-- **Scripts**:
-  - `npm run dev` - Start development server
-  - `npm run build` - Build for production
-  - `npm run preview` - Preview production build
+- `npm run dev` - Start Vite development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+- `npm run format` - Format with Prettier
 
-## Technologies
+## 🗄️ Database Schema
 
-### Backend
-- **Runtime**: Node.js
-- **Framework**: Express.js
-- **Language**: TypeScript
-- **Database**: PostgreSQL with Prisma ORM
-- **Security**: Helmet, CORS
+The application uses a comprehensive Prisma schema with the following main entities:
 
-### Frontend
-- **Framework**: React 18
-- **Language**: TypeScript
-- **Build Tool**: Vite
-- **Routing**: React Router DOM
+- **Users**: Role-based access control (Admin, Coordinator, Billing Staff, Transport Agency)
+- **Facilities**: Hospitals, nursing homes, cancer centers, rehab facilities
+- **Transport Requests**: Patient transfers with HIPAA-compliant identifiers
+- **Transport Agencies**: EMS services with capabilities and contact info
+- **Units**: Available EMS units with capabilities and status
+- **Distance Matrix**: Pre-calculated distances between facilities
+- **Routes**: Optimized transport assignments
 
-## Database Models
+## 🔐 Authentication & Security
 
-### User
-- **id**: Unique identifier (CUID)
-- **email**: Unique email address
-- **password**: Hashed password (bcrypt)
-- **name**: Optional display name
-- **role**: User role (ADMIN, DOCTOR, NURSE, USER)
-- **isActive**: Account status
-- **createdAt/updatedAt**: Timestamps
+- JWT-based authentication with refresh tokens
+- Role-based access control
+- HIPAA compliance for patient data
+- Password hashing with bcrypt
+- CORS configuration for security
 
-## API Endpoints
+## 📱 PWA Features
 
-### Health Check
-- `GET /` - API status
-- `GET /health` - Health check with timestamp
+- Service worker for offline functionality
+- Web app manifest for installation
+- Background sync capabilities
+- Local storage for offline data
+- Responsive design for all devices
 
-### Authentication
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
-- `GET /api/auth/profile` - Get user profile (protected)
-- `PUT /api/auth/profile` - Update user profile (protected)
+## 🚀 Deployment
 
-### Protected Routes
-- `GET /api/protected/dashboard` - User dashboard (protected)
-- `GET /api/protected/admin` - Admin access (ADMIN role only)
-- `GET /api/protected/medical` - Medical staff access (DOCTOR, NURSE, ADMIN)
+### Render Deployment
 
-## Development Workflow
+1. Connect your GitHub repository to Render
+2. Create a new Web Service for the backend
+3. Create a new Static Site for the frontend
+4. Configure environment variables
+5. Deploy!
 
-1. **Start Development**: Use `./scripts/start-dev-complete.sh`
-2. **Backend Changes**: Auto-reload with nodemon
-3. **Frontend Changes**: Hot module replacement with Vite
-4. **Database Changes**: Use Prisma migrations
+## 🧪 Testing
 
-## Deployment
-
-### Production Build
 ```bash
-# Backend
-cd backend
-npm run build
+# Run linting
+npm run lint
 
-# Frontend
-cd ../frontend
-npm run build
+# Check formatting
+npm run format:check
+
+# Run tests (when implemented)
+npm test
 ```
 
-### Environment Variables
-- `DATABASE_URL` - PostgreSQL connection string
-- `PORT` - Server port (default: 5001)
-- `NODE_ENV` - Environment (development/production)
-- `JWT_SECRET` - Secret key for JWT token generation
+## 📚 API Documentation
 
-## Contributing
+The API includes the following main endpoints:
 
-1. Follow the established project structure
-2. Use TypeScript for all new code
-3. Follow the existing code style
-4. Test your changes thoroughly
+- `/api/auth` - Authentication routes (login, register, refresh)
+- `/api/protected` - Protected routes requiring authentication
+- `/api/transport-requests` - Transport request management
+- `/api/facilities` - Facility management
+- `/api/agencies` - Transport agency management
+- `/api/routes` - Route optimization and assignment
 
-## License
+## 🤝 Contributing
 
-[Your License Here]
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run linting and tests
+5. Submit a pull request
 
-## Support
+## 📄 License
 
-For questions or issues, please contact the development team.
+This project is proprietary software. All rights reserved.
+
+## 🆘 Support
+
+For support and questions, please contact the development team.
+
+---
+
+**MedPort** - Optimizing medical transport coordination for better patient care and agency efficiency.
