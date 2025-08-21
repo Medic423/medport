@@ -3,8 +3,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 import { authenticateToken, requireRole } from '../middleware/auth';
-import { AuthService } from '../services/authService.js';
-import { UserService } from '../services/userService.js';
+import { AuthService } from '../services/authService';
+import { UserService } from '../services/userService';
 
 const router = Router();
 const prisma = new PrismaClient();

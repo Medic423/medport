@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import TransportRequests from './pages/TransportRequests';
+import StatusBoard from './pages/StatusBoard';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board'>('home');
 
   return (
     <div className="App">
@@ -34,6 +35,16 @@ function App() {
               >
                 Transport Requests
               </button>
+              <button
+                onClick={() => setCurrentPage('status-board')}
+                className={`px-3 py-2 rounded-md text-sm font-medium ${
+                  currentPage === 'status-board'
+                    ? 'bg-blue-700 text-white'
+                    : 'text-blue-100 hover:bg-blue-500 hover:text-white'
+                }`}
+              >
+                Status Board
+              </button>
             </div>
           </div>
         </div>
@@ -56,13 +67,13 @@ function App() {
                     <span className="text-green-800 font-medium">Phase 1: Foundation & Core Infrastructure</span>
                     <span className="text-green-600 font-bold">✅ COMPLETE</span>
                   </div>
-                  <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-                    <span className="text-blue-800 font-medium">Phase 2.1: Transport Request System</span>
-                    <span className="text-blue-600 font-bold">🚧 IN PROGRESS</span>
+                  <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+                    <span className="text-green-800 font-medium">Phase 2.1: Transport Request System</span>
+                    <span className="text-green-600 font-bold">✅ COMPLETE</span>
                   </div>
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <span className="text-gray-800 font-medium">Phase 2.2: Status Board Implementation</span>
-                    <span className="text-gray-600 font-bold">⏳ PENDING</span>
+                  <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+                    <span className="text-green-800 font-medium">Phase 2.2: Status Board Implementation</span>
+                    <span className="text-green-600 font-bold">✅ COMPLETE</span>
                   </div>
                   <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                     <span className="text-gray-800 font-medium">Phase 2.3: Basic Distance Matrix</span>
@@ -82,14 +93,33 @@ function App() {
                     <li>✅ Bulk operations and filtering</li>
                   </ul>
                 </div>
+                
+                <div className="mt-6 p-4 bg-green-50 rounded-lg">
+                  <h4 className="text-lg font-semibold text-green-900 mb-2">What's New in Phase 2.2</h4>
+                  <ul className="text-green-800 space-y-2 text-left">
+                    <li>✅ Real-time status board with live updates</li>
+                    <li>✅ Advanced filtering and search capabilities</li>
+                    <li>✅ Status workflow management with confirmation</li>
+                    <li>✅ Comprehensive statistics and metrics</li>
+                    <li>✅ Auto-refresh every 30 seconds</li>
+                    <li>✅ Print-friendly status board layout</li>
+                    <li>✅ Responsive card-based design</li>
+                  </ul>
+                </div>
               </div>
               
-              <div className="mt-8">
+              <div className="mt-8 flex space-x-4 justify-center">
                 <button
                   onClick={() => setCurrentPage('transport-requests')}
                   className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-lg font-medium"
                 >
                   Try Transport Requests →
+                </button>
+                <button
+                  onClick={() => setCurrentPage('status-board')}
+                  className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 text-lg font-medium"
+                >
+                  View Status Board →
                 </button>
               </div>
             </div>
@@ -97,6 +127,7 @@ function App() {
         )}
         
         {currentPage === 'transport-requests' && <TransportRequests />}
+        {currentPage === 'status-board' && <StatusBoard />}
       </main>
     </div>
   );
