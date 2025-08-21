@@ -2,7 +2,9 @@ import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateToken, requireRole } from '../middleware/auth';
+import { AuthService } from '../services/authService.js';
+import { UserService } from '../services/userService.js';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -158,6 +160,146 @@ router.put('/profile', authenticateToken, async (req: any, res: Response) => {
   } catch (error) {
     console.error('[MedPort] Profile update error:', error);
     res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Refresh access token
+router.post('/refresh', async (req: Request, res: Response) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(400).json({ 
+        message: 'Refresh token is required' 
+      });
+    }
+
+    const result = await AuthService.refreshToken(refreshToken);
+
+    res.json({
+      message: 'Token refreshed successfully',
+      ...result
+    });
+  } catch (error: any) {
+    console.error('[MedPort] Token refresh error:', error);
+    res.status(401).json({ 
+      message: error.message || 'Token refresh failed' 
+    });
+  }
+});
+
+// Change password (protected route)
+router.put('/change-password', authenticateToken, async (req: any, res: Response) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ 
+        message: 'Current and new password are required' 
+      });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ 
+        message: 'New password must be at least 8 characters long' 
+      });
+    }
+
+    const result = await AuthService.changePassword(
+      req.user.id, 
+      currentPassword, 
+      newPassword
+    );
+
+    res.json(result);
+  } catch (error: any) {
+    console.error('[MedPort] Password change error:', error);
+    res.status(400).json({ 
+      message: error.message || 'Password change failed' 
+    });
+  }
+});
+
+// Admin routes
+router.get('/users', authenticateToken, requireRole(['ADMIN']), async (req: any, res: Response) => {
+  try {
+    const { page = 1, limit = 20, role, isActive, search } = req.query;
+    const result = await UserService.getUsers(
+      { role, isActive: isActive === 'true' ? true : isActive === 'false' ? false : undefined, search },
+      parseInt(page as string),
+      parseInt(limit as string)
+    );
+    res.json(result);
+  } catch (error: any) {
+    console.error('[MedPort] Get users error:', error);
+    res.status(500).json({ 
+      message: error.message || 'Failed to get users' 
+    });
+  }
+});
+
+router.post('/users', authenticateToken, requireRole(['ADMIN']), async (req: any, res: Response) => {
+  try {
+    const { email, password, name, role } = req.body;
+    const user = await UserService.createUser(
+      { email, password, name, role },
+      req.user.id
+    );
+    res.status(201).json({ 
+      message: 'User created successfully',
+      user 
+    });
+  } catch (error: any) {
+    console.error('[MedPort] Create user error:', error);
+    res.status(500).json({ 
+      message: error.message || 'Failed to create user' 
+    });
+  }
+});
+
+router.put('/users/:id', authenticateToken, requireRole(['ADMIN']), async (req: any, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { name, email, role, isActive } = req.body;
+    const user = await UserService.updateUser(
+      id,
+      { name, email, role, isActive },
+      req.user.id
+    );
+    res.json({ 
+      message: 'User updated successfully',
+      user 
+    });
+  } catch (error: any) {
+    console.error('[MedPort] Update user error:', error);
+    res.status(500).json({ 
+      message: error.message || 'Failed to update user' 
+    });
+  }
+});
+
+router.delete('/users/:id', authenticateToken, requireRole(['ADMIN']), async (req: any, res: Response) => {
+  try {
+    const { id } = req.params;
+    const result = await UserService.deleteUser(id, req.user.id);
+    res.json(result);
+  } catch (error: any) {
+    console.error('[MedPort] Password change error:', error);
+    res.status(400).json({ 
+      message: error.message || 'Failed to delete user' 
+    });
+  }
+});
+
+router.get('/users/stats', authenticateToken, requireRole(['ADMIN']), async (req: any, res: Response) => {
+  try {
+    const stats = await UserService.getUserStats();
+    res.json(stats);
+  } catch (error: any) {
+    console.error('[MedPort] Get user stats error:', error);
+    res.status(500).json({ 
+      message: error.message || 'Failed to get user stats' 
+    });
   }
 });
 
