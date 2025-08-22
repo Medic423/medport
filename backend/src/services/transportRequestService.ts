@@ -1,5 +1,6 @@
 import { PrismaClient, TransportRequest, TransportLevel, Priority, RequestStatus, Facility, User } from '@prisma/client';
 import { createHash } from 'crypto';
+import distanceService from './distanceService';
 
 const prisma = new PrismaClient();
 
@@ -325,6 +326,81 @@ export class TransportRequestService {
       byPriority: priorityStats,
       byTransportLevel: transportLevelStats
     };
+  }
+
+  /**
+   * Calculate loaded miles for a transport request
+   */
+  async calculateLoadedMiles(transportRequestId: string): Promise<number> {
+    try {
+      const transportRequest = await prisma.transportRequest.findUnique({
+        where: { id: transportRequestId },
+        select: { originFacilityId: true, destinationFacilityId: true }
+      });
+
+      if (!transportRequest) {
+        throw new Error('Transport request not found');
+      }
+
+      const loadedMiles = await distanceService.calculateLoadedMiles(
+        transportRequest.originFacilityId,
+        transportRequest.destinationFacilityId
+      );
+
+      console.log(`[MedPort:TransportRequest] Calculated ${loadedMiles.toFixed(2)} loaded miles for request ${transportRequestId}`);
+      return loadedMiles;
+    } catch (error) {
+      console.error('[MedPort:TransportRequest] Error calculating loaded miles:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get transport request with distance information
+   */
+  async getTransportRequestWithDistance(id: string): Promise<TransportRequestWithDetails & { loadedMiles?: number } | null> {
+    try {
+      const transportRequest = await this.getTransportRequestById(id);
+      if (!transportRequest) return null;
+
+      // Calculate loaded miles
+      const loadedMiles = await this.calculateLoadedMiles(id);
+
+      return {
+        ...transportRequest,
+        loadedMiles
+      };
+    } catch (error) {
+      console.error('[MedPort:TransportRequest] Error getting transport request with distance:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get all transport requests with distance information
+   */
+  async getAllTransportRequestsWithDistance(filters?: any): Promise<(TransportRequestWithDetails & { loadedMiles?: number })[]> {
+    try {
+      const transportRequestsResponse = await this.getTransportRequests(filters);
+      
+      // Calculate distances for all requests
+      const requestsWithDistance = await Promise.all(
+        transportRequestsResponse.requests.map(async (request: TransportRequestWithDetails) => {
+          try {
+            const loadedMiles = await this.calculateLoadedMiles(request.id);
+            return { ...request, loadedMiles };
+          } catch (error) {
+            console.warn(`[MedPort:TransportRequest] Could not calculate distance for request ${request.id}:`, error);
+            return { ...request, loadedMiles: undefined };
+          }
+        })
+      );
+
+      return requestsWithDistance;
+    } catch (error) {
+      console.error('[MedPort:TransportRequest] Error getting transport requests with distance:', error);
+      throw error;
+    }
   }
 }
 

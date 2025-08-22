@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/auth';
 import protectedRoutes from './routes/protected';
 import transportRequestRoutes from './routes/transportRequests';
+import distanceRoutes from './routes/distance';
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/protected', protectedRoutes);
 app.use('/api/transport-requests', transportRequestRoutes);
+app.use('/api/distance', distanceRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'MedPort Backend API is running!' });
