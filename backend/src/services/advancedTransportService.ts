@@ -491,10 +491,14 @@ export class AdvancedTransportService {
     return prisma.weatherUpdate.create({
       data: {
         longDistanceTransportId: transportId,
-        timestamp: new Date(),
-        conditions: weatherData.conditions,
-        impact: weatherData.impact,
-        recommendations: weatherData.recommendations
+        location: weatherData.location || 'Unknown',
+        weatherConditions: weatherData.weatherConditions || 'CLEAR',
+        temperature: weatherData.temperature || 0,
+        windSpeed: weatherData.windSpeed || 0,
+        windDirection: weatherData.windDirection || 'Unknown',
+        visibility: weatherData.visibility || 0,
+        precipitation: weatherData.precipitation || 0,
+        cloudCover: weatherData.cloudCover || 0
       }
     });
   }

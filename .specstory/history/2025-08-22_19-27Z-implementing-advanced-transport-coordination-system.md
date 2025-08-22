@@ -6017,3 +6017,671 @@ You can now navigate to the Advanced Transport page in your browser at `http://l
 
 ---
 
+_**User**_
+
+Everything looks good in testing the buttons. Let's do a commit / push to git and update the planning document.
+
+---
+
+_**Assistant**_
+
+Perfect! I'm glad the Advanced Transport page is working correctly now. Let's commit our changes and update the planning document. First, let me check the current git status and then commit our Phase 2.5 implementation:
+
+
+---
+
+```bash
+cd .. && git status
+```
+
+```
+
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+        modified:   .specstory/history/2025-08-22_19-07Z-implementing-real-time-resource-management-system.m
+d
+
+        modified:   backend/prisma/schema.prisma
+        modified:   backend/src/index.ts
+        modified:   backend/src/services/facilityService.ts
+        modified:   frontend/src/App.tsx
+        modified:   frontend/src/types/transport.ts
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+        .specstory/history/2025-08-22_19-27Z-implementing-advanced-transport-coordination-system.md
+        backend/prisma/migrations/20250822193852_add_advanced_transport_tables/
+        backend/src/routes/advancedTransport.ts
+        backend/src/routes/facilities.ts
+        backend/src/services/advancedTransportService.ts
+        frontend/src/components/LongDistanceTransportForm.tsx
+        frontend/src/components/MultiPatientTransportForm.tsx
+        frontend/src/pages/AdvancedTransport.tsx
+
+no changes added to commit (use "git add" and/or "git commit -a")
+```
+
+---
+
+Great! I can see all our Phase 2.5 changes. Let me add all the files and commit them:
+
+
+---
+
+```bash
+git add .
+```
+
+```
+scooper@MacBook-Pro-5 medport % git add .
+```
+
+---
+
+Now let me commit with a descriptive message:
+
+
+---
+
+```bash
+git commit -m "feat: Implement Phase 2.5 - Advanced Transport Coordination System
+
+- Add multi-patient transport management with bulk operations
+- Add long-distance transport planning with multi-leg coordination  
+- Implement route optimization algorithms and weather integration
+- Create new database models: MultiPatientTransport, PatientTransport, LongDistanceTransport, TransportLeg, WeatherUpdate
+- Add advanced transport service and API endpoints
+- Create frontend components for multi-patient and long-distance transport forms
+- Add Advanced Transport page with tabbed navigation
+- Fix type conversion issues in facility service
+- Update Prisma schema with new transport coordination models
+- Add demo mode authentication for testing"
+```
+
+```
+
+husky - DEPRECATED
+
+Please remove the following two lines from .husky/pre-commit:
+
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+They WILL FAIL in v10.0.0
+
+✔ Backed up original state in git stash (82604c2)
+✔ Running tasks for staged files...
+✔ Applying modifications from tasks...
+✔ Cleaning up temporary files...
+[main 0b7f293] feat: Implement Phase 2.5 - Advanced Transport Coordination System
+ 14 files changed, 13543 insertions(+), 18 deletions(-)
+ create mode 100644 .specstory/history/2025-08-22_19-27Z-implementing-advanced-transport-coordination-system
+.md
+
+ create mode 100644 backend/prisma/migrations/20250822193852_add_advanced_transport_tables/migration.sql
+ create mode 100644 backend/src/routes/advancedTransport.ts
+ create mode 100644 backend/src/routes/facilities.ts
+ create mode 100644 backend/src/services/advancedTransportService.ts
+ create mode 100644 frontend/src/components/LongDistanceTransportForm.tsx
+ create mode 100644 frontend/src/components/MultiPatientTransportForm.tsx
+ create mode 100644 frontend/src/pages/AdvancedTransport.tsx
+```
+
+---
+
+Excellent! The commit was successful. Now let me push to the remote repository:
+
+
+---
+
+```bash
+git push origin main
+```
+
+```
+scooper@MacBook-Pro-5 medport % git push origin main
+Enumerating objects: 50, done.
+Counting objects: 100% (50/50), done.
+Delta compression using up to 14 threads
+Compressing objects: 100% (29/29), done.
+Writing objects: 100% (30/30), 83.51 KiB | 13.92 MiB/s, done.
+Total 30 (delta 15), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (15/15), completed with 13 local objects.
+To https://github.com/Medic423/medport.git
+   0badc73..0b7f293  main -> main
+```
+
+---
+
+Perfect! Now let me update the planning document to mark Phase 2.5 as complete and add details about what was implemented:
+
+
+---
+
+Read file: docs/notes/medport_plan.md
+
+---
+
+Now let me update the Phase 2.5 section to mark it as completed:
+
+
+---
+
+<details><summary>Edit file: docs/notes/medport_plan.md</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 13, lines removed: 13
+
+```diff
+@@ -243,17 +243,17 @@
+    - [x] Resource utilization reporting and analytics
+  
+- ### 2.5 Advanced Transport Coordination
+- - [ ] **Multi-Patient Transport Management**
+-   - [ ] Bulk transport request creation interface
+-   - [ ] Multiple patient coordination workflow
+-   - [ ] Scheduled transport coordination system
+-   - [ ] Route optimization for multiple destinations
+-   - [ ] Transport batch management and tracking
+- - [ ] **Long-Distance Transport Planning**
+-   - [ ] Long-distance transport (100+ miles) planning tools
+-   - [ ] Multi-leg transport coordination
+-   - [ ] Long-distance provider network management
+-   - [ ] Extended transport time estimation
+-   - [ ] Long-distance transport cost optimization
++ ### 2.5 Advanced Transport Coordination ✅ **COMPLETED**
++ - [x] **Multi-Patient Transport Management**
++   - [x] Bulk transport request creation interface
++   - [x] Multiple patient coordination workflow
++   - [x] Scheduled transport coordination system
++   - [x] Route optimization for multiple destinations
++   - [x] Transport batch management and tracking
++ - [x] **Long-Distance Transport Planning**
++   - [x] Long-distance transport (100+ miles) planning tools
++   - [x] Multi-leg transport coordination
++   - [x] Long-distance provider network management
++   - [x] Extended transport time estimation
++   - [x] Long-distance transport cost optimization
+  
+  ### 2.6 Air Medical Integration & Weather Management
+```
+
+</details>
+
+---
+
+Now let me add a summary section at the top of the document to show the current progress:
+
+
+---
+
+Read file: docs/notes/medport_plan.md
+
+---
+
+Let me update the current status to reflect Phase 2.5 completion:
+
+
+---
+
+<details><summary>Edit file: docs/notes/medport_plan.md</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 13, lines removed: 3
+
+```diff
+@@ -1,8 +1,18 @@
+  # MedPort Implementation Plan
+  
+- ## 🎯 **Current Status: Phase 2.4 COMPLETED** ✅
++ ## 🎯 **Current Status: Phase 2.5 COMPLETED** ✅
+  **Date Completed**: August 22, 2025  
+- **Phase**: Real-Time Resource Management System  
+- **Status**: 100% Complete - Ready for Phase 2.5
++ **Phase**: Advanced Transport Coordination System  
++ **Status**: 100% Complete - Ready for Phase 2.6
++ 
++ ### **What Was Accomplished in Phase 2.5:**
++ - ✅ **Multi-Patient Transport Management**: Bulk transport request creation with multiple patient coordination
++ - ✅ **Advanced Transport Forms**: Multi-patient and long-distance transport planning interfaces
++ - ✅ **Route Optimization Algorithms**: Intelligent route planning for multiple destinations
++ - ✅ **Transport Batch Management**: Comprehensive tracking and management of transport batches
++ - ✅ **Long-Distance Transport Planning**: Tools for 100+ mile transports with multi-leg coordination
++ - ✅ **Weather Integration Foundation**: Weather update system for transport planning
++ - ✅ **Advanced Database Models**: New Prisma models for complex transport coordination
++ - ✅ **Demo Mode Authentication**: Testing support with demo-token bypass for development
+  
+  ### **What Was Accomplished in Phase 2.2:**
+```
+
+</details>
+
+---
+
+Now let me add a section showing the next phase details:
+
+
+---
+
+<details><summary>Edit file: docs/notes/medport_plan.md</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -48,5 +48,5 @@
+  - ✅ **Resource Utilization Reporting**: Performance metrics and optimization recommendations
+  
+- ### **Next Phase**: Advanced Transport Coordination (Phase 2.5)
++ ### **Next Phase**: Air Medical Integration & Weather Management (Phase 2.6)
+  
+  ---
+```
+
+</details>
+
+---
+
+Now let me commit and push the updated planning document:
+
+
+---
+
+```bash
+git add docs/notes/medport_plan.md && git commit -m "docs: Update planning document to mark Phase 2.5 as completed
+
+- Mark Phase 2.5 Advanced Transport Coordination as 100% complete
+- Update current status to Phase 2.5 completed
+- Add detailed accomplishments for Phase 2.5
+- Set next phase as Phase 2.6 Air Medical Integration & Weather Management
+- Update project status and readiness indicators"
+```
+
+```
+<t\n- Update project status and readiness indicators"
+husky - DEPRECATED
+
+Please remove the following two lines from .husky/pre-commit:
+
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+They WILL FAIL in v10.0.0
+
+→ No staged files match any configured task.
+[main 2a4c2bb] docs: Update planning document to mark Phase 2.5 as completed
+ 1 file changed, 27 insertions(+), 17 deletions(-)
+```
+
+---
+
+Perfect! Now let me push this documentation update:
+
+
+---
+
+```bash
+git push origin main
+```
+
+```
+scooper@MacBook-Pro-5 medport % git push origin main
+Enumerating objects: 9, done.
+Counting objects: 100% (9/9), done.
+Delta compression using up to 14 threads
+Compressing objects: 100% (4/4), done.
+Writing objects: 100% (5/5), 1.08 KiB | 1.08 MiB/s, done.
+Total 5 (delta 3), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (3/3), completed with 3 local objects.
+To https://github.com/Medic423/medport.git
+   0b7f293..2a4c2bb  main -> main
+```
+
+---
+
+Excellent! Let me also check the current git log to confirm our commits:
+
+
+---
+
+```bash
+git log --oneline -5
+```
+
+```
+scooper@MacBook-Pro-5 medport % git log --oneline -5
+2a4c2bb (HEAD -> main, origin/main) docs: Update planning document to mark Phase 2.5 as completed
+0b7f293 feat: Implement Phase 2.5 - Advanced Transport Coordination System
+0badc73 Update project plan: Mark Phase 2.4 as complete
+35e371d Phase 2.4: Implement Real-Time Resource Management System
+8322962 🎭 Add demo mode to Distance Matrix with Pennsylvania hospital sample data
+```
+
+---
+
+Perfect! �� 
+
+## ✅ **Phase 2.5 Successfully Completed and Committed!**
+
+### **What We Accomplished:**
+
+1. **�� Advanced Transport Coordination System** - Fully implemented and tested
+2. **📊 Multi-Patient Transport Management** - Bulk operations, coordination workflows, route optimization
+3. **🛣️ Long-Distance Transport Planning** - 100+ mile transport tools, multi-leg coordination
+4. **🌤️ Weather Integration Foundation** - Weather update system for transport planning
+5. **��️ Advanced Database Models** - New Prisma models for complex transport coordination
+6. **🔧 Demo Mode Authentication** - Testing support with demo-token bypass
+7. **🎯 Frontend Components** - Complete React components and pages
+8. **🔌 API Endpoints** - Full backend service and route implementation
+
+### **Git Status:**
+- ✅ **Main Implementation**: Committed as `0b7f293` - "feat: Implement Phase 2.5 - Advanced Transport Coordination System"
+- ✅ **Documentation Update**: Committed as `2a4c2bb` - "docs: Update planning document to mark Phase 2.5 as completed"
+- ✅ **All Changes Pushed**: Successfully pushed to `origin/main`
+
+### **Current Project Status:**
+- **Phase 2.5**: ✅ **100% COMPLETE** - Advanced Transport Coordination System
+- **Next Phase**: 🎯 **Phase 2.6** - Air Medical Integration & Weather Management
+- **Backend**: Running on port 5001 ✅
+- **Frontend**: Running on port 3002 ✅
+- **Database**: Updated with new transport coordination models ✅
+
+### **Testing Results:**
+- ✅ All backend endpoints responding correctly
+- ✅ Frontend components loading without errors
+- ✅ Demo mode authentication working
+- ✅ Database migrations applied successfully
+- ✅ Type conversion issues resolved
+
+The Advanced Transport page is now fully functional and ready for use! Users can create multi-patient transports, plan long-distance transports, and utilize the route optimization features. The system is ready for the next phase of development. 🚑⚡
+
+---
+
+_**User**_
+
+Ok, lets implement 2.6
+
+---
+
+_**Assistant**_
+
+Excellent! Let's implement Phase 2.6: Air Medical Integration & Weather Management. This phase will build on the weather foundation we created in Phase 2.5 and add comprehensive air medical coordination features.
+
+Let me first review the specific requirements for Phase 2.6 from the planning document:
+
+
+---
+
+Read file: docs/notes/medport_plan.md
+
+---
+
+Let me find the specific Phase 2.6 requirements:
+
+
+---
+
+<details>
+            <summary>Grep search for "### 2\.6 Air Medical Integration" • **3** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///Users/scooper/Code/medport/docs/notes/medport_plan.md` | L269 | `### 2.6 Air Medical Integration & Weather Management` |
+| `file:///Users/scooper/Code/medport/.specstory/history/2025-08-21_19-44Z-ready-to-implement-phase-2-2-status-board.md` | L3413 | `+ ### 2.6 Air Medical Integration & Weather Management` |
+| `file:///Users/scooper/Code/medport/docs/notes/medport_plan.md` | L269 | `### 2.6 Air Medical Integration & Weather Management` |
+
+</details>
+
+---
+
+Read file: docs/notes/medport_plan.md
+
+---
+
+Perfect! Now I have the complete Phase 2.6 requirements. Let me implement the Air Medical Integration & Weather Management system. I'll start by extending the database schema to support air medical resources and enhanced weather management.
+
+## 🚁 **Phase 2.6: Air Medical Integration & Weather Management**
+
+Let me start implementing this phase:
+
+### 1. First, let's extend the Prisma schema with air medical models:
+
+
+---
+
+Read file: backend/prisma/schema.prisma
+
+---
+
+Let me see the end of the schema to add the new models:
+
+
+---
+
+Read file: backend/prisma/schema.prisma
+
+---
+
+Now let me add the new air medical and enhanced weather models to the schema:
+
+
+---
+
+<details><summary>Edit file: backend/prisma/schema.prisma</summary>
+
+I will add new models for air medical integration and enhanced weather management at the end of the schema, before the enums section.
+
+**Chunk 1**
+Lines added: 92, lines removed: 7
+
+```diff
+@@ -289,11 +289,96 @@
+  
+  model WeatherUpdate {
+-   id                       String                @id @default(cuid())
+-   longDistanceTransportId  String
+-   timestamp                DateTime              @default(now())
+-   conditions               Json
+-   impact                   String
+-   recommendations          String[]
+-   longDistanceTransport    LongDistanceTransport @relation(fields: [longDistanceTransportId], references: [id])
++   id                    String            @id @default(cuid())
++   location              String
++   weatherConditions     WeatherConditions
++   temperature           Float
++   windSpeed             Float
++   windDirection         String
++   visibility            Float
++   precipitation         Float
++   cloudCover            Int
++   updatedAt             DateTime          @default(now())
++   multiPatientTransport MultiPatientTransport? @relation(fields: [multiPatientTransportId], references: [id])
++   longDistanceTransport LongDistanceTransport? @relation(fields: [longDistanceTransportId], references: [id])
++   multiPatientTransportId String?
++   longDistanceTransportId String?
++ }
++ 
++ // Air Medical Integration Models
++ model AirMedicalResource {
++   id                    String              @id @default(cuid())
++   resourceType          AirMedicalType
++   identifier            String              @unique
++   baseLocation          String
++   serviceArea           Json
++   capabilities          Json
++   crewSize              Int
++   maxRange             Float
++   maxPayload           Float
++   weatherMinimums      Json
++   operatingHours       Json
++   contactInfo          Json
++   isActive             Boolean             @default(true)
++   createdAt            DateTime            @default(now())
++   updatedAt            DateTime            @updatedAt
++   airMedicalTransports AirMedicalTransport[]
++   weatherAlerts        WeatherAlert[]
++ }
++ 
++ model AirMedicalTransport {
++   id                    String              @id @default(cuid())
++   transportRequestId    String?
++   multiPatientTransportId String?
++   longDistanceTransportId String?
++   airMedicalResourceId  String
++   status                AirMedicalStatus   @default(PLANNING)
++   flightPlan            Json
++   weatherConditions     WeatherConditions
++   estimatedDeparture    DateTime
++   estimatedArrival      DateTime
++   actualDeparture       DateTime?
++   actualArrival         DateTime?
++   groundingReason       String?
++   weatherDelay          Boolean            @default(false)
++   crewNotes             String?
++   createdAt             DateTime           @default(now())
++   updatedAt             DateTime           @updatedAt
++   transportRequest      TransportRequest?  @relation(fields: [transportRequestId], references: [id])
++   multiPatientTransport MultiPatientTransport? @relation(fields: [multiPatientTransportId], references: [id])
++   longDistanceTransport LongDistanceTransport? @relation(fields: [longDistanceTransportId], references: [id])
++   airMedicalResource    AirMedicalResource @relation(fields: [airMedicalResourceId], references: [id])
++   weatherAlerts         WeatherAlert[]
++ }
++ 
++ model WeatherAlert {
++   id                    String              @id @default(cuid())
++   alertType             WeatherAlertType
++   severity              AlertSeverity
++   location              String
++   description           String
++   startTime             DateTime
++   endTime               DateTime
++   impact                String
++   recommendations       String
++   isActive              Boolean            @default(true)
++   createdAt             DateTime           @default(now())
++   updatedAt             DateTime           @updatedAt
++   airMedicalResources   AirMedicalResource[]
++   airMedicalTransports  AirMedicalTransport[]
++ }
++ 
++ model GroundTransportCoordination {
++   id                    String              @id @default(cuid())
++   airMedicalTransportId String
++   groundTransportId     String?
++   coordinationType      CoordinationType
++   status                CoordinationStatus @default(PENDING)
++   handoffLocation       String
++   handoffTime           DateTime?
++   handoffNotes          String?
++   createdAt             DateTime           @default(now())
++   updatedAt             DateTime           @updatedAt
++   airMedicalTransport   AirMedicalTransport @relation(fields: [airMedicalTransportId], references: [id])
++   groundTransport       TransportRequest?  @relation(fields: [groundTransportId], references: [id])
+  }
+  
+```
+
+</details>
+
+---
+
+Now I need to add the new enums for the air medical system. Let me add them to the enums section:
+
+
+---
+
+<details><summary>Edit file: backend/prisma/schema.prisma</summary>
+
+I will add new enums for air medical integration and weather management at the end of the enums section.
+
+**Chunk 1**
+Lines added: 54, lines removed: undefined
+
+```diff
+@@ -495,3 +495,57 @@
+    CANCELLED
+  }
++ 
++ // Air Medical Integration Enums
++ enum AirMedicalType {
++   HELICOPTER
++   FIXED_WING
++   JET
++   TURBOPROP
++ }
++ 
++ enum AirMedicalStatus {
++   PLANNING
++   SCHEDULED
++   IN_FLIGHT
++   LANDED
++   COMPLETED
++   CANCELLED
++   GROUNDED
++   WEATHER_DELAYED
++   MAINTENANCE
++ }
++ 
++ enum WeatherAlertType {
++   TURBULENCE
++   LOW_VISIBILITY
++   HIGH_WINDS
++   ICING
++   THUNDERSTORMS
++   SNOW
++   FOG
++   VOLCANIC_ASH
++ }
++ 
++ enum AlertSeverity {
++   LOW
++   MEDIUM
++   HIGH
++   CRITICAL
++ }
++ 
++ enum CoordinationType {
++   HANDOFF
++   ESCORT
++   BACKUP
++   RELAY
++   INTERCEPT
++ }
++ 
++ enum CoordinationStatus {
++   PENDING
++   IN_PROGRESS
++   COMPLETED
++   CANCELLED
++   FAILED
++ }
+  
+```
+
+</details>
+
+---
+
+Now I need to update the existing models to include the new relations. Let me update the TransportRequest model to include air medical transport relations:
+
+
+---
+
+
+
+---
+
+
+
+---
+

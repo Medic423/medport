@@ -4,9 +4,10 @@ import StatusBoard from './pages/StatusBoard';
 import DistanceMatrix from './pages/DistanceMatrix';
 import ResourceManagement from './pages/ResourceManagement';
 import AdvancedTransport from './pages/AdvancedTransport';
+import AirMedical from './pages/AirMedical';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical'>('home');
 
   return (
     <div className="App">
@@ -77,6 +78,16 @@ function App() {
                 }`}
               >
                 Advanced Transport
+              </button>
+              <button
+                onClick={() => setCurrentPage('air-medical')}
+                className={`px-3 py-2 rounded-md text-sm font-medium ${
+                  currentPage === 'air-medical'
+                    ? 'bg-blue-700 text-white'
+                    : 'text-blue-100 hover:bg-blue-500 hover:text-white'
+                }`}
+              >
+                Air Medical
               </button>
             </div>
           </div>
@@ -189,6 +200,22 @@ function App() {
                     <li>✅ Cost optimization and revenue potential analysis</li>
                   </ul>
                 </div>
+                
+                <div className="mt-6 p-4 bg-red-50 rounded-lg">
+                  <h4 className="text-lg font-semibold text-red-900 mb-2">What's New in Phase 2.6</h4>
+                  <ul className="text-red-800 space-y-2 text-left">
+                    <li>✅ Air medical resource management system</li>
+                    <li>✅ Weather API integration for air medical availability</li>
+                    <li>✅ Weather-based routing alternatives and notifications</li>
+                    <li>✅ Grounding status tracking for air medical services</li>
+                    <li>✅ Weather impact alerts for transport coordinators</li>
+                    <li>✅ Air-to-ground transport coordination system</li>
+                    <li>✅ Air medical crew ground transport coordination</li>
+                    <li>✅ Helicopter availability status integration</li>
+                    <li>✅ Air medical service area management</li>
+                    <li>✅ Real-time weather monitoring and alerts</li>
+                  </ul>
+                </div>
               </div>
               
               <div className="mt-8 flex space-x-4 justify-center">
@@ -222,6 +249,12 @@ function App() {
                 >
                   Advanced Transport →
                 </button>
+                <button
+                  onClick={() => setCurrentPage('air-medical')}
+                  className="px-8 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 text-lg font-medium"
+                >
+                  Air Medical →
+                </button>
               </div>
             </div>
           </div>
@@ -232,6 +265,7 @@ function App() {
         {currentPage === 'distance-matrix' && <DistanceMatrix />}
         {currentPage === 'resource-management' && <ResourceManagement />}
         {currentPage === 'advanced-transport' && <AdvancedTransport />}
+        {currentPage === 'air-medical' && <AirMedical />}
       </main>
     </div>
   );

@@ -77,6 +77,8 @@ model TransportRequest {
   destinationFacility    Facility         @relation("DestinationFacility", fields: [destinationFacilityId], references: [id])
   originFacility         Facility         @relation("OriginFacility", fields: [originFacilityId], references: [id])
   routes                 Route[]          @relation("RouteToTransportRequest")
+  airMedicalTransports   AirMedicalTransport[]
+  groundTransportCoordination GroundTransportCoordination[]
 }
 
 model TransportAgency {
@@ -214,6 +216,8 @@ model MultiPatientTransport {
   assignedUnit         Unit?                 @relation(fields: [assignedUnitId], references: [id])
   patientTransports    PatientTransport[]
   routeStops           RouteStop[]
+  weatherUpdates       WeatherUpdate[]
+  airMedicalTransports AirMedicalTransport[]
 }
 
 model PatientTransport {
@@ -262,6 +266,7 @@ model LongDistanceTransport {
   assignedUnit         Unit?                 @relation(fields: [assignedUnitId], references: [id])
   transportLegs        TransportLeg[]
   weatherUpdates       WeatherUpdate[]
+  airMedicalTransports AirMedicalTransport[]
 }
 
 model TransportLeg {
@@ -288,13 +293,99 @@ model TransportLeg {
 }
 
 model WeatherUpdate {
-  id                       String                @id @default(cuid())
-  longDistanceTransportId  String
-  timestamp                DateTime              @default(now())
-  conditions               Json
-  impact                   String
-  recommendations          String[]
-  longDistanceTransport    LongDistanceTransport @relation(fields: [longDistanceTransportId], references: [id])
+  id                    String            @id @default(cuid())
+  location              String
+  weatherConditions     WeatherConditions
+  temperature           Float
+  windSpeed             Float
+  windDirection         String
+  visibility            Float
+  precipitation         Float
+  cloudCover            Int
+  updatedAt             DateTime          @default(now())
+  multiPatientTransport MultiPatientTransport? @relation(fields: [multiPatientTransportId], references: [id])
+  longDistanceTransport LongDistanceTransport? @relation(fields: [longDistanceTransportId], references: [id])
+  multiPatientTransportId String?
+  longDistanceTransportId String?
+}
+
+// Air Medical Integration Models
+model AirMedicalResource {
+  id                    String              @id @default(cuid())
+  resourceType          AirMedicalType
+  identifier            String              @unique
+  baseLocation          String
+  serviceArea           Json
+  capabilities          Json
+  crewSize              Int
+  maxRange             Float
+  maxPayload           Float
+  weatherMinimums      Json
+  operatingHours       Json
+  contactInfo          Json
+  isActive             Boolean             @default(true)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  airMedicalTransports AirMedicalTransport[]
+  weatherAlerts        WeatherAlert[]
+}
+
+model AirMedicalTransport {
+  id                    String              @id @default(cuid())
+  transportRequestId    String?
+  multiPatientTransportId String?
+  longDistanceTransportId String?
+  airMedicalResourceId  String
+  status                AirMedicalStatus   @default(PLANNING)
+  flightPlan            Json
+  weatherConditions     WeatherConditions
+  estimatedDeparture    DateTime
+  estimatedArrival      DateTime
+  actualDeparture       DateTime?
+  actualArrival         DateTime?
+  groundingReason       String?
+  weatherDelay          Boolean            @default(false)
+  crewNotes             String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  transportRequest      TransportRequest?  @relation(fields: [transportRequestId], references: [id])
+  multiPatientTransport MultiPatientTransport? @relation(fields: [multiPatientTransportId], references: [id])
+  longDistanceTransport LongDistanceTransport? @relation(fields: [longDistanceTransportId], references: [id])
+  airMedicalResource    AirMedicalResource @relation(fields: [airMedicalResourceId], references: [id])
+  weatherAlerts         WeatherAlert[]
+  groundTransportCoordination GroundTransportCoordination[]
+}
+
+model WeatherAlert {
+  id                    String              @id @default(cuid())
+  alertType             WeatherAlertType
+  severity              AlertSeverity
+  location              String
+  description           String
+  startTime             DateTime
+  endTime               DateTime
+  impact                String
+  recommendations       String
+  isActive              Boolean            @default(true)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  airMedicalResources   AirMedicalResource[]
+  airMedicalTransports  AirMedicalTransport[]
+}
+
+model GroundTransportCoordination {
+  id                    String              @id @default(cuid())
+  airMedicalTransportId String
+  groundTransportId     String?
+  coordinationType      CoordinationType
+  status                CoordinationStatus @default(PENDING)
+  handoffLocation       String
+  handoffTime           DateTime?
+  handoffNotes          String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  airMedicalTransport   AirMedicalTransport @relation(fields: [airMedicalTransportId], references: [id])
+  groundTransport       TransportRequest?  @relation(fields: [groundTransportId], references: [id])
 }
 
 enum UserRole {
@@ -408,4 +499,72 @@ enum LegStatus {
   COMPLETED
   DELAYED
   CANCELLED
+}
+
+// Weather Conditions Enum
+enum WeatherConditions {
+  CLEAR
+  PARTLY_CLOUDY
+  CLOUDY
+  RAIN
+  SNOW
+  FOG
+  THUNDERSTORMS
+  HIGH_WINDS
+  ICING
+  TURBULENCE
+}
+
+// Air Medical Integration Enums
+enum AirMedicalType {
+  HELICOPTER
+  FIXED_WING
+  JET
+  TURBOPROP
+}
+
+enum AirMedicalStatus {
+  PLANNING
+  SCHEDULED
+  IN_FLIGHT
+  LANDED
+  COMPLETED
+  CANCELLED
+  GROUNDED
+  WEATHER_DELAYED
+  MAINTENANCE
+}
+
+enum WeatherAlertType {
+  TURBULENCE
+  LOW_VISIBILITY
+  HIGH_WINDS
+  ICING
+  THUNDERSTORMS
+  SNOW
+  FOG
+  VOLCANIC_ASH
+}
+
+enum AlertSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum CoordinationType {
+  HANDOFF
+  ESCORT
+  BACKUP
+  RELAY
+  INTERCEPT
+}
+
+enum CoordinationStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  FAILED
 }
