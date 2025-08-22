@@ -47,6 +47,8 @@ model Facility {
   patientTransportDestinations PatientTransport[] @relation("PatientTransportDestination")
   transportLegOrigins TransportLeg[] @relation("TransportLegOrigin")
   transportLegDestinations TransportLeg[] @relation("TransportLegDestination")
+  emergencyDepartment EmergencyDepartment? @relation("FacilityEmergencyDepartment")
+  demandPatterns      DemandPattern[]
 }
 
 model TransportRequest {
@@ -79,6 +81,7 @@ model TransportRequest {
   routes                 Route[]          @relation("RouteToTransportRequest")
   airMedicalTransports   AirMedicalTransport[]
   groundTransportCoordination GroundTransportCoordination[]
+  transportQueues        TransportQueue[]
 }
 
 model TransportAgency {
@@ -103,6 +106,8 @@ model TransportAgency {
   units             Unit[]
   multiPatientTransports MultiPatientTransport[]
   longDistanceTransports LongDistanceTransport[]
+  providerForecasts ProviderForecast[]
+  assignedTransportQueues TransportQueue[]
 }
 
 model Unit {
@@ -123,6 +128,7 @@ model Unit {
   multiPatientTransports MultiPatientTransport[]
   longDistanceTransports LongDistanceTransport[]
   agency            TransportAgency    @relation(fields: [agencyId], references: [id])
+  transportQueues   TransportQueue[]
 }
 
 model DistanceMatrix {
@@ -388,6 +394,113 @@ model GroundTransportCoordination {
   groundTransport       TransportRequest?  @relation(fields: [groundTransportId], references: [id])
 }
 
+// Emergency Department Optimization Models (Phase 2.7)
+model EmergencyDepartment {
+  id                    String              @id @default(cuid())
+  facilityId            String              @unique
+  name                  String
+  totalBeds             Int
+  availableBeds         Int
+  occupiedBeds          Int
+  hallwayBeds           Int
+  criticalBeds          Int
+  capacityThreshold     Int                 @default(80)
+  currentCensus         Int
+  transportQueueLength  Int                 @default(0)
+  averageWaitTime       Int                 @default(0)
+  peakHours             Json?
+  isActive              Boolean             @default(true)
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  facility              Facility            @relation("FacilityEmergencyDepartment", fields: [facilityId], references: [id])
+  bedStatusUpdates      BedStatusUpdate[]
+  transportQueues       TransportQueue[]
+  capacityAlerts        CapacityAlert[]
+}
+
+model BedStatusUpdate {
+  id                    String              @id @default(cuid())
+  emergencyDepartmentId String
+  updateType            BedUpdateType
+  bedCount              Int
+  updateReason          String?
+  notes                 String?
+  updatedBy             String?
+  createdAt             DateTime            @default(now())
+  emergencyDepartment   EmergencyDepartment @relation(fields: [emergencyDepartmentId], references: [id])
+}
+
+model TransportQueue {
+  id                    String              @id @default(cuid())
+  emergencyDepartmentId String
+  transportRequestId    String
+  queuePosition         Int
+  priority              Priority            @default(MEDIUM)
+  waitTime              Int                 @default(0)
+  estimatedWaitTime     Int?
+  status                QueueStatus         @default(WAITING)
+  assignedProviderId    String?
+  assignedUnitId        String?
+  queueTimestamp        DateTime            @default(now())
+  assignedTimestamp     DateTime?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  emergencyDepartment   EmergencyDepartment @relation(fields: [emergencyDepartmentId], references: [id])
+  transportRequest      TransportRequest    @relation(fields: [transportRequestId], references: [id])
+  assignedProvider      TransportAgency?   @relation(fields: [assignedProviderId], references: [id])
+  assignedUnit          Unit?               @relation(fields: [assignedUnitId], references: [id])
+}
+
+model CapacityAlert {
+  id                    String              @id @default(cuid())
+  emergencyDepartmentId String
+  alertType             CapacityAlertType
+  severity              AlertSeverity
+  message               String
+  threshold             Int
+  currentValue          Int
+  isActive              Boolean             @default(true)
+  acknowledgedBy        String?
+  acknowledgedAt        DateTime?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  emergencyDepartment   EmergencyDepartment @relation(fields: [emergencyDepartmentId], references: [id])
+}
+
+model ProviderForecast {
+  id                    String              @id @default(cuid())
+  agencyId              String
+  forecastDate          DateTime
+  forecastType          ForecastType
+  predictedDemand       Int
+  availableCapacity     Int
+  capacityUtilization   Float
+  confidence            Float               @default(0.8)
+  factors               Json?
+  recommendations       String?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  agency                TransportAgency     @relation(fields: [agencyId], references: [id])
+}
+
+model DemandPattern {
+  id                    String              @id @default(cuid())
+  facilityId            String
+  patternType           PatternType
+  dayOfWeek             Int?
+  hourOfDay             Int?
+  averageDemand         Float
+  peakDemand            Float
+  seasonalFactor        Float               @default(1.0)
+  trendDirection        TrendDirection
+  confidence            Float               @default(0.8)
+  dataPoints            Int                 @default(0)
+  lastUpdated           DateTime            @default(now())
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  facility              Facility            @relation(fields: [facilityId], references: [id])
+}
+
 enum UserRole {
   ADMIN
   COORDINATOR
@@ -567,4 +680,55 @@ enum CoordinationStatus {
   COMPLETED
   CANCELLED
   FAILED
+}
+
+enum BedUpdateType {
+  BED_ADDED
+  BED_REMOVED
+  BED_OCCUPIED
+  BED_VACATED
+  HALLWAY_BED_ADDED
+  HALLWAY_BED_REMOVED
+  CRITICAL_BED_UPDATE
+}
+
+enum QueueStatus {
+  WAITING
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  ESCALATED
+}
+
+enum CapacityAlertType {
+  BED_CAPACITY
+  HALLWAY_BED_THRESHOLD
+  TRANSPORT_QUEUE_LENGTH
+  WAIT_TIME_THRESHOLD
+  CRITICAL_BED_SHORTAGE
+}
+
+enum ForecastType {
+  DAILY
+  WEEKLY
+  MONTHLY
+  SEASONAL
+  EVENT_BASED
+}
+
+enum PatternType {
+  DAILY
+  WEEKLY
+  MONTHLY
+  SEASONAL
+  EVENT_DRIVEN
+}
+
+enum TrendDirection {
+  INCREASING
+  DECREASING
+  STABLE
+  CYCLICAL
+  UNKNOWN
 }

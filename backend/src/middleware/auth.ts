@@ -11,6 +11,18 @@ export interface AuthRequest extends Request {
 
 export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers['authorization'];
+  
+  // Demo mode support
+  if (authHeader === 'demo-token') {
+    console.log('AUTH: Demo mode authentication bypassed');
+    req.user = {
+      id: 'demo-user',
+      email: 'demo@medport.com',
+      role: 'COORDINATOR'
+    };
+    return next();
+  }
+  
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
   if (!token) {

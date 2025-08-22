@@ -76,6 +76,36 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+/**
+ * @route POST /api/facilities
+ * @desc Create a new facility (demo mode only)
+ * @access Demo mode only
+ */
+router.post('/', async (req, res) => {
+  try {
+    // Only allow in demo mode
+    if (!req.headers.authorization || !req.headers.authorization.includes('demo-token')) {
+      return res.status(403).json({
+        message: 'Facility creation only available in demo mode'
+      });
+    }
+
+    const facilityData = req.body;
+    const facility = await facilityService.createFacility(facilityData);
+
+    res.status(201).json({
+      message: 'Facility created successfully',
+      data: facility
+    });
+  } catch (error: any) {
+    console.error('[MedPort:Facilities] Error creating facility:', error);
+    res.status(500).json({
+      message: 'Failed to create facility',
+      error: error.message
+    });
+  }
+});
+
 
 
 export default router;

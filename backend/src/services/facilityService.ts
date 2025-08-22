@@ -71,6 +71,30 @@ export class FacilityService {
   }
 
   /**
+   * Create a new facility
+   */
+  async createFacility(data: {
+    name: string;
+    type: FacilityType;
+    address: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    phone?: string;
+    email?: string;
+    coordinates?: any;
+    operatingHours?: any;
+    capabilities?: any;
+  }): Promise<Facility> {
+    return prisma.facility.create({
+      data: {
+        ...data,
+        isActive: true
+      }
+    });
+  }
+
+  /**
    * Get facilities by type
    */
   async getFacilitiesByType(type: FacilityType): Promise<Facility[]> {

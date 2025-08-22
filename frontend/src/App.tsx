@@ -5,9 +5,10 @@ import DistanceMatrix from './pages/DistanceMatrix';
 import ResourceManagement from './pages/ResourceManagement';
 import AdvancedTransport from './pages/AdvancedTransport';
 import AirMedical from './pages/AirMedical';
+import EmergencyDepartment from './pages/EmergencyDepartment';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department'>('home');
 
   return (
     <div className="App">
@@ -88,6 +89,16 @@ function App() {
                 }`}
               >
                 Air Medical
+              </button>
+              <button
+                onClick={() => setCurrentPage('emergency-department')}
+                className={`px-3 py-2 rounded-md text-sm font-medium ${
+                  currentPage === 'emergency-department'
+                    ? 'bg-blue-700 text-white'
+                    : 'text-blue-100 hover:bg-blue-500 hover:text-white'
+                }`}
+              >
+                Emergency Department
               </button>
             </div>
           </div>
@@ -201,21 +212,37 @@ function App() {
                   </ul>
                 </div>
                 
-                <div className="mt-6 p-4 bg-red-50 rounded-lg">
-                  <h4 className="text-lg font-semibold text-red-900 mb-2">What's New in Phase 2.6</h4>
-                  <ul className="text-red-800 space-y-2 text-left">
-                    <li>✅ Air medical resource management system</li>
-                    <li>✅ Weather API integration for air medical availability</li>
-                    <li>✅ Weather-based routing alternatives and notifications</li>
-                    <li>✅ Grounding status tracking for air medical services</li>
-                    <li>✅ Weather impact alerts for transport coordinators</li>
-                    <li>✅ Air-to-ground transport coordination system</li>
-                    <li>✅ Air medical crew ground transport coordination</li>
-                    <li>✅ Helicopter availability status integration</li>
-                    <li>✅ Air medical service area management</li>
-                    <li>✅ Real-time weather monitoring and alerts</li>
-                  </ul>
-                </div>
+                                  <div className="mt-6 p-4 bg-red-50 rounded-lg">
+                    <h4 className="text-lg font-semibold text-red-900 mb-2">What's New in Phase 2.6</h4>
+                    <ul className="text-red-800 space-y-2 text-left">
+                      <li>✅ Air medical resource management system</li>
+                      <li>✅ Weather API integration for air medical availability</li>
+                      <li>✅ Weather-based routing alternatives and notifications</li>
+                      <li>✅ Grounding status tracking for air medical services</li>
+                      <li>✅ Weather impact alerts for transport coordinators</li>
+                      <li>✅ Air-to-ground transport coordination system</li>
+                      <li>✅ Air medical crew ground transport coordination</li>
+                      <li>✅ Helicopter availability status integration</li>
+                      <li>✅ Air medical service area management</li>
+                      <li>✅ Real-time weather monitoring and alerts</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="mt-6 p-4 bg-indigo-50 rounded-lg">
+                    <h4 className="text-lg font-semibold text-indigo-900 mb-2">What's New in Phase 2.7</h4>
+                    <ul className="text-indigo-800 space-y-2 text-left">
+                      <li>✅ Emergency Department optimization dashboard</li>
+                      <li>✅ Real-time ED transport queue monitoring</li>
+                      <li>✅ Bed status integration and hallway bed tracking</li>
+                      <li>✅ Capacity alerts and threshold notifications</li>
+                      <li>✅ Transport provider forecasting system</li>
+                      <li>✅ Demand prediction algorithms and analytics</li>
+                      <li>✅ Provider capacity planning tools</li>
+                      <li>✅ Peak demand management system</li>
+                      <li>✅ Seasonal and trend analysis</li>
+                      <li>✅ Resource optimization recommendations</li>
+                    </ul>
+                  </div>
               </div>
               
               <div className="mt-8 flex space-x-4 justify-center">
@@ -255,6 +282,12 @@ function App() {
                 >
                   Air Medical →
                 </button>
+                <button
+                  onClick={() => setCurrentPage('emergency-department')}
+                  className="px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 text-lg font-medium"
+                >
+                  Emergency Department →
+                </button>
               </div>
             </div>
           </div>
@@ -266,6 +299,7 @@ function App() {
         {currentPage === 'resource-management' && <ResourceManagement />}
         {currentPage === 'advanced-transport' && <AdvancedTransport />}
         {currentPage === 'air-medical' && <AirMedical />}
+        {currentPage === 'emergency-department' && <EmergencyDepartment />}
       </main>
     </div>
   );
