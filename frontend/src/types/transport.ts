@@ -307,3 +307,232 @@ export interface FacilityStats {
   active: number;
   inactive: number;
 }
+
+// Multi-Patient Transport Interfaces
+export interface MultiPatientTransport {
+  id: string;
+  batchNumber: string;
+  coordinatorId: string;
+  status: MultiPatientStatus;
+  totalPatients: number;
+  totalDistance: number;
+  estimatedDuration: number;
+  plannedStartTime: string;
+  plannedEndTime: string;
+  assignedAgencyId?: string;
+  assignedUnitId?: string;
+  routeOptimizationScore?: number;
+  costSavings?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MultiPatientTransportWithDetails extends MultiPatientTransport {
+  coordinator: User;
+  assignedAgency?: TransportAgency;
+  assignedUnit?: Unit;
+  patientTransports: PatientTransport[];
+  routeStops: RouteStop[];
+}
+
+export interface PatientTransport {
+  id: string;
+  multiPatientTransportId: string;
+  patientId: string;
+  originFacilityId: string;
+  destinationFacilityId: string;
+  transportLevel: TransportLevel;
+  priority: Priority;
+  specialRequirements?: string;
+  sequenceOrder: number;
+  estimatedPickupTime: string;
+  estimatedDropoffTime: string;
+  actualPickupTime?: string;
+  actualDropoffTime?: string;
+  status: PatientTransportStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PatientTransportWithDetails extends PatientTransport {
+  originFacility: Facility;
+  destinationFacility: Facility;
+}
+
+// Long-Distance Transport Interfaces
+export interface LongDistanceTransport {
+  id: string;
+  transportNumber: string;
+  coordinatorId: string;
+  status: LongDistanceStatus;
+  totalDistance: number;
+  estimatedDuration: number;
+  plannedStartTime: string;
+  plannedEndTime: string;
+  isMultiLeg: boolean;
+  legCount: number;
+  assignedAgencyId?: string;
+  assignedUnitId?: string;
+  costEstimate: number;
+  revenuePotential: number;
+  weatherConditions?: WeatherConditions;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LongDistanceTransportWithDetails extends LongDistanceTransport {
+  coordinator: User;
+  assignedAgency?: TransportAgency;
+  assignedUnit?: Unit;
+  transportLegs: TransportLeg[];
+  weatherUpdates: WeatherUpdate[];
+}
+
+export interface TransportLeg {
+  id: string;
+  longDistanceTransportId: string;
+  legNumber: number;
+  originFacilityId: string;
+  destinationFacilityId: string;
+  distance: number;
+  estimatedDuration: number;
+  plannedStartTime: string;
+  plannedEndTime: string;
+  actualStartTime?: string;
+  actualEndTime?: string;
+  status: LegStatus;
+  patientId?: string;
+  transportLevel: TransportLevel;
+  specialRequirements?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TransportLegWithDetails extends TransportLeg {
+  originFacility: Facility;
+  destinationFacility: Facility;
+}
+
+// Weather and Environmental Interfaces
+export interface WeatherConditions {
+  temperature: number;
+  windSpeed: number;
+  visibility: number;
+  precipitation: number;
+  conditions: string;
+  isAirMedicalSuitable: boolean;
+  groundTransportRequired: boolean;
+}
+
+export interface WeatherUpdate {
+  id: string;
+  longDistanceTransportId: string;
+  timestamp: string;
+  conditions: WeatherConditions;
+  impact: string;
+  recommendations: string[];
+}
+
+// Provider Network Interfaces
+export interface ProviderNetwork {
+  id: string;
+  name: string;
+  coverageArea: string[];
+  capabilities: TransportLevel[];
+  longDistanceCapable: boolean;
+  maxDistance: number;
+  responseTime: number;
+  costPerMile: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Route Optimization Interfaces
+export interface RouteOptimizationRequest {
+  patientTransports: PatientTransport[];
+  constraints: RouteConstraints;
+  optimizationGoals: OptimizationGoal[];
+}
+
+export interface RouteConstraints {
+  maxDuration: number;
+  timeWindows: TimeWindow[];
+  vehicleCapacity: number;
+  driverRestRequirements: boolean;
+  facilityOperatingHours: boolean;
+}
+
+export interface TimeWindow {
+  startTime: string;
+  endTime: string;
+  priority: Priority;
+}
+
+export interface OptimizationGoal {
+  type: 'MINIMIZE_DISTANCE' | 'MINIMIZE_TIME' | 'MAXIMIZE_REVENUE' | 'MINIMIZE_COST';
+  weight: number;
+}
+
+export interface OptimizedRoute {
+  routeId: string;
+  totalDistance: number;
+  totalDuration: number;
+  totalCost: number;
+  revenuePotential: number;
+  stops: OptimizedStop[];
+  optimizationScore: number;
+  savings: RouteSavings;
+}
+
+export interface OptimizedStop {
+  facilityId: string;
+  stopType: StopType;
+  sequence: number;
+  estimatedArrival: string;
+  estimatedDeparture: string;
+  patientTransports: string[];
+  duration: number;
+}
+
+export interface RouteSavings {
+  distanceSaved: number;
+  timeSaved: number;
+  costSaved: number;
+  unitsSaved: number;
+  revenueIncrease: number;
+}
+
+// New Enums
+export enum MultiPatientStatus {
+  PLANNING = 'PLANNING',
+  SCHEDULED = 'SCHEDULED',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED'
+}
+
+export enum PatientTransportStatus {
+  PENDING = 'PENDING',
+  SCHEDULED = 'SCHEDULED',
+  IN_TRANSIT = 'IN_TRANSIT',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED'
+}
+
+export enum LongDistanceStatus {
+  PLANNING = 'PLANNING',
+  SCHEDULED = 'SCHEDULED',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+  WEATHER_DELAYED = 'WEATHER_DELAYED'
+}
+
+export enum LegStatus {
+  PLANNED = 'PLANNED',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  DELAYED = 'DELAYED',
+  CANCELLED = 'CANCELLED'
+}

@@ -18,6 +18,8 @@ model User {
   updatedAt         DateTime           @updatedAt
   routes            Route[]
   transportRequests TransportRequest[]
+  multiPatientTransports MultiPatientTransport[]
+  longDistanceTransports LongDistanceTransport[]
 }
 
 model Facility {
@@ -41,6 +43,10 @@ model Facility {
   routeStops          RouteStop[]
   destinationRequests TransportRequest[] @relation("DestinationFacility")
   originRequests      TransportRequest[] @relation("OriginFacility")
+  patientTransportOrigins PatientTransport[] @relation("PatientTransportOrigin")
+  patientTransportDestinations PatientTransport[] @relation("PatientTransportDestination")
+  transportLegOrigins TransportLeg[] @relation("TransportLegOrigin")
+  transportLegDestinations TransportLeg[] @relation("TransportLegDestination")
 }
 
 model TransportRequest {
@@ -93,6 +99,8 @@ model TransportAgency {
   routes            Route[]
   transportRequests TransportRequest[]
   units             Unit[]
+  multiPatientTransports MultiPatientTransport[]
+  longDistanceTransports LongDistanceTransport[]
 }
 
 model Unit {
@@ -110,6 +118,8 @@ model Unit {
   updatedAt         DateTime           @updatedAt
   routes            Route[]
   transportRequests TransportRequest[]
+  multiPatientTransports MultiPatientTransport[]
+  longDistanceTransports LongDistanceTransport[]
   agency            TransportAgency    @relation(fields: [agencyId], references: [id])
 }
 
@@ -161,23 +171,130 @@ model Route {
 }
 
 model RouteStop {
-  id                 String            @id @default(cuid())
-  routeId            String
-  stopOrder          Int
-  facilityId         String
-  transportRequestId String?
-  stopType           StopType
-  estimatedArrival   DateTime?
-  actualArrival      DateTime?
-  estimatedDeparture DateTime?
-  actualDeparture    DateTime?
-  stopDuration       Int?
-  notes              String?
-  facility           Facility          @relation(fields: [facilityId], references: [id])
-  route              Route             @relation(fields: [routeId], references: [id])
-  transportRequest   TransportRequest? @relation(fields: [transportRequestId], references: [id])
+  id                       String                @id @default(cuid())
+  routeId                  String
+  stopOrder                Int
+  facilityId               String
+  transportRequestId       String?
+  multiPatientTransportId  String?
+  stopType                 StopType
+  estimatedArrival         DateTime?
+  actualArrival            DateTime?
+  estimatedDeparture       DateTime?
+  actualDeparture          DateTime?
+  stopDuration             Int?
+  notes                    String?
+  facility                 Facility              @relation(fields: [facilityId], references: [id])
+  route                    Route                 @relation(fields: [routeId], references: [id])
+  transportRequest         TransportRequest?     @relation(fields: [transportRequestId], references: [id])
+  multiPatientTransport    MultiPatientTransport? @relation(fields: [multiPatientTransportId], references: [id])
 
   @@unique([routeId, stopOrder])
+}
+
+// Multi-Patient Transport Models
+model MultiPatientTransport {
+  id                   String                @id @default(cuid())
+  batchNumber          String                @unique
+  coordinatorId        String
+  status               MultiPatientStatus    @default(PLANNING)
+  totalPatients        Int
+  totalDistance        Float
+  estimatedDuration    Int
+  plannedStartTime     DateTime
+  plannedEndTime       DateTime
+  assignedAgencyId     String?
+  assignedUnitId       String?
+  routeOptimizationScore Float?
+  costSavings          Float?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  coordinator          User                  @relation(fields: [coordinatorId], references: [id])
+  assignedAgency       TransportAgency?      @relation(fields: [assignedAgencyId], references: [id])
+  assignedUnit         Unit?                 @relation(fields: [assignedUnitId], references: [id])
+  patientTransports    PatientTransport[]
+  routeStops           RouteStop[]
+}
+
+model PatientTransport {
+  id                       String                  @id @default(cuid())
+  multiPatientTransportId  String
+  patientId                String
+  originFacilityId         String
+  destinationFacilityId    String
+  transportLevel           TransportLevel
+  priority                 Priority                @default(MEDIUM)
+  specialRequirements      String?
+  sequenceOrder            Int
+  estimatedPickupTime      DateTime
+  estimatedDropoffTime     DateTime
+  actualPickupTime         DateTime?
+  actualDropoffTime        DateTime?
+  status                   PatientTransportStatus  @default(PENDING)
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt
+  multiPatientTransport    MultiPatientTransport   @relation(fields: [multiPatientTransportId], references: [id])
+  originFacility           Facility                @relation("PatientTransportOrigin", fields: [originFacilityId], references: [id])
+  destinationFacility      Facility                @relation("PatientTransportDestination", fields: [destinationFacilityId], references: [id])
+}
+
+// Long-Distance Transport Models
+model LongDistanceTransport {
+  id                   String                @id @default(cuid())
+  transportNumber      String                @unique
+  coordinatorId        String
+  status               LongDistanceStatus    @default(PLANNING)
+  totalDistance        Float
+  estimatedDuration    Int
+  plannedStartTime     DateTime
+  plannedEndTime       DateTime
+  isMultiLeg           Boolean               @default(false)
+  legCount             Int
+  assignedAgencyId     String?
+  assignedUnitId       String?
+  costEstimate         Float
+  revenuePotential     Float
+  weatherConditions    Json?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  coordinator          User                  @relation(fields: [coordinatorId], references: [id])
+  assignedAgency       TransportAgency?      @relation(fields: [assignedAgencyId], references: [id])
+  assignedUnit         Unit?                 @relation(fields: [assignedUnitId], references: [id])
+  transportLegs        TransportLeg[]
+  weatherUpdates       WeatherUpdate[]
+}
+
+model TransportLeg {
+  id                       String                @id @default(cuid())
+  longDistanceTransportId  String
+  legNumber                Int
+  originFacilityId         String
+  destinationFacilityId    String
+  distance                 Float
+  estimatedDuration        Int
+  plannedStartTime         DateTime
+  plannedEndTime           DateTime
+  actualStartTime          DateTime?
+  actualEndTime            DateTime?
+  status                   LegStatus             @default(PLANNED)
+  patientId                String?
+  transportLevel           TransportLevel
+  specialRequirements      String?
+  createdAt                DateTime              @default(now())
+  updatedAt                DateTime              @updatedAt
+  longDistanceTransport    LongDistanceTransport @relation(fields: [longDistanceTransportId], references: [id])
+  originFacility           Facility              @relation("TransportLegOrigin", fields: [originFacilityId], references: [id])
+  destinationFacility      Facility              @relation("TransportLegDestination", fields: [destinationFacilityId], references: [id])
+}
+
+model WeatherUpdate {
+  id                       String                @id @default(cuid())
+  longDistanceTransportId  String
+  timestamp                DateTime              @default(now())
+  conditions               Json
+  impact                   String
+  recommendations          String[]
+  longDistanceTransport    LongDistanceTransport @relation(fields: [longDistanceTransportId], references: [id])
 }
 
 enum UserRole {
@@ -257,4 +374,38 @@ enum StopType {
   REST
   EQUIPMENT
   TRANSFER
+}
+
+// New Enums for Advanced Transport Coordination
+enum MultiPatientStatus {
+  PLANNING
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PatientTransportStatus {
+  PENDING
+  SCHEDULED
+  IN_TRANSIT
+  COMPLETED
+  CANCELLED
+}
+
+enum LongDistanceStatus {
+  PLANNING
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  WEATHER_DELAYED
+}
+
+enum LegStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  DELAYED
+  CANCELLED
 }

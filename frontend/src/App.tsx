@@ -3,9 +3,10 @@ import TransportRequests from './pages/TransportRequests';
 import StatusBoard from './pages/StatusBoard';
 import DistanceMatrix from './pages/DistanceMatrix';
 import ResourceManagement from './pages/ResourceManagement';
+import AdvancedTransport from './pages/AdvancedTransport';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport'>('home');
 
   return (
     <div className="App">
@@ -66,6 +67,16 @@ function App() {
                 }`}
               >
                 Resource Management
+              </button>
+              <button
+                onClick={() => setCurrentPage('advanced-transport')}
+                className={`px-3 py-2 rounded-md text-sm font-medium ${
+                  currentPage === 'advanced-transport'
+                    ? 'bg-blue-700 text-white'
+                    : 'text-blue-100 hover:bg-blue-500 hover:text-white'
+                }`}
+              >
+                Advanced Transport
               </button>
             </div>
           </div>
@@ -162,6 +173,22 @@ function App() {
                     <li>✅ Resource utilization reporting and analytics</li>
                   </ul>
                 </div>
+                
+                <div className="mt-6 p-4 bg-indigo-50 rounded-lg">
+                  <h4 className="text-lg font-semibold text-indigo-900 mb-2">What's New in Phase 2.5</h4>
+                  <ul className="text-indigo-800 space-y-2 text-left">
+                    <li>✅ Multi-patient transport management system</li>
+                    <li>✅ Bulk transport request creation interface</li>
+                    <li>✅ Long-distance transport planning tools</li>
+                    <li>✅ Multi-leg transport coordination</li>
+                    <li>✅ Weather conditions and air medical suitability</li>
+                    <li>✅ Advanced route optimization algorithms</li>
+                    <li>✅ Transport batch management and tracking</li>
+                    <li>✅ Long-distance provider network management</li>
+                    <li>✅ Extended transport time estimation</li>
+                    <li>✅ Cost optimization and revenue potential analysis</li>
+                  </ul>
+                </div>
               </div>
               
               <div className="mt-8 flex space-x-4 justify-center">
@@ -189,6 +216,12 @@ function App() {
                 >
                   Resource Management →
                 </button>
+                <button
+                  onClick={() => setCurrentPage('advanced-transport')}
+                  className="px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 text-lg font-medium"
+                >
+                  Advanced Transport →
+                </button>
               </div>
             </div>
           </div>
@@ -198,6 +231,7 @@ function App() {
         {currentPage === 'status-board' && <StatusBoard />}
         {currentPage === 'distance-matrix' && <DistanceMatrix />}
         {currentPage === 'resource-management' && <ResourceManagement />}
+        {currentPage === 'advanced-transport' && <AdvancedTransport />}
       </main>
     </div>
   );

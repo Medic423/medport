@@ -28,7 +28,7 @@ export class FacilityService {
     totalPages: number;
   }> {
     const { page = 1, limit = 50, ...whereFilters } = filters;
-    const skip = (page - 1) * limit;
+    const skip = (parseInt(page.toString()) - 1) * parseInt(limit.toString());
 
     const where: any = { isActive: true };
     if (whereFilters.name) {
@@ -48,7 +48,7 @@ export class FacilityService {
         where,
         orderBy: { name: 'asc' },
         skip,
-        take: limit
+        take: parseInt(limit.toString())
       }),
       prisma.facility.count({ where })
     ]);

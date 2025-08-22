@@ -7,6 +7,8 @@ import protectedRoutes from './routes/protected';
 import transportRequestRoutes from './routes/transportRequests';
 import distanceRoutes from './routes/distance';
 import resourceManagementRoutes from './routes/resourceManagement';
+import advancedTransportRoutes from './routes/advancedTransport';
+import facilityRoutes from './routes/facilities';
 
 dotenv.config();
 
@@ -23,6 +25,8 @@ app.use('/api/protected', protectedRoutes);
 app.use('/api/transport-requests', transportRequestRoutes);
 app.use('/api/distance', distanceRoutes);
 app.use('/api/resource-management', resourceManagementRoutes);
+app.use('/api/advanced-transport', advancedTransportRoutes);
+app.use('/api/facilities', facilityRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'MedPort Backend API is running!' });
