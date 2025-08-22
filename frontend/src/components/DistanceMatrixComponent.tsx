@@ -38,6 +38,49 @@ const DistanceMatrixComponent: React.FC<DistanceMatrixComponentProps> = ({
   const loadDistanceMatrix = async () => {
     try {
       setLoading(true);
+      
+      // For demo mode, show sample distance data
+      if (facilities.some(f => f.id.startsWith('demo-'))) {
+        const demoDistances: DistanceMatrix[] = [
+          {
+            id: 'demo-1',
+            fromFacilityId: 'demo-1',
+            toFacilityId: 'demo-2',
+            distanceMiles: 45.2,
+            estimatedTimeMinutes: 52,
+            trafficFactor: 1.1,
+            tolls: 0.0,
+            routeType: 'FASTEST',
+            lastUpdated: new Date().toISOString()
+          },
+          {
+            id: 'demo-2',
+            fromFacilityId: 'demo-1',
+            toFacilityId: 'demo-3',
+            distanceMiles: 38.7,
+            estimatedTimeMinutes: 44,
+            trafficFactor: 1.0,
+            tolls: 0.0,
+            routeType: 'FASTEST',
+            lastUpdated: new Date().toISOString()
+          },
+          {
+            id: 'demo-3',
+            fromFacilityId: 'demo-2',
+            toFacilityId: 'demo-4',
+            distanceMiles: 67.3,
+            estimatedTimeMinutes: 78,
+            trafficFactor: 1.2,
+            tolls: 0.0,
+            routeType: 'FASTEST',
+            lastUpdated: new Date().toISOString()
+          }
+        ];
+        setDistances(demoDistances);
+        setLoading(false);
+        return;
+      }
+
       const response = await fetch('/api/distance/matrix/all', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -60,6 +103,22 @@ const DistanceMatrixComponent: React.FC<DistanceMatrixComponentProps> = ({
   const handleCalculateDistance = async () => {
     if (!selectedFromFacility || !selectedToFacility) {
       alert('Please select both origin and destination facilities');
+      return;
+    }
+
+    // For demo mode, show estimated distances
+    if (facilities.some(f => f.id.startsWith('demo-'))) {
+      const fromFacility = facilities.find(f => f.id === selectedFromFacility);
+      const toFacility = facilities.find(f => f.id === selectedToFacility);
+      
+      if (fromFacility && toFacility) {
+        // Simple demo distance calculation based on facility IDs
+        const distance = Math.random() * 50 + 20; // Random distance between 20-70 miles
+        const time = Math.ceil(distance * 1.2); // Rough time estimate
+        
+        alert(`Demo Distance Calculation:\nFrom: ${fromFacility.name}\nTo: ${toFacility.name}\nDistance: ${distance.toFixed(1)} miles\nTime: ${time} minutes\n\nNote: This is demo data. Real calculations will use Google Maps API.`);
+        loadDistanceMatrix(); // Refresh the matrix
+      }
       return;
     }
 
