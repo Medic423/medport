@@ -136,6 +136,9 @@ const EnhancedRouteCardInterface: React.FC<EnhancedRouteCardInterfaceProps> = ({
   useEffect(() => {
     if (opportunities.length > 0) {
       generateEnhancedCards();
+    } else {
+      // Generate demo cards when no opportunities exist
+      generateDemoCards();
     }
   }, [opportunities]);
 
@@ -162,6 +165,35 @@ const EnhancedRouteCardInterface: React.FC<EnhancedRouteCardInterfaceProps> = ({
       }
     } catch (error) {
       console.error('Error generating enhanced route cards:', error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const generateDemoCards = async () => {
+    setIsGenerating(true);
+    try {
+      // Generate demo cards with mock opportunity IDs
+      const response = await fetch('/api/route-card-generation/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': localStorage.getItem('demoMode') === 'true' ? 'demo-token' : `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          opportunityIds: ['demo-1', 'demo-2', 'demo-3', 'demo-4', 'demo-5'],
+          exportOptions
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setEnhancedCards(result.data.routeCards);
+      } else {
+        console.error('Failed to generate demo route cards');
+      }
+    } catch (error) {
+      console.error('Error generating demo route cards:', error);
     } finally {
       setIsGenerating(false);
     }
@@ -243,6 +275,17 @@ const EnhancedRouteCardInterface: React.FC<EnhancedRouteCardInterfaceProps> = ({
           <p className="text-gray-600">
             {enhancedCards.length} enhanced route cards generated
           </p>
+          {enhancedCards.length === 0 && (
+            <button
+              onClick={generateDemoCards}
+              className="mt-2 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Generate Demo Cards
+            </button>
+          )}
         </div>
         <button
           onClick={onBack}
