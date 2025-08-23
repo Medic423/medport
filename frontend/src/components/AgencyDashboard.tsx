@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import UnitManagement from './UnitManagement';
+import TransportRequests from './TransportRequests';
+import BidManagement from './BidManagement';
 
 interface AgencyStats {
   totalUnits: number;
@@ -389,76 +392,11 @@ const AgencyDashboard: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'units' && (
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Unit Management</h2>
-            </div>
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {units.map(unit => (
-                  <div key={unit.id} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-medium text-gray-900">{unit.unitNumber}</h3>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(unit.currentStatus)}`}>
-                        {unit.currentStatus}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-2">Type: {unit.type}</p>
-                    {unit.unitAvailability && (
-                      <div className="text-xs text-gray-500">
-                        <p>Status: {unit.unitAvailability.status}</p>
-                        {unit.unitAvailability.shiftStart && (
-                          <p>Shift: {new Date(unit.unitAvailability.shiftStart).toLocaleTimeString()}</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+        {activeTab === 'units' && <UnitManagement />}
 
-        {activeTab === 'transports' && (
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Available Transports</h2>
-            </div>
-            <div className="p-6">
-              <button
-                onClick={() => navigate('/agency/transports')}
-                className="w-full p-8 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors"
-              >
-                <div className="text-center">
-                  <span className="text-4xl mb-4 block">🔍</span>
-                  <p className="text-lg font-medium text-gray-900">View Available Transport Requests</p>
-                  <p className="text-gray-600">Browse and bid on new transport opportunities</p>
-                </div>
-              </button>
-            </div>
-          </div>
-        )}
+        {activeTab === 'transports' && <TransportRequests />}
 
-        {activeTab === 'bids' && (
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Bid Management</h2>
-            </div>
-            <div className="p-6">
-              <button
-                onClick={() => navigate('/agency/bids')}
-                className="w-full p-8 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors"
-              >
-                <div className="text-center">
-                  <span className="text-4xl mb-4 block">💰</span>
-                  <p className="text-lg font-medium text-gray-900">View Your Bids</p>
-                  <p className="text-gray-600">Track bid status and performance</p>
-                </div>
-              </button>
-            </div>
-          </div>
-        )}
+        {activeTab === 'bids' && <BidManagement />}
       </main>
     </div>
   );
