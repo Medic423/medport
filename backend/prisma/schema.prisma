@@ -82,6 +82,8 @@ model TransportRequest {
   airMedicalTransports   AirMedicalTransport[]
   groundTransportCoordination GroundTransportCoordination[]
   transportQueues        TransportQueue[]
+  transportBids          TransportBid[]
+  unitAssignments        UnitAssignment[]
 }
 
 model TransportAgency {
@@ -108,6 +110,11 @@ model TransportAgency {
   longDistanceTransports LongDistanceTransport[]
   providerForecasts ProviderForecast[]
   assignedTransportQueues TransportQueue[]
+  agencyUsers       AgencyUser[]
+  agencyProfiles    AgencyProfile[]
+  serviceAreas      ServiceArea[]
+  agencyPerformance AgencyPerformance[]
+  transportBids     TransportBid[]
 }
 
 model Unit {
@@ -129,6 +136,8 @@ model Unit {
   longDistanceTransports LongDistanceTransport[]
   agency            TransportAgency    @relation(fields: [agencyId], references: [id])
   transportQueues   TransportQueue[]
+  unitAssignments   UnitAssignment[]
+  unitAvailability  UnitAvailability[]
 }
 
 model DistanceMatrix {
@@ -501,6 +510,138 @@ model DemandPattern {
   facility              Facility            @relation(fields: [facilityId], references: [id])
 }
 
+// Agency Portal Models (Phase 3.1)
+model AgencyUser {
+  id                String             @id @default(cuid())
+  agencyId          String
+  email             String             @unique
+  password          String
+  name              String
+  role              AgencyUserRole     @default(STAFF)
+  phone             String?
+  isActive          Boolean            @default(true)
+  lastLogin         DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  agency            TransportAgency    @relation(fields: [agencyId], references: [id])
+  unitAssignments   UnitAssignment[]
+  transportBids     TransportBid[]
+}
+
+model AgencyProfile {
+  id                    String             @id @default(cuid())
+  agencyId              String             @unique
+  description           String?
+  website               String?
+  licenseNumber         String?
+  insuranceInfo         Json?
+  certifications        Json?
+  specializations       Json?
+  emergencyProcedures   Json?
+  contactPerson         String?
+  emergencyContact      String?
+  emergencyPhone        String?
+  serviceAreaNotes      String?
+  operatingNotes        String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  agency                TransportAgency    @relation(fields: [agencyId], references: [id])
+}
+
+model UnitAvailability {
+  id                String             @id @default(cuid())
+  unitId            String
+  status            UnitStatus         @default(AVAILABLE)
+  location          Json?
+  shiftStart        DateTime?
+  shiftEnd          DateTime?
+  crewMembers       Json?
+  currentAssignment String?
+  notes             String?
+  lastUpdated       DateTime           @default(now())
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  unit              Unit               @relation(fields: [unitId], references: [id])
+  unitAssignments   UnitAssignment[]
+}
+
+model UnitAssignment {
+  id                    String             @id @default(cuid())
+  unitId                String
+  unitAvailabilityId    String
+  transportRequestId    String?
+  assignmentType        AssignmentType
+  startTime             DateTime
+  endTime               DateTime?
+  status                AssignmentStatus   @default(ACTIVE)
+  notes                 String?
+  assignedBy            String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  unit                  Unit               @relation(fields: [unitId], references: [id])
+  unitAvailability      UnitAvailability   @relation(fields: [unitAvailabilityId], references: [id])
+  transportRequest      TransportRequest?  @relation(fields: [transportRequestId], references: [id])
+  assignedByUser        AgencyUser?        @relation(fields: [assignedBy], references: [id])
+}
+
+model TransportBid {
+  id                    String             @id @default(cuid())
+  transportRequestId    String
+  agencyId              String
+  agencyUserId          String
+  bidAmount             Float?
+  estimatedArrival      DateTime?
+  unitType              TransportLevel
+  specialCapabilities   Json?
+  notes                 String?
+  status                BidStatus          @default(PENDING)
+  submittedAt           DateTime           @default(now())
+  reviewedAt            DateTime?
+  reviewedBy            String?
+  reviewNotes           String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  transportRequest      TransportRequest   @relation(fields: [transportRequestId], references: [id])
+  agency                TransportAgency    @relation(fields: [agencyId], references: [id])
+  agencyUser            AgencyUser        @relation(fields: [agencyUserId], references: [id])
+}
+
+model ServiceArea {
+  id                    String             @id @default(cuid())
+  agencyId              String
+  name                  String
+  description           String?
+  geographicBoundaries  Json
+  coverageRadius        Float?
+  primaryServiceArea    Boolean            @default(false)
+  operatingHours        Json?
+  specialRestrictions   String?
+  isActive              Boolean            @default(true)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  agency                TransportAgency    @relation(fields: [agencyId], references: [id])
+}
+
+model AgencyPerformance {
+  id                    String             @id @default(cuid())
+  agencyId              String
+  periodStart           DateTime
+  periodEnd             DateTime
+  totalTransports       Int                @default(0)
+  completedTransports   Int                @default(0)
+  cancelledTransports   Int                @default(0)
+  averageResponseTime   Int?
+  totalMiles            Float              @default(0)
+  revenueGenerated      Float              @default(0)
+  customerSatisfaction  Float?
+  onTimePercentage      Float?
+  safetyIncidents       Int                @default(0)
+  notes                 String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  agency                TransportAgency    @relation(fields: [agencyId], references: [id])
+}
+
 enum UserRole {
   ADMIN
   COORDINATOR
@@ -731,4 +872,31 @@ enum TrendDirection {
   STABLE
   CYCLICAL
   UNKNOWN
+}
+
+// New Enums for Agency Portal
+enum AgencyUserRole {
+  ADMIN
+  STAFF
+  BILLING_STAFF
+}
+
+enum AssignmentType {
+  PRIMARY
+  SECONDARY
+  SUPPLEMENTAL
+}
+
+enum AssignmentStatus {
+  ACTIVE
+  INACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum BidStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
 }

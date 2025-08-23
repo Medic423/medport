@@ -11,6 +11,7 @@ import advancedTransportRoutes from './routes/advancedTransport';
 import facilityRoutes from './routes/facilities';
 import airMedicalRoutes from './routes/airMedical';
 import emergencyDepartmentRoutes from './routes/emergencyDepartment';
+import agencyRoutes from './routes/agency';
 
 dotenv.config();
 
@@ -31,6 +32,7 @@ app.use('/api/advanced-transport', advancedTransportRoutes);
 app.use('/api/facilities', facilityRoutes);
 app.use('/api/air-medical', airMedicalRoutes);
 app.use('/api/emergency-department', emergencyDepartmentRoutes);
+app.use('/api/agency', agencyRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'MedPort Backend API is running!' });

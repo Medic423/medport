@@ -6,9 +6,12 @@ import ResourceManagement from './pages/ResourceManagement';
 import AdvancedTransport from './pages/AdvancedTransport';
 import AirMedical from './pages/AirMedical';
 import EmergencyDepartment from './pages/EmergencyDepartment';
+import AgencyRegistration from './pages/AgencyRegistration';
+import AgencyLogin from './pages/AgencyLogin';
+import AgencyDashboard from './pages/AgencyDashboard';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard'>('home');
 
   return (
     <div className="App">
@@ -99,6 +102,16 @@ function App() {
                 }`}
               >
                 Emergency Department
+              </button>
+              <button
+                onClick={() => setCurrentPage('agency-login')}
+                className={`px-3 py-2 rounded-md text-sm font-medium ${
+                  currentPage === 'agency-login'
+                    ? 'bg-blue-700 text-white'
+                    : 'text-blue-100 hover:bg-blue-500 hover:text-white'
+                }`}
+              >
+                Agency Portal
               </button>
             </div>
           </div>
@@ -243,6 +256,22 @@ function App() {
                       <li>✅ Resource optimization recommendations</li>
                     </ul>
                   </div>
+                  
+                  <div className="mt-6 p-4 bg-emerald-50 rounded-lg">
+                    <h4 className="text-lg font-semibold text-emerald-900 mb-2">What's New in Phase 3.1</h4>
+                    <ul className="text-emerald-800 space-y-2 text-left">
+                      <li>🚀 Transport Agency Integration Portal</li>
+                      <li>🚀 Agency registration and authentication system</li>
+                      <li>🚀 Real-time unit availability management</li>
+                      <li>🚀 Transport request bidding system</li>
+                      <li>🚀 Agency dashboard with performance metrics</li>
+                      <li>🚀 Service area and capability management</li>
+                      <li>🚀 Bid history and performance tracking</li>
+                      <li>🚀 Demo mode for testing and exploration</li>
+                      <li>🚀 Mobile-responsive agency interface</li>
+                      <li>🚀 Secure agency data management</li>
+                    </ul>
+                  </div>
               </div>
               
               <div className="mt-8 flex space-x-4 justify-center">
@@ -288,6 +317,12 @@ function App() {
                 >
                   Emergency Department →
                 </button>
+                <button
+                  onClick={() => setCurrentPage('agency-login')}
+                  className="px-8 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 text-lg font-medium"
+                >
+                  Agency Portal →
+                </button>
               </div>
             </div>
           </div>
@@ -300,6 +335,9 @@ function App() {
         {currentPage === 'advanced-transport' && <AdvancedTransport />}
         {currentPage === 'air-medical' && <AirMedical />}
         {currentPage === 'emergency-department' && <EmergencyDepartment />}
+        {currentPage === 'agency-registration' && <AgencyRegistration />}
+        {currentPage === 'agency-login' && <AgencyLogin />}
+        {currentPage === 'agency-dashboard' && <AgencyDashboard />}
       </main>
     </div>
   );
