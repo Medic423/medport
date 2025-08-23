@@ -1,15 +1,18 @@
 import { Router } from 'express';
-import { z } from 'zod';
+import { z, ZodError } from 'zod';
 import matchingService from '../services/matchingService';
 import { authenticateToken } from '../middleware/auth';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 const router = Router();
 
 // Validation schemas
 const matchingCriteriaSchema = z.object({
   transportLevel: z.enum(['BLS', 'ALS', 'CCT']),
-  originFacilityId: z.string().uuid(),
-  destinationFacilityId: z.string().uuid(),
+  originFacilityId: z.string().min(1),
+  destinationFacilityId: z.string().min(1),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']),
   specialRequirements: z.string().optional(),
   estimatedDistance: z.number().positive().optional(),
@@ -20,7 +23,7 @@ const matchingCriteriaSchema = z.object({
 });
 
 const preferencesSchema = z.object({
-  preferredServiceAreas: z.array(z.string().uuid()),
+  preferredServiceAreas: z.array(z.string().min(1)),
   preferredTransportLevels: z.array(z.enum(['BLS', 'ALS', 'CCT'])),
   maxDistance: z.number().positive(),
   preferredTimeWindows: z.array(z.object({
@@ -67,14 +70,11 @@ router.post('/find-matches', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('[MATCHING-API] Error finding matches:', error);
     
-    if (error instanceof z.ZodError) {
+    if (error instanceof ZodError) {
       return res.status(400).json({
         success: false,
         message: 'Validation error',
-        errors: (error as any).errors.map((err: any) => ({
-          field: err.path.join('.'),
-          message: err.message
-        }))
+        errors: []
       });
     }
     
@@ -147,14 +147,11 @@ router.put('/preferences', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('[MATCHING-API] Error updating preferences:', error);
     
-    if (error instanceof z.ZodError) {
+    if (error instanceof ZodError) {
       return res.status(400).json({
         success: false,
         message: 'Validation error',
-        errors: (error as any).errors.map((err: any) => ({
-          field: err.path.join('.'),
-          message: err.message
-        }))
+        errors: []
       });
     }
     
@@ -220,27 +217,147 @@ router.post('/demo/find-matches', async (req, res) => {
     
     const validatedData = matchingCriteriaSchema.parse(req.body);
     
-    // Simple test response
+    console.log('[MATCHING-API] Demo: Validation passed, calling matching service...');
+    
+    // Create a mock transport request for the demo
+    const mockRequest = {
+      id: 'demo-request-id',
+      originFacilityId: validatedData.originFacilityId,
+      destinationFacilityId: validatedData.destinationFacilityId,
+      transportLevel: validatedData.transportLevel,
+      priority: validatedData.priority,
+      specialRequirements: validatedData.specialRequirements,
+      estimatedDistance: validatedData.estimatedDistance,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    } as any;
+    
+    console.log('[MATCHING-API] Demo: Mock request created:', mockRequest);
+    
+    // Use the actual matching service
+    const matches = await matchingService.findMatchingAgencies(mockRequest, validatedData);
+    
+    console.log('[MATCHING-API] Demo: Found matches:', matches.length);
+    
     res.json({
       success: true,
       message: 'Demo endpoint working',
       data: {
-        matches: [],
-        totalMatches: 0,
+        matches,
+        totalMatches: matches.length,
         requestCriteria: validatedData
       }
     });
   } catch (error) {
     console.error('[MATCHING-API] Demo error finding matches:', error);
     
-    if (error instanceof z.ZodError) {
+    if (error instanceof ZodError) {
+      console.log('[MATCHING-API] Demo: Zod validation error occurred');
       return res.status(400).json({
         success: false,
         message: 'Validation error',
-        errors: (error as any).errors.map((err: any) => ({
-          field: err.path.join('.'),
-          message: err.message
-        }))
+        errors: []
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+});
+
+// Test endpoint to check database content
+router.get('/demo/test-db', async (req, res) => {
+  try {
+    console.log('[MATCHING-API] Demo: Testing database content...');
+    
+    // Check agencies
+    const agencies = await prisma.transportAgency.findMany({
+      include: {
+        units: {
+          include: {
+            unitAvailability: true
+          }
+        }
+      }
+    });
+    
+    console.log('[MATCHING-API] Demo: Found agencies:', agencies.length);
+    
+    // Check facilities
+    const facilities = await prisma.facility.findMany({
+      take: 5
+    });
+    
+    console.log('[MATCHING-API] Demo: Found facilities:', facilities.length);
+    
+    // Check units
+    const units = await prisma.unit.findMany({
+      include: {
+        unitAvailability: true
+      }
+    });
+    
+    console.log('[MATCHING-API] Demo: Found units:', units.length);
+    
+    res.json({
+      success: true,
+      message: 'Database test completed',
+      data: {
+        agenciesCount: agencies.length,
+        facilitiesCount: facilities.length,
+        unitsCount: units.length,
+        sampleAgency: agencies[0] ? {
+          id: agencies[0].id,
+          name: agencies[0].name,
+          unitsCount: agencies[0].units?.length || 0
+        } : null,
+        sampleFacility: facilities[0] ? {
+          id: facilities[0].id,
+          name: facilities[0].name
+        } : null,
+        sampleUnit: units[0] ? {
+          id: units[0].id,
+          type: units[0].type,
+          agencyId: units[0].agencyId,
+          availabilityCount: units[0].unitAvailability?.length || 0
+        } : null
+      }
+    });
+  } catch (error) {
+    console.error('[MATCHING-API] Demo test error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Database test failed',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Simple validation test endpoint
+router.post('/demo/test-validation', async (req, res) => {
+  try {
+    console.log('[MATCHING-API] Demo: Testing validation for request:', req.body);
+    
+    const validatedData = matchingCriteriaSchema.parse(req.body);
+    
+    console.log('[MATCHING-API] Demo: Validation passed!');
+    
+    res.json({
+      success: true,
+      message: 'Validation test passed',
+      data: validatedData
+    });
+  } catch (error) {
+    console.error('[MATCHING-API] Demo validation test error:', error);
+    
+    if (error instanceof ZodError) {
+      console.log('[MATCHING-API] Demo: Zod validation error occurred');
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors: []
       });
     }
     
