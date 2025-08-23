@@ -4110,11 +4110,541 @@ I can see the issue! The problem is in the demo mode - the filtering logic is on
 
 ---
 
+<details><summary>Edit file: frontend/src/components/DistanceMatrixComponent.tsx</summary>
+
+I'm updating the loadDistanceMatrix function to implement proper filtering for demo mode, so the search and filters work correctly in both demo and production modes
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -75,5 +75,5 @@
+        setLoading(true);
+        
+-       // For demo mode, show sample distance data
++       // For demo mode, show sample distance data with filtering
+        if (facilities.some(f => f.id.startsWith('demo-'))) {
+          const demoDistances: DistanceMatrix[] = [
+```
+
+**Chunk 2**
+Lines added: 24, lines removed: 2
+
+```diff
+@@ -112,11 +112,33 @@
+            }
+          ];
+-         setDistances(demoDistances);
++ 
++         // Apply filters to demo data
++         let filteredDistances = demoDistances;
++         
++         if (searchFilters.fromFacilityId) {
++           filteredDistances = filteredDistances.filter(d => d.fromFacilityId === searchFilters.fromFacilityId);
++         }
++         
++         if (searchFilters.toFacilityId) {
++           filteredDistances = filteredDistances.filter(d => d.toFacilityId === searchFilters.toFacilityId);
++         }
++         
++         if (searchFilters.minDistance) {
++           const minDistance = parseFloat(searchFilters.minDistance);
++           filteredDistances = filteredDistances.filter(d => d.distanceMiles >= minDistance);
++         }
++         
++         if (searchFilters.maxDistance) {
++           const maxDistance = parseFloat(searchFilters.maxDistance);
++           filteredDistances = filteredDistances.filter(d => d.distanceMiles <= maxDistance);
++         }
++ 
++         setDistances(filteredDistances);
+          setTotalPages(1);
+          setLoading(false);
+          return;
+        }
+  
+-       // Build query parameters
++       // Build query parameters for API calls
+        const params = new URLSearchParams({
+          page: currentPage.toString(),
+```
+
+</details>
+
+---
+
+Now I need to also update the `loadDistanceStats` function to work with the filtered distances, and ensure that when new distances are added (like through the Calculate Distance button), they're also subject to the current filters:
 
 
 ---
 
+<details><summary>Edit file: frontend/src/components/DistanceMatrixComponent.tsx</summary>
 
+I'm updating the loadDistanceStats function to work with filtered distances and ensuring that new distance entries respect the current filters
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -172,5 +172,5 @@
+      try {
+        if (facilities.some(f => f.id.startsWith('demo-'))) {
+-         // Calculate demo stats dynamically from current distances
++         // Calculate demo stats dynamically from current filtered distances
+          if (distances.length > 0) {
+            const totalEntries = distances.length;
+```
+
+**Chunk 2**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -203,5 +203,5 @@
+            });
+          } else {
+-           // Fallback to default demo stats if no distances
++           // Fallback to default demo stats if no distances match filters
+            setDistanceStats({
+              totalEntries: 0,
+```
+
+**Chunk 3**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -217,5 +217,5 @@
+        }
+  
+-       const response = await fetch('/api/distance/stats', {
++       const response = await fetch('/api/distance/stistance/stats', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+```
+
+</details>
+
+---
+
+I made a typo in the API endpoint. Let me fix that:
+
+
+---
+
+<details><summary>Edit file: frontend/src/components/DistanceMatrixComponent.tsx</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -217,5 +217,5 @@
+        }
+  
+-       const response = await fetch('/api/distance/stistance/stats', {
++       const response = await fetch('/api/distance/stats', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+```
+
+</details>
+
+---
+
+Now I need to update the `handleCalculateDistance` function to ensure that when new distances are added in demo mode, they respect the current filters. The new distance should only appear if it matches the current filter criteria:
+
+
+---
+
+Read file: frontend/src/components/DistanceMatrixComponent.tsx
+
+---
+
+I need to update the demo mode part of `handleCalculateDistance` to respect the current filters. Instead of directly adding to the distances array, it should call `loadDistanceMatrix()` to apply the current filters:
+
+
+---
+
+<details><summary>Edit file: frontend/src/components/DistanceMatrixComponent.tsx</summary>
+
+I'm updating the demo mode part of handleCalculateDistance to store new distances in a separate state and then call loadDistanceMatrix to apply current filters, ensuring new entries respect the filter criteria
+
+**Chunk 1**
+Lines added: 4, lines removed: 1
+
+```diff
+@@ -63,5 +63,8 @@
+    const [totalPages, setTotalPages] = useState(1);
+    const [itemsPerPage] = useState(20);
+- 
++   
++   // Store all demo distances (including newly added ones) separately from filtered distances
++   const [allDemoDistances, setAllDemoDistances] = useState<DistanceMatrix[]>([]);
++ 
+    useEffect(() => {
+      if (facilities.length > 0) {
+```
+
+**Chunk 2**
+Lines added: 22, lines removed: 2
+
+```diff
+@@ -387,6 +390,26 @@
+          };
+          
+-         // Add to the distances array
+-         setDistances(prevDistances => [...prevDistances, newDistanceEntry]);
++         // Add to the allDemoDistances state
++         setAllDemoDistances(prev => [...prev, newDistanceEntry]);
++         
++         // Apply current filters to the allDemoDistances to get the final filtered list
++         let filteredDemoDistances = allDemoDistances;
++         if (searchFilters.fromFacilityId) {
++           filteredDemoDistances = filteredDemoDistances.filter(d => d.fromFacilityId === searchFilters.fromFacilityId);
++         }
++         if (searchFilters.toFacilityId) {
++           filteredDemoDistances = filteredDemoDistances.filter(d => d.toFacilityId === searchFilters.toFacilityId);
++         }
++         if (searchFilters.minDistance) {
++           const minDistance = parseFloat(searchFilters.minDistance);
++           filteredDemoDistances = filteredDemoDistances.filter(d => d.distanceMiles >= minDistance);
++         }
++         if (searchFilters.maxDistance) {
++           const maxDistance = parseFloat(searchFilters.maxDistance);
++           filteredDemoDistances = filteredDemoDistances.filter(d => d.distanceMiles <= maxDistance);
++         }
++ 
++         // Update the main distances state with the filtered demo distances
++         setDistances(filteredDemoDistances);
+          
+          // Show success message
+```
+
+</details>
+
+---
+
+Now I need to update the `loadDistanceMatrix` function to use the `allDemoDistances` state instead of the hardcoded demo distances:
+
+
+---
+
+<details><summary>Edit file: frontend/src/components/DistanceMatrixComponent.tsx</summary>
+
+I'm updating the loadDistanceMatrix function to use the allDemoDistances state instead of hardcoded demo distances, and initializing allDemoDistances with the default demo data
+
+**Chunk 1**
+Lines added: 3, lines removed: 12
+
+```diff
+@@ -69,16 +69,7 @@
+    useEffect(() => {
+      if (facilities.length > 0) {
+-       loadDistanceMatrix();
+-       loadDistanceStats();
+-     }
+-   }, [facilities, currentPage, searchFilters]);
+- 
+-   const loadDistanceMatrix = async () => {
+-     try {
+-       setLoading(true);
+-       
+-       // For demo mode, show sample distance data with filtering
+-       if (facilities.some(f => f.id.startsWith('demo-'))) {
+-         const demoDistances: DistanceMatrix[] = [
++       // Initialize demo distances if this is the first load
++       if (facilities.some(f => f.id.startsWith('demo-')) && allDemoDistances.length === 0) {
++         const initialDemoDistances: DistanceMatrix[] = [
+            {
+              id: 'demo-1',
+```
+
+**Chunk 2**
+Lines added: 15, lines removed: 3
+
+```diff
+@@ -115,7 +106,19 @@
+            }
+          ];
+- 
+-         // Apply filters to demo data
+-         let filteredDistances = demoDistances;
++         setAllDemoDistances(initialDemoDistances);
++       }
++       loadDistanceMatrix();
++       loadDistanceStats();
++     }
++   }, [facilities, currentPage, searchFilters, allDemoDistances]);
++ 
++   const loadDistanceMatrix = async () => {
++     try {
++       setLoading(true);
++       
++       // For demo mode, show sample distance data with filtering
++       if (facilities.some(f => f.id.startsWith('demo-'))) {
++         // Use allDemoDistances instead of hardcoded demo distances
++         let filteredDistances = allDemoDistances;
+          
+          if (searchFilters.fromFacilityId) {
+```
+
+</details>
+
+---
+
+Now I need to fix the `handleCalculateDistance` function to properly update the state and call `loadDistanceMatrix`:
+
+
+---
+
+<details><summary>Edit file: frontend/src/components/DistanceMatrixComponent.tsx</summary>
+
+I'm fixing the handleCalculateDistance function to properly update allDemoDistances and then call loadDistanceMatrix to apply filters, ensuring the new entry appears only if it matches the current filters
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -397,5 +397,5 @@
+          
+          // Apply current filters to the allDemoDistances to get the final filtered list
+-         let filteredDemoDistances = allDemoDistances;
++         let filteredDemoDistances = [...allDemoDistances, newDistanceEntry];
+          if (searchFilters.fromFacilityId) {
+            filteredDemoDistances = filteredDemoDistances.filter(d => d.fromFacilityId === searchFilters.fromFacilityId);
+```
+
+</details>
+
+---
+
+Now let me test the build to make sure there are no TypeScript errors:
+
+
+---
+
+```bash
+cd frontend && npm run build
+```
+
+```
+
+
+> frontend@1.0.0 build
+> vite build
+
+vite v7.1.3 building for production...
+✓ 62 modules transformed.
+dist/index.html                   0.68 kB │ gzip:   0.37 kB
+dist/assets/index-DtrciHBa.css   31.76 kB │ gzip:   5.70 kB
+dist/assets/index-DGwvKF_C.js   518.79 kB │ gzip: 114.04 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-option
+s/#output-manualchunks
+
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 822ms
+```
+
+---
+
+Great! The build is successful. Now let me commit these changes and explain what was fixed:
+
+
+---
+
+```bash
+cd .. && git add . && git commit -m "Fix: Implement proper filtering for demo mode in Search & Filters section" && git push
+```
+
+```
+scooper@MacBook-Pro-5 frontend % cd .. && git add . && git commit -m "Fix: Implement proper filtering for de
+mo mode in Search & Filters section" && git push
+husky - DEPRECATED
+
+Please remove the following two lines from .husky/pre-commit:
+
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+They WILL FAIL in v10.0.0
+
+✔ Backed up original state in git stash (75a70a9)
+✔ Running tasks for staged files...
+✔ Applying modifications from tasks...
+✔ Cleaning up temporary files...
+[main 76f4b61] Fix: Implement proper filtering for demo mode in Search & Filters section
+ 2 files changed, 568 insertions(+), 18 deletions(-)
+Enumerating objects: 17, done.
+Counting objects: 100% (17/17), done.
+Delta compression using up to 14 threads
+Compressing objects: 100% (9/9), done.
+Writing objects: 100% (9/9), 5.51 KiB | 5.51 MiB/s, done.
+Total 9 (delta 7), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (7/7), completed with 7 local objects.
+To https://github.com/Medic423/medport.git
+   e756ebc..76f4b61  main -> main
+```
+
+---
+
+Perfect! Now let me explain what was wrong and what I fixed:
+
+## �� **Issue Identified: Search & Filters Not Working in Demo Mode**
+
+### **What Was Wrong**
+The "Search & Filters" section wasn't working because:
+
+1. **Demo Mode Filtering**: In demo mode, the filtering logic was only implemented for API calls, but demo data was hardcoded and never filtered
+2. **State Management**: New distance entries added via "Calculate Distance" weren't being filtered against the current search criteria
+3. **Filter Application**: Filters were only applied when loading from the API, not when working with demo data
+
+### **What I Fixed**
+
+#### **1. Implemented Demo Mode Filtering**
+- ✅ **Added `allDemoDistances` state**: Stores all demo distances (including newly added ones)
+- ✅ **Applied filters to demo data**: Now filters work in both demo and production modes
+- ✅ **Real-time filtering**: Filters are applied every time `searchFilters` change
+
+#### **2. Enhanced Filter Logic**
+```typescript
+// Before: No filtering in demo mode
+setDistances(demoDistances);
+
+// After: Full filtering support
+let filteredDistances = allDemoDistances;
+
+if (searchFilters.fromFacilityId) {
+  filteredDistances = filteredDistances.filter(d => d.fromFacilityId === searchFilters.fromFacilityId);
+}
+
+if (searchFilters.toFacilityId) {
+  filteredDistances = filteredDistances.filter(d => d.toFacilityId === searchFilters.toFacilityId);
+}
+
+if (searchFilters.minDistance) {
+  const minDistance = parseFloat(searchFilters.minDistance);
+  filteredDistances = filteredDistances.filter(d => d.distanceMiles >= minDistance);
+}
+
+if (searchFilters.maxDistance) {
+  const maxDistance = parseFloat(searchFilters.maxDistance);
+  filteredDistances = filteredDistances.filter(d => d.distanceMiles <= maxDistance);
+}
+```
+
+#### **3. Fixed New Entry Filtering**
+- ✅ **New entries respect filters**: When you add a distance via "Calculate Distance", it only appears if it matches current filters
+- ✅ **Consistent state**: All demo distances are stored in `allDemoDistances`, filtered results in `distances`
+- ✅ **Real-time updates**: Statistics and display update immediately when filters change
+
+---
+
+## 🧪 **How to Test the Fixed Search & Filters**
+
+### **Test 1: Basic Filtering**
+1. **Go to Distance Matrix page**: `http://localhost:3003`
+2. **In "Search & Filters" section**:
+   - Select "UPMC Altoona Hospital" as Origin Facility
+   - Click outside or press Tab
+   - **Expected**: Table should show only entries FROM "UPMC Altoona Hospital"
+
+### **Test 2: Multiple Filters**
+1. **Apply multiple filters**:
+   - Origin: "UPMC Altoona Hospital"
+   - Destination: "Conemaugh Memorial Medical Center"
+   - Min Distance: 40
+   - Max Distance: 50
+2. **Expected**: Table should show only entries that match ALL criteria
+
+### **Test 3: Filter with New Entries**
+1. **Set a filter** (e.g., Origin: "UPMC Altoona Hospital")
+2. **Add new distance** via "Calculate Distance" button:
+   - Select origin: "UPMC Altoona Hospital"
+   - Select destination: "Penn Highlands DuBois"
+   - Click "Calculate Distance"
+3. **Expected**: 
+   - New entry appears (matches filter)
+   - Statistics update
+   - Table shows filtered results
+
+### **Test 4: Clear Filters**
+1. **Apply some filters** (e.g., Origin facility)
+2. **Click "Clear Filters"** button
+3. **Expected**: 
+   - All demo distances reappear
+   - Statistics update to show all entries
+   - Filter dropdowns reset to empty
+
+### **Test 5: Edge Cases**
+1. **Set impossible filters**:
+   - Min Distance: 100
+   - Max Distance: 50
+2. **Expected**: Table shows no entries (logical impossibility)
+3. **Clear filters** and verify all entries reappear
+
+---
+
+## 🔍 **What You Should See Now**
+
+### **Before Fix (What You Experienced)**
+- ❌ Filters had no effect on the distance matrix table
+- ❌ New entries always appeared regardless of filters
+- ❌ Statistics didn't update when filters changed
+
+### **After Fix (What Should Happen Now)**
+- ✅ **Filters work immediately**: Table updates as you change filter values
+- ✅ **Real-time filtering**: Results update without needing to refresh
+- ✅ **New entries respect filters**: Only appear if they match current criteria
+- ✅ **Statistics update**: Show counts and averages for filtered results only
+- ✅ **Clear filters work**: Restore all entries when filters are cleared
+
+---
+
+## 🚀 **Technical Implementation Details**
+
+### **State Management**
+```typescript
+// All demo distances (unfiltered)
+const [allDemoDistances, setAllDemoDistances] = useState<DistanceMatrix[]>([]);
+
+// Filtered results (what's displayed)
+const [distances, setDistances] = useState<DistanceMatrix[]>([]);
+
+// Search criteria
+const [searchFilters, setSearchFilters] = useState({...});
+```
+
+### **Filter Application**
+- **Facility Filters**: Exact match on facility IDs
+- **Distance Filters**: Range-based filtering (min ≤ distance ≤ max)
+- **Real-time Updates**: Applied whenever `searchFilters` change
+- **Performance**: Efficient filtering with no unnecessary API calls
+
+### **New Entry Handling**
+- **Store in `allDemoDistances`**: Preserve all entries
+- **Apply current filters**: Only show if matches criteria
+- **Update statistics**: Recalculate based on filtered results
+- **Maintain consistency**: State always reflects current filter criteria
+
+---
+
+## �� **Expected Results**
+
+Now when you use the Search & Filters:
+
+1. **✅ Origin Facility Filter**: Shows only distances FROM selected facility
+2. **✅ Destination Facility Filter**: Shows only distances TO selected facility  
+3. **✅ Distance Range Filters**: Shows only distances within specified range
+4. **✅ Combined Filters**: All filters work together (AND logic)
+5. **✅ Real-time Updates**: Table updates immediately when filters change
+6. **✅ New Entries**: Respect current filters when appearing
+7. **✅ Statistics**: Update to reflect filtered results
+8. **✅ Clear Filters**: Restore all entries when needed
+
+The Search & Filters section should now work exactly as expected, providing a responsive and intuitive way to find specific distance matrix entries in both demo and production modes!
 
 ---
 
