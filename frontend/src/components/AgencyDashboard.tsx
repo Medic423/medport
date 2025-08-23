@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import UnitManagement from './UnitManagement';
 import TransportRequests from './TransportRequests';
 import BidManagement from './BidManagement';
@@ -36,8 +35,11 @@ interface RecentTransport {
   requestTimestamp: string;
 }
 
-const AgencyDashboard: React.FC = () => {
-  const navigate = useNavigate();
+interface AgencyDashboardProps {
+  onNavigate: (page: string) => void;
+}
+
+const AgencyDashboard: React.FC<AgencyDashboardProps> = ({ onNavigate }) => {
   const [stats, setStats] = useState<AgencyStats | null>(null);
   const [units, setUnits] = useState<Unit[]>([]);
   const [recentTransports, setRecentTransports] = useState<RecentTransport[]>([]);
@@ -108,7 +110,7 @@ const AgencyDashboard: React.FC = () => {
     try {
       const token = localStorage.getItem('agencyToken');
       if (!token) {
-        navigate('/agency/login');
+        onNavigate('agency-login');
         return;
       }
 
@@ -152,8 +154,8 @@ const AgencyDashboard: React.FC = () => {
     localStorage.removeItem('agencyUser');
     localStorage.removeItem('agency');
     localStorage.removeItem('demoMode');
-    navigate('/agency/login');
-  };
+            onNavigate('agency-login');
+      };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -219,7 +221,7 @@ const AgencyDashboard: React.FC = () => {
             </div>
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => navigate('/agency/profile')}
+                onClick={() => onNavigate('agency-profile')}
                 className="px-4 py-2 text-gray-700 hover:text-gray-900"
               >
                 Profile
@@ -324,7 +326,7 @@ const AgencyDashboard: React.FC = () => {
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <button
-                  onClick={() => navigate('/agency/transports')}
+                  onClick={() => setActiveTab('transports')}
                   className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors"
                 >
                   <div className="text-center">
@@ -335,23 +337,21 @@ const AgencyDashboard: React.FC = () => {
                 </button>
 
                 <button
-                  onClick={() => navigate('/agency/units')}
+                  onClick={() => setActiveTab('units')}
                   className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors"
                 >
                   <div className="text-center">
                     <span className="text-3xl mb-2 block">🚑</span>
-                    <p className="font-medium text-gray-900">Manage Units</p>
                     <p className="text-sm text-gray-600">Update availability</p>
                   </div>
                 </button>
 
                 <button
-                  onClick={() => navigate('/agency/bids')}
+                  onClick={() => setActiveTab('bids')}
                   className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors"
                 >
                   <div className="text-center">
                     <span className="text-3xl mb-2 block">💰</span>
-                    <p className="font-medium text-gray-900">View Bids</p>
                     <p className="text-sm text-gray-600">Track submissions</p>
                   </div>
                 </button>

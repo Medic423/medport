@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 interface LoginData {
   email: string;
   password: string;
 }
 
-const AgencyLogin: React.FC = () => {
-  const navigate = useNavigate();
+interface AgencyLoginProps {
+  onNavigate: (page: string) => void;
+}
+
+const AgencyLogin: React.FC<AgencyLoginProps> = ({ onNavigate }) => {
   const [formData, setFormData] = useState<LoginData>({
     email: '',
     password: ''
@@ -63,7 +65,7 @@ const AgencyLogin: React.FC = () => {
         localStorage.setItem('agencyUser', JSON.stringify(result.data.user));
         localStorage.setItem('agency', JSON.stringify(result.data.agency));
         
-        navigate('/agency/dashboard');
+        onNavigate('agency-dashboard');
       } else {
         setSubmitError(result.message || 'Login failed');
       }
@@ -97,7 +99,7 @@ const AgencyLogin: React.FC = () => {
         localStorage.setItem('agency', JSON.stringify(result.data.agency));
         localStorage.setItem('demoMode', 'true');
         
-        navigate('/agency/dashboard');
+        onNavigate('agency-dashboard');
       } else {
         setSubmitError(result.message || 'Demo login failed');
       }
@@ -201,7 +203,7 @@ const AgencyLogin: React.FC = () => {
 
             <div className="mt-6 text-center">
               <button
-                onClick={() => navigate('/agency/register')}
+                onClick={() => onNavigate('agency-registration')}
                 className="text-blue-600 hover:text-blue-500 font-medium"
               >
                 Register your agency
@@ -222,7 +224,7 @@ const AgencyLogin: React.FC = () => {
       {/* Back to Main */}
       <div className="text-center mt-6">
         <button
-          onClick={() => navigate('/')}
+          onClick={() => onNavigate('home')}
           className="text-gray-600 hover:text-gray-500 font-medium"
         >
           ← Back to Main Menu

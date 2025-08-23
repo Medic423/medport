@@ -335,9 +335,9 @@ function App() {
         {currentPage === 'advanced-transport' && <AdvancedTransport />}
         {currentPage === 'air-medical' && <AirMedical />}
         {currentPage === 'emergency-department' && <EmergencyDepartment />}
-        {currentPage === 'agency-registration' && <AgencyRegistration />}
-        {currentPage === 'agency-login' && <AgencyLogin />}
-        {currentPage === 'agency-dashboard' && <AgencyDashboard />}
+        {currentPage === 'agency-registration' && <AgencyRegistration onNavigate={setCurrentPage} />}
+        {currentPage === 'agency-login' && <AgencyLogin onNavigate={setCurrentPage} />}
+        {currentPage === 'agency-dashboard' && <AgencyDashboard onNavigate={setCurrentPage} />}
       </main>
     </div>
   );

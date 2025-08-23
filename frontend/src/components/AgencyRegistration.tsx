@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 interface AgencyRegistrationData {
   name: string;
@@ -33,8 +32,11 @@ const US_STATES = [
 
 const TRANSPORT_CAPABILITIES = ['BLS', 'ALS', 'CCT'];
 
-const AgencyRegistration: React.FC = () => {
-  const navigate = useNavigate();
+interface AgencyRegistrationProps {
+  onNavigate: (page: string) => void;
+}
+
+const AgencyRegistration: React.FC<AgencyRegistrationProps> = ({ onNavigate }) => {
   const [formData, setFormData] = useState<AgencyRegistrationData>({
     name: '',
     contactName: '',
@@ -153,7 +155,7 @@ const AgencyRegistration: React.FC = () => {
         localStorage.setItem('agencyUser', JSON.stringify(result.data.user));
         localStorage.setItem('agency', JSON.stringify(result.data.agency));
         
-        navigate('/agency/dashboard');
+        onNavigate('agency-dashboard');
       } else {
         setSubmitError(result.message || 'Registration failed');
       }
@@ -469,7 +471,7 @@ const AgencyRegistration: React.FC = () => {
             <div className="flex justify-end space-x-4">
               <button
                 type="button"
-                onClick={() => navigate('/')}
+                onClick={() => onNavigate('home')}
                 className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 Cancel
@@ -490,7 +492,7 @@ const AgencyRegistration: React.FC = () => {
           <p className="text-gray-600">
             Already have an account?{' '}
             <button
-              onClick={() => navigate('/agency/login')}
+              onClick={() => onNavigate('agency-login')}
               className="text-blue-600 hover:text-blue-500 font-medium"
             >
               Sign in here
