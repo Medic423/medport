@@ -156,6 +156,48 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// Demo Login (Public - for testing)
+router.post('/demo/login', async (req, res) => {
+  try {
+    console.log('[AGENCY-DEMO-LOGIN] Demo login attempt');
+    
+    // Create demo data
+    const demoUser = {
+      id: 'demo-user-001',
+      name: 'Demo User',
+      email: 'demo@agency.com',
+      role: 'ADMIN'
+    };
+    
+    const demoAgency = {
+      id: 'demo-agency-001',
+      name: 'Demo Transport Agency',
+      email: 'demo@agency.com'
+    };
+    
+    const demoToken = 'demo-token-' + Date.now();
+    
+    console.log('[AGENCY-DEMO-LOGIN] Success:', { userId: demoUser.id, agencyId: demoAgency.id });
+    
+    res.json({
+      success: true,
+      message: 'Demo login successful',
+      data: {
+        user: demoUser,
+        agency: demoAgency,
+        token: demoToken
+      }
+    });
+  } catch (error) {
+    console.error('[AGENCY-DEMO-LOGIN] Error:', error);
+    
+    res.status(500).json({
+      success: false,
+      message: 'Demo login failed'
+    });
+  }
+});
+
 // Get Agency Profile (Protected)
 router.get('/profile', authenticateToken, async (req, res) => {
   try {
