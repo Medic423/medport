@@ -36,13 +36,13 @@ const DistanceMatrixComponent: React.FC<DistanceMatrixComponentProps> = ({
     estimatedTimeMinutes: 0,
     trafficFactor: 1.0,
     tolls: 0.0,
-    routeType: 'FASTEST' as RouteType
+    routeType: RouteType.FASTEST
   });
   const [showAddForm, setShowAddForm] = useState(false);
   const [newDistance, setNewDistance] = useState({
     fromFacilityId: '',
     toFacilityId: '',
-    routeType: 'FASTEST' as RouteType
+    routeType: RouteType.FASTEST
   });
   
   // New state for enhanced features
@@ -85,7 +85,7 @@ const DistanceMatrixComponent: React.FC<DistanceMatrixComponentProps> = ({
             estimatedTimeMinutes: 52,
             trafficFactor: 1.1,
             tolls: 0.0,
-            routeType: 'FASTEST',
+            routeType: RouteType.FASTEST,
             lastUpdated: new Date().toISOString()
           },
           {
@@ -96,7 +96,7 @@ const DistanceMatrixComponent: React.FC<DistanceMatrixComponentProps> = ({
             estimatedTimeMinutes: 44,
             trafficFactor: 1.0,
             tolls: 0.0,
-            routeType: 'FASTEST',
+            routeType: RouteType.FASTEST,
             lastUpdated: new Date().toISOString()
           },
           {
@@ -107,7 +107,7 @@ const DistanceMatrixComponent: React.FC<DistanceMatrixComponentProps> = ({
             estimatedTimeMinutes: 78,
             trafficFactor: 1.2,
             tolls: 0.0,
-            routeType: 'FASTEST',
+            routeType: RouteType.FASTEST,
             lastUpdated: new Date().toISOString()
           }
         ];
@@ -149,16 +149,48 @@ const DistanceMatrixComponent: React.FC<DistanceMatrixComponentProps> = ({
   const loadDistanceStats = async () => {
     try {
       if (facilities.some(f => f.id.startsWith('demo-'))) {
-        // Demo stats
-        setDistanceStats({
-          totalEntries: 3,
-          averageDistance: 50.4,
-          averageTime: 58,
-          distanceRange: { min: 38.7, max: 67.3 },
-          timeRange: { min: 44, max: 78 },
-          facilityCount: 5,
-          lastUpdated: new Date().toISOString()
-        });
+        // Calculate demo stats dynamically from current distances
+        if (distances.length > 0) {
+          const totalEntries = distances.length;
+          const totalDistance = distances.reduce((sum, d) => sum + d.distanceMiles, 0);
+          const totalTime = distances.reduce((sum, d) => sum + d.estimatedTimeMinutes, 0);
+          const averageDistance = totalDistance / totalEntries;
+          const averageTime = totalTime / totalEntries;
+          
+          const distanceValues = distances.map(d => d.distanceMiles);
+          const timeValues = distances.map(d => d.estimatedTimeMinutes);
+          
+          const distanceRange = {
+            min: Math.min(...distanceValues),
+            max: Math.max(...distanceValues)
+          };
+          
+          const timeRange = {
+            min: Math.min(...timeValues),
+            max: Math.max(...timeValues)
+          };
+          
+          setDistanceStats({
+            totalEntries,
+            averageDistance,
+            averageTime,
+            distanceRange,
+            timeRange,
+            facilityCount: facilities.length,
+            lastUpdated: new Date().toISOString()
+          });
+        } else {
+          // Fallback to default demo stats if no distances
+          setDistanceStats({
+            totalEntries: 0,
+            averageDistance: 0,
+            averageTime: 0,
+            distanceRange: { min: 0, max: 0 },
+            timeRange: { min: 0, max: 0 },
+            facilityCount: facilities.length,
+            lastUpdated: new Date().toISOString()
+          });
+        }
         return;
       }
 
@@ -309,7 +341,7 @@ const DistanceMatrixComponent: React.FC<DistanceMatrixComponentProps> = ({
       return;
     }
 
-    // For demo mode, show estimated distances
+    // For demo mode, create a new distance entry
     if (facilities.some(f => f.id.startsWith('demo-'))) {
       const fromFacility = facilities.find(f => f.id === selectedFromFacility);
       const toFacility = facilities.find(f => f.id === selectedToFacility);
@@ -319,8 +351,31 @@ const DistanceMatrixComponent: React.FC<DistanceMatrixComponentProps> = ({
         const distance = Math.random() * 50 + 20; // Random distance between 20-70 miles
         const time = Math.ceil(distance * 1.2); // Rough time estimate
         
-        alert(`Demo Distance Calculation:\nFrom: ${fromFacility.name}\nTo: ${toFacility.name}\nDistance: ${distance.toFixed(1)} miles\nTime: ${time} minutes\n\nNote: This is demo data. Real calculations will use Google Maps API.`);
-        loadDistanceMatrix(); // Refresh the matrix
+        // Create a new distance entry for demo mode
+        const newDistanceEntry: DistanceMatrix = {
+          id: `demo-${Date.now()}`, // Generate unique ID
+          fromFacilityId: selectedFromFacility,
+          toFacilityId: selectedToFacility,
+          distanceMiles: distance,
+          estimatedTimeMinutes: time,
+          trafficFactor: 1.0,
+          tolls: 0.0,
+          routeType: RouteType.FASTEST,
+          lastUpdated: new Date().toISOString()
+        };
+        
+        // Add to the distances array
+        setDistances(prevDistances => [...prevDistances, newDistanceEntry]);
+        
+        // Show success message
+        alert(`✅ New Distance Entry Created!\n\nFrom: ${fromFacility.name}\nTo: ${toFacility.name}\nDistance: ${distance.toFixed(1)} miles\nTime: ${time} minutes\n\nNote: This is demo data. Real calculations will use Google Maps API.`);
+        
+        // Clear the selection
+        setSelectedFromFacility('');
+        setSelectedToFacility('');
+        
+        // Refresh stats
+        loadDistanceStats();
       }
       return;
     }
@@ -335,8 +390,42 @@ const DistanceMatrixComponent: React.FC<DistanceMatrixComponentProps> = ({
 
       if (response.ok) {
         const data = await response.json();
-        alert(`Distance: ${data.data.distanceMiles.toFixed(2)} miles\nTime: ${data.data.estimatedTimeMinutes} minutes`);
-        loadDistanceMatrix(); // Refresh the matrix
+        
+        // Create or update the distance matrix entry
+        const distanceData = {
+          fromFacilityId: selectedFromFacility,
+          toFacilityId: selectedToFacility,
+          distanceMiles: data.data.distanceMiles,
+          estimatedTimeMinutes: data.data.estimatedTimeMinutes,
+          trafficFactor: data.data.trafficFactor || 1.0,
+          tolls: data.data.tolls || 0.0,
+          routeType: data.data.routeType || RouteType.FASTEST
+        };
+
+        // Use the existing API to create/update the entry
+        const createResponse = await fetch('/api/distance/matrix', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify(distanceData)
+        });
+
+        if (createResponse.ok) {
+          const createdEntry = await createResponse.json();
+          alert(`✅ Distance Entry Created/Updated!\n\nDistance: ${data.data.distanceMiles.toFixed(2)} miles\nTime: ${data.data.estimatedTimeMinutes} minutes\n\nEntry has been added to the distance matrix.`);
+          
+          // Clear the selection
+          setSelectedFromFacility('');
+          setSelectedToFacility('');
+          
+          // Refresh the matrix and stats
+          loadDistanceMatrix();
+          loadDistanceStats();
+        } else {
+          alert(`Distance calculated but failed to save: ${data.data.distanceMiles.toFixed(2)} miles, ${data.data.estimatedTimeMinutes} minutes`);
+        }
       } else {
         alert('Failed to calculate distance');
       }
@@ -413,7 +502,7 @@ const DistanceMatrixComponent: React.FC<DistanceMatrixComponentProps> = ({
 
       if (response.ok) {
         setShowAddForm(false);
-        setNewDistance({ fromFacilityId: '', toFacilityId: '', routeType: 'FASTEST' });
+        setNewDistance({ fromFacilityId: '', toFacilityId: '', routeType: RouteType.FASTEST });
         loadDistanceMatrix();
       } else {
         alert('Failed to create distance matrix entry');
