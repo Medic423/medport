@@ -4,6 +4,7 @@ import RouteOptimizationDashboard from '../components/RouteOptimizationDashboard
 import OptimizationControls from '../components/OptimizationControls';
 import RouteCardInterface from '../components/RouteCardInterface';
 import OptimizationAnalytics from '../components/OptimizationAnalytics';
+import EnhancedRouteCardInterface from '../components/EnhancedRouteCardInterface';
 
 export interface RouteOptimizationRequest {
   timeWindowStart: Date;
@@ -85,7 +86,7 @@ const RouteOptimization: React.FC = () => {
 
   const [optimizationResult, setOptimizationResult] = useState<RouteOptimizationResult | null>(null);
   const [isOptimizing, setIsOptimizing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'controls' | 'results' | 'analytics'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'controls' | 'results' | 'analytics' | 'enhanced-cards'>('dashboard');
   const [selectedOpportunity, setSelectedOpportunity] = useState<ChainedTripOpportunity | null>(null);
   const [isDemoMode, setIsDemoMode] = useState(false);
 
@@ -345,6 +346,16 @@ const RouteOptimization: React.FC = () => {
             >
               Analytics
             </button>
+            <button
+              onClick={() => setActiveTab('enhanced-cards')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'enhanced-cards'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Enhanced Cards
+            </button>
           </nav>
         </div>
       </div>
@@ -384,6 +395,13 @@ const RouteOptimization: React.FC = () => {
         {activeTab === 'analytics' && (
           <OptimizationAnalytics
             optimizationResult={optimizationResult}
+            onBack={() => setActiveTab('dashboard')}
+          />
+        )}
+
+        {activeTab === 'enhanced-cards' && (
+          <EnhancedRouteCardInterface
+            opportunities={optimizationResult?.opportunities || []}
             onBack={() => setActiveTab('dashboard')}
           />
         )}
