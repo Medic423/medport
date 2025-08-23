@@ -329,7 +329,23 @@ const EnhancedRouteCardInterface: React.FC<EnhancedRouteCardInterfaceProps> = ({
 
       {/* Tab Content */}
       {activeTab === 'cards' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="space-y-6">
+          {/* Compare Button */}
+          {selectedCards.length >= 2 && (
+            <div className="flex justify-center">
+              <button
+                onClick={() => setActiveTab('comparison')}
+                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-lg"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Compare {selectedCards.length} Selected Cards
+              </button>
+            </div>
+          )}
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {enhancedCards.map((card) => (
             <div
               key={card.id}
@@ -464,12 +480,23 @@ const EnhancedRouteCardInterface: React.FC<EnhancedRouteCardInterfaceProps> = ({
               </div>
             </div>
           ))}
+          </div>
         </div>
       )}
 
       {activeTab === 'comparison' && (
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Route Comparison</h3>
+          
+          {/* Debug Information */}
+          <div className="mb-4 p-3 bg-gray-100 rounded text-xs">
+            <p><strong>Debug Info:</strong></p>
+            <p>Selected Cards: {selectedCards.length}</p>
+            <p>Enhanced Cards: {enhancedCards.length}</p>
+            <p>Selected IDs: {selectedCards.join(', ')}</p>
+            <p>Available IDs: {enhancedCards.map(c => c.id).join(', ')}</p>
+          </div>
+          
           {selectedCards.length < 2 ? (
             <p className="text-gray-600">Select at least 2 route cards to compare</p>
           ) : (
