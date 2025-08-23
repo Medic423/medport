@@ -24,6 +24,22 @@ export interface RouteOptimizationResult {
   chainingOpportunities: any[];
 }
 
+export interface BulkDistanceData {
+  fromFacilityId: string;
+  toFacilityId: string;
+  distanceMiles: number;
+  estimatedTimeMinutes: number;
+  trafficFactor?: number;
+  tolls?: number;
+  routeType?: RouteType;
+}
+
+export interface DistanceValidationResult {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
 export class DistanceService {
   private googleMapsApiKey: string;
 
@@ -31,6 +47,382 @@ export class DistanceService {
     this.googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY || '';
     if (!this.googleMapsApiKey) {
       console.warn('DISTANCE_SERVICE: Google Maps API key not configured');
+    }
+  }
+
+  /**
+   * Validate distance data for integrity and logical consistency
+   */
+  async validateDistanceData(data: BulkDistanceData): Promise<DistanceValidationResult> {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    // Basic validation
+    if (data.distanceMiles <= 0) {
+      errors.push('Distance must be greater than 0');
+    }
+    if (data.distanceMiles > 1000) {
+      warnings.push('Distance exceeds 1000 miles - please verify accuracy');
+    }
+    if (data.estimatedTimeMinutes <= 0) {
+      errors.push('Estimated time must be greater than 0');
+    }
+    if (data.estimatedTimeMinutes > 1440) {
+      warnings.push('Estimated time exceeds 24 hours - please verify accuracy');
+    }
+    if (data.trafficFactor && (data.trafficFactor < 0.5 || data.trafficFactor > 3.0)) {
+      warnings.push('Traffic factor should be between 0.5 and 3.0');
+    }
+    if (data.tolls && data.tolls < 0) {
+      errors.push('Tolls cannot be negative');
+    }
+
+    // Check if facilities exist
+    try {
+      const [fromFacility, toFacility] = await Promise.all([
+        prisma.facility.findUnique({ where: { id: data.fromFacilityId } }),
+        prisma.facility.findUnique({ where: { id: data.toFacilityId } })
+      ]);
+
+      if (!fromFacility) {
+        errors.push(`Origin facility with ID ${data.fromFacilityId} not found`);
+      }
+      if (!toFacility) {
+        errors.push(`Destination facility with ID ${data.toFacilityId} not found`);
+      }
+
+      // Check for self-referencing
+      if (data.fromFacilityId === data.toFacilityId) {
+        errors.push('Origin and destination facilities cannot be the same');
+      }
+
+      // Check triangle inequality if both directions exist
+      if (fromFacility && toFacility) {
+        const reverseDistance = await this.getDistanceMatrix(data.toFacilityId, data.fromFacilityId);
+        if (reverseDistance) {
+          const difference = Math.abs(data.distanceMiles - reverseDistance.distanceMiles);
+          if (difference > 5) { // Allow 5 mile tolerance for different routes
+            warnings.push('Distance difference between directions exceeds 5 miles - verify accuracy');
+          }
+        }
+      }
+    } catch (error) {
+      errors.push('Error validating facility references');
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+      warnings
+    };
+  }
+
+  /**
+   * Bulk import distance matrix data with validation
+   */
+  async bulkImportDistances(data: BulkDistanceData[]): Promise<{
+    success: number;
+    failed: number;
+    errors: Array<{ index: number; data: BulkDistanceData; errors: string[] }>;
+  }> {
+    const results = {
+      success: 0,
+      failed: 0,
+      errors: [] as Array<{ index: number; data: BulkDistanceData; errors: string[] }>
+    };
+
+    console.log(`DISTANCE_SERVICE: Starting bulk import of ${data.length} distance entries`);
+
+    for (let i = 0; i < data.length; i++) {
+      const entry = data[i];
+      try {
+        // Validate the entry
+        const validation = await this.validateDistanceData(entry);
+        if (!validation.isValid) {
+          results.failed++;
+          results.errors.push({
+            index: i,
+            data: entry,
+            errors: validation.errors
+          });
+          continue;
+        }
+
+        // Create or update the distance matrix entry
+        await this.upsertDistanceMatrix(entry);
+        results.success++;
+
+        // Log progress every 100 entries
+        if ((i + 1) % 100 === 0) {
+          console.log(`DISTANCE_SERVICE: Processed ${i + 1}/${data.length} entries`);
+        }
+      } catch (error) {
+        results.failed++;
+        results.errors.push({
+          index: i,
+          data: entry,
+          errors: [error instanceof Error ? error.message : 'Unknown error']
+        });
+      }
+    }
+
+    console.log(`DISTANCE_SERVICE: Bulk import completed. Success: ${results.success}, Failed: ${results.failed}`);
+    return results;
+  }
+
+  /**
+   * Export distance matrix data in various formats
+   */
+  async exportDistanceMatrix(format: 'json' | 'csv' = 'json', filters?: {
+    fromFacilityId?: string;
+    toFacilityId?: string;
+    minDistance?: number;
+    maxDistance?: number;
+  }): Promise<string> {
+    try {
+      // Build where clause
+      const where: any = {};
+      if (filters?.fromFacilityId) where.fromFacilityId = filters.fromFacilityId;
+      if (filters?.toFacilityId) where.toFacilityId = filters.toFacilityId;
+      if (filters?.minDistance) where.distanceMiles = { gte: filters.minDistance };
+      if (filters?.maxDistance) {
+        where.distanceMiles = { ...where.distanceMiles, lte: filters.maxDistance };
+      }
+
+      const distances = await prisma.distanceMatrix.findMany({
+        where,
+        include: {
+          fromFacility: {
+            select: {
+              name: true,
+              city: true,
+              state: true
+            }
+          },
+          toFacility: {
+            select: {
+              name: true,
+              city: true,
+              state: true
+            }
+          }
+        },
+        orderBy: [
+          { fromFacility: { name: 'asc' } },
+          { toFacility: { name: 'asc' } }
+        ]
+      });
+
+      if (format === 'csv') {
+        return this.convertToCSV(distances);
+      } else {
+        return JSON.stringify(distances, null, 2);
+      }
+    } catch (error) {
+      console.error('DISTANCE_SERVICE: Error exporting distance matrix:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Convert distance matrix data to CSV format
+   */
+  private convertToCSV(distances: any[]): string {
+    const headers = [
+      'From Facility',
+      'From City',
+      'From State',
+      'To Facility',
+      'To City',
+      'To State',
+      'Distance (Miles)',
+      'Time (Minutes)',
+      'Traffic Factor',
+      'Tolls',
+      'Route Type',
+      'Last Updated'
+    ];
+
+    const rows = distances.map(d => [
+      d.fromFacility.name,
+      d.fromFacility.city,
+      d.fromFacility.state,
+      d.toFacility.name,
+      d.toFacility.city,
+      d.toFacility.state,
+      d.distanceMiles,
+      d.estimatedTimeMinutes,
+      d.trafficFactor,
+      d.tolls,
+      d.routeType,
+      new Date(d.lastUpdated).toISOString()
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .join('\n');
+
+    return csvContent;
+  }
+
+  /**
+   * Upsert distance matrix entry (create or update)
+   */
+  async upsertDistanceMatrix(data: BulkDistanceData): Promise<DistanceMatrix> {
+    try {
+      return await prisma.distanceMatrix.upsert({
+        where: {
+          fromFacilityId_toFacilityId: {
+            fromFacilityId: data.fromFacilityId,
+            toFacilityId: data.toFacilityId
+          }
+        },
+        update: {
+          distanceMiles: data.distanceMiles,
+          estimatedTimeMinutes: data.estimatedTimeMinutes,
+          trafficFactor: data.trafficFactor || 1.0,
+          tolls: data.tolls || 0.0,
+          routeType: data.routeType || 'FASTEST',
+          lastUpdated: new Date()
+        },
+        create: {
+          fromFacilityId: data.fromFacilityId,
+          toFacilityId: data.toFacilityId,
+          distanceMiles: data.distanceMiles,
+          estimatedTimeMinutes: data.estimatedTimeMinutes,
+          trafficFactor: data.trafficFactor || 1.0,
+          tolls: data.tolls || 0.0,
+          routeType: data.routeType || 'FASTEST'
+        }
+      });
+    } catch (error) {
+      console.error('DISTANCE_SERVICE: Error upserting distance matrix:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get distance matrix statistics for analytics
+   */
+  async getDistanceMatrixStats(): Promise<{
+    totalEntries: number;
+    averageDistance: number;
+    averageTime: number;
+    distanceRange: { min: number; max: number };
+    timeRange: { min: number; max: number };
+    facilityCount: number;
+    lastUpdated: Date | null;
+  }> {
+    try {
+      const [totalEntries, stats, facilityCount, lastUpdated] = await Promise.all([
+        prisma.distanceMatrix.count(),
+        prisma.distanceMatrix.aggregate({
+          _avg: {
+            distanceMiles: true,
+            estimatedTimeMinutes: true
+          },
+          _min: {
+            distanceMiles: true,
+            estimatedTimeMinutes: true
+          },
+          _max: {
+            distanceMiles: true,
+            estimatedTimeMinutes: true
+          }
+        }),
+        prisma.facility.count({ where: { isActive: true } }),
+        prisma.distanceMatrix.findFirst({
+          orderBy: { lastUpdated: 'desc' },
+          select: { lastUpdated: true }
+        })
+      ]);
+
+      return {
+        totalEntries,
+        averageDistance: stats._avg.distanceMiles || 0,
+        averageTime: stats._avg.estimatedTimeMinutes || 0,
+        distanceRange: {
+          min: stats._min.distanceMiles || 0,
+          max: stats._max.distanceMiles || 0
+        },
+        timeRange: {
+          min: stats._min.estimatedTimeMinutes || 0,
+          max: stats._max.estimatedTimeMinutes || 0
+        },
+        facilityCount,
+        lastUpdated: lastUpdated?.lastUpdated || null
+      };
+    } catch (error) {
+      console.error('DISTANCE_SERVICE: Error getting distance matrix stats:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Optimize distance matrix by removing redundant entries and validating consistency
+   */
+  async optimizeDistanceMatrix(): Promise<{
+    entriesRemoved: number;
+    entriesUpdated: number;
+    inconsistencies: string[];
+  }> {
+    const results = {
+      entriesRemoved: 0,
+      entriesUpdated: 0,
+      inconsistencies: [] as string[]
+    };
+
+    try {
+      console.log('DISTANCE_SERVICE: Starting distance matrix optimization...');
+
+      // Find and remove self-referencing entries
+      const selfReferencing = await prisma.distanceMatrix.findMany({
+        where: {
+          fromFacilityId: { equals: prisma.distanceMatrix.fields.toFacilityId }
+        }
+      });
+
+      if (selfReferencing.length > 0) {
+        await prisma.distanceMatrix.deleteMany({
+          where: {
+            id: { in: selfReferencing.map(e => e.id) }
+          }
+        });
+        results.entriesRemoved += selfReferencing.length;
+        console.log(`DISTANCE_SERVICE: Removed ${selfReferencing.length} self-referencing entries`);
+      }
+
+      // Find and validate bidirectional consistency
+      const allEntries = await prisma.distanceMatrix.findMany({
+        include: {
+          fromFacility: { select: { name: true } },
+          toFacility: { select: { name: true } }
+        }
+      });
+
+      for (const entry of allEntries) {
+        const reverseEntry = await this.getDistanceMatrix(entry.toFacilityId, entry.fromFacilityId);
+        if (reverseEntry) {
+          const difference = Math.abs(entry.distanceMiles - reverseEntry.distanceMiles);
+          if (difference > 10) { // Flag differences greater than 10 miles
+            results.inconsistencies.push(
+              `${entry.fromFacility.name} ↔ ${entry.toFacility.name}: ${difference.toFixed(1)} mile difference`
+            );
+          }
+        }
+      }
+
+      // Update lastUpdated for all entries to trigger cache refresh
+      await prisma.distanceMatrix.updateMany({
+        data: { lastUpdated: new Date() }
+      });
+      results.entriesUpdated = allEntries.length;
+
+      console.log(`DISTANCE_SERVICE: Optimization completed. Removed: ${results.entriesRemoved}, Updated: ${results.entriesUpdated}`);
+      return results;
+    } catch (error) {
+      console.error('DISTANCE_SERVICE: Error optimizing distance matrix:', error);
+      throw error;
     }
   }
 

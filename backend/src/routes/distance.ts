@@ -391,6 +391,165 @@ router.delete('/cache', async (req, res) => {
 });
 
 /**
+ * @route POST /api/distance/bulk-import
+ * @desc Bulk import distance matrix data
+ * @access Private
+ */
+router.post('/bulk-import', async (req, res) => {
+  try {
+    const { data } = req.body;
+
+    if (!Array.isArray(data) || data.length === 0) {
+      return res.status(400).json({
+        message: 'Data must be a non-empty array',
+        error: 'INVALID_DATA'
+      });
+    }
+
+    if (data.length > 1000) {
+      return res.status(400).json({
+        message: 'Bulk import limited to 1000 entries per request',
+        error: 'TOO_MANY_ENTRIES'
+      });
+    }
+
+    const results = await distanceService.bulkImportDistances(data);
+
+    res.status(200).json({
+      message: 'Bulk import completed',
+      data: results
+    });
+  } catch (error) {
+    console.error('DISTANCE_ROUTE: Error in bulk import:', error);
+    res.status(500).json({
+      message: 'Error during bulk import',
+      error: 'INTERNAL_SERVER_ERROR',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * @route GET /api/distance/export
+ * @desc Export distance matrix data
+ * @access Private
+ */
+router.get('/export', async (req, res) => {
+  try {
+    const { format = 'json', fromFacilityId, toFacilityId, minDistance, maxDistance } = req.query;
+
+    if (format !== 'json' && format !== 'csv') {
+      return res.status(400).json({
+        message: 'Format must be either "json" or "csv"',
+        error: 'INVALID_FORMAT'
+      });
+    }
+
+    const filters: any = {};
+    if (fromFacilityId) filters.fromFacilityId = fromFacilityId;
+    if (toFacilityId) filters.toFacilityId = toFacilityId;
+    if (minDistance) filters.minDistance = parseFloat(minDistance as string);
+    if (maxDistance) filters.maxDistance = parseFloat(maxDistance as string);
+
+    const exportData = await distanceService.exportDistanceMatrix(format as 'json' | 'csv', filters);
+
+    if (format === 'csv') {
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="distance-matrix.csv"');
+    } else {
+      res.setHeader('Content-Type', 'application/json');
+    }
+
+    res.send(exportData);
+  } catch (error) {
+    console.error('DISTANCE_ROUTE: Error exporting distance matrix:', error);
+    res.status(500).json({
+      message: 'Error exporting distance matrix',
+      error: 'INTERNAL_SERVER_ERROR',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * @route GET /api/distance/stats
+ * @desc Get distance matrix statistics
+ * @access Private
+ */
+router.get('/stats', async (req, res) => {
+  try {
+    const stats = await distanceService.getDistanceMatrixStats();
+
+    res.json({
+      message: 'Distance matrix statistics retrieved successfully',
+      data: stats
+    });
+  } catch (error) {
+    console.error('DISTANCE_ROUTE: Error getting distance matrix stats:', error);
+    res.status(500).json({
+      message: 'Error retrieving distance matrix statistics',
+      error: 'INTERNAL_SERVER_ERROR',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * @route POST /api/distance/optimize
+ * @desc Optimize distance matrix (remove redundancies, validate consistency)
+ * @access Private
+ */
+router.post('/optimize', async (req, res) => {
+  try {
+    const results = await distanceService.optimizeDistanceMatrix();
+
+    res.json({
+      message: 'Distance matrix optimization completed',
+      data: results
+    });
+  } catch (error) {
+    console.error('DISTANCE_ROUTE: Error optimizing distance matrix:', error);
+    res.status(500).json({
+      message: 'Error optimizing distance matrix',
+      error: 'INTERNAL_SERVER_ERROR',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * @route POST /api/distance/validate
+ * @desc Validate distance data without saving
+ * @access Private
+ */
+router.post('/validate', async (req, res) => {
+  try {
+    const { data } = req.body;
+
+    if (!data || typeof data !== 'object') {
+      return res.status(400).json({
+        message: 'Valid data object is required',
+        error: 'INVALID_DATA'
+      });
+    }
+
+    const validation = await distanceService.validateDistanceData(data);
+
+    res.json({
+      message: 'Distance data validation completed',
+      data: validation
+    });
+  } catch (error) {
+    console.error('DISTANCE_ROUTE: Error validating distance data:', error);
+    res.status(500).json({
+      message: 'Error validating distance data',
+      error: 'INTERNAL_SERVER_ERROR',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
  * @route GET /api/distance/matrix/all
  * @desc Get all distance matrix entries with pagination
  * @access Private
