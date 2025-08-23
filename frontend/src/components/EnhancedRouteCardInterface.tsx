@@ -317,7 +317,7 @@ const EnhancedRouteCardInterface: React.FC<EnhancedRouteCardInterfaceProps> = ({
               }`}
             >
               {tab.name}
-              {tab.count > 0 && (
+              {tab.count && tab.count > 0 && (
                 <span className="ml-2 bg-gray-100 text-gray-900 py-0.5 px-2.5 rounded-full text-xs">
                   {tab.count}
                 </span>
@@ -416,13 +416,13 @@ const EnhancedRouteCardInterface: React.FC<EnhancedRouteCardInterfaceProps> = ({
                     <div>
                       <span className="text-gray-500">ROI:</span>
                       <span className="ml-2 font-medium text-green-600">
-                        {card.financialAnalysis.roi.toFixed(1)}%
+                        {card.financialAnalysis?.roi?.toFixed(1) || '0'}%
                       </span>
                     </div>
                     <div>
                       <span className="text-gray-500">Profit Margin:</span>
                       <span className="ml-2 font-medium text-blue-600">
-                        {card.financialAnalysis.profitMargin.toFixed(1)}%
+                        {card.financialAnalysis?.profitMargin?.toFixed(1) || '0'}%
                       </span>
                     </div>
                   </div>
@@ -560,7 +560,7 @@ const EnhancedRouteCardInterface: React.FC<EnhancedRouteCardInterfaceProps> = ({
                         return (
                           <td key={cardId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             <span className="text-green-600 font-medium">
-                              +${card?.financialAnalysis.revenueIncrease.toFixed(0) || '0'}
+                              +${card?.routeSummary?.revenueIncrease?.toFixed(0) || '0'}
                             </span>
                           </td>
                         );
@@ -576,7 +576,7 @@ const EnhancedRouteCardInterface: React.FC<EnhancedRouteCardInterfaceProps> = ({
                         return (
                           <td key={cardId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             <span className="text-blue-600 font-medium">
-                              ${card?.financialAnalysis.costSavings.toFixed(0) || '0'}
+                              ${card?.financialAnalysis?.costSavings?.toFixed(0) || '0'}
                             </span>
                           </td>
                         );
@@ -592,7 +592,7 @@ const EnhancedRouteCardInterface: React.FC<EnhancedRouteCardInterfaceProps> = ({
                         return (
                           <td key={cardId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             <span className="text-green-600 font-medium">
-                              {card?.financialAnalysis.roi.toFixed(1) || '0'}%
+                              {card?.financialAnalysis?.roi?.toFixed(1) || '0'}%
                             </span>
                           </td>
                         );
@@ -609,7 +609,7 @@ const EnhancedRouteCardInterface: React.FC<EnhancedRouteCardInterfaceProps> = ({
                         return (
                           <td key={cardId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             <span className="text-blue-600 font-medium">
-                              {card?.routeMetrics.distance.toFixed(0)} miles
+                              {card?.routeSummary?.milesSaved?.toFixed(0) || '0'} miles
                             </span>
                           </td>
                         );
@@ -625,7 +625,7 @@ const EnhancedRouteCardInterface: React.FC<EnhancedRouteCardInterfaceProps> = ({
                         return (
                           <td key={cardId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             <span className="text-blue-600 font-medium">
-                              {formatTime(card?.routeMetrics.time || 0)}
+                              {formatTime(card?.routeSummary?.totalTime || 0)}
                             </span>
                           </td>
                         );
@@ -641,11 +641,11 @@ const EnhancedRouteCardInterface: React.FC<EnhancedRouteCardInterfaceProps> = ({
                         return (
                           <td key={cardId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              (card?.operationalMetrics.efficiencyScore || 0) >= 80 ? 'bg-green-100 text-green-800' :
-                              (card?.operationalMetrics.efficiencyScore || 0) >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                              (card?.operationalMetrics?.efficiencyScore || 0) >= 80 ? 'bg-green-100 text-green-800' :
+                              (card?.operationalMetrics?.efficiencyScore || 0) >= 60 ? 'bg-yellow-100 text-yellow-800' :
                               'bg-red-100 text-red-800'
                             }`}>
-                              {card?.operationalMetrics.efficiencyScore.toFixed(0) || '0'}%
+                              {card?.operationalMetrics?.efficiencyScore?.toFixed(0) || '0'}%
                             </span>
                           </td>
                         );
@@ -662,7 +662,7 @@ const EnhancedRouteCardInterface: React.FC<EnhancedRouteCardInterfaceProps> = ({
                         return (
                           <td key={cardId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             <span className="text-green-600 font-medium">
-                              {card?.routeDetails.fuelSavings.toFixed(1) || '0'} lbs
+                              {card?.routeSummary?.carbonFootprintReduction?.toFixed(1) || '0'} kg
                             </span>
                           </td>
                         );
@@ -678,7 +678,7 @@ const EnhancedRouteCardInterface: React.FC<EnhancedRouteCardInterfaceProps> = ({
                         const card = enhancedCards.find(c => c.id === cardId);
                         return (
                           <td key={cardId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {card?.routeDetails.stops.length || 0} stops
+                            {card?.routeDetails?.stops?.length || 0} stops
                           </td>
                         );
                       })}
@@ -692,7 +692,7 @@ const EnhancedRouteCardInterface: React.FC<EnhancedRouteCardInterfaceProps> = ({
                         const card = enhancedCards.find(c => c.id === cardId);
                         return (
                           <td key={cardId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {card?.routeDetails.constraints.length || 0} constraints
+                            {card?.routeDetails?.constraints?.length || 0} constraints
                           </td>
                         );
                       })}
@@ -725,9 +725,9 @@ const EnhancedRouteCardInterface: React.FC<EnhancedRouteCardInterfaceProps> = ({
                         const bestCard = enhancedCards
                           .filter(c => selectedCards.includes(c.id))
                           .reduce((best, current) => 
-                            (current.financialAnalysis.revenueIncrease > best.financialAnalysis.revenueIncrease) ? current : best
+                            (current.financialAnalysis?.revenuePotential > best.financialAnalysis?.revenuePotential) ? current : best
                           );
-                        return bestCard ? `+$${bestCard.financialAnalysis.revenueIncrease.toFixed(0)}` : 'N/A';
+                        return bestCard ? `+$${bestCard.financialAnalysis?.revenuePotential?.toFixed(0)}` : 'N/A';
                       })()}
                     </div>
                   </div>
@@ -738,25 +738,25 @@ const EnhancedRouteCardInterface: React.FC<EnhancedRouteCardInterfaceProps> = ({
                         const bestCard = enhancedCards
                           .filter(c => selectedCards.includes(c.id))
                           .reduce((best, current) => 
-                            (current.operationalMetrics.efficiencyScore > best.operationalMetrics.efficiencyScore) ? current : best
+                            (current.operationalMetrics?.efficiencyScore > best.operationalMetrics?.efficiencyScore) ? current : best
                           );
-                        return bestCard ? `${bestCard.operationalMetrics.efficiencyScore.toFixed(0)}%` : 'N/A';
+                        return bestCard ? `${bestCard.operationalMetrics?.efficiencyScore?.toFixed(0)}%` : 'N/A';
                       })()}
                     </div>
                   </div>
-                                       <div>
-                       <span className="text-blue-600 font-medium">Best ROI:</span>
-                       <div className="text-blue-900">
-                         {(() => {
-                           const bestCard = enhancedCards
-                             .filter(c => selectedCards.includes(c.id))
-                             .reduce((best, current) => 
-                               (current.financialAnalysis.roi > best.financialAnalysis.roi) ? current : best
-                             );
-                           return bestCard ? `${bestCard.financialAnalysis.roi.toFixed(1)}%` : 'N/A';
-                         })()}
-                       </div>
-                     </div>
+                  <div>
+                    <span className="text-blue-600 font-medium">Best ROI:</span>
+                    <div className="text-blue-900">
+                      {(() => {
+                        const bestCard = enhancedCards
+                          .filter(c => selectedCards.includes(c.id))
+                          .reduce((best, current) => 
+                            (current.financialAnalysis?.roi > best.financialAnalysis?.roi) ? current : best
+                          );
+                        return bestCard ? `${bestCard.financialAnalysis?.roi?.toFixed(1)}%` : 'N/A';
+                      })()}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
