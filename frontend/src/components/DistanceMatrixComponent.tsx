@@ -62,21 +62,15 @@ const DistanceMatrixComponent: React.FC<DistanceMatrixComponentProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [itemsPerPage] = useState(20);
+  
+  // Store all demo distances (including newly added ones) separately from filtered distances
+  const [allDemoDistances, setAllDemoDistances] = useState<DistanceMatrix[]>([]);
 
   useEffect(() => {
     if (facilities.length > 0) {
-      loadDistanceMatrix();
-      loadDistanceStats();
-    }
-  }, [facilities, currentPage, searchFilters]);
-
-  const loadDistanceMatrix = async () => {
-    try {
-      setLoading(true);
-      
-      // For demo mode, show sample distance data
-      if (facilities.some(f => f.id.startsWith('demo-'))) {
-        const demoDistances: DistanceMatrix[] = [
+      // Initialize demo distances if this is the first load
+      if (facilities.some(f => f.id.startsWith('demo-')) && allDemoDistances.length === 0) {
+        const initialDemoDistances: DistanceMatrix[] = [
           {
             id: 'demo-1',
             fromFacilityId: 'demo-1',
@@ -111,13 +105,47 @@ const DistanceMatrixComponent: React.FC<DistanceMatrixComponentProps> = ({
             lastUpdated: new Date().toISOString()
           }
         ];
-        setDistances(demoDistances);
+        setAllDemoDistances(initialDemoDistances);
+      }
+      loadDistanceMatrix();
+      loadDistanceStats();
+    }
+  }, [facilities, currentPage, searchFilters, allDemoDistances]);
+
+  const loadDistanceMatrix = async () => {
+    try {
+      setLoading(true);
+      
+      // For demo mode, show sample distance data with filtering
+      if (facilities.some(f => f.id.startsWith('demo-'))) {
+        // Use allDemoDistances instead of hardcoded demo distances
+        let filteredDistances = allDemoDistances;
+        
+        if (searchFilters.fromFacilityId) {
+          filteredDistances = filteredDistances.filter(d => d.fromFacilityId === searchFilters.fromFacilityId);
+        }
+        
+        if (searchFilters.toFacilityId) {
+          filteredDistances = filteredDistances.filter(d => d.toFacilityId === searchFilters.toFacilityId);
+        }
+        
+        if (searchFilters.minDistance) {
+          const minDistance = parseFloat(searchFilters.minDistance);
+          filteredDistances = filteredDistances.filter(d => d.distanceMiles >= minDistance);
+        }
+        
+        if (searchFilters.maxDistance) {
+          const maxDistance = parseFloat(searchFilters.maxDistance);
+          filteredDistances = filteredDistances.filter(d => d.distanceMiles <= maxDistance);
+        }
+
+        setDistances(filteredDistances);
         setTotalPages(1);
         setLoading(false);
         return;
       }
 
-      // Build query parameters
+      // Build query parameters for API calls
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: itemsPerPage.toString()
@@ -149,7 +177,7 @@ const DistanceMatrixComponent: React.FC<DistanceMatrixComponentProps> = ({
   const loadDistanceStats = async () => {
     try {
       if (facilities.some(f => f.id.startsWith('demo-'))) {
-        // Calculate demo stats dynamically from current distances
+        // Calculate demo stats dynamically from current filtered distances
         if (distances.length > 0) {
           const totalEntries = distances.length;
           const totalDistance = distances.reduce((sum, d) => sum + d.distanceMiles, 0);
@@ -180,7 +208,7 @@ const DistanceMatrixComponent: React.FC<DistanceMatrixComponentProps> = ({
             lastUpdated: new Date().toISOString()
           });
         } else {
-          // Fallback to default demo stats if no distances
+          // Fallback to default demo stats if no distances match filters
           setDistanceStats({
             totalEntries: 0,
             averageDistance: 0,
@@ -364,8 +392,28 @@ const DistanceMatrixComponent: React.FC<DistanceMatrixComponentProps> = ({
           lastUpdated: new Date().toISOString()
         };
         
-        // Add to the distances array
-        setDistances(prevDistances => [...prevDistances, newDistanceEntry]);
+        // Add to the allDemoDistances state
+        setAllDemoDistances(prev => [...prev, newDistanceEntry]);
+        
+        // Apply current filters to the allDemoDistances to get the final filtered list
+        let filteredDemoDistances = [...allDemoDistances, newDistanceEntry];
+        if (searchFilters.fromFacilityId) {
+          filteredDemoDistances = filteredDemoDistances.filter(d => d.fromFacilityId === searchFilters.fromFacilityId);
+        }
+        if (searchFilters.toFacilityId) {
+          filteredDemoDistances = filteredDemoDistances.filter(d => d.toFacilityId === searchFilters.toFacilityId);
+        }
+        if (searchFilters.minDistance) {
+          const minDistance = parseFloat(searchFilters.minDistance);
+          filteredDemoDistances = filteredDemoDistances.filter(d => d.distanceMiles >= minDistance);
+        }
+        if (searchFilters.maxDistance) {
+          const maxDistance = parseFloat(searchFilters.maxDistance);
+          filteredDemoDistances = filteredDemoDistances.filter(d => d.distanceMiles <= maxDistance);
+        }
+
+        // Update the main distances state with the filtered demo distances
+        setDistances(filteredDemoDistances);
         
         // Show success message
         alert(`✅ New Distance Entry Created!\n\nFrom: ${fromFacility.name}\nTo: ${toFacility.name}\nDistance: ${distance.toFixed(1)} miles\nTime: ${time} minutes\n\nNote: This is demo data. Real calculations will use Google Maps API.`);
