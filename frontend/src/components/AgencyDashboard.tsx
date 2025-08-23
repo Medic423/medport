@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import UnitManagement from './UnitManagement';
 import TransportRequests from './TransportRequests';
 import BidManagement from './BidManagement';
+import MatchingSystem from './MatchingSystem';
 
 interface AgencyStats {
   totalUnits: number;
@@ -245,7 +246,8 @@ const AgencyDashboard: React.FC<AgencyDashboardProps> = ({ onNavigate }) => {
               { id: 'overview', name: 'Overview', icon: '📊' },
               { id: 'units', name: 'Units', icon: '🚑' },
               { id: 'transports', name: 'Transports', icon: '📋' },
-              { id: 'bids', name: 'Bids', icon: '💰' }
+              { id: 'bids', name: 'Bids', icon: '💰' },
+              { id: 'matching', name: 'Smart Matching', icon: '🎯' }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -397,6 +399,7 @@ const AgencyDashboard: React.FC<AgencyDashboardProps> = ({ onNavigate }) => {
         {activeTab === 'transports' && <TransportRequests />}
 
         {activeTab === 'bids' && <BidManagement />}
+        {activeTab === 'matching' && <MatchingSystem />}
       </main>
     </div>
   );
