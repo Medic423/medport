@@ -473,11 +473,265 @@ const EnhancedRouteCardInterface: React.FC<EnhancedRouteCardInterfaceProps> = ({
           {selectedCards.length < 2 ? (
             <p className="text-gray-600">Select at least 2 route cards to compare</p>
           ) : (
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600">
-                Comparing {selectedCards.length} route cards...
-              </p>
-              {/* Comparison visualization would go here */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-600">
+                  Comparing {selectedCards.length} route cards
+                </p>
+                <div className="text-sm text-gray-500">
+                  {selectedCards.length} selected
+                </div>
+              </div>
+              
+              {/* Comparison Table */}
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Metric
+                      </th>
+                      {selectedCards.map(cardId => {
+                        const card = enhancedCards.find(c => c.id === cardId);
+                        return (
+                          <th key={cardId} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {card?.routeType.replace('_', ' ') || 'Route'}
+                          </th>
+                        );
+                      })}
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {/* Optimization Score */}
+                    <tr>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        Optimization Score
+                      </td>
+                      {selectedCards.map(cardId => {
+                        const card = enhancedCards.find(c => c.id === cardId);
+                        return (
+                          <td key={cardId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              (card?.optimizationScore || 0) >= 80 ? 'bg-green-100 text-green-800' :
+                              (card?.optimizationScore || 0) >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {card?.optimizationScore.toFixed(1) || '0'}%
+                            </span>
+                          </td>
+                        );
+                      })}
+                    </tr>
+
+                    {/* Financial Metrics */}
+                    <tr className="bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        Revenue Increase
+                      </td>
+                      {selectedCards.map(cardId => {
+                        const card = enhancedCards.find(c => c.id === cardId);
+                        return (
+                          <td key={cardId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <span className="text-green-600 font-medium">
+                              +${card?.financialAnalysis.revenueIncrease.toFixed(0) || '0'}
+                            </span>
+                          </td>
+                        );
+                      })}
+                    </tr>
+
+                    <tr>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        Cost Savings
+                      </td>
+                      {selectedCards.map(cardId => {
+                        const card = enhancedCards.find(c => c.id === cardId);
+                        return (
+                          <td key={cardId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <span className="text-blue-600 font-medium">
+                              ${card?.financialAnalysis.costSavings.toFixed(0) || '0'}
+                            </span>
+                          </td>
+                        );
+                      })}
+                    </tr>
+
+                    <tr className="bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        ROI
+                      </td>
+                      {selectedCards.map(cardId => {
+                        const card = enhancedCards.find(c => c.id === cardId);
+                        return (
+                          <td key={cardId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <span className="text-green-600 font-medium">
+                              {card?.financialAnalysis.roi.toFixed(1) || '0'}%
+                            </span>
+                          </td>
+                        );
+                      })}
+                    </tr>
+
+                    {/* Operational Metrics */}
+                    <tr>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        Distance Saved
+                      </td>
+                      {selectedCards.map(cardId => {
+                        const card = enhancedCards.find(c => c.id === cardId);
+                        return (
+                          <td key={cardId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <span className="text-blue-600 font-medium">
+                              {card?.routeMetrics.distance.toFixed(0)} miles
+                            </span>
+                          </td>
+                        );
+                      })}
+                    </tr>
+
+                    <tr className="bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        Time Saved
+                      </td>
+                      {selectedCards.map(cardId => {
+                        const card = enhancedCards.find(c => c.id === cardId);
+                        return (
+                          <td key={cardId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <span className="text-blue-600 font-medium">
+                              {formatTime(card?.routeMetrics.time || 0)}
+                            </span>
+                          </td>
+                        );
+                      })}
+                    </tr>
+
+                    <tr>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        Efficiency Score
+                      </td>
+                      {selectedCards.map(cardId => {
+                        const card = enhancedCards.find(c => c.id === cardId);
+                        return (
+                          <td key={cardId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              (card?.operationalMetrics.efficiencyScore || 0) >= 80 ? 'bg-green-100 text-green-800' :
+                              (card?.operationalMetrics.efficiencyScore || 0) >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {card?.operationalMetrics.efficiencyScore.toFixed(0) || '0'}%
+                            </span>
+                          </td>
+                        );
+                      })}
+                    </tr>
+
+                    {/* Environmental Impact */}
+                    <tr className="bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        CO2 Reduction
+                      </td>
+                      {selectedCards.map(cardId => {
+                        const card = enhancedCards.find(c => c.id === cardId);
+                        return (
+                          <td key={cardId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <span className="text-green-600 font-medium">
+                              {card?.routeDetails.fuelSavings.toFixed(1) || '0'} lbs
+                            </span>
+                          </td>
+                        );
+                      })}
+                    </tr>
+
+                    {/* Route Details */}
+                    <tr>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        Stops
+                      </td>
+                      {selectedCards.map(cardId => {
+                        const card = enhancedCards.find(c => c.id === cardId);
+                        return (
+                          <td key={cardId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {card?.routeDetails.stops.length || 0} stops
+                          </td>
+                        );
+                      })}
+                    </tr>
+
+                    <tr className="bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        Constraints
+                      </td>
+                      {selectedCards.map(cardId => {
+                        const card = enhancedCards.find(c => c.id === cardId);
+                        return (
+                          <td key={cardId} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {card?.routeDetails.constraints.length || 0} constraints
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Summary Comparison */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-blue-900 mb-2">Comparison Summary</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <span className="text-blue-600 font-medium">Best Score:</span>
+                    <div className="text-blue-900">
+                      {(() => {
+                        const bestCard = enhancedCards
+                          .filter(c => selectedCards.includes(c.id))
+                          .reduce((best, current) => 
+                            (current.optimizationScore > best.optimizationScore) ? current : best
+                          );
+                        return bestCard ? `${bestCard.optimizationScore.toFixed(1)}%` : 'N/A';
+                      })()}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-blue-600 font-medium">Highest Revenue:</span>
+                    <div className="text-blue-900">
+                      {(() => {
+                        const bestCard = enhancedCards
+                          .filter(c => selectedCards.includes(c.id))
+                          .reduce((best, current) => 
+                            (current.financialAnalysis.revenueIncrease > best.financialAnalysis.revenueIncrease) ? current : best
+                          );
+                        return bestCard ? `+$${bestCard.financialAnalysis.revenueIncrease.toFixed(0)}` : 'N/A';
+                      })()}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-blue-600 font-medium">Most Efficient:</span>
+                    <div className="text-blue-900">
+                      {(() => {
+                        const bestCard = enhancedCards
+                          .filter(c => selectedCards.includes(c.id))
+                          .reduce((best, current) => 
+                            (current.operationalMetrics.efficiencyScore > best.operationalMetrics.efficiencyScore) ? current : best
+                          );
+                        return bestCard ? `${bestCard.operationalMetrics.efficiencyScore.toFixed(0)}%` : 'N/A';
+                      })()}
+                    </div>
+                  </div>
+                                       <div>
+                       <span className="text-blue-600 font-medium">Best ROI:</span>
+                       <div className="text-blue-900">
+                         {(() => {
+                           const bestCard = enhancedCards
+                             .filter(c => selectedCards.includes(c.id))
+                             .reduce((best, current) => 
+                               (current.financialAnalysis.roi > best.financialAnalysis.roi) ? current : best
+                             );
+                           return bestCard ? `${bestCard.financialAnalysis.roi.toFixed(1)}%` : 'N/A';
+                         })()}
+                       </div>
+                     </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
