@@ -370,11 +370,38 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
                 backgroundSize: '120px 120px'
               }} />
             </div>
+
+            {/* Major Roads */}
+            <div className="absolute inset-0 opacity-60">
+              <div className="w-full h-full" style={{
+                backgroundImage: `
+                  linear-gradient(rgba(75, 85, 99, 0.3) 3px, transparent 3px),
+                  linear-gradient(90deg, rgba(75, 85, 99, 0.3) 3px, transparent 3px)
+                `,
+                backgroundSize: '240px 240px'
+              }} />
+            </div>
+
+            {/* Water Features */}
+            <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-blue-200 rounded-full opacity-20"></div>
+            <div className="absolute bottom-1/3 right-1/4 w-24 h-24 bg-blue-200 rounded-full opacity-20"></div>
+
+            {/* Park/Green Areas */}
+            <div className="absolute top-1/2 left-1/6 w-20 h-16 bg-green-200 rounded-lg opacity-30"></div>
+            <div className="absolute bottom-1/4 right-1/6 w-16 h-20 bg-green-200 rounded-lg opacity-30"></div>
             
             {/* Demo Map Title */}
             <div className="absolute top-4 left-4 bg-white bg-opacity-95 rounded-lg px-4 py-2 shadow-lg border border-blue-200">
-              <h3 className="text-lg font-semibold text-blue-800">🗺️ Demo Map Mode</h3>
-              <p className="text-sm text-blue-600">Interactive simulation - no API key required</p>
+              <h3 className="text-lg font-semibold text-blue-800">🗺️ DEMO MAP INTERFACE</h3>
+              <p className="text-sm text-blue-600">This IS your map - simulated for demo purposes</p>
+            </div>
+
+            {/* Scale Bar */}
+            <div className="absolute bottom-32 right-4 bg-white bg-opacity-95 rounded-lg p-2 shadow-lg border border-gray-200">
+              <div className="flex items-center space-x-2">
+                <div className="w-16 h-1 bg-gray-600"></div>
+                <span className="text-xs text-gray-600 font-medium">1 mile</span>
+              </div>
             </div>
 
             {/* Demo Unit Markers */}
@@ -466,6 +493,36 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
                 <div className="flex items-center space-x-2">
                   <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                   <span>Valley Clinic (0.5 mi)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Street Names */}
+            <div className="absolute top-1/3 left-1/4 bg-white bg-opacity-80 rounded px-2 py-1 text-xs font-medium text-gray-700 shadow-sm">
+              Main St
+            </div>
+            <div className="absolute top-1/2 left-1/2 bg-white bg-opacity-80 rounded px-2 py-1 text-xs font-medium text-gray-700 shadow-sm">
+              Oak Ave
+            </div>
+            <div className="absolute bottom-1/3 right-1/3 bg-white bg-opacity-80 rounded px-2 py-1 text-xs font-medium text-gray-700 shadow-sm">
+              Pine Rd
+            </div>
+
+            {/* Map Legend */}
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-95 rounded-lg p-3 shadow-lg border border-gray-200">
+              <h4 className="text-sm font-semibold text-gray-800 mb-2 text-center">🗺️ Map Legend</h4>
+              <div className="flex items-center space-x-4 text-xs text-gray-600">
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-blue-200 rounded-full"></div>
+                  <span>Water</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-green-200 rounded-full"></div>
+                  <span>Parks</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
+                  <span>Roads</span>
                 </div>
               </div>
             </div>
