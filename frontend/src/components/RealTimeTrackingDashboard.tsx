@@ -85,6 +85,16 @@ const RealTimeTrackingDashboard: React.FC = () => {
       setIsLoading(true);
       setError(null);
 
+      // Check if we're in demo mode
+      const isDemoMode = token === 'demo-token';
+      
+      if (isDemoMode) {
+        // Generate demo data for demonstration
+        const demoData = generateDemoData();
+        setDashboardData(demoData);
+        return;
+      }
+
       const response = await fetch('/api/real-time-tracking/dashboard', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -166,6 +176,69 @@ const RealTimeTrackingDashboard: React.FC = () => {
     if (diffMins < 60) return `${diffMins}m ago`;
     const diffHours = Math.floor(diffMins / 60);
     return `${diffHours}h ${diffMins % 60}m ago`;
+  };
+
+  const generateDemoData = (): DashboardData => {
+    const now = new Date();
+    const demoUnits: UnitLocation[] = [
+      {
+        id: 'demo-1',
+        unitId: 'demo-unit-1',
+        unitNumber: 'DEMO-001',
+        agencyName: 'Demo EMS Agency',
+        latitude: 37.7749 + (Math.random() - 0.5) * 0.01,
+        longitude: -122.4194 + (Math.random() - 0.5) * 0.01,
+        speed: 25 + Math.random() * 15,
+        heading: Math.random() * 360,
+        batteryLevel: 80 + Math.random() * 20,
+        signalStrength: 70 + Math.random() * 30,
+        timestamp: now.toISOString(),
+        lastUpdated: now.toISOString(),
+      },
+      {
+        id: 'demo-2',
+        unitId: 'demo-unit-2',
+        unitNumber: 'DEMO-002',
+        agencyName: 'Demo EMS Agency',
+        latitude: 37.7849 + (Math.random() - 0.5) * 0.01,
+        longitude: -122.4094 + (Math.random() - 0.5) * 0.01,
+        speed: 30 + Math.random() * 10,
+        heading: Math.random() * 360,
+        batteryLevel: 60 + Math.random() * 30,
+        signalStrength: 80 + Math.random() * 20,
+        timestamp: now.toISOString(),
+        lastUpdated: now.toISOString(),
+      },
+      {
+        id: 'demo-3',
+        unitId: 'demo-unit-3',
+        unitNumber: 'DEMO-003',
+        agencyName: 'Demo EMS Agency',
+        latitude: 37.7649 + (Math.random() - 0.5) * 0.01,
+        longitude: -122.4294 + (Math.random() - 0.5) * 0.01,
+        speed: 35 + Math.random() * 10,
+        heading: Math.random() * 360,
+        batteryLevel: 90 + Math.random() * 10,
+        signalStrength: 90 + Math.random() * 10,
+        timestamp: now.toISOString(),
+        lastUpdated: now.toISOString(),
+      },
+    ];
+
+    return {
+      summary: {
+        totalUnits: demoUnits.length,
+        activeUnits: demoUnits.length,
+        unitsWithIssues: demoUnits.filter(u => u.batteryLevel < 20 || u.signalStrength < 30).length,
+        lastUpdated: now.toISOString(),
+      },
+      units: demoUnits,
+      alerts: {
+        lowBattery: demoUnits.filter(u => u.batteryLevel < 20).length,
+        poorSignal: demoUnits.filter(u => u.signalStrength < 30).length,
+        offline: 0,
+      },
+    };
   };
 
   if (isLoading && !dashboardData) {

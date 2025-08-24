@@ -4,13 +4,15 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   user: any | null;
+  token: string | null;
 }
 
 export const useAuth = (): AuthState => {
   const [authState, setAuthState] = useState<AuthState>({
     isAuthenticated: false,
     isLoading: true,
-    user: null
+    user: null,
+    token: null
   });
 
   useEffect(() => {
@@ -24,13 +26,23 @@ export const useAuth = (): AuthState => {
           setAuthState({
             isAuthenticated: true,
             isLoading: false,
-            user: { id: 'user-1', name: 'Authenticated User' }
+            user: { id: 'user-1', name: 'Authenticated User' },
+            token: token
+          });
+        } else if (demoMode === 'true') {
+          // Demo mode - provide a demo token
+          setAuthState({
+            isAuthenticated: true,
+            isLoading: false,
+            user: { id: 'demo-user', name: 'Demo User' },
+            token: 'demo-token'
           });
         } else {
           setAuthState({
             isAuthenticated: false,
             isLoading: false,
-            user: null
+            user: null,
+            token: null
           });
         }
       } catch (error) {
@@ -38,7 +50,8 @@ export const useAuth = (): AuthState => {
         setAuthState({
           isAuthenticated: false,
           isLoading: false,
-          user: null
+          user: null,
+          token: null
         });
       }
     };

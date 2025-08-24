@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enable Demo Mode - MedPort</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .button {
+            background: #3b82f6;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        .button:hover {
+            background: #2563eb;
+        }
+        .button.danger {
+            background: #ef4444;
+        }
+        .button.danger:hover {
+            background: #dc2626;
+        }
+        .status {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        .status.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚑 MedPort Demo Mode</h1>
+        <p>Use this page to enable or disable demo mode for testing the application without authentication.</p>
+        
+        <div id="status" class="status info">
+            Checking current demo mode status...
+        </div>
+        
+        <div>
+            <button class="button" onclick="enableDemoMode()">Enable Demo Mode</button>
+            <button class="button danger" onclick="disableDemoMode()">Disable Demo Mode</button>
+            <button class="button" onclick="checkStatus()">Check Status</button>
+        </div>
+        
+        <div style="margin-top: 30px;">
+            <h3>What Demo Mode Does:</h3>
+            <ul>
+                <li>Allows access to all features without authentication</li>
+                <li>Generates realistic demo data for testing</li>
+                <li>Enables real-time tracking simulation</li>
+                <li>Perfect for demonstrations and development</li>
+            </ul>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <a href="/" class="button">Return to MedPort</a>
+        </div>
+    </div>
+
+    <script>
+        function checkStatus() {
+            const demoMode = localStorage.getItem('demoMode');
+            const token = localStorage.getItem('token');
+            
+            let statusText = '';
+            let statusClass = '';
+            
+            if (demoMode === 'true') {
+                statusText = '✅ Demo Mode is ENABLED. You can now access all features without authentication.';
+                statusClass = 'success';
+            } else if (token) {
+                statusText = '🔐 Authentication Mode: You have a valid token and are logged in.';
+                statusClass = 'info';
+            } else {
+                statusText = '❌ No authentication or demo mode detected. Please enable demo mode or log in.';
+                statusClass = 'error';
+            }
+            
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = statusText;
+            statusDiv.className = `status ${statusClass}`;
+        }
+        
+        function enableDemoMode() {
+            localStorage.setItem('demoMode', 'true');
+            localStorage.removeItem('token'); // Clear any existing token
+            checkStatus();
+        }
+        
+        function disableDemoMode() {
+            localStorage.removeItem('demoMode');
+            checkStatus();
+        }
+        
+        // Check status on page load
+        checkStatus();
+    </script>
+</body>
+</html>
