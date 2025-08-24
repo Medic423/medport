@@ -66,6 +66,18 @@ const UnitAssignmentDashboard: React.FC = () => {
     unitsUtilized: number;
     assignments: any[];
   } | null>(null);
+  
+  // New Assignment Modal State
+  const [showNewAssignmentModal, setShowNewAssignmentModal] = useState(false);
+  const [newAssignment, setNewAssignment] = useState({
+    unitId: '',
+    transportRequestId: '',
+    assignmentType: 'PRIMARY',
+    startTime: new Date().toISOString().slice(0, 16),
+    notes: ''
+  });
+  const [availableUnits, setAvailableUnits] = useState<Unit[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
 
   const isDemoMode = localStorage.getItem('demoMode') === 'true';
 
@@ -221,6 +233,37 @@ const UnitAssignmentDashboard: React.FC = () => {
     }
   };
 
+  // Load data for new assignment form
+  const loadNewAssignmentData = async () => {
+    try {
+      // Load available units
+      const unitsResponse = await fetch('/api/unit-assignment/units?status=AVAILABLE', {
+        headers: {
+          'Authorization': 'Bearer demo-token'
+        }
+      });
+      
+      if (unitsResponse.ok) {
+        const unitsData = await unitsResponse.json();
+        setAvailableUnits(unitsData.data);
+      }
+
+      // Load pending transport requests
+      const requestsResponse = await fetch('/api/transport-requests?status=PENDING', {
+        headers: {
+          'Authorization': 'Bearer demo-token'
+        }
+      });
+      
+      if (requestsResponse.ok) {
+        const requestsData = await requestsResponse.json();
+        setPendingRequests(requestsData.data || []);
+      }
+    } catch (error) {
+      console.error('Error loading new assignment data:', error);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'AVAILABLE':
@@ -255,6 +298,54 @@ const UnitAssignmentDashboard: React.FC = () => {
     const matchesStatus = statusFilter === 'all' || unit.currentStatus === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const handleCreateAssignment = async () => {
+    try {
+      if (!newAssignment.unitId || !newAssignment.transportRequestId) {
+        alert('Please select both a unit and a transport request');
+        return;
+      }
+
+      const response = await fetch('/api/unit-assignment/assign', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer demo-token'
+        },
+        body: JSON.stringify({
+          transportRequestId: newAssignment.transportRequestId,
+          transportLevel: 'BLS', // Will be determined from the request
+          assignmentTime: new Date().toISOString(),
+          assignedBy: 'cmeo6eojr0002ccpwrin40zz7', // Demo agency user ID
+          notes: newAssignment.notes
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert(`Assignment created successfully! Unit: ${result.data.unitNumber}`);
+        
+        // Reset form and close modal
+        setNewAssignment({
+          unitId: '',
+          transportRequestId: '',
+          assignmentType: 'PRIMARY',
+          startTime: new Date().toISOString().slice(0, 16),
+          notes: ''
+        });
+        setShowNewAssignmentModal(false);
+        
+        // Refresh dashboard data
+        loadDashboardData();
+      } else {
+        const errorText = await response.text();
+        alert(`Failed to create assignment: ${errorText}`);
+      }
+    } catch (error) {
+      console.error('Error creating assignment:', error);
+      alert('Failed to create assignment');
+    }
+  };
 
   const handleOptimizeAssignments = async () => {
     try {
@@ -366,7 +457,13 @@ const UnitAssignmentDashboard: React.FC = () => {
               </svg>
               Load Real Data
             </button>
-            <button className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <button 
+              onClick={() => {
+                setShowNewAssignmentModal(true);
+                loadNewAssignmentData();
+              }}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
               <PlusIcon className="h-4 w-4 mr-2" />
               New Assignment
             </button>
@@ -723,6 +820,140 @@ const UnitAssignmentDashboard: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* New Assignment Modal */}
+      {showNewAssignmentModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Create New Assignment</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+                  <select
+                    value={newAssignment.unitId}
+                    onChange={(e) => setNewAssignment({...newAssignment, unitId: e.target.value})}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select a unit</option>
+                    {availableUnits.map((unit) => (
+                      <option key={unit.id} value={unit.id}>
+                        {unit.unitNumber} ({unit.type})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Transport Request</label>
+                  {pendingRequests.length > 0 ? (
+                    <select
+                      value={newAssignment.transportRequestId}
+                      onChange={(e) => setNewAssignment({...newAssignment, transportRequestId: e.target.value})}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select a transport request</option>
+                      {pendingRequests.map((request) => (
+                        <option key={request.id} value={request.id}>
+                          {request.patientId} - {request.transportLevel} ({request.originFacility?.name} → {request.destinationFacility?.name})
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded-md border">
+                      No pending transport requests available. 
+                      <button
+                        onClick={async () => {
+                          try {
+                            const response = await fetch('/api/transport-requests', {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer demo-token'
+                              },
+                              body: JSON.stringify({
+                                patientId: `DEMO-${Date.now()}`,
+                                originFacilityId: 'cmeo6eodq0000ccpwaosx7w0r', // Demo facility ID
+                                destinationFacilityId: 'cmeo6eodq0000ccpwaosx7w0r', // Demo facility ID
+                                transportLevel: 'BLS',
+                                priority: 'MEDIUM',
+                                specialRequirements: 'Demo transport request for testing'
+                              })
+                            });
+                            
+                            if (response.ok) {
+                              alert('Demo transport request created! Refreshing data...');
+                              loadNewAssignmentData();
+                            } else {
+                              alert('Failed to create demo transport request');
+                            }
+                          } catch (error) {
+                            console.error('Error creating demo transport request:', error);
+                            alert('Failed to create demo transport request');
+                          }
+                        }}
+                        className="ml-2 text-blue-600 hover:text-blue-800 underline"
+                      >
+                        Create Demo Request
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Assignment Type</label>
+                  <select
+                    value={newAssignment.assignmentType}
+                    onChange={(e) => setNewAssignment({...newAssignment, assignmentType: e.target.value})}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="PRIMARY">Primary</option>
+                    <option value="BACKUP">Backup</option>
+                    <option value="SUPPORT">Support</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+                  <input
+                    type="datetime-local"
+                    value={newAssignment.startTime}
+                    onChange={(e) => setNewAssignment({...newAssignment, startTime: e.target.value})}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                  <textarea
+                    value={newAssignment.notes}
+                    onChange={(e) => setNewAssignment({...newAssignment, notes: e.target.value})}
+                    rows={3}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Optional notes about this assignment..."
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setShowNewAssignmentModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateAssignment}
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Create Assignment
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
