@@ -47,7 +47,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     if (!mapRef.current) return;
 
     try {
-      const apiKey = process.env.VITE_GOOGLE_MAPS_API_KEY;
+      const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
       
       if (!apiKey || apiKey === 'demo-key' || apiKey === 'your-google-maps-api-key') {
         // Show demo mode instead of error
@@ -338,9 +338,9 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   }
 
   // Check if we're in demo mode (no valid API key)
-  const isDemoMode = !process.env.VITE_GOOGLE_MAPS_API_KEY || 
-                    process.env.VITE_GOOGLE_MAPS_API_KEY === 'demo-key' || 
-                    process.env.VITE_GOOGLE_MAPS_API_KEY === 'your-google-maps-api-key';
+  const isDemoMode = !import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 
+                    import.meta.env.VITE_GOOGLE_MAPS_API_KEY === 'demo-key' || 
+                    import.meta.env.VITE_GOOGLE_MAPS_API_KEY === 'your-google-maps-api-key';
 
   if (isDemoMode && isMapLoaded) {
     return (
