@@ -14,10 +14,10 @@ import UnitAssignment from './pages/UnitAssignment';
 import NotificationDashboard from './components/NotificationDashboard';
 import QRCodeSystem from './pages/QRCodeSystem';
 import RealTimeTracking from './pages/RealTimeTracking';
-import MapTest from './pages/MapTest';
+
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system' | 'real-time-tracking' | 'map-test'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system' | 'real-time-tracking'>('home');
 
   return (
     <div className="App">
@@ -158,12 +158,6 @@ function App() {
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       Real-Time Tracking
-                    </button>
-                    <button
-                      onClick={() => setCurrentPage('map-test')}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Map Test
                     </button>
                     <button
                       onClick={() => setCurrentPage('notifications')}
@@ -418,7 +412,6 @@ function App() {
         {currentPage === 'notifications' && <NotificationDashboard />}
         {currentPage === 'qr-code-system' && <QRCodeSystem />}
         {currentPage === 'real-time-tracking' && <RealTimeTracking />}
-        {currentPage === 'map-test' && <MapTest />}
         {currentPage === 'agency-registration' && <AgencyRegistration onNavigate={(page) => setCurrentPage(page as any)} />}
         {currentPage === 'agency-login' && <AgencyLogin onNavigate={(page) => setCurrentPage(page as any)} />}
         {currentPage === 'agency-dashboard' && <AgencyDashboard onNavigate={(page) => setCurrentPage(page as any)} />}
