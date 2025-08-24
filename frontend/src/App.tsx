@@ -14,10 +14,11 @@ import UnitAssignment from './pages/UnitAssignment';
 import NotificationDashboard from './components/NotificationDashboard';
 import QRCodeSystem from './pages/QRCodeSystem';
 import RealTimeTracking from './pages/RealTimeTracking';
+import Analytics from './pages/Analytics';
 
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system' | 'real-time-tracking'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system' | 'real-time-tracking' | 'analytics'>('home');
 
   return (
     <div className="App">
@@ -164,6 +165,12 @@ function App() {
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       Notifications
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage('analytics')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Analytics & Reporting
                     </button>
                   </div>
                 </div>
@@ -394,6 +401,14 @@ function App() {
                     <div className="text-red-600 font-semibold mb-2">Real-Time Tracking</div>
                     <div className="text-sm text-red-600">Live unit monitoring</div>
                   </button>
+                  
+                  <button
+                    onClick={() => setCurrentPage('analytics')}
+                    className="p-6 bg-teal-50 hover:bg-teal-100 rounded-lg transition-colors duration-200 text-center"
+                  >
+                    <div className="text-teal-600 font-semibold mb-2">Analytics</div>
+                    <div className="text-sm text-teal-600">Performance insights</div>
+                  </button>
                 </div>
               </div>
             </div>
@@ -412,6 +427,7 @@ function App() {
         {currentPage === 'notifications' && <NotificationDashboard />}
         {currentPage === 'qr-code-system' && <QRCodeSystem />}
         {currentPage === 'real-time-tracking' && <RealTimeTracking />}
+        {currentPage === 'analytics' && <Analytics />}
         {currentPage === 'agency-registration' && <AgencyRegistration onNavigate={(page) => setCurrentPage(page as any)} />}
         {currentPage === 'agency-login' && <AgencyLogin onNavigate={(page) => setCurrentPage(page as any)} />}
         {currentPage === 'agency-dashboard' && <AgencyDashboard onNavigate={(page) => setCurrentPage(page as any)} />}
