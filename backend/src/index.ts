@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import { createServer } from 'http';
 import authRoutes from './routes/auth';
 import protectedRoutes from './routes/protected';
 import transportRequestRoutes from './routes/transportRequests';
@@ -19,10 +20,12 @@ import unitAssignmentRoutes from './routes/unitAssignment';
 import notificationRoutes from './routes/notifications';
 import qrCodeRoutes from './routes/qrCode';
 import realTimeTrackingRoutes from './routes/realTimeTracking';
+import WebSocketService from './services/webSocketService';
 
 dotenv.config();
 
 const app = express();
+const server = createServer(app);
 const PORT = process.env.PORT || 5001;
 
 app.use(helmet());
@@ -60,6 +63,11 @@ app.get('/health', (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
+// Initialize WebSocket service
+const webSocketService = new WebSocketService(server);
+
+// Start server
+server.listen(PORT, () => {
   console.log(`[MedPort] Server running on port ${PORT}`);
+  console.log(`[MedPort] WebSocket service initialized`);
 });

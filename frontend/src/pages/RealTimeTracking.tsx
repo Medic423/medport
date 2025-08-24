@@ -1,8 +1,8 @@
 import React from 'react';
-import RealTimeTrackingDashboard from '../components/RealTimeTrackingDashboard';
+import EnhancedRealTimeTrackingDashboard from '../components/EnhancedRealTimeTrackingDashboard';
 
 const RealTimeTracking: React.FC = () => {
-  return <RealTimeTrackingDashboard />;
+  return <EnhancedRealTimeTrackingDashboard />;
 };
 
 export default RealTimeTracking;
