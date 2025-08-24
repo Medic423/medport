@@ -49,6 +49,7 @@ model Facility {
   transportLegDestinations TransportLeg[] @relation("TransportLegDestination")
   emergencyDepartment EmergencyDepartment? @relation("FacilityEmergencyDepartment")
   demandPatterns      DemandPattern[]
+  geofenceEvents      GeofenceEvent[]
 }
 
 model TransportRequest {
@@ -138,6 +139,7 @@ model Unit {
   transportQueues   TransportQueue[]
   unitAssignments   UnitAssignment[]
   unitAvailability  UnitAvailability[]
+  gpsTracking       GPSTracking[]
 }
 
 model DistanceMatrix {
@@ -185,6 +187,7 @@ model Route {
   createdBy                User                   @relation(fields: [createdById], references: [id])
   routeStops               RouteStop[]
   transportRequests        TransportRequest[]     @relation("RouteToTransportRequest")
+  routeDeviations          RouteDeviation[]
 }
 
 model RouteStop {
@@ -642,6 +645,146 @@ model AgencyPerformance {
   agency                TransportAgency    @relation(fields: [agencyId], references: [id])
 }
 
+// Real-time Tracking Models (Phase 6.1)
+model GPSTracking {
+  id                String             @id @default(cuid())
+  unitId            String
+  latitude          Float
+  longitude         Float
+  altitude          Float?
+  speed             Float?             // Speed in mph
+  heading           Float?             // Direction in degrees
+  accuracy          Float?             // GPS accuracy in meters
+  timestamp         DateTime           @default(now())
+  isActive          Boolean            @default(true)
+  batteryLevel      Float?             // Unit battery level
+  signalStrength    Float?             // Signal strength
+  locationType      LocationType       @default(GPS)
+  source            LocationSource     @default(UNIT_DEVICE)
+  unit              Unit               @relation(fields: [unitId], references: [id])
+  locationHistory   LocationHistory[]
+  geofenceEvents    GeofenceEvent[]
+  routeDeviations   RouteDeviation[]
+  etaUpdates        ETAUpdate[]
+
+  @@index([unitId, timestamp])
+  @@index([timestamp])
+}
+
+model LocationHistory {
+  id                String             @id @default(cuid())
+  gpsTrackingId     String
+  latitude          Float
+  longitude         Float
+  altitude          Float?
+  speed             Float?
+  heading           Float?
+  accuracy          Float?
+  timestamp         DateTime           @default(now())
+  locationType      LocationType       @default(GPS)
+  source            LocationSource     @default(UNIT_DEVICE)
+  gpsTracking       GPSTracking        @relation(fields: [gpsTrackingId], references: [id])
+
+  @@index([gpsTrackingId, timestamp])
+  @@index([timestamp])
+}
+
+model GeofenceEvent {
+  id                String             @id @default(cuid())
+  gpsTrackingId     String
+  facilityId        String?
+  geofenceType      GeofenceType
+  eventType         GeofenceEventType
+  latitude          Float
+  longitude         Float
+  radius            Float              // Geofence radius in meters
+  timestamp         DateTime           @default(now())
+  isActive          Boolean            @default(true)
+  notes             String?
+  gpsTracking       GPSTracking        @relation(fields: [gpsTrackingId], references: [id])
+  facility          Facility?          @relation(fields: [facilityId], references: [id])
+
+  @@index([gpsTrackingId, timestamp])
+  @@index([facilityId, timestamp])
+}
+
+model RouteDeviation {
+  id                String             @id @default(cuid())
+  gpsTrackingId     String
+  routeId           String?
+  deviationType     DeviationType
+  severity          AlertSeverity
+  description       String
+  currentLatitude   Float
+  currentLongitude  Float
+  expectedLatitude  Float
+  expectedLongitude Float
+  distanceOffRoute  Float              // Distance off route in meters
+  timestamp         DateTime           @default(now())
+  isResolved        Boolean            @default(false)
+  resolvedAt        DateTime?
+  resolvedBy        String?
+  resolutionNotes   String?
+  gpsTracking       GPSTracking        @relation(fields: [gpsTrackingId], references: [id])
+  route             Route?             @relation(fields: [routeId], references: [id])
+
+  @@index([gpsTrackingId, timestamp])
+  @@index([routeId, timestamp])
+}
+
+model ETAUpdate {
+  id                String             @id @default(cuid())
+  gpsTrackingId     String
+  destinationId     String             // Facility or location ID
+  destinationType   DestinationType
+  currentETA        DateTime
+  previousETA       DateTime?
+  trafficFactor     Float              @default(1.0)
+  weatherFactor     Float              @default(1.0)
+  routeConditions   Json?              // Current route conditions
+  timestamp         DateTime           @default(now())
+  isActive          Boolean            @default(true)
+  gpsTracking       GPSTracking        @relation(fields: [gpsTrackingId], references: [id])
+
+  @@index([gpsTrackingId, timestamp])
+  @@index([destinationId, timestamp])
+}
+
+model TrafficCondition {
+  id                String             @id @default(cuid())
+  location          String             // Geographic area or route segment
+  severity          TrafficSeverity
+  description       String
+  startTime         DateTime
+  endTime           DateTime?
+  impactFactor      Float              @default(1.0) // 1.0 = no impact, 2.0 = doubles travel time
+  affectedRoutes    Json?              // Routes affected by this condition
+  isActive          Boolean            @default(true)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([location, startTime])
+  @@index([isActive])
+}
+
+model WeatherImpact {
+  id                String             @id @default(cuid())
+  location          String             // Geographic area
+  weatherType       WeatherConditions
+  impactLevel       WeatherImpactLevel
+  description       String
+  startTime         DateTime
+  endTime           DateTime?
+  travelDelayFactor Float              @default(1.0) // Multiplier for travel time
+  affectedAreas     Json?              // Geographic areas affected
+  isActive          Boolean            @default(true)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([location, startTime])
+  @@index([isActive])
+}
+
 enum UserRole {
   ADMIN
   COORDINATOR
@@ -898,5 +1041,110 @@ enum BidStatus {
   PENDING
   ACCEPTED
   REJECTED
+  EXPIRED
+}
+
+// Real-time Tracking Enums (Phase 6.1)
+enum LocationType {
+  GPS
+  CELLULAR
+  WIFI
+  MANUAL
+  ESTIMATED
+}
+
+enum LocationSource {
+  UNIT_DEVICE
+  MOBILE_APP
+  CAD_SYSTEM
+  MANUAL_ENTRY
+  ESTIMATION
+}
+
+enum GeofenceType {
+  FACILITY_ARRIVAL
+  FACILITY_DEPARTURE
+  SERVICE_AREA
+  RESTRICTED_AREA
+  CUSTOM
+}
+
+enum GeofenceEventType {
+  ENTERED
+  EXITED
+  APPROACHING
+  DEPARTING
+}
+
+enum DeviationType {
+  ROUTE_DEVIATION
+  SPEED_VIOLATION
+  STOPPED_UNEXPECTEDLY
+  WRONG_DIRECTION
+  OFF_ROUTE
+}
+
+enum DestinationType {
+  FACILITY
+  PICKUP_LOCATION
+  DROPOFF_LOCATION
+  WAYPOINT
+  CUSTOM
+}
+
+enum TrafficSeverity {
+  NONE
+  LIGHT
+  MODERATE
+  HEAVY
+  SEVERE
+}
+
+enum WeatherImpactLevel {
+  NONE
+  MINIMAL
+  MODERATE
+  SIGNIFICANT
+  SEVERE
+}
+
+// New Enums for Real-time Tracking Models (Phase 6.1)
+enum GPSTrackingStatus {
+  ACTIVE
+  INACTIVE
+  ERROR
+  OFFLINE
+}
+
+enum ETAUpdateStatus {
+  ACTIVE
+  INACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum RouteDeviationStatus {
+  UNRESOLVED
+  RESOLVED
+  IGNORED
+}
+
+enum LocationHistorySource {
+  UNIT_DEVICE
+  MOBILE_APP
+  CAD_SYSTEM
+  MANUAL_ENTRY
+}
+
+enum LocationHistoryType {
+  GPS
+  CELLULAR
+  WIFI
+  MANUAL
+}
+
+enum GeofenceEventStatus {
+  ACTIVE
+  INACTIVE
   EXPIRED
 }

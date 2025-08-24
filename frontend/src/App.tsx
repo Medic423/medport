@@ -13,9 +13,10 @@ import RouteOptimization from './pages/RouteOptimization';
 import UnitAssignment from './pages/UnitAssignment';
 import NotificationDashboard from './components/NotificationDashboard';
 import QRCodeSystem from './pages/QRCodeSystem';
+import RealTimeTracking from './pages/RealTimeTracking';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system' | 'real-time-tracking'>('home');
 
   return (
     <div className="App">
@@ -150,6 +151,12 @@ function App() {
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       QR Code System
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage('real-time-tracking')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Real-Time Tracking
                     </button>
                     <button
                       onClick={() => setCurrentPage('notifications')}
@@ -378,6 +385,14 @@ function App() {
                     <div className="text-indigo-600 font-semibold mb-2">QR Code System</div>
                     <div className="text-sm text-indigo-600">Generate & scan</div>
                   </button>
+                  
+                  <button
+                    onClick={() => setCurrentPage('real-time-tracking')}
+                    className="p-6 bg-red-50 hover:bg-red-100 rounded-lg transition-colors duration-200 text-center"
+                  >
+                    <div className="text-red-600 font-semibold mb-2">Real-Time Tracking</div>
+                    <div className="text-sm text-red-600">Live unit monitoring</div>
+                  </button>
                 </div>
               </div>
             </div>
@@ -395,9 +410,10 @@ function App() {
         {currentPage === 'unit-assignment' && <UnitAssignment />}
         {currentPage === 'notifications' && <NotificationDashboard />}
         {currentPage === 'qr-code-system' && <QRCodeSystem />}
-        {currentPage === 'agency-registration' && <AgencyRegistration onNavigate={setCurrentPage} />}
-        {currentPage === 'agency-login' && <AgencyLogin onNavigate={setCurrentPage} />}
-        {currentPage === 'agency-dashboard' && <AgencyDashboard onNavigate={setCurrentPage} />}
+        {currentPage === 'real-time-tracking' && <RealTimeTracking />}
+        {currentPage === 'agency-registration' && <AgencyRegistration onNavigate={(page) => setCurrentPage(page as any)} />}
+        {currentPage === 'agency-login' && <AgencyLogin onNavigate={(page) => setCurrentPage(page as any)} />}
+        {currentPage === 'agency-dashboard' && <AgencyDashboard onNavigate={(page) => setCurrentPage(page as any)} />}
       </main>
     </div>
   );

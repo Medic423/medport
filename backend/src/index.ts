@@ -18,6 +18,7 @@ import routeCardGenerationRoutes from './routes/routeCardGeneration';
 import unitAssignmentRoutes from './routes/unitAssignment';
 import notificationRoutes from './routes/notifications';
 import qrCodeRoutes from './routes/qrCode';
+import realTimeTrackingRoutes from './routes/realTimeTracking';
 
 dotenv.config();
 
@@ -45,6 +46,7 @@ app.use('/api/route-card-generation', routeCardGenerationRoutes);
 app.use('/api/unit-assignment', unitAssignmentRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/qr', qrCodeRoutes);
+app.use('/api/real-time-tracking', realTimeTrackingRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'MedPort Backend API is running!' });
