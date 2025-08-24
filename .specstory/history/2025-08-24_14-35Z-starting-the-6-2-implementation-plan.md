@@ -6679,3 +6679,440 @@ This demo map gives you:
 
 ---
 
+_**User**_
+
+OK, we'll leave this as is for the time being. You can remove the "Map Test" from the "Tools & Utilies" menu. 
+
+---
+
+_**Assistant**_
+
+Perfect! Let me remove the "Map Test" from the Tools & Utilities menu since you're satisfied with the demo map interface and don't need the separate test page anymore.
+
+
+---
+
+The string to replace was not found in the file.
+
+---
+
+Let me check the current structure of the App.tsx file to see the exact navigation setup:
+
+
+---
+
+Read file: frontend/src/App.tsx
+
+---
+
+Let me continue reading to find the Tools & Utilities section:
+
+
+---
+
+Read file: frontend/src/App.tsx
+
+---
+
+Perfect! I found the Tools & Utilities section. Now let me remove the Map Test button:
+
+
+---
+
+<details><summary>Edit file: frontend/src/App.tsx</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: undefined, lines removed: 6
+
+```diff
+@@ -160,10 +160,4 @@
+                        Real-Time Tracking
+                      </button>
+-                     <button
+-                       onClick={() => setCurrentPage('map-test')}
+-                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+-                     >
+-                       Map Test
+-                     </button>
+                      <button
+                        onClick={() => setCurrentPage('notifications')}
+```
+
+</details>
+
+---
+
+Now I need to remove the MapTest import and the map-test case from the currentPage state type and the rendering logic. Let me check the end of the file to see the rendering section:
+
+
+---
+
+Read file: frontend/src/App.tsx
+
+---
+
+Now I need to remove the MapTest import, the map-test case from the state type, and the rendering logic. Let me do this step by step:
+
+
+---
+
+<details><summary>Edit file: frontend/src/App.tsx</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -15,5 +15,5 @@
+  import QRCodeSystem from './pages/QRCodeSystem';
+  import RealTimeTracking from './pages/RealTimeTracking';
+- import MapTest from './pages/MapTest';
++ 
+  
+  function App() {
+```
+
+</details>
+
+---
+
+Now I need to remove the map-test case from the state type and the rendering logic:
+
+
+---
+
+<details><summary>Edit file: frontend/src/App.tsx</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -18,5 +18,5 @@
+  
+  function App() {
+-   const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system' | 'real-time-tracking' | 'map-test'>('home');
++   const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system' | 'real-time-tracking'>('home');
+  
+    return (
+```
+
+</details>
+
+---
+
+Now I need to remove the rendering logic for the map-test case:
+
+
+---
+
+<details><summary>Edit file: frontend/src/App.tsx</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: undefined, lines removed: 1
+
+```diff
+@@ -413,5 +413,4 @@
+          {currentPage === 'qr-code-system' && <QRCodeSystem />}
+          {currentPage === 'real-time-tracking' && <RealTimeTracking />}
+-         {currentPage === 'map-test' && <MapTest />}
+          {currentPage === 'agency-registration' && <AgencyRegistration onNavigate={(page) => setCurrentPage(page as any)} />}
+          {currentPage === 'agency-login' && <AgencyLogin onNavigate={(page) => setCurrentPage(page as any)} />}
+```
+
+</details>
+
+---
+
+Now let me test if the frontend builds successfully with our changes:
+
+
+---
+
+```bash
+npm run build:frontend
+```
+
+```
+
+
+> medport@1.0.0 build:frontend
+> cd frontend && npm run build
+
+
+> frontend@1.0.0 build
+> vite build
+
+vite v7.1.3 building for production...
+✓ 2064 modules transformed.
+dist/index.html                                  0.68 kB │ gzip:   0.37 kB
+dist/assets/index-Ch0RKQZ_.css                  40.38 kB │ gzip:   6.86 kB
+dist/assets/qr-scanner-worker.min-D85Z9gVD.js   43.95 kB │ gzip:  10.40 kB
+dist/assets/index-DZbaiVkO.js                  752.29 kB │ gzip: 162.30 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-option
+s/#output-manualchunks
+
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 1.24s
+```
+
+---
+
+Perfect! The frontend builds successfully. Now let me commit our changes:
+
+
+---
+
+```bash
+git add . && git commit -m "Remove Map Test from Tools & Utilities menu
+
+- Removed Map Test button from Tools & Utilities dropdown
+- Removed MapTest import and component reference
+- Removed map-test from currentPage state type
+- Cleaned up navigation structure
+- Map functionality still available through Real-Time Tracking page
+- Demo map interface working perfectly without separate test page" && git push
+```
+
+```
+<ng perfectly without separate test page" && git push
+husky - DEPRECATED
+
+Please remove the following two lines from .husky/pre-commit:
+
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+They WILL FAIL in v10.0.0
+
+✔ Backed up original state in git stash (1582707)
+✔ Running tasks for staged files...
+✔ Applying modifications from tasks...
+✔ Cleaning up temporary files...
+[main 7a7b083] Remove Map Test from Tools & Utilities menu
+ 2 files changed, 300 insertions(+), 9 deletions(-)
+Enumerating objects: 15, done.
+Counting objects: 100% (15/15), done.
+Delta compression using up to 14 threads
+Compressing objects: 100% (8/8), done.
+Writing objects: 100% (8/8), 3.51 KiB | 3.51 MiB/s, done.
+Total 8 (delta 6), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (6/6), completed with 6 local objects.
+To https://github.com/Medic423/medport.git
+   3af2ff1..7a7b083  main -> main
+```
+
+---
+
+## ✅ **Map Test Removed Successfully!**
+
+I've successfully removed the "Map Test" from the Tools & Utilities menu. Here's what was cleaned up:
+
+### **🗑️ What Was Removed**
+- **Map Test button** from the Tools & Utilities dropdown menu
+- **MapTest import** from the component imports
+- **map-test case** from the currentPage state type
+- **MapTest rendering logic** from the main content area
+
+### **🎯 What Remains Available**
+- **Real-Time Tracking** - Still accessible from Tools & Utilities
+- **Demo Map Interface** - Fully functional with all the enhancements we added
+- **All Map Functionality** - Unit tracking, markers, controls, and features
+
+### **�� Current Navigation Structure**
+
+**Tools & Utilities** now contains:
+- QR Code System
+- Real-Time Tracking ← **This is where you access the map**
+- Notifications
+
+### **��️ Accessing the Map**
+
+You can still access the enhanced demo map interface through:
+1. **Tools & Utilities** → **Real-Time Tracking**
+2. **Quick Access** section on the home page → **Real-Time Tracking**
+
+The map functionality is now integrated directly into the Real-Time Tracking dashboard, which makes more sense from a user experience perspective. Users don't need a separate "test" page when the map is fully functional within the main tracking interface.
+
+### **🚀 Benefits of This Change**
+- ✅ **Cleaner navigation** - No redundant test pages
+- ✅ **Better UX** - Map functionality where users expect it
+- ✅ **Simplified structure** - Fewer menu items to navigate
+- ✅ **Integrated experience** - Map and tracking data in one place
+
+The enhanced demo map interface with water features, parks, street names, and all the visual elements is still fully available and working perfectly! 🗺️✨
+
+---
+
+_**User**_
+
+Very good. To make things simplier can we incorporate the contents of the phase6.2_implementation_prompt.md file into the medport_plan.md file so we have one central planning document.
+
+---
+
+_**Assistant**_
+
+Excellent idea! Consolidating the planning documents into one central location will make it much easier to manage and track progress. Let me read the Phase 6.2 implementation prompt file and then integrate it into the main medport_plan.md file.
+
+
+---
+
+Read file: docs/notes/phase6.2_implementation_prompt.md
+
+---
+
+Now let me integrate this content into the main medport_plan.md file. I'll add it as a detailed section under Phase 6.2:
+
+
+---
+
+<details><summary>Edit file: docs/notes/medport_plan.md</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 4, lines removed: 2
+
+```diff
+@@ -262,6 +262,8 @@
+  
+  ### 6.2 Advanced Map Integration & WebSocket Support 🔄 **IN PROGRESS**
+- - [x] **Phase 6.2.1: Map Integration Foundation ✅ COMPLETED**
+-   - [x] Implement Google Maps API integration
++ 
++ #### **Phase 6.2.1: Map Integration Foundation ✅ COMPLETED**
++ - [x] **Google Maps API Integration**
++   - [x] Implement Google Maps API integration with custom medical transport theming
+    - [x] Create interactive map interface for real-time unit tracking
+    - [x] Add custom markers for transport units, facilities, and routes
+```
+
+**Chunk 2**
+Lines added: 74, lines removed: 4
+
+```diff
+@@ -273,22 +275,92 @@
+    - [x] Develop frontend WebSocket integration with useWebSocket hook
+    - [x] Add comprehensive testing infrastructure with MapTestComponent
++   - [x] **Demo Mode Implementation**: Create fully functional map simulation without API key requirements
++   - [x] **Enhanced Visual Elements**: Water features, parks, street names, landmarks, compass, scale bar
++   - [x] **Professional Interface**: Map legend, enhanced markers with pulse animations, comprehensive controls
+  
+- - [ ] **Phase 6.2.2: WebSocket Infrastructure Enhancement** (Next)
++ #### **Phase 6.2.2: WebSocket Infrastructure Enhancement** (Next Priority)
++ - [ ] **Real-time Communication Infrastructure**
+    - [ ] Integrate WebSocket with map interface for real-time updates
+    - [ ] Implement live location streaming via WebSocket
+    - [ ] Add real-time status synchronization
+    - [ ] Create connection health monitoring and reconnection logic
++   - [ ] Implement real-time location push notifications
++   - [ ] Create live status updates for transport requests
++   - [ ] Add real-time alerts for route deviations and geofencing events
++   - [ ] Implement fallback to Server-Sent Events (SSE) for compatibility
+  
+- - [ ] **Phase 6.2.3: Advanced Map Features**
++ #### **Phase 6.2.3: Advanced Map Features**
++ - [ ] **Enhanced Map Capabilities**
+    - [ ] Implement route visualization with turn-by-turn directions
+    - [ ] Add traffic layer integration for route optimization
+    - [ ] Create map clustering for multiple units in same area
+    - [ ] Implement advanced geofencing with polygon support
++   - [ ] Add weather-based geofence adjustments
++   - [ ] Create mobile GPS integration for real device tracking
+  
+- - [ ] **Phase 6.2.4: CAD System Integration Preparation**
++ #### **Phase 6.2.4: CAD System Integration Preparation**
++ - [ ] **Computer Aided Dispatch Integration**
+    - [ ] Design CAD system API interface specifications
+    - [ ] Create data mapping between MedPort and CAD systems
+    - [ ] Implement CAD event synchronization
+-   - [ ] Add CAD authentication and security protocols
++   - [ ] Add CAD unit status integration
++   - [ ] Create CAD transport request import/export
++   - [ ] Implement CAD authentication and security protocols
++   - [ ] Add CAD system health monitoring
++ 
++ #### **Technical Requirements & Architecture**
++ 
++ **Backend Infrastructure:**
++ - **WebSocket Server**: Socket.IO implementation with authentication and connection management
++ - **Map API Integration**: Google Maps API with proper key management and demo mode fallback
++ - **Real-time Database**: Optimized PostgreSQL for real-time queries
++ - **Authentication**: JWT-based WebSocket authentication with demo mode support
++ - **Error Handling**: Comprehensive error handling for real-time connections
++ - **Performance**: Support 100+ concurrent WebSocket connections
++ 
++ **Frontend Components:**
++ - **Interactive Map Component**: React-based map interface with real-time updates
++ - **WebSocket Client**: Real-time data synchronization with fallback mechanisms
++ - **Map Controls**: Zoom, pan, layer management, and unit filtering
++ - **Real-time Dashboard**: Live updates for all tracking features
++ - **Mobile Responsiveness**: Touch-friendly map controls for mobile devices
++ 
++ **Integration Points:**
++ - **Existing Real-time Tracking**: Extend current GPS tracking with map visualization
++ - **Unit Assignment System**: Real-time updates for unit status changes
++ - **Transport Requests**: Live updates for request status changes
++ - **Notification System**: Real-time alerts via WebSocket
++ - **Authentication System**: Seamless integration with existing JWT system
++ 
++ #### **Success Criteria**
++ 
++ **Technical Metrics:**
++ - Map loads in < 2 seconds with real-time data
++ - WebSocket connections maintain 99.9% uptime
++ - Support 100+ concurrent real-time connections
++ - Real-time updates have < 100ms latency
++ - Mobile map performance maintains 60fps
++ 
++ **User Experience Goals:**
++ - Intuitive map interface for transport coordinators
++ - Real-time visibility of all transport units
++ - Seamless integration with existing workflows
++ - Professional-grade interface ready for production
++ - Mobile-optimized experience for field personnel
++ 
++ #### **Challenges & Considerations**
++ 
++ **Technical Challenges:**
++ - **Map Performance**: Handle large numbers of units and routes efficiently
++ - **WebSocket Scalability**: Manage multiple concurrent connections
++ - **Mobile Optimization**: Ensure smooth performance on mobile devices
++ - **API Rate Limits**: Manage Google Maps API usage and costs
++ - **Real-time Synchronization**: Keep map data consistent across clients
++ 
++ **Business Considerations:**
++ - **API Costs**: Google Maps pricing for production use
++ - **Data Privacy**: Ensure HIPAA compliance for real-time location data
++ - **User Training**: Provide training for new map-based interface
++ - **Performance Expectations**: Meet real-time requirements for medical transport
+  
+  **Phase 6.2.1 Implementation Summary: ✅ COMPLETED**
+```
+
+</details>
+
+---
+
+Now let me add a section about the implementation approach and current status at the end of the Phase 6.2 section:
+
+
+---
+
+
+
+---
+
+
+
+---
+
