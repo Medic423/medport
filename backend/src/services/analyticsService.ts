@@ -350,18 +350,21 @@ export class AnalyticsService {
     }
 
     // Cost breakdown (demo implementation)
-    const fuelCosts = totalCosts * 0.35;
-    const maintenanceCosts = totalCosts * 0.25;
-    const laborCosts = totalCosts * 0.20;
-    const insuranceCosts = totalCosts * 0.15;
-    const administrativeCosts = totalCosts * 0.05;
+    const fuelCosts = totalCosts > 0 ? totalCosts * 0.35 : 0;
+    const maintenanceCosts = totalCosts > 0 ? totalCosts * 0.25 : 0;
+    const laborCosts = totalCosts > 0 ? totalCosts * 0.20 : 0;
+    const insuranceCosts = totalCosts > 0 ? totalCosts * 0.15 : 0;
+    const administrativeCosts = totalCosts > 0 ? totalCosts * 0.05 : 0;
 
     const costPerMile = totalMiles > 0 ? totalCosts / totalMiles : 0;
     const costPerTransport = totalTransports > 0 ? totalCosts / totalTransports : 0;
 
     // Calculate profit margin (demo - would use actual revenue data)
-    const estimatedRevenue = totalCosts * 1.25; // 25% profit margin
-    const profitMargin = ((estimatedRevenue - totalCosts) / estimatedRevenue) * 100;
+    let profitMargin = 0;
+    if (totalCosts > 0) {
+      const estimatedRevenue = totalCosts * 1.25; // 25% profit margin
+      profitMargin = ((estimatedRevenue - totalCosts) / estimatedRevenue) * 100;
+    }
 
     return {
       totalCosts: Math.round(totalCosts * 100) / 100,

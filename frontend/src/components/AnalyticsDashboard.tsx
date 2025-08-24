@@ -519,33 +519,44 @@ const AnalyticsDashboard: React.FC = () => {
         {/* Cost Analysis Tab */}
         {activeTab === 'costs' && (
           <div className="space-y-6">
-            {/* Cost Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-red-600">
-                    ${analyticsData.costAnalysis.totalCosts.toLocaleString()}
+            {analyticsData.costAnalysis.totalCosts > 0 ? (
+              <>
+                {/* Cost Overview */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-red-600">
+                        ${analyticsData.costAnalysis.totalCosts.toLocaleString()}
+                      </div>
+                      <div className="text-sm text-gray-500">Total Costs</div>
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-500">Total Costs</div>
-                </div>
-              </div>
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">
-                    ${analyticsData.costAnalysis.costPerMile.toFixed(2)}
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-600">
+                        ${analyticsData.costAnalysis.costPerMile.toFixed(2)}
+                      </div>
+                      <div className="text-sm text-gray-500">Cost per Mile</div>
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-500">Cost per Mile</div>
-                </div>
-              </div>
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">
-                    {analyticsData.costAnalysis.profitMargin.toFixed(1)}%
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600">
+                        {analyticsData.costAnalysis.profitMargin !== null ? analyticsData.costAnalysis.profitMargin.toFixed(1) : '0.0'}%
+                      </div>
+                      <div className="text-sm text-gray-500">Profit Margin</div>
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-500">Profit Margin</div>
                 </div>
+              </>
+            ) : (
+              <div className="bg-white rounded-lg shadow p-8 text-center">
+                <div className="text-gray-400 text-6xl mb-4">📊</div>
+                <h3 className="text-xl font-medium text-gray-900 mb-2">Cost Analysis</h3>
+                <p className="text-gray-600 mb-4">No cost data available for the selected time period.</p>
+                <p className="text-sm text-gray-500">Costs will appear here once transport assignments are completed and cost data is available.</p>
               </div>
-            </div>
+            )}
 
             {/* Cost Breakdown */}
             <div className="bg-white rounded-lg shadow">
@@ -553,28 +564,36 @@ const AnalyticsDashboard: React.FC = () => {
                 <h3 className="text-lg font-medium text-gray-900">Cost Breakdown</h3>
               </div>
               <div className="p-6">
-                <div className="space-y-4">
-                  {[
-                    { label: 'Fuel Costs', value: analyticsData.costAnalysis.fuelCosts, color: 'bg-red-500' },
-                    { label: 'Maintenance Costs', value: analyticsData.costAnalysis.maintenanceCosts, color: 'bg-yellow-500' },
-                    { label: 'Labor Costs', value: analyticsData.costAnalysis.laborCosts, color: 'bg-blue-500' },
-                    { label: 'Insurance Costs', value: analyticsData.costAnalysis.insuranceCosts, color: 'bg-purple-500' },
-                    { label: 'Administrative Costs', value: analyticsData.costAnalysis.administrativeCosts, color: 'bg-gray-500' }
-                  ].map((cost, index) => (
-                    <div key={index}>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="text-gray-600">{cost.label}</span>
-                        <span className="font-medium">${cost.value.toLocaleString()}</span>
+                {analyticsData.costAnalysis.totalCosts > 0 ? (
+                  <div className="space-y-4">
+                    {[
+                      { label: 'Fuel Costs', value: analyticsData.costAnalysis.fuelCosts, color: 'bg-red-500' },
+                      { label: 'Maintenance Costs', value: analyticsData.costAnalysis.maintenanceCosts, color: 'bg-yellow-500' },
+                      { label: 'Labor Costs', value: analyticsData.costAnalysis.laborCosts, color: 'bg-blue-500' },
+                      { label: 'Insurance Costs', value: analyticsData.costAnalysis.insuranceCosts, color: 'bg-purple-500' },
+                      { label: 'Administrative Costs', value: analyticsData.costAnalysis.administrativeCosts, color: 'bg-gray-500' }
+                    ].map((cost, index) => (
+                      <div key={index}>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-gray-600">{cost.label}</span>
+                          <span className="font-medium">${cost.value.toLocaleString()}</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className={`${cost.color} h-2 rounded-full`}
+                            style={{ width: `${(cost.value / analyticsData.costAnalysis.totalCosts) * 100}%` }}
+                          ></div>
+                        </div>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className={`${cost.color} h-2 rounded-full`}
-                          style={{ width: `${(cost.value / analyticsData.costAnalysis.totalCosts) * 100}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="text-gray-400 text-6xl mb-4">💰</div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Cost Data Available</h3>
+                    <p className="text-gray-600">Cost analysis data will appear here once transport assignments are completed.</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
