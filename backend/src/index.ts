@@ -17,6 +17,7 @@ import routeOptimizationRoutes from './routes/routeOptimization';
 import routeCardGenerationRoutes from './routes/routeCardGeneration';
 import unitAssignmentRoutes from './routes/unitAssignment';
 import notificationRoutes from './routes/notifications';
+import qrCodeRoutes from './routes/qrCode';
 
 dotenv.config();
 
@@ -43,6 +44,7 @@ app.use('/api/route-optimization', routeOptimizationRoutes);
 app.use('/api/route-card-generation', routeCardGenerationRoutes);
 app.use('/api/unit-assignment', unitAssignmentRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/qr', qrCodeRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'MedPort Backend API is running!' });

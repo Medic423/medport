@@ -12,9 +12,10 @@ import AgencyDashboard from './pages/AgencyDashboard';
 import RouteOptimization from './pages/RouteOptimization';
 import UnitAssignment from './pages/UnitAssignment';
 import NotificationDashboard from './components/NotificationDashboard';
+import QRCodeSystem from './pages/QRCodeSystem';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system'>('home');
 
   return (
     <div className="App">
@@ -25,7 +26,8 @@ function App() {
             <div className="flex items-center">
               <h1 className="text-xl font-bold">MedPort</h1>
             </div>
-            <div className="flex space-x-4">
+            <div className="flex space-x-2">
+              {/* Home */}
               <button
                 onClick={() => setCurrentPage('home')}
                 className={`px-3 py-2 rounded-md text-sm font-medium ${
@@ -36,106 +38,130 @@ function App() {
               >
                 Home
               </button>
-              <button
-                onClick={() => setCurrentPage('transport-requests')}
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  currentPage === 'transport-requests'
-                    ? 'bg-blue-700 text-white'
-                    : 'text-blue-100 hover:bg-blue-500 hover:text-white'
-                }`}
-              >
-                Transport Requests
-              </button>
-              <button
-                onClick={() => setCurrentPage('status-board')}
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  currentPage === 'status-board'
-                    ? 'bg-blue-700 text-white'
-                    : 'text-blue-100 hover:bg-blue-500 hover:text-white'
-                }`}
-              >
-                Status Board
-              </button>
-              <button
-                onClick={() => setCurrentPage('distance-matrix')}
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  currentPage === 'distance-matrix'
-                    ? 'bg-blue-700 text-white'
-                    : 'text-blue-100 hover:bg-blue-500 hover:text-white'
-                }`}
-              >
-                Distance Matrix
-              </button>
-              <button
-                onClick={() => setCurrentPage('resource-management')}
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  currentPage === 'resource-management'
-                    ? 'bg-blue-700 text-white'
-                    : 'text-blue-100 hover:bg-blue-500 hover:text-white'
-                }`}
-              >
-                Resource Management
-              </button>
-              <button
-                onClick={() => setCurrentPage('advanced-transport')}
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  currentPage === 'advanced-transport'
-                    ? 'bg-blue-700 text-white'
-                    : 'text-blue-100 hover:bg-blue-500 hover:text-white'
-                }`}
-              >
-                Advanced Transport
-              </button>
-              <button
-                onClick={() => setCurrentPage('air-medical')}
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  currentPage === 'air-medical'
-                    ? 'bg-blue-700 text-white'
-                    : 'text-blue-100 hover:bg-blue-500 hover:text-white'
-                }`}
-              >
-                Air Medical
-              </button>
-              <button
-                onClick={() => setCurrentPage('emergency-department')}
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  currentPage === 'emergency-department'
-                    ? 'bg-blue-700 text-white'
-                    : 'text-blue-100 hover:bg-blue-500 hover:text-white'
-                }`}
-              >
-                Emergency Department
-              </button>
-              <button
-                onClick={() => setCurrentPage('route-optimization')}
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  currentPage === 'route-optimization'
-                    ? 'bg-blue-700 text-white'
-                    : 'text-blue-100 hover:bg-blue-500 hover:text-white'
-                }`}
-              >
-                Route Optimization
-              </button>
-              <button
-                onClick={() => setCurrentPage('unit-assignment')}
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  currentPage === 'unit-assignment'
-                    ? 'bg-blue-700 text-white'
-                    : 'text-blue-100 hover:bg-blue-500 hover:text-white'
-                }`}
-              >
-                Unit Assignment
-              </button>
-              <button
-                onClick={() => setCurrentPage('notifications')}
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  currentPage === 'notifications'
-                    ? 'bg-blue-700 text-white'
-                    : 'text-blue-100 hover:bg-blue-500 hover:text-white'
-                }`}
-              >
-                Notifications
-              </button>
+
+              {/* Core Operations Dropdown */}
+              <div className="relative group">
+                <button className="px-3 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-500 hover:text-white flex items-center">
+                  Core Operations
+                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <div className="absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="py-1">
+                    <button
+                      onClick={() => setCurrentPage('transport-requests')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Transport Requests
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage('status-board')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Status Board
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage('unit-assignment')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Unit Assignment
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Planning & Optimization Dropdown */}
+              <div className="relative group">
+                <button className="px-3 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-500 hover:text-white flex items-center">
+                  Planning & Optimization
+                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <div className="absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="py-1">
+                    <button
+                      onClick={() => setCurrentPage('route-optimization')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Route Optimization
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage('distance-matrix')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Distance Matrix
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage('resource-management')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Resource Management
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Specialized Transport Dropdown */}
+              <div className="relative group">
+                <button className="px-3 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-500 hover:text-white flex items-center">
+                  Specialized Transport
+                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <div className="absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="py-1">
+                    <button
+                      onClick={() => setCurrentPage('advanced-transport')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Advanced Transport
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage('air-medical')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Air Medical
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage('emergency-department')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Emergency Department
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tools & Utilities Dropdown */}
+              <div className="relative group">
+                <button className="px-3 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-500 hover:text-white flex items-center">
+                  Tools & Utilities
+                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <div className="absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="py-1">
+                    <button
+                      onClick={() => setCurrentPage('qr-code-system')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      QR Code System
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage('notifications')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Notifications
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Agency Portal */}
               <button
                 onClick={() => setCurrentPage('agency-login')}
                 className={`px-3 py-2 rounded-md text-sm font-medium ${
@@ -154,208 +180,205 @@ function App() {
       {/* Main Content */}
       <main>
         {currentPage === 'home' && (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="text-center">
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">Welcome to MedPort!</h1>
-              <p className="text-xl text-gray-600 mb-8">
-                Your medical transport coordination system is now running successfully.
-              </p>
-              
-              <div className="bg-white rounded-lg shadow-lg p-8 max-w-2xl mx-auto">
-                <h3 className="text-2xl font-semibold text-gray-900 mb-6">Project Status</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-                    <span className="text-green-800 font-medium">Phase 1: Foundation & Core Infrastructure</span>
-                    <span className="text-green-600 font-bold">✅ COMPLETE</span>
+          <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
+            {/* Hero Section */}
+            <div className="relative overflow-hidden">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+                <div className="text-center">
+                  <div className="flex justify-center mb-6">
+                    <div className="bg-blue-600 p-4 rounded-full">
+                      <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-                    <span className="text-green-800 font-medium">Phase 2.1: Transport Request System</span>
-                    <span className="text-green-600 font-bold">✅ COMPLETE</span>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-                    <span className="text-green-800 font-medium">Phase 2.2: Status Board Implementation</span>
-                    <span className="text-green-600 font-bold">✅ COMPLETE</span>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-                    <span className="text-green-800 font-medium">Phase 2.3: Basic Distance Matrix</span>
-                    <span className="text-green-600 font-bold">✅ COMPLETE</span>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg">
-                    <span className="text-orange-800 font-medium">Phase 2.4: Real-Time Resource Management</span>
-                    <span className="text-orange-600 font-bold">✅ COMPLETE</span>
+                  <h1 className="text-5xl font-bold text-gray-900 mb-6">
+                    Welcome to <span className="text-blue-600">MedPort</span>
+                  </h1>
+                  <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+                    The comprehensive medical transport coordination system that optimizes ambulance availability, 
+                    loaded miles, and routing efficiency across hospital service areas.
+                  </p>
+                  <div className="flex justify-center space-x-4">
+                    <button
+                      onClick={() => setCurrentPage('transport-requests')}
+                      className="px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-lg font-medium transition-all duration-200 transform hover:scale-105"
+                    >
+                      Get Started →
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage('status-board')}
+                      className="px-8 py-4 bg-white text-blue-600 border-2 border-blue-600 rounded-lg hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-lg font-medium transition-all duration-200"
+                    >
+                      View Status Board
+                    </button>
                   </div>
                 </div>
-                
-                <div className="mt-8 p-4 bg-blue-50 rounded-lg">
-                  <h4 className="text-lg font-semibold text-blue-900 mb-2">What's New in Phase 2.1</h4>
-                  <ul className="text-blue-800 space-y-2 text-left">
-                    <li>✅ Transport request creation form with validation</li>
-                    <li>✅ Facility search and selection</li>
-                    <li>✅ Transport level and priority selection</li>
-                    <li>✅ HIPAA-compliant patient ID generation</li>
-                    <li>✅ Request management (edit, duplicate, cancel)</li>
-                    <li>✅ Status workflow management</li>
-                    <li>✅ Bulk operations and filtering</li>
-                  </ul>
-                </div>
-                
-                <div className="mt-6 p-4 bg-green-50 rounded-lg">
-                  <h4 className="text-lg font-semibold text-green-900 mb-2">What's New in Phase 2.2</h4>
-                  <ul className="text-green-800 space-y-2 text-left">
-                    <li>✅ Real-time status board with live updates</li>
-                    <li>✅ Advanced filtering and search capabilities</li>
-                    <li>✅ Status workflow management with confirmation</li>
-                    <li>✅ Comprehensive statistics and metrics</li>
-                    <li>✅ Auto-refresh every 30 seconds</li>
-                    <li>✅ Print-friendly status board layout</li>
-                    <li>✅ Responsive card-based design</li>
-                  </ul>
-                </div>
-                
-                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                  <h4 className="text-lg font-semibold text-blue-900 mb-2">What's New in Phase 2.3</h4>
-                  <ul className="text-blue-800 space-y-2 text-left">
-                    <li>✅ Google Maps API integration for distance calculations</li>
-                    <li>✅ JSON-based editable distance matrix system</li>
-                    <li>✅ Automatic distance calculation for transport requests</li>
-                    <li>✅ Admin interface for distance matrix management</li>
-                    <li>✅ Caching system for performance optimization</li>
-                    <li>✅ Distance validation and error handling</li>
-                    <li>✅ Route ID generation system</li>
-                    <li>✅ Integration with existing transport request workflow</li>
-                  </ul>
-                </div>
-                
-                <div className="mt-6 p-4 bg-orange-50 rounded-lg">
-                  <h4 className="text-lg font-semibold text-orange-900 mb-2">What's New in Phase 2.4</h4>
-                  <ul className="text-orange-800 space-y-2 text-left">
-                    <li>✅ Real-time CCT unit availability tracking</li>
-                    <li>✅ Urgent request escalation system with notifications</li>
-                    <li>✅ Critical care provider availability matrix</li>
-                    <li>✅ Emergency transport priority queue management</li>
-                    <li>✅ CCT resource allocation dashboard</li>
-                    <li>✅ Real-time crew availability monitoring</li>
-                    <li>✅ Dynamic resource allocation algorithms</li>
-                    <li>✅ Call volume analytics and capacity planning</li>
-                    <li>✅ Unit status management and tracking</li>
-                    <li>✅ Resource utilization reporting and analytics</li>
-                  </ul>
-                </div>
-                
-                <div className="mt-6 p-4 bg-indigo-50 rounded-lg">
-                  <h4 className="text-lg font-semibold text-indigo-900 mb-2">What's New in Phase 2.5</h4>
-                  <ul className="text-indigo-800 space-y-2 text-left">
-                    <li>✅ Multi-patient transport management system</li>
-                    <li>✅ Bulk transport request creation interface</li>
-                    <li>✅ Long-distance transport planning tools</li>
-                    <li>✅ Multi-leg transport coordination</li>
-                    <li>✅ Weather conditions and air medical suitability</li>
-                    <li>✅ Advanced route optimization algorithms</li>
-                    <li>✅ Transport batch management and tracking</li>
-                    <li>✅ Long-distance provider network management</li>
-                    <li>✅ Extended transport time estimation</li>
-                    <li>✅ Cost optimization and revenue potential analysis</li>
-                  </ul>
-                </div>
-                
-                                  <div className="mt-6 p-4 bg-red-50 rounded-lg">
-                    <h4 className="text-lg font-semibold text-red-900 mb-2">What's New in Phase 2.6</h4>
-                    <ul className="text-red-800 space-y-2 text-left">
-                      <li>✅ Air medical resource management system</li>
-                      <li>✅ Weather API integration for air medical availability</li>
-                      <li>✅ Weather-based routing alternatives and notifications</li>
-                      <li>✅ Grounding status tracking for air medical services</li>
-                      <li>✅ Weather impact alerts for transport coordinators</li>
-                      <li>✅ Air-to-ground transport coordination system</li>
-                      <li>✅ Air medical crew ground transport coordination</li>
-                      <li>✅ Helicopter availability status integration</li>
-                      <li>✅ Air medical service area management</li>
-                      <li>✅ Real-time weather monitoring and alerts</li>
-                    </ul>
-                  </div>
-                  
-                  <div className="mt-6 p-4 bg-indigo-50 rounded-lg">
-                    <h4 className="text-lg font-semibold text-indigo-900 mb-2">What's New in Phase 2.7</h4>
-                    <ul className="text-indigo-800 space-y-2 text-left">
-                      <li>✅ Emergency Department optimization dashboard</li>
-                      <li>✅ Real-time ED transport queue monitoring</li>
-                      <li>✅ Bed status integration and hallway bed tracking</li>
-                      <li>✅ Capacity alerts and threshold notifications</li>
-                      <li>✅ Transport provider forecasting system</li>
-                      <li>✅ Demand prediction algorithms and analytics</li>
-                      <li>✅ Provider capacity planning tools</li>
-                      <li>✅ Peak demand management system</li>
-                      <li>✅ Seasonal and trend analysis</li>
-                      <li>✅ Resource optimization recommendations</li>
-                    </ul>
-                  </div>
-                  
-                  <div className="mt-6 p-4 bg-emerald-50 rounded-lg">
-                    <h4 className="text-lg font-semibold text-emerald-900 mb-2">What's New in Phase 3.1</h4>
-                    <ul className="text-emerald-800 space-y-2 text-left">
-                      <li>🚀 Transport Agency Integration Portal</li>
-                      <li>🚀 Agency registration and authentication system</li>
-                      <li>🚀 Real-time unit availability management</li>
-                      <li>🚀 Transport request bidding system</li>
-                      <li>🚀 Agency dashboard with performance metrics</li>
-                      <li>🚀 Service area and capability management</li>
-                      <li>🚀 Bid history and performance tracking</li>
-                      <li>🚀 Demo mode for testing and exploration</li>
-                      <li>🚀 Mobile-responsive agency interface</li>
-                      <li>🚀 Secure agency data management</li>
-                    </ul>
-                  </div>
+              </div>
+            </div>
+
+            {/* Features Grid */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+              <div className="text-center mb-16">
+                <h2 className="text-3xl font-bold text-gray-900 mb-4">System Capabilities</h2>
+                <p className="text-lg text-gray-600">Comprehensive features designed for modern medical transport coordination</p>
               </div>
               
-              <div className="mt-8 flex space-x-4 justify-center">
-                <button
-                  onClick={() => setCurrentPage('transport-requests')}
-                  className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-lg font-medium"
-                >
-                  Try Transport Requests →
-                </button>
-                <button
-                  onClick={() => setCurrentPage('status-board')}
-                  className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 text-lg font-medium"
-                >
-                  View Status Board →
-                </button>
-                <button
-                  onClick={() => setCurrentPage('distance-matrix')}
-                  className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 text-lg font-medium"
-                >
-                  Manage Distance Matrix →
-                </button>
-                <button
-                  onClick={() => setCurrentPage('resource-management')}
-                  className="px-8 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 text-lg font-medium"
-                >
-                  Resource Management →
-                </button>
-                <button
-                  onClick={() => setCurrentPage('advanced-transport')}
-                  className="px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 text-lg font-medium"
-                >
-                  Advanced Transport →
-                </button>
-                <button
-                  onClick={() => setCurrentPage('air-medical')}
-                  className="px-8 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 text-lg font-medium"
-                >
-                  Air Medical →
-                </button>
-                <button
-                  onClick={() => setCurrentPage('emergency-department')}
-                  className="px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 text-lg font-medium"
-                >
-                  Emergency Department →
-                </button>
-                <button
-                  onClick={() => setCurrentPage('agency-login')}
-                  className="px-8 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 text-lg font-medium"
-                >
-                  Agency Portal →
-                </button>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {/* Transport Management */}
+                <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+                  <div className="bg-blue-100 p-3 rounded-lg w-fit mb-4">
+                    <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Transport Management</h3>
+                  <p className="text-gray-600 mb-4">Complete transport request system with HIPAA compliance, real-time status tracking, and workflow management.</p>
+                  <button
+                    onClick={() => setCurrentPage('transport-requests')}
+                    className="text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Learn More →
+                  </button>
+                </div>
+
+                {/* Resource Optimization */}
+                <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+                  <div className="bg-green-100 p-3 rounded-lg w-fit mb-4">
+                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Resource Optimization</h3>
+                  <p className="text-gray-600 mb-4">Advanced route optimization, unit assignment algorithms, and revenue maximization for transport agencies.</p>
+                  <button
+                    onClick={() => setCurrentPage('route-optimization')}
+                    className="text-green-600 hover:text-green-700 font-medium"
+                  >
+                    Learn More →
+                  </button>
+                </div>
+
+                {/* Real-Time Monitoring */}
+                <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+                  <div className="bg-purple-100 p-3 rounded-lg w-fit mb-4">
+                    <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Real-Time Monitoring</h3>
+                  <p className="text-gray-600 mb-4">Live status board, resource tracking, and comprehensive analytics for operational insights.</p>
+                  <button
+                    onClick={() => setCurrentPage('status-board')}
+                    className="text-purple-600 hover:text-purple-700 font-medium"
+                  >
+                    Learn More →
+                  </button>
+                </div>
+
+                {/* Agency Integration */}
+                <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+                  <div className="bg-emerald-100 p-3 rounded-lg w-fit mb-4">
+                    <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Agency Integration</h3>
+                  <p className="text-gray-600 mb-4">Complete portal for transport agencies with bidding, performance tracking, and service management.</p>
+                  <button
+                    onClick={() => setCurrentPage('agency-login')}
+                    className="text-emerald-600 hover:text-emerald-700 font-medium"
+                  >
+                    Learn More →
+                  </button>
+                </div>
+
+                {/* Advanced Transport */}
+                <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+                  <div className="bg-indigo-100 p-3 rounded-lg w-fit mb-4">
+                    <svg className="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Advanced Transport</h3>
+                  <p className="text-gray-600 mb-4">Multi-patient coordination, long-distance planning, and specialized transport services.</p>
+                  <button
+                    onClick={() => setCurrentPage('advanced-transport')}
+                    className="text-indigo-600 hover:text-indigo-700 font-medium"
+                  >
+                    Learn More →
+                  </button>
+                </div>
+
+                {/* Notifications */}
+                <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+                  <div className="bg-orange-100 p-3 rounded-lg w-fit mb-4">
+                    <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM4.19 4.19A2 2 0 004 6v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2h12" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Smart Notifications</h3>
+                  <p className="text-gray-600 mb-4">Automated SMS, email, and push notifications for urgent requests and status updates.</p>
+                  <button
+                    onClick={() => setCurrentPage('notifications')}
+                    className="text-orange-600 hover:text-orange-700 font-medium"
+                  >
+                    Learn More →
+                  </button>
+                </div>
+              </div>
+            </div>
+
+              
+            {/* Quick Access Section */}
+            <div className="bg-white border-t border-gray-200">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+                <div className="text-center mb-12">
+                  <h2 className="text-3xl font-bold text-gray-900 mb-4">Quick Access</h2>
+                  <p className="text-lg text-gray-600">Jump directly to the tools you need</p>
+                </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                  <button
+                    onClick={() => setCurrentPage('transport-requests')}
+                    className="p-6 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors duration-200 text-center"
+                  >
+                    <div className="text-blue-600 font-semibold mb-2">Transport Requests</div>
+                    <div className="text-sm text-blue-600">Create & manage</div>
+                  </button>
+                  
+                  <button
+                    onClick={() => setCurrentPage('status-board')}
+                    className="p-6 bg-green-50 hover:bg-green-100 rounded-lg transition-colors duration-200 text-center"
+                  >
+                    <div className="text-green-600 font-semibold mb-2">Status Board</div>
+                    <div className="text-sm text-green-600">Live monitoring</div>
+                  </button>
+                  
+                  <button
+                    onClick={() => setCurrentPage('route-optimization')}
+                    className="p-6 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors duration-200 text-center"
+                  >
+                    <div className="text-purple-600 font-semibold mb-2">Route Optimization</div>
+                    <div className="text-sm text-purple-600">Maximize efficiency</div>
+                  </button>
+                  
+                  <button
+                    onClick={() => setCurrentPage('notifications')}
+                    className="p-6 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors duration-200 text-center"
+                  >
+                    <div className="text-orange-600 font-semibold mb-2">Notifications</div>
+                    <div className="text-sm text-orange-600">Smart alerts</div>
+                  </button>
+                  
+                  <button
+                    onClick={() => setCurrentPage('qr-code-system')}
+                    className="p-6 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors duration-200 text-center"
+                  >
+                    <div className="text-indigo-600 font-semibold mb-2">QR Code System</div>
+                    <div className="text-sm text-indigo-600">Generate & scan</div>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -371,6 +394,7 @@ function App() {
         {currentPage === 'route-optimization' && <RouteOptimization />}
         {currentPage === 'unit-assignment' && <UnitAssignment />}
         {currentPage === 'notifications' && <NotificationDashboard />}
+        {currentPage === 'qr-code-system' && <QRCodeSystem />}
         {currentPage === 'agency-registration' && <AgencyRegistration onNavigate={setCurrentPage} />}
         {currentPage === 'agency-login' && <AgencyLogin onNavigate={setCurrentPage} />}
         {currentPage === 'agency-dashboard' && <AgencyDashboard onNavigate={setCurrentPage} />}
