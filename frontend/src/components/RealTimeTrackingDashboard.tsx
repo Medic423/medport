@@ -68,7 +68,7 @@ const RealTimeTrackingDashboard: React.FC = () => {
         clearInterval(intervalRef.current);
       }
     };
-  }, [autoRefresh, refreshInterval]);
+  }, [autoRefresh, refreshInterval, token]);
 
   const startAutoRefresh = () => {
     if (intervalRef.current) {
@@ -85,16 +85,36 @@ const RealTimeTrackingDashboard: React.FC = () => {
       setIsLoading(true);
       setError(null);
 
+      console.log('🔍 Fetching dashboard data...');
+      console.log('🔑 Token from useAuth:', token);
+      console.log('🔑 Token type:', typeof token);
+      console.log('🔑 Token length:', token ? token.length : 0);
+      
+      // Fallback check for demo mode directly from localStorage
+      const localStorageDemoMode = localStorage.getItem('demoMode');
+      console.log('🎭 Demo mode from localStorage:', localStorageDemoMode);
+      console.log('🎭 Demo mode === "true":', localStorageDemoMode === 'true');
+
       // Check if we're in demo mode
-      const isDemoMode = token === 'demo-token';
+      const isDemoMode = token === 'demo-token' || localStorageDemoMode === 'true';
+      console.log('🎭 Final demo mode decision:', isDemoMode);
       
       if (isDemoMode) {
+        console.log('🎭 Generating demo data...');
         // Generate demo data for demonstration
         const demoData = generateDemoData();
+        console.log('🎭 Demo data generated:', demoData);
         setDashboardData(demoData);
         return;
       }
 
+      if (!token) {
+        console.log('❌ No token available, cannot fetch real data');
+        setError('No authentication token available. Please enable demo mode or log in.');
+        return;
+      }
+
+      console.log('🌐 Making API call to real-time tracking dashboard...');
       const response = await fetch('/api/real-time-tracking/dashboard', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -102,15 +122,20 @@ const RealTimeTrackingDashboard: React.FC = () => {
         },
       });
 
+      console.log('📡 API response status:', response.status);
+      console.log('📡 API response ok:', response.ok);
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const result = await response.json();
+      console.log('📊 API response data:', result);
       setDashboardData(result.data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch dashboard data');
-      console.error('Error fetching dashboard data:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch dashboard data';
+      console.error('❌ Error fetching dashboard data:', err);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
