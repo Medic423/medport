@@ -17,10 +17,11 @@ import RealTimeTracking from './pages/RealTimeTracking';
 import Analytics from './pages/Analytics';
 import OfflineCapabilities from './pages/OfflineCapabilities';
 import OfflineIndicator from './components/OfflineIndicator';
+import MainLogin from './components/MainLogin';
 
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system' | 'real-time-tracking' | 'analytics' | 'offline-capabilities'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system' | 'real-time-tracking' | 'analytics' | 'offline-capabilities' | 'login' | 'transport-center-dashboard' | 'hospital-dashboard'>('home');
 
   return (
     <div className="App">
@@ -33,6 +34,12 @@ function App() {
             </div>
             <div className="flex items-center space-x-4">
               <OfflineIndicator showDetails={true} />
+              <button
+                onClick={() => setCurrentPage('login')}
+                className="px-3 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-500 hover:text-white"
+              >
+                Login
+              </button>
             </div>
             <div className="flex space-x-2">
               {/* Home */}
@@ -448,6 +455,9 @@ function App() {
         {currentPage === 'real-time-tracking' && <RealTimeTracking />}
         {currentPage === 'analytics' && <Analytics />}
         {currentPage === 'offline-capabilities' && <OfflineCapabilities />}
+        {currentPage === 'login' && <MainLogin onNavigate={(page) => setCurrentPage(page as any)} />}
+        {currentPage === 'transport-center-dashboard' && <div className="min-h-screen bg-gray-50 p-8"><h1 className="text-3xl font-bold">Transport Center Dashboard</h1><p className="text-gray-600">Welcome to the Transport Center dashboard. This will be implemented next.</p></div>}
+        {currentPage === 'hospital-dashboard' && <div className="min-h-screen bg-gray-50 p-8"><h1 className="text-3xl font-bold">Hospital Dashboard</h1><p className="text-gray-600">Welcome to the Hospital dashboard. This will be implemented next.</p></div>}
         {currentPage === 'agency-registration' && <AgencyRegistration onNavigate={(page) => setCurrentPage(page as any)} />}
         {currentPage === 'agency-login' && <AgencyLogin onNavigate={(page) => setCurrentPage(page as any)} />}
         {currentPage === 'agency-dashboard' && <AgencyDashboard onNavigate={(page) => setCurrentPage(page as any)} />}
