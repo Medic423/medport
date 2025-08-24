@@ -60,6 +60,12 @@ const UnitAssignmentDashboard: React.FC = () => {
   const [selectedTimeRange, setSelectedTimeRange] = useState('30d');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [optimizationResults, setOptimizationResults] = useState<{
+    assignmentsCreated: number;
+    totalRevenueIncrease: number;
+    unitsUtilized: number;
+    assignments: any[];
+  } | null>(null);
 
   const isDemoMode = localStorage.getItem('demoMode') === 'true';
 
@@ -171,6 +177,18 @@ const UnitAssignmentDashboard: React.FC = () => {
       setIsLoading(true);
       setError('');
 
+      // Load units from backend
+      const unitsResponse = await fetch('/api/unit-assignment/units', {
+        headers: {
+          'Authorization': 'Bearer demo-token'
+        }
+      });
+      
+      if (unitsResponse.ok) {
+        const unitsData = await unitsResponse.json();
+        setUnits(unitsData.data);
+      }
+
       // Load availability matrix
       const matrixResponse = await fetch('/api/unit-assignment/availability-matrix', {
         headers: {
@@ -240,6 +258,12 @@ const UnitAssignmentDashboard: React.FC = () => {
 
   const handleOptimizeAssignments = async () => {
     try {
+      console.log('[MedPort:UnitAssignment] Sending optimization request...');
+      console.log('[MedPort:UnitAssignment] Headers:', {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer demo-token'
+      });
+      
       const response = await fetch('/api/unit-assignment/optimize', {
         method: 'POST',
         headers: {
@@ -255,18 +279,34 @@ const UnitAssignmentDashboard: React.FC = () => {
         })
       });
 
+      console.log('[MedPort:UnitAssignment] Response status:', response.status);
+      console.log('[MedPort:UnitAssignment] Response ok:', response.ok);
+
       if (response.ok) {
         const result = await response.json();
-        alert(`Optimization completed: ${result.data.message}`);
-        // Refresh data
-        if (isDemoMode) {
-          loadDemoData();
-        } else {
-          loadDashboardData();
+        console.log('[MedPort:UnitAssignment] Optimization result:', result);
+        
+        // Update the dashboard with the optimization results
+        if (result.data.success) {
+          setOptimizationResults({
+            assignmentsCreated: result.data.assignmentsCreated,
+            totalRevenueIncrease: result.data.totalRevenueIncrease,
+            unitsUtilized: result.data.unitsUtilized,
+            assignments: result.data.assignments
+          });
+          
+          // Show success message with actual results
+          alert(`Optimization completed successfully!\n\nAssignments Created: ${result.data.assignmentsCreated}\nRevenue Increase: $${result.data.totalRevenueIncrease.toFixed(2)}\nUnits Utilized: ${result.data.unitsUtilized}`);
         }
+        // Refresh data - always load real data after optimization
+        loadDashboardData();
+      } else {
+        const errorText = await response.text();
+        console.error('[MedPort:UnitAssignment] Response not OK:', response.status, errorText);
+        alert(`Optimization failed: ${response.status} - ${errorText}`);
       }
     } catch (error) {
-      console.error('Error optimizing assignments:', error);
+      console.error('[MedPort:UnitAssignment] Error optimizing assignments:', error);
       alert('Failed to optimize assignments');
     }
   };
@@ -313,6 +353,18 @@ const UnitAssignmentDashboard: React.FC = () => {
             >
               <CogIcon className="h-4 w-4 mr-2" />
               Optimize Assignments
+            </button>
+            <button
+              onClick={() => {
+                // Always load real data from backend for testing
+                loadDashboardData();
+              }}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Load Real Data
             </button>
             <button className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
               <PlusIcon className="h-4 w-4 mr-2" />
@@ -630,6 +682,42 @@ const UnitAssignmentDashboard: React.FC = () => {
                     Run Optimization
                   </button>
                 </div>
+
+                {/* Optimization Results */}
+                {optimizationResults && (
+                  <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-6">
+                    <h4 className="text-lg font-medium text-green-900 mb-4">Optimization Results</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-green-600">{optimizationResults.assignmentsCreated}</p>
+                        <p className="text-sm text-green-700">Assignments Created</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-green-600">${optimizationResults.totalRevenueIncrease.toFixed(2)}</p>
+                        <p className="text-sm text-green-700">Revenue Increase</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-green-600">{optimizationResults.unitsUtilized}</p>
+                        <p className="text-sm text-green-700">Units Utilized</p>
+                      </div>
+                    </div>
+                    
+                    {optimizationResults.assignments.length > 0 && (
+                      <div className="mt-4">
+                        <h5 className="font-medium text-green-900 mb-2">Recent Assignments</h5>
+                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                          {optimizationResults.assignments.slice(0, 5).map((assignment, index) => (
+                            <div key={index} className="flex items-center justify-between text-sm bg-white rounded px-3 py-2">
+                              <span className="text-green-800">Unit {assignment.unitNumber}</span>
+                              <span className="text-green-600">Score: {assignment.score}</span>
+                              <span className="text-green-700">${assignment.estimatedRevenue}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}

@@ -7,17 +7,26 @@ import { z } from 'zod';
 
 const router = express.Router();
 
-// Demo mode middleware for GET requests
+// Demo mode middleware for GET and POST requests
 const demoOrAuth = (req: any, res: any, next: any) => {
-  // Allow demo access for GET requests
-  if (req.method === 'GET') {
+  console.log('[MedPort:UnitAssignment] Demo middleware - Method:', req.method, 'Headers:', req.headers);
+  
+  // Allow demo access for GET and POST requests
+  if (req.method === 'GET' || req.method === 'POST') {
     const authHeader = req.headers['authorization'];
-    if (authHeader && authHeader.includes('demo-token')) {
-      // Set demo user for GET requests
+    console.log('[MedPort:UnitAssignment] Demo middleware - Auth header:', authHeader);
+    
+    if (authHeader && (authHeader.includes('demo-token') || authHeader === 'Bearer demo-token')) {
+      console.log('[MedPort:UnitAssignment] Demo middleware - Demo token detected, setting demo user');
+      // Set demo user for GET and POST requests
       req.user = { id: 'demo-user', email: 'demo@medport.com', role: 'COORDINATOR' };
       return next();
+    } else {
+      console.log('[MedPort:UnitAssignment] Demo middleware - No valid demo token found');
     }
   }
+  
+  console.log('[MedPort:UnitAssignment] Demo middleware - Falling back to regular auth');
   // For all other requests, require proper authentication
   return authenticateToken(req, res, next);
 };
@@ -209,6 +218,43 @@ router.get('/availability-matrix', async (req: AuthRequest, res) => {
 });
 
 /**
+ * GET /api/unit-assignment/debug
+ * Debug endpoint to check data
+ */
+router.get('/debug', async (req: AuthRequest, res) => {
+  try {
+    console.log('[MedPort:UnitAssignment] GET /debug - Debug request received');
+
+    // Get unassigned transport requests using the service
+    const unassignedRequests = await unitAssignmentService.getAvailableUnits(TransportLevel.BLS);
+    
+    // Get available units using the service
+    const availableUnits = await unitAssignmentService.getAvailableUnits(TransportLevel.BLS);
+
+    res.status(200).json({
+      message: 'Debug data retrieved successfully',
+      data: {
+        unassignedRequests: {
+          count: unassignedRequests.length,
+          requests: unassignedRequests
+        },
+        availableUnits: {
+          count: availableUnits.length,
+          units: availableUnits
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('[MedPort:UnitAssignment] Error during debug:', error);
+    res.status(500).json({
+      error: 'Debug failed',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
  * POST /api/unit-assignment/optimize
  * Optimize unit assignments for maximum revenue
  */
@@ -238,6 +284,46 @@ router.post('/optimize', async (req: AuthRequest, res) => {
     console.error('[MedPort:UnitAssignment] Error during optimization:', error);
     res.status(500).json({
       error: 'Unit assignment optimization failed',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * GET /api/unit-assignment/units
+ * Get all units with availability status
+ */
+router.get('/units', async (req: AuthRequest, res) => {
+  try {
+    console.log('[MedPort:UnitAssignment] GET /units - Query params:', req.query);
+
+    const { status, transportLevel } = req.query;
+
+    // Build where clause
+    const where: any = {
+      isActive: true
+    };
+
+    if (status) {
+      where.currentStatus = status;
+    }
+
+    if (transportLevel) {
+      where.type = transportLevel;
+    }
+
+    // Get all units from the database
+    const units = await unitAssignmentService.getAllUnits(where);
+
+    res.status(200).json({
+      message: 'Units retrieved successfully',
+      data: units
+    });
+
+  } catch (error) {
+    console.error('[MedPort:UnitAssignment] Error getting units:', error);
+    res.status(500).json({
+      error: 'Failed to retrieve units',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
   }

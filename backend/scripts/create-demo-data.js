@@ -21,12 +21,22 @@ async function createDemoData() {
     const facilities = await createDemoFacilities();
     console.log(`✅ Created ${facilities.length} facilities`);
 
-    // Step 2: Create demo transport requests
+    // Step 2: Create demo agencies
+    console.log('\n🚑 Creating demo agencies...');
+    const agencies = await createDemoAgencies();
+    console.log(`✅ Created ${agencies.length} agencies`);
+
+    // Step 3: Create demo units
+    console.log('\n🚑 Creating demo units...');
+    const units = await createDemoUnits(agencies);
+    console.log(`✅ Created ${units.length} units`);
+
+    // Step 3: Create demo transport requests
     console.log('\n🚑 Creating demo transport requests...');
     const transportRequests = await createDemoTransportRequests(facilities, demoUser.id);
     console.log(`✅ Created ${transportRequests.length} transport requests`);
 
-    // Step 3: Create demo distance matrix entries
+    // Step 4: Create demo distance matrix entries
     console.log('\n🗺️ Creating demo distance matrix...');
     const distanceEntries = await createDemoDistanceMatrix(facilities);
     console.log(`✅ Created ${distanceEntries.length} distance matrix entries`);
@@ -34,6 +44,8 @@ async function createDemoData() {
     console.log('\n🎉 Demo data creation completed successfully!');
     console.log('\n📊 Summary:');
     console.log(`   - Facilities: ${facilities.length}`);
+    console.log(`   - Agencies: ${agencies.length}`);
+    console.log(`   - Units: ${units.length}`);
     console.log(`   - Transport Requests: ${transportRequests.length}`);
     console.log(`   - Distance Matrix Entries: ${distanceEntries.length}`);
     console.log('\n🔗 You can now test:');
@@ -122,6 +134,132 @@ async function createDemoFacilities() {
   }
 
   return facilities;
+}
+
+async function createDemoAgencies() {
+  const agencyData = [
+    {
+      name: 'Philadelphia EMS',
+      contactName: 'John Smith',
+      phone: '215-555-0101',
+      email: 'info@phillyems.com',
+      address: '123 Main St',
+      city: 'Philadelphia',
+      state: 'PA',
+      zipCode: '19107',
+      capabilities: ['BLS', 'ALS', 'CCT'],
+      serviceArea: { radius: 50, center: { lat: 39.9447, lng: -75.1550 } },
+      operatingHours: { start: '06:00', end: '18:00' },
+      pricingStructure: { base: 150, perMile: 2.50 }
+    },
+    {
+      name: 'Pennsylvania Ambulance Service',
+      contactName: 'Sarah Johnson',
+      phone: '215-555-0202',
+      email: 'dispatch@paambulance.com',
+      address: '456 Oak Ave',
+      city: 'Philadelphia',
+      state: 'PA',
+      zipCode: '19104',
+      capabilities: ['BLS', 'ALS'],
+      serviceArea: { radius: 40, center: { lat: 39.9589, lng: -75.2000 } },
+      operatingHours: { start: '08:00', end: '20:00' },
+      pricingStructure: { base: 140, perMile: 2.25 }
+    }
+  ];
+
+  const agencies = [];
+  for (const data of agencyData) {
+    try {
+      const agency = await prisma.transportAgency.create({
+        data: {
+          name: data.name,
+          contactName: data.contactName,
+          phone: data.phone,
+          email: data.email,
+          address: data.address,
+          city: data.city,
+          state: data.state,
+          zipCode: data.zipCode,
+          capabilities: data.capabilities,
+          serviceArea: data.serviceArea,
+          operatingHours: data.operatingHours,
+          pricingStructure: data.pricingStructure
+        }
+      });
+      agencies.push(agency);
+    } catch (error) {
+      console.log(`⚠️ Skipping agency ${data.name}: ${error.message}`);
+    }
+  }
+
+  return agencies;
+}
+
+async function createDemoUnits(agencies) {
+  const unitData = [
+    {
+      unitNumber: 'BLS-001',
+      type: 'BLS',
+      currentStatus: 'AVAILABLE',
+      isActive: true,
+      agencyId: agencies[0]?.id,
+      currentLocation: { lat: 39.9447, lng: -75.1550 }
+    },
+    {
+      unitNumber: 'BLS-002',
+      type: 'BLS',
+      currentStatus: 'AVAILABLE',
+      isActive: true,
+      agencyId: agencies[0]?.id,
+      currentLocation: { lat: 39.9489, lng: -75.1578 }
+    },
+    {
+      unitNumber: 'ALS-001',
+      type: 'ALS',
+      currentStatus: 'AVAILABLE',
+      isActive: true,
+      agencyId: agencies[0]?.id,
+      currentLocation: { lat: 39.9817, lng: -75.1550 }
+    },
+    {
+      unitNumber: 'CCT-001',
+      type: 'CCT',
+      currentStatus: 'AVAILABLE',
+      isActive: true,
+      agencyId: agencies[0]?.id,
+      currentLocation: { lat: 40.0376, lng: -75.1420 }
+    },
+    {
+      unitNumber: 'CCT-002',
+      type: 'CCT',
+      currentStatus: 'AVAILABLE',
+      isActive: true,
+      agencyId: agencies[1]?.id,
+      currentLocation: { lat: 39.9589, lng: -75.2000 }
+    }
+  ];
+
+  const units = [];
+  for (const data of unitData) {
+    try {
+      const unit = await prisma.unit.create({
+        data: {
+          unitNumber: data.unitNumber,
+          type: data.type,
+          currentStatus: data.currentStatus,
+          isActive: data.isActive,
+          currentLocation: data.currentLocation,
+          agencyId: data.agencyId
+        }
+      });
+      units.push(unit);
+    } catch (error) {
+      console.log(`⚠️ Skipping unit ${data.unitNumber}: ${error.message}`);
+    }
+  }
+
+  return units;
 }
 
 async function createDemoTransportRequests(facilities, demoUserId) {

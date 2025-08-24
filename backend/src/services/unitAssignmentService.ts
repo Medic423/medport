@@ -75,27 +75,72 @@ export class UnitAssignmentService {
   }
 
   /**
+   * Get all units with optional filtering
+   */
+  async getAllUnits(where: any = {}): Promise<any[]> {
+    try {
+      console.log('[UNIT_ASSIGNMENT_SERVICE] Getting all units with filters:', where);
+      
+      const units = await prisma.unit.findMany({
+        where: {
+          isActive: true,
+          ...where
+        },
+        include: {
+          agency: true,
+          unitAvailability: {
+            orderBy: { lastUpdated: 'desc' },
+            take: 1
+          }
+        }
+      });
+
+      return units.map(unit => ({
+        id: unit.id,
+        unitNumber: unit.unitNumber,
+        type: unit.type,
+        currentStatus: unit.currentStatus,
+        agencyName: unit.agency.name,
+        currentLocation: unit.currentLocation,
+        shiftStart: unit.shiftStart,
+        shiftEnd: unit.shiftEnd,
+        estimatedRevenue: 0, // Will be calculated based on assignments
+        lastStatusUpdate: unit.unitAvailability?.[0]?.lastUpdated || unit.updatedAt
+      }));
+
+    } catch (error) {
+      console.error('[UNIT_ASSIGNMENT_SERVICE] Error getting all units:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get available units for a specific transport level and agency
    */
   async getAvailableUnits(transportLevel: TransportLevel, agencyId?: string): Promise<any[]> {
-    const where: any = {
+    try {
+      console.log('[UNIT_ASSIGNMENT_SERVICE] Getting available units for:', { transportLevel, agencyId });
+      
+      const where: any = {
       type: transportLevel,
-      currentStatus: UnitStatus.AVAILABLE,
       isActive: true
     };
+
+    // Handle both enum and string values for status
+    where.OR = [
+      { currentStatus: UnitStatus.AVAILABLE },
+      { currentStatus: 'AVAILABLE' }
+    ];
 
     if (agencyId) {
       where.agencyId = agencyId;
     }
 
-    return await prisma.unit.findMany({
+    const units = await prisma.unit.findMany({
       where,
       include: {
         agency: true,
         unitAvailability: {
-          where: {
-            status: UnitStatus.AVAILABLE
-          },
           orderBy: {
             lastUpdated: 'desc'
           },
@@ -103,6 +148,17 @@ export class UnitAssignmentService {
         }
       }
     });
+
+    console.log(`[UNIT_ASSIGNMENT_SERVICE] Found ${units.length} available units for ${transportLevel}`);
+    units.forEach(unit => {
+      console.log(`[UNIT_ASSIGNMENT_SERVICE] Unit: ${unit.unitNumber} (${unit.type}) - Status: ${unit.currentStatus}`);
+    });
+
+    return units;
+    } catch (error) {
+      console.error('[UNIT_ASSIGNMENT_SERVICE] Error getting available units:', error);
+      return [];
+    }
   }
 
   /**
@@ -196,15 +252,17 @@ export class UnitAssignmentService {
    */
   private async calculateTimeEfficiencyScore(unit: any, transportRequest: any, assignmentTime: Date): Promise<number> {
     // Check if unit is within optimal shift time
-    const unitAvailability = unit.unitAvailability[0];
-    if (unitAvailability) {
-      const shiftStart = new Date(unitAvailability.shiftStart);
-      const shiftEnd = new Date(unitAvailability.shiftEnd);
-      
-      if (assignmentTime >= shiftStart && assignmentTime <= shiftEnd) {
-        return 1.0; // Optimal timing
-      } else if (assignmentTime >= shiftStart && assignmentTime <= new Date(shiftEnd.getTime() + 2 * 60 * 60 * 1000)) {
-        return 0.8; // Within 2 hours of shift end
+    if (unit.unitAvailability && unit.unitAvailability.length > 0) {
+      const unitAvailability = unit.unitAvailability[0];
+      if (unitAvailability && unitAvailability.shiftStart && unitAvailability.shiftEnd) {
+        const shiftStart = new Date(unitAvailability.shiftStart);
+        const shiftEnd = new Date(unitAvailability.shiftEnd);
+        
+        if (assignmentTime >= shiftStart && assignmentTime <= shiftEnd) {
+          return 1.0; // Optimal timing
+        } else if (assignmentTime >= shiftStart && assignmentTime <= new Date(shiftEnd.getTime() + 2 * 60 * 60 * 1000)) {
+          return 0.8; // Within 2 hours of shift end
+        }
       }
     }
     
@@ -488,13 +546,31 @@ export class UnitAssignmentService {
         }
       });
 
-      // Get available units
-      const availableUnits = await prisma.unit.findMany({
-        where: {
-          currentStatus: UnitStatus.AVAILABLE,
-          isActive: true
-        }
+      console.log(`[UNIT_ASSIGNMENT_SERVICE] Found ${unassignedRequests.length} unassigned requests`);
+      
+      if (unassignedRequests.length === 0) {
+        console.log('[UNIT_ASSIGNMENT_SERVICE] No unassigned requests found');
+        return {
+          success: true,
+          assignmentsCreated: 0,
+          totalRevenueIncrease: 0,
+          unitsUtilized: 0,
+          assignments: [],
+          message: 'No unassigned transport requests to optimize'
+        };
+      }
+
+      unassignedRequests.forEach(req => {
+        console.log(`[UNIT_ASSIGNMENT_SERVICE] Request ${req.id}: ${req.transportLevel} from ${req.originFacility?.name} to ${req.destinationFacility?.name}`);
       });
+
+      // Get available units for each transport level
+      const availableUnitsByLevel = new Map();
+      for (const request of unassignedRequests) {
+        const units = await this.getAvailableUnits(request.transportLevel);
+        availableUnitsByLevel.set(request.transportLevel, units);
+        console.log(`[UNIT_ASSIGNMENT_SERVICE] Found ${units.length} available units for ${request.transportLevel}`);
+      }
 
       const assignments = [];
       let totalRevenueIncrease = 0;
@@ -502,7 +578,12 @@ export class UnitAssignmentService {
 
       // Simple greedy algorithm for demo
       for (const request of unassignedRequests) {
-        if (availableUnits.length === 0) break;
+        const availableUnits = availableUnitsByLevel.get(request.transportLevel) || [];
+        
+        if (availableUnits.length === 0) {
+          console.log(`[UNIT_ASSIGNMENT_SERVICE] No available units for ${request.transportLevel} transport level`);
+          continue;
+        }
 
         // Find best unit for this request
         let bestUnit = null;
@@ -510,33 +591,74 @@ export class UnitAssignmentService {
 
         for (let i = 0; i < availableUnits.length; i++) {
           const unit = availableUnits[i];
-          if (unit.type === request.transportLevel) {
-            const score = await this.calculateUnitAssignmentScores([unit], request.id, new Date());
-            if (score[0] && score[0].score > bestScore) {
-              bestScore = score[0].score;
-              bestUnit = { unit, index: i };
+          // Compare transport levels, handling both string and enum values
+          if (unit.type === request.transportLevel || 
+              unit.type.toString() === request.transportLevel.toString()) {
+            try {
+              const score = await this.calculateUnitAssignmentScores([unit], request.id, new Date());
+              if (score && score.length > 0 && score[0].score > bestScore) {
+                bestScore = score[0].score;
+                bestUnit = { unit, index: i };
+              }
+            } catch (error) {
+              console.log(`[UNIT_ASSIGNMENT_SERVICE] Error calculating score for unit ${unit.id}:`, error);
+              continue;
             }
           }
         }
 
         if (bestUnit) {
-          // Create assignment
-          const assignment = await this.assignTransportToUnit({
-            transportRequestId: request.id,
-            transportLevel: request.transportLevel,
-            assignmentTime: new Date(),
-            assignedBy: 'system-optimization'
-          });
+          try {
+            console.log(`[UNIT_ASSIGNMENT_SERVICE] Creating assignment for request ${request.id} to unit ${bestUnit.unit.unitNumber}`);
+            
+            // Create assignment directly
+            const assignment = await this.createUnitAssignment({
+              unitId: bestUnit.unit.id,
+              transportRequestId: request.id,
+              assignmentType: 'PRIMARY',
+              startTime: new Date(),
+              status: 'ACTIVE',
+              assignedBy: 'cmeo6eojr0002ccpwrin40zz7' // Use existing agency user ID
+            });
 
-          assignments.push(assignment);
-          totalRevenueIncrease += assignment.estimatedRevenue || 0;
-          unitsUtilized++;
+            // Update unit status
+            await this.updateUnitStatus(bestUnit.unit.id, 'IN_USE');
 
-          // Remove assigned unit from available list
-          availableUnits.splice(bestUnit.index, 1);
+            // Update transport request status and assign unit
+            await this.updateTransportRequestStatus(request.id, 'SCHEDULED');
+            await prisma.transportRequest.update({
+              where: { id: request.id },
+              data: { assignedUnitId: bestUnit.unit.id }
+            });
+
+            assignments.push({
+              success: true,
+              assignmentId: assignment.id,
+              unitId: bestUnit.unit.id,
+              unitNumber: bestUnit.unit.unitNumber,
+              score: bestScore,
+              estimatedRevenue: bestScore * 100, // Simple revenue calculation
+              assignmentTime: assignment.startTime,
+              message: `Successfully assigned to ${bestUnit.unit.unitNumber} with score ${bestScore.toFixed(2)}`
+            });
+
+            totalRevenueIncrease += bestScore * 100;
+            unitsUtilized++;
+
+            // Remove assigned unit from available list
+            availableUnits.splice(bestUnit.index, 1);
+            console.log(`[UNIT_ASSIGNMENT_SERVICE] Successfully assigned request ${request.id} to unit ${bestUnit.unit.unitNumber}`);
+          } catch (error) {
+            console.log(`[UNIT_ASSIGNMENT_SERVICE] Error creating assignment for unit ${bestUnit.unit.id}:`, error);
+            continue;
+          }
+        } else {
+          console.log(`[UNIT_ASSIGNMENT_SERVICE] No suitable unit found for request ${request.id} (${request.transportLevel})`);
         }
       }
 
+      console.log(`[UNIT_ASSIGNMENT_SERVICE] Optimization completed: ${assignments.length} assignments created`);
+      
       return {
         success: true,
         assignmentsCreated: assignments.length,

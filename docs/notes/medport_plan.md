@@ -432,7 +432,7 @@ MedPort is a Progressive Web App (PWA) designed to coordinate interfacility EMS 
 - Analytics dashboard displaying performance metrics
 - All API endpoints validated and working correctly
 
-### 4.4 Unit Assignment & Revenue Tracking ✅ **COMPLETED**
+### 4.4 Unit Assignment & Revenue Tracking ✅ **PARTIALLY COMPLETED**
 - [x] **Assignment Management with Revenue Focus**
   - [x] Create visual unit tracking dashboard
   - [x] Implement mileage per unit per shift tracking
@@ -443,7 +443,7 @@ MedPort is a Progressive Web App (PWA) designed to coordinate interfacility EMS 
   - [x] Create shift change management
   - [x] Implement unit performance metrics and revenue analysis
 
-**Phase 4.4 Implementation Summary: ✅ COMPLETED**
+**Phase 4.4 Implementation Summary: ✅ PARTIALLY COMPLETED**
 
 **Backend Components:**
 - `UnitAssignmentService`: Core service for intelligent route-to-unit assignment with revenue optimization
@@ -478,6 +478,31 @@ MedPort is a Progressive Web App (PWA) designed to coordinate interfacility EMS 
 - Conflict detection system validated with overlapping assignment scenarios
 - All API endpoints validated and working correctly
 - Frontend components fully responsive and cross-browser compatible
+
+**Current Issue & Resolution Status:**
+- ✅ **Authentication Fixed**: Demo mode middleware now properly handles `Bearer demo-token` format
+- ✅ **API Endpoints Working**: All unit assignment endpoints return 200 status (no more 401 errors)
+- ✅ **Frontend Integration**: Optimization button successfully reaches backend and receives responses
+- ❌ **Optimization Logic Issue**: Button runs successfully but finds 0 assignments to create
+- 🔄 **Debugging in Progress**: Enhanced logging added to identify why no data is found for optimization
+
+**Technical Details of Current Issue:**
+- **Problem**: Optimization runs successfully but returns "0 assignments created, $0.00 revenue increase"
+- **Root Cause**: Likely data state mismatch - transport requests may not be in expected PENDING status or units not in AVAILABLE status
+- **Files Modified**: 
+  - `backend/src/services/unitAssignmentService.ts` - Enhanced error handling and logging
+  - `backend/src/routes/unitAssignment.ts` - Fixed demo mode middleware
+  - `frontend/src/components/UnitAssignmentDashboard.tsx` - Added detailed logging
+- **Debug Scripts Created**: `backend/scripts/reset-demo-data.js` to reset data to unassigned state
+
+**Next Steps Required:**
+1. Investigate actual database state of transport requests and units
+2. Verify enum values match between code and database
+3. Add more detailed logging to optimization process
+4. Test data reset script to ensure clean unassigned state
+5. Debug why optimization queries are not finding expected data
+
+**Status**: Phase 4.4 is functionally complete but requires debugging to resolve the optimization data finding issue. Core functionality works, authentication is fixed, but optimization logic needs investigation to understand why no assignments are being created.
 
 ## Phase 5: Communication & Automation (Week 7)
 
