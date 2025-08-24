@@ -349,19 +349,30 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
         <div className="w-full h-full rounded-lg shadow-lg bg-gradient-to-br from-blue-50 to-green-50 border-2 border-dashed border-blue-300">
           {/* Demo Map Background */}
           <div className="relative w-full h-full">
-            {/* Demo Grid Pattern */}
-            <div className="absolute inset-0 opacity-20">
+            {/* Enhanced Demo Grid Pattern */}
+            <div className="absolute inset-0 opacity-30">
               <div className="w-full h-full" style={{
                 backgroundImage: `
-                  linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
-                  linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px)
+                  linear-gradient(rgba(59, 130, 246, 0.15) 1px, transparent 1px),
+                  linear-gradient(90deg, rgba(59, 130, 246, 0.15) 1px, transparent 1px)
                 `,
-                backgroundSize: '20px 20px'
+                backgroundSize: '40px 40px'
+              }} />
+            </div>
+            
+            {/* Roads Pattern */}
+            <div className="absolute inset-0 opacity-40">
+              <div className="w-full h-full" style={{
+                backgroundImage: `
+                  linear-gradient(rgba(107, 114, 128, 0.2) 2px, transparent 2px),
+                  linear-gradient(90deg, rgba(107, 114, 128, 0.2) 2px, transparent 2px)
+                `,
+                backgroundSize: '120px 120px'
               }} />
             </div>
             
             {/* Demo Map Title */}
-            <div className="absolute top-4 left-4 bg-white bg-opacity-90 rounded-lg px-4 py-2 shadow-lg">
+            <div className="absolute top-4 left-4 bg-white bg-opacity-95 rounded-lg px-4 py-2 shadow-lg border border-blue-200">
               <h3 className="text-lg font-semibold text-blue-800">🗺️ Demo Map Mode</h3>
               <p className="text-sm text-blue-600">Interactive simulation - no API key required</p>
             </div>
@@ -377,14 +388,28 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
                 }}
                 onClick={() => onUnitSelect?.(location)}
               >
-                {/* Demo Marker */}
+                {/* Enhanced Demo Marker */}
                 <div className="relative">
-                  <div className={`w-6 h-6 rounded-full border-2 border-white shadow-lg ${
+                  {/* Main Marker */}
+                  <div className={`w-8 h-8 rounded-full border-3 border-white shadow-xl ${
                     location.batteryLevel > 20 ? 'bg-green-500' : 'bg-red-500'
                   }`} />
-                  <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-90 rounded px-2 py-1 shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-                    <p className="text-xs font-medium text-gray-800">{location.unitNumber}</p>
+                  
+                  {/* Pulse Animation */}
+                  <div className={`absolute inset-0 rounded-full border-2 border-white animate-ping ${
+                    location.batteryLevel > 20 ? 'border-green-400' : 'border-red-400'
+                  }`} style={{ animationDuration: '2s' }} />
+                  
+                  {/* Unit Icon */}
+                  <div className="absolute inset-0 flex items-center justify-center text-white text-sm font-bold">
+                    🚑
+                  </div>
+                  
+                  {/* Enhanced Tooltip */}
+                  <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-95 rounded-lg px-3 py-2 shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity border border-gray-200">
+                    <p className="text-sm font-semibold text-gray-800">{location.unitNumber}</p>
                     <p className="text-xs text-gray-600">{location.agencyName}</p>
+                    <p className="text-xs text-gray-500">Battery: {location.batteryLevel}%</p>
                   </div>
                 </div>
               </div>
@@ -392,29 +417,56 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
             {/* Demo Map Controls */}
             <div className="absolute top-4 right-4 space-y-2">
-              <div className="bg-white bg-opacity-90 rounded-lg shadow-lg p-2">
+              <div className="bg-white bg-opacity-95 rounded-lg shadow-lg p-2 border border-gray-200">
                 <button
                   onClick={() => console.log('Demo: Zoom in')}
-                  className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded"
+                  className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
                 >
                   +
                 </button>
                 <button
                   onClick={() => console.log('Demo: Zoom out')}
-                  className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded"
+                  className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
                 >
                   −
                 </button>
               </div>
               
-              <div className="bg-white bg-opacity-90 rounded-lg shadow-lg p-2">
+              <div className="bg-white bg-opacity-95 rounded-lg shadow-lg p-2 border border-gray-200">
                 <button
                   onClick={() => console.log('Demo: Reset view')}
-                  className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded"
+                  className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
                   title="Reset View"
                 >
                   🏠
                 </button>
+              </div>
+            </div>
+
+            {/* Compass */}
+            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-95 rounded-lg p-2 shadow-lg border border-gray-200">
+              <div className="text-center">
+                <div className="text-lg">🧭</div>
+                <div className="text-xs text-gray-600 font-medium">N</div>
+              </div>
+            </div>
+
+            {/* Simulated Landmarks */}
+            <div className="absolute bottom-20 left-8 bg-white bg-opacity-95 rounded-lg p-3 shadow-lg border border-gray-200">
+              <h4 className="text-sm font-semibold text-gray-800 mb-2">🏥 Nearby Facilities</h4>
+              <div className="space-y-1 text-xs text-gray-600">
+                <div className="flex items-center space-x-2">
+                  <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                  <span>Altoona Hospital (0.8 mi)</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                  <span>Central Medical (1.2 mi)</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                  <span>Valley Clinic (0.5 mi)</span>
+                </div>
               </div>
             </div>
 

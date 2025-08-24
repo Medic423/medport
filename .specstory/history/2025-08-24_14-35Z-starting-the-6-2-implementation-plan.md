@@ -5785,3 +5785,265 @@ The Real-Time Tracking page should now work perfectly and show you a fully funct
 
 ---
 
+_**User**_
+
+Still getting a blank screen. Here is what I see in the console.
+
+---
+
+_**Assistant**_
+
+I can see the issue! The error `process is not defined` is occurring in the `InteractiveMap` component. This happens because `process.env` is a Node.js environment variable that doesn't exist in the browser. In Vite, we need to use `import.meta.env` instead.
+
+Let me fix this:
+
+
+---
+
+<details><summary>Edit file: frontend/src/components/InteractiveMap.tsx</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -48,5 +48,5 @@
+  
+      try {
+-       const apiKey = process.env.VITE_GOOGLE_MAPS_API_KEY;
++       const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+        
+        if (!apiKey || apiKey === 'demo-key' || apiKey === 'your-google-maps-api-key') {
+```
+
+</details>
+
+---
+
+Now I need to fix the other reference to `process.env` in the demo mode check:
+
+
+---
+
+<details><summary>Edit file: frontend/src/components/InteractiveMap.tsx</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 3, lines removed: 3
+
+```diff
+@@ -339,7 +339,7 @@
+  
+    // Check if we're in demo mode (no valid API key)
+-   const isDemoMode = !process.env.VITE_GOOGLE_MAPS_API_KEY || 
+-                     process.env.VITE_GOOGLE_MAPS_API_KEY === 'demo-key' || 
+-                     process.env.VITE_GOOGLE_MAPS_API_KEY === 'your-google-maps-api-key';
++   const isDemoMode = !import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 
++                     import.meta.env.VITE_GOOGLE_MAPS_API_KEY === 'demo-key' || 
++                     import.meta.env.VITE_GOOGLE_MAPS_API_KEY === 'your-google-maps-api-key';
+  
+    if (isDemoMode && isMapLoaded) {
+```
+
+</details>
+
+---
+
+Now let me test if the frontend builds successfully with our fixes:
+
+
+---
+
+```bash
+npm run build:frontend
+```
+
+```
+
+
+> medport@1.0.0 build:frontend
+> cd frontend && npm run build
+
+
+> frontend@1.0.0 build
+> vite build
+
+vite v7.1.3 building for production...
+✓ 2066 modules transformed.
+dist/index.html                                  0.68 kB │ gzip:   0.37 kB
+dist/assets/index-CYLZzh58.css                  39.17 kB │ gzip:   6.66 kB
+dist/assets/qr-scanner-worker.min-D85Z9gVD.js   43.95 kB │ gzip:  10.40 kB
+dist/assets/index-TnY5g3xT.js                  753.62 kB │ gzip: 162.61 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-option
+s/#output-manualchunks
+
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 1.29s
+```
+
+---
+
+Perfect! The frontend builds successfully. Now let me commit our fix:
+
+
+---
+
+```bash
+git add . && git commit -m "Fix process.env error in InteractiveMap component
+
+- Changed process.env.VITE_GOOGLE_MAPS_API_KEY to import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+- This fixes the 'process is not defined' error in the browser
+- Vite requires import.meta.env for environment variables in the frontend
+- Component should now render properly without blank screen" && git push
+```
+
+```
+<ow render properly without blank screen" && git push
+husky - DEPRECATED
+
+Please remove the following two lines from .husky/pre-commit:
+
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+They WILL FAIL in v10.0.0
+
+✔ Backed up original state in git stash (13bea11)
+✔ Running tasks for staged files...
+✔ Applying modifications from tasks...
+✔ Cleaning up temporary files...
+[main 71d7d81] Fix process.env error in InteractiveMap component
+ 2 files changed, 729 insertions(+), 4 deletions(-)
+Enumerating objects: 17, done.
+Counting objects: 100% (17/17), done.
+Delta compression using up to 14 threads
+Compressing objects: 100% (9/9), done.
+Writing objects: 100% (9/9), 4.75 KiB | 4.75 MiB/s, done.
+Total 9 (delta 7), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (7/7), completed with 7 local objects.
+To https://github.com/Medic423/medport.git
+   21b240f..71d7d81  main -> main
+```
+
+---
+
+## 🎯 **Fixed the Critical Error!**
+
+The issue was that the `InteractiveMap` component was trying to access `process.env.VITE_GOOGLE_MAPS_API_KEY`, but `process.env` is a Node.js environment variable that doesn't exist in the browser. In Vite (which is what your frontend uses), we need to use `import.meta.env` instead.
+
+### **�� What Was Happening**
+
+1. **Console Error**: `Uncaught ReferenceError: process is not defined`
+2. **Component Failure**: The `InteractiveMap` component crashed before rendering
+3. **Blank Screen**: React couldn't render the component due to the error
+4. **Demo Mode**: The authentication and data fetching were working fine
+
+### **✅ What I Fixed**
+
+Changed all references from:
+```typescript
+// ❌ Wrong - Node.js syntax
+process.env.VITE_GOOGLE_MAPS_API_KEY
+
+// ✅ Correct - Vite/browser syntax  
+import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+```
+
+### **�� Files Modified**
+
+- `frontend/src/components/InteractiveMap.tsx` - Fixed environment variable access
+- Both the API key check and demo mode detection now use the correct syntax
+
+### **�� What Should Happen Now**
+
+1. **No More Errors**: The `process is not defined` error should be gone
+2. **Component Renders**: The `InteractiveMap` should now load properly
+3. **Demo Mode Works**: Since there's no API key, it should show the demo map interface
+4. **Full Dashboard**: The Real-Time Tracking page should display completely
+
+### **📱 Test It Now**
+
+1. **Refresh the page**: Tools & Utilities → Real-Time Tracking
+2. **Check the console**: Should see no more `process is not defined` errors
+3. **See the interface**: Should display the full dashboard with demo map
+4. **Demo functionality**: All the interactive features should work
+
+The component should now render the beautiful demo map interface we created, showing simulated unit markers and allowing you to test all the tracking features without requiring a Google Maps API key! 🗺️✨
+
+Let me know if you're still seeing any issues or if the dashboard is now displaying properly!
+
+---
+
+_**User**_
+
+Here is what I see now. There are three dots which are the units, but their isn't a map.
+
+---
+
+_**Assistant**_
+
+Perfect! I can see the dashboard is now working and showing the demo mode interface. The three green dots you're seeing are the simulated unit markers, and what you're seeing is actually the **demo map interface** - it's designed to look like a simplified map when the Google Maps API isn't available.
+
+However, I can see from your description that it might not be clear that this is the intended demo map. Let me enhance the demo map interface to make it look more map-like and clearly indicate that this is a functional demo interface.
+
+
+---
+
+<details><summary>Edit file: frontend/src/components/InteractiveMap.tsx</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 17, lines removed: 6
+
+```diff
+@@ -350,17 +350,28 @@
+            {/* Demo Map Background */}
+            <div className="relative w-full h-full">
+-             {/* Demo Grid Pattern */}
+-             <div className="absolute inset-0 opacity-20">
++             {/* Enhanced Demo Grid Pattern */}
++             <div className="absolute inset-0 opacity-30">
++               <div className="w-full h-full" style={{
++                 backgroundImage: `
++                   linear-gradient(rgba(59, 130, 246, 0.15) 1px, transparent 1px),
++                   linear-gradient(90deg, rgba(59, 130, 246, 0.15) 1px, transparent 1px)
++                 `,
++                 backgroundSize: '40px 40px'
++               }} />
++             </div>
++             
++             {/* Roads Pattern */}
++             <div className="absolute inset-0 opacity-40">
+                <div className="w-full h-full" style={{
+                  backgroundImage: `
+-                   linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+-                   linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px)
++                   linear-gradient(rgba(107, 114, 128, 0.2) 2px, transparent 2px),
++                   linear-gradient(90deg, rgba(107, 114, 128, 0.2) 2px, transparent 2px)
+                  `,
+-                 backgroundSize: '20px 20px'
++                 backgroundSize: '120px 120px'
+                }} />
+              </div>
+              
+              {/* Demo Map Title */}
+-             <div className="absolute top-4 left-4 bg-white bg-opacity-90 rounded-lg px-4 py-2 shadow-lg">
++             <div className="absolute top-4 left-4 bg-white bg-opacity-95 rounded-lg px-4 py-2 shadow-lg border border-blue-200">
+                <h3 className="text-lg font-semibold text-blue-800">🗺️ Demo Map Mode</h3>
+                <p className="text-sm text-blue-600">Interactive simulation - no API key required</p>
+```
+
+</details>
+
+---
+
+
+
+---
+
