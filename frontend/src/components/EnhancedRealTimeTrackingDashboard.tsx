@@ -275,9 +275,25 @@ const EnhancedRealTimeTrackingDashboard: React.FC = () => {
             <div className="flex items-center">
               <div className="text-2xl mr-3">🚑</div>
               <h1 className="text-xl font-semibold text-gray-900">Enhanced Real-Time Tracking</h1>
+              {token === 'demo-token' && (
+                <div className="ml-4 bg-yellow-100 border border-yellow-300 rounded-full px-3 py-1">
+                  <span className="text-sm font-medium text-yellow-800">🎭 Demo Mode</span>
+                </div>
+              )}
             </div>
             
             <div className="flex items-center space-x-4">
+              {/* Demo Mode Indicator */}
+              {token === 'demo-token' && (
+                <div className="bg-yellow-100 border border-yellow-300 rounded-lg px-3 py-2">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-yellow-800">🎭</span>
+                    <span className="text-sm font-medium text-yellow-800">Demo Mode Active</span>
+                    <span className="text-xs text-yellow-600">(No API key required)</span>
+                  </div>
+                </div>
+              )}
+              
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-600">Auto-refresh:</span>
                 <input

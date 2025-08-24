@@ -47,8 +47,17 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     if (!mapRef.current) return;
 
     try {
+      const apiKey = process.env.VITE_GOOGLE_MAPS_API_KEY;
+      
+      if (!apiKey || apiKey === 'demo-key' || apiKey === 'your-google-maps-api-key') {
+        // Show demo mode instead of error
+        console.log('🔑 No valid API key found, showing demo mode');
+        showDemoMode();
+        return;
+      }
+
       const loader = new Loader({
-        apiKey: process.env.VITE_GOOGLE_MAPS_API_KEY || 'demo-key',
+        apiKey: apiKey,
         version: 'weekly',
         libraries: ['places', 'geometry'],
       });
@@ -90,9 +99,24 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
     } catch (error) {
       console.error('Error loading Google Maps:', error);
-      setMapError('Failed to load map. Please check your internet connection.');
+      
+      // Provide more specific error messages
+      if (error.message?.includes('API key')) {
+        setMapError('Invalid Google Maps API key. Please check your configuration.');
+      } else if (error.message?.includes('network')) {
+        setMapError('Network error. Please check your internet connection.');
+      } else {
+        setMapError(`Failed to load map: ${error.message || 'Unknown error'}`);
+      }
     }
   }, [center, zoom, showTraffic]);
+
+  // Demo mode function
+  const showDemoMode = useCallback(() => {
+    setIsMapLoaded(true);
+    setMapError(null);
+    console.log('🎭 Demo mode activated - showing interactive demo map');
+  }, []);
 
   // Create or update markers for units
   const updateMarkers = useCallback(() => {
@@ -281,17 +305,146 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   }, [showTraffic, isMapLoaded, initializeMap]);
 
   if (mapError) {
+    const isApiKeyError = mapError.includes('API key');
+    
     return (
       <div className="flex items-center justify-center h-96 bg-gray-100 rounded-lg">
-        <div className="text-center">
-          <div className="text-red-500 text-xl mb-2">🗺️</div>
-          <p className="text-gray-600">{mapError}</p>
+        <div className="text-center max-w-md">
+          <div className="text-red-500 text-4xl mb-4">🗺️</div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">Map Loading Error</h3>
+          <p className="text-gray-600 mb-4">{mapError}</p>
+          
+          {isApiKeyError && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 text-left">
+              <h4 className="font-semibold text-blue-800 mb-2">How to fix:</h4>
+              <ol className="text-sm text-blue-700 space-y-1">
+                <li>1. Create a <code className="bg-blue-100 px-1 rounded">.env</code> file in the frontend directory</li>
+                <li>2. Add: <code className="bg-blue-100 px-1 rounded">VITE_GOOGLE_MAPS_API_KEY=your-actual-api-key</code></li>
+                <li>3. Get an API key from <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="underline">Google Cloud Console</a></li>
+                <li>4. Restart your development server</li>
+              </ol>
+            </div>
+          )}
+          
           <button
             onClick={initializeMap}
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
             Retry
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if we're in demo mode (no valid API key)
+  const isDemoMode = !process.env.VITE_GOOGLE_MAPS_API_KEY || 
+                    process.env.VITE_GOOGLE_MAPS_API_KEY === 'demo-key' || 
+                    process.env.VITE_GOOGLE_MAPS_API_KEY === 'your-google-maps-api-key';
+
+  if (isDemoMode && isMapLoaded) {
+    return (
+      <div className="relative w-full h-full min-h-[500px]">
+        {/* Demo Map Interface */}
+        <div className="w-full h-full rounded-lg shadow-lg bg-gradient-to-br from-blue-50 to-green-50 border-2 border-dashed border-blue-300">
+          {/* Demo Map Background */}
+          <div className="relative w-full h-full">
+            {/* Demo Grid Pattern */}
+            <div className="absolute inset-0 opacity-20">
+              <div className="w-full h-full" style={{
+                backgroundImage: `
+                  linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+                  linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px)
+                `,
+                backgroundSize: '20px 20px'
+              }} />
+            </div>
+            
+            {/* Demo Map Title */}
+            <div className="absolute top-4 left-4 bg-white bg-opacity-90 rounded-lg px-4 py-2 shadow-lg">
+              <h3 className="text-lg font-semibold text-blue-800">🗺️ Demo Map Mode</h3>
+              <p className="text-sm text-blue-600">Interactive simulation - no API key required</p>
+            </div>
+
+            {/* Demo Unit Markers */}
+            {locations.map((location, index) => (
+              <div
+                key={location.id}
+                className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
+                style={{
+                  left: `${50 + (index * 20)}%`,
+                  top: `${30 + (index * 10)}%`,
+                }}
+                onClick={() => onUnitSelect?.(location)}
+              >
+                {/* Demo Marker */}
+                <div className="relative">
+                  <div className={`w-6 h-6 rounded-full border-2 border-white shadow-lg ${
+                    location.batteryLevel > 20 ? 'bg-green-500' : 'bg-red-500'
+                  }`} />
+                  <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-90 rounded px-2 py-1 shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                    <p className="text-xs font-medium text-gray-800">{location.unitNumber}</p>
+                    <p className="text-xs text-gray-600">{location.agencyName}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Demo Map Controls */}
+            <div className="absolute top-4 right-4 space-y-2">
+              <div className="bg-white bg-opacity-90 rounded-lg shadow-lg p-2">
+                <button
+                  onClick={() => console.log('Demo: Zoom in')}
+                  className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded"
+                >
+                  +
+                </button>
+                <button
+                  onClick={() => console.log('Demo: Zoom out')}
+                  className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded"
+                >
+                  −
+                </button>
+              </div>
+              
+              <div className="bg-white bg-opacity-90 rounded-lg shadow-lg p-2">
+                <button
+                  onClick={() => console.log('Demo: Reset view')}
+                  className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded"
+                  title="Reset View"
+                >
+                  🏠
+                </button>
+              </div>
+            </div>
+
+            {/* Demo Info Panel */}
+            <div className="absolute bottom-4 left-4 bg-white bg-opacity-90 rounded-lg p-4 shadow-lg max-w-xs">
+              <h4 className="font-semibold text-gray-800 mb-2">🎭 Demo Mode Active</h4>
+              <p className="text-sm text-gray-600 mb-2">
+                This is a simulated map interface. Click on unit markers to see details.
+              </p>
+              <div className="text-xs text-gray-500">
+                <p>• {locations.length} units displayed</p>
+                <p>• Interactive markers with hover effects</p>
+                <p>• Simulated map controls</p>
+              </div>
+            </div>
+
+            {/* Demo Traffic Layer Toggle */}
+            {showTraffic && (
+              <div className="absolute bottom-4 right-4 bg-orange-100 border border-orange-300 rounded-lg px-3 py-2">
+                <p className="text-sm text-orange-800">🚦 Traffic Layer (Demo)</p>
+              </div>
+            )}
+
+            {/* Demo Routes Layer Toggle */}
+            {showRoutes && (
+              <div className="absolute bottom-20 right-4 bg-purple-100 border border-purple-300 rounded-lg px-3 py-2">
+                <p className="text-sm text-purple-800">🛣️ Routes Layer (Demo)</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -315,7 +468,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
       )}
       
       {/* Map Controls Overlay */}
-      {isMapLoaded && (
+      {isMapLoaded && !isDemoMode && (
         <div className="absolute top-4 right-4 space-y-2">
           <div className="bg-white rounded-lg shadow-lg p-2">
             <button
