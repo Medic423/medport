@@ -3,16 +3,28 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
 
-// Register service worker for PWA functionality
+// Enhanced service worker registration with offline capabilities
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then((registration) => {
-        console.log('[MedPort] Service Worker registered successfully:', registration);
-      })
-      .catch((error) => {
-        console.error('[MedPort] Service Worker registration failed:', error);
+  window.addEventListener('load', async () => {
+    try {
+      const registration = await navigator.serviceWorker.register('/sw.js');
+      console.log('[MedPort] Enhanced Service Worker registered successfully:', registration);
+      
+      // Check for updates
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing;
+        if (newWorker) {
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('[MedPort] New service worker available. Reload to update.');
+              // Optionally show update notification to user
+            }
+          });
+        }
       });
+    } catch (error) {
+      console.error('[MedPort] Enhanced Service Worker registration failed:', error);
+    }
   });
 }
 

@@ -15,10 +15,12 @@ import NotificationDashboard from './components/NotificationDashboard';
 import QRCodeSystem from './pages/QRCodeSystem';
 import RealTimeTracking from './pages/RealTimeTracking';
 import Analytics from './pages/Analytics';
+import OfflineCapabilities from './pages/OfflineCapabilities';
+import OfflineIndicator from './components/OfflineIndicator';
 
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system' | 'real-time-tracking' | 'analytics'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system' | 'real-time-tracking' | 'analytics' | 'offline-capabilities'>('home');
 
   return (
     <div className="App">
@@ -28,6 +30,9 @@ function App() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
               <h1 className="text-xl font-bold">MedPort</h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <OfflineIndicator showDetails={true} />
             </div>
             <div className="flex space-x-2">
               {/* Home */}
@@ -171,6 +176,12 @@ function App() {
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       Analytics & Reporting
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage('offline-capabilities')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Offline Capabilities
                     </button>
                   </div>
                 </div>
@@ -409,6 +420,14 @@ function App() {
                     <div className="text-teal-600 font-semibold mb-2">Analytics</div>
                     <div className="text-sm text-teal-600">Performance insights</div>
                   </button>
+                  
+                  <button
+                    onClick={() => setCurrentPage('offline-capabilities')}
+                    className="p-6 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors duration-200 text-center"
+                  >
+                    <div className="text-amber-600 font-semibold mb-2">Offline Capabilities</div>
+                    <div className="text-sm text-amber-600">Work without internet</div>
+                  </button>
                 </div>
               </div>
             </div>
@@ -428,6 +447,7 @@ function App() {
         {currentPage === 'qr-code-system' && <QRCodeSystem />}
         {currentPage === 'real-time-tracking' && <RealTimeTracking />}
         {currentPage === 'analytics' && <Analytics />}
+        {currentPage === 'offline-capabilities' && <OfflineCapabilities />}
         {currentPage === 'agency-registration' && <AgencyRegistration onNavigate={(page) => setCurrentPage(page as any)} />}
         {currentPage === 'agency-login' && <AgencyLogin onNavigate={(page) => setCurrentPage(page as any)} />}
         {currentPage === 'agency-dashboard' && <AgencyDashboard onNavigate={(page) => setCurrentPage(page as any)} />}
