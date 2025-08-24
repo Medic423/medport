@@ -16,6 +16,7 @@ import matchingRoutes from './routes/matching';
 import routeOptimizationRoutes from './routes/routeOptimization';
 import routeCardGenerationRoutes from './routes/routeCardGeneration';
 import unitAssignmentRoutes from './routes/unitAssignment';
+import notificationRoutes from './routes/notifications';
 
 dotenv.config();
 
@@ -41,6 +42,7 @@ app.use('/api/matching', matchingRoutes);
 app.use('/api/route-optimization', routeOptimizationRoutes);
 app.use('/api/route-card-generation', routeCardGenerationRoutes);
 app.use('/api/unit-assignment', unitAssignmentRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'MedPort Backend API is running!' });

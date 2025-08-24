@@ -11,9 +11,10 @@ import AgencyLogin from './pages/AgencyLogin';
 import AgencyDashboard from './pages/AgencyDashboard';
 import RouteOptimization from './pages/RouteOptimization';
 import UnitAssignment from './pages/UnitAssignment';
+import NotificationDashboard from './components/NotificationDashboard';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications'>('home');
 
   return (
     <div className="App">
@@ -124,6 +125,16 @@ function App() {
                 }`}
               >
                 Unit Assignment
+              </button>
+              <button
+                onClick={() => setCurrentPage('notifications')}
+                className={`px-3 py-2 rounded-md text-sm font-medium ${
+                  currentPage === 'notifications'
+                    ? 'bg-blue-700 text-white'
+                    : 'text-blue-100 hover:bg-blue-500 hover:text-white'
+                }`}
+              >
+                Notifications
               </button>
               <button
                 onClick={() => setCurrentPage('agency-login')}
@@ -359,6 +370,7 @@ function App() {
         {currentPage === 'emergency-department' && <EmergencyDepartment />}
         {currentPage === 'route-optimization' && <RouteOptimization />}
         {currentPage === 'unit-assignment' && <UnitAssignment />}
+        {currentPage === 'notifications' && <NotificationDashboard />}
         {currentPage === 'agency-registration' && <AgencyRegistration onNavigate={setCurrentPage} />}
         {currentPage === 'agency-login' && <AgencyLogin onNavigate={setCurrentPage} />}
         {currentPage === 'agency-dashboard' && <AgencyDashboard onNavigate={setCurrentPage} />}
