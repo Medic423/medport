@@ -246,11 +246,74 @@ const EnhancedRealTimeTrackingDashboard: React.FC = () => {
     return agencies;
   };
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+  // Always render the main structure, even if loading or error
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center">
+              <div className="text-2xl mr-3">🚑</div>
+              <h1 className="text-xl font-semibold text-gray-900">Enhanced Real-Time Tracking</h1>
+              {token === 'demo-token' && (
+                <div className="ml-4 bg-yellow-100 border border-yellow-300 rounded-full px-3 py-1">
+                  <span className="text-sm font-medium text-yellow-800">🎭 Demo Mode</span>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              {/* Demo Mode Indicator */}
+              {token === 'demo-token' && (
+                <div className="bg-yellow-100 border border-yellow-300 rounded-lg px-3 py-2">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-yellow-800">🎭</span>
+                    <span className="text-sm font-medium text-yellow-800">Demo Mode Active</span>
+                    <span className="text-xs text-yellow-600">(No API key required)</span>
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">Auto-refresh:</span>
+                <input
+                  type="checkbox"
+                  checked={autoRefresh}
+                  onChange={(e) => setAutoRefresh(e.target.checked)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+              </div>
+              
+              {autoRefresh && (
+                <select
+                  value={refreshInterval}
+                  onChange={(e) => setRefreshInterval(Number(e.target.value))}
+                  className="text-sm border border-gray-300 rounded px-3 py-1"
+                >
+                  <option value={2000}>2s</option>
+                  <option value={5000}>5s</option>
+                  <option value={10000}>10s</option>
+                  <option value={30000}>30s</option>
+                </select>
+              )}
+              
+              <button
+                onClick={fetchDashboardData}
+                disabled={isLoading}
+                className="px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              >
+                {isLoading ? '🔄' : '🔄'} Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-6 text-center">
             <div className="text-red-500 text-4xl mb-4">⚠️</div>
             <h2 className="text-xl font-semibold text-red-800 mb-2">Error Loading Dashboard</h2>
             <p className="text-red-600 mb-4">{error}</p>
@@ -261,10 +324,333 @@ const EnhancedRealTimeTrackingDashboard: React.FC = () => {
               Retry
             </button>
           </div>
+        )}
+
+        {/* Loading State */}
+        {isLoading && !dashboardData && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p className="text-lg text-gray-600">Loading tracking data...</p>
+            <p className="text-sm text-gray-500 mt-2">This may take a few seconds</p>
+          </div>
+        )}
+
+        {/* Summary Cards */}
+        {dashboardData && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center">
+                <div className="text-2xl text-blue-600 mr-3">🚑</div>
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Total Units</p>
+                  <p className="text-2xl font-semibold text-gray-900">{dashboardData.summary.totalUnits}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center">
+                <div className="text-2xl text-green-600 mr-3">✅</div>
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Active Units</p>
+                  <p className="text-2xl font-semibold text-gray-900">{dashboardData.summary.activeUnits}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center">
+                <div className="text-2xl text-yellow-600 mr-3">⚠️</div>
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Units with Issues</p>
+                  <p className="text-2xl font-semibold text-gray-900">{dashboardData.summary.unitsWithIssues}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center">
+                <div className="text-2xl text-gray-600 mr-3">🕒</div>
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Last Updated</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {new Date(dashboardData.summary.lastUpdated).toLocaleTimeString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* View Mode Toggle */}
+        <div className="bg-white rounded-lg shadow p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <span className="text-sm font-medium text-gray-700">View Mode:</span>
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('map')}
+                  className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                    viewMode === 'map' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  🗺️ Map
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                    viewMode === 'list' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  📋 List
+                </button>
+                <button
+                  onClick={() => setViewMode('split')}
+                  className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                    viewMode === 'split' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  🔀 Split
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="showTraffic"
+                  checked={showTraffic}
+                  onChange={(e) => setShowTraffic(e.target.checked)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="showTraffic" className="text-sm text-gray-600">Show Traffic</label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="showRoutes"
+                    checked={showRoutes}
+                    onChange={(e) => setShowRoutes(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <label htmlFor="showRoutes" className="text-sm text-gray-600">Show Routes</label>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+
+        {/* Filters */}
+        <div className="bg-white rounded-lg shadow p-4 mb-6">
+          <div className="flex items-center space-x-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Agency</label>
+              <select
+                value={filterAgency}
+                onChange={(e) => setFilterAgency(e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+              >
+                <option value="all">All Agencies</option>
+                {dashboardData && getAgencyOptions().map(agency => (
+                  <option key={agency} value={agency}>{agency}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="stationary">Stationary</option>
+                <option value="lowBattery">Low Battery</option>
+                <option value="poorSignal">Poor Signal</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        {dashboardData ? (
+          <>
+            {viewMode === 'map' && (
+              <div className="bg-white rounded-lg shadow">
+                <InteractiveMap
+                  locations={getFilteredUnits()}
+                  center={mapCenter}
+                  zoom={mapZoom}
+                  onUnitSelect={handleUnitSelect}
+                  selectedUnitId={selectedUnit?.id}
+                  showTraffic={showTraffic}
+                  showRoutes={showRoutes}
+                />
+              </div>
+            )}
+
+            {viewMode === 'list' && (
+              <div className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <h3 className="text-lg font-medium text-gray-900">Unit Locations</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Agency</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Speed</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Battery</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Signal</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Update</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {getFilteredUnits().map((unit) => (
+                        <tr
+                          key={unit.id}
+                          onClick={() => handleUnitSelect(unit)}
+                          className={`hover:bg-gray-50 cursor-pointer ${
+                            selectedUnit?.id === unit.id ? 'bg-blue-50' : ''
+                          }`}
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">{unit.unitNumber}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{unit.agencyName}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">
+                              {unit.latitude.toFixed(4)}, {unit.longitude.toFixed(4)}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{unit.speed} mph</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className={`text-sm ${unit.batteryLevel > 20 ? 'text-green-600' : 'text-red-600'}`}>
+                              {unit.batteryLevel}%
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className={`text-sm ${unit.signalStrength > 50 ? 'text-green-600' : 'text-yellow-600'}`}>
+                              {unit.signalStrength}%
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">
+                              {new Date(unit.lastUpdated).toLocaleTimeString()}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {viewMode === 'split' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white rounded-lg shadow">
+                  <InteractiveMap
+                    locations={getFilteredUnits()}
+                    center={mapCenter}
+                    zoom={mapZoom}
+                    onUnitSelect={handleUnitSelect}
+                    selectedUnitId={selectedUnit?.id}
+                    showTraffic={showTraffic}
+                    showRoutes={showRoutes}
+                  />
+                </div>
+                
+                <div className="bg-white rounded-lg shadow overflow-hidden">
+                  <div className="px-6 py-4 border-b border-gray-200">
+                    <h3 className="text-lg font-medium text-gray-900">Unit Details</h3>
+                  </div>
+                  <div className="p-6">
+                    {selectedUnit ? (
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="text-lg font-semibold text-gray-900">{selectedUnit.unitNumber}</h4>
+                          <p className="text-sm text-gray-600">{selectedUnit.agencyName}</p>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-sm font-medium text-gray-600">Speed</p>
+                            <p className="text-lg text-gray-900">{selectedUnit.speed} mph</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-600">Heading</p>
+                            <p className="text-lg text-gray-900">{selectedUnit.heading}°</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-600">Battery</p>
+                            <p className={`text-lg ${selectedUnit.batteryLevel > 20 ? 'text-green-600' : 'text-red-600'}`}>
+                              {selectedUnit.batteryLevel}%
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-600">Signal</p>
+                            <p className={`text-lg ${selectedUnit.signalStrength > 50 ? 'text-green-600' : 'text-yellow-600'}`}>
+                              {selectedUnit.signalStrength}%
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">Location</p>
+                          <p className="text-sm text-gray-900">
+                            {selectedUnit.latitude.toFixed(6)}, {selectedUnit.longitude.toFixed(6)}
+                          </p>
+                        </div>
+                        
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">Last Update</p>
+                          <p className="text-sm text-gray-900">
+                            {new Date(selectedUnit.lastUpdated).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center text-gray-500 py-8">
+                        <div className="text-4xl mb-2">📍</div>
+                        <p>Select a unit on the map to view details</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          /* No Data State */
+          <div className="bg-white rounded-lg shadow p-12 text-center">
+            <div className="text-6xl mb-4">🗺️</div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Tracking Data Available</h3>
+            <p className="text-gray-600 mb-6">
+              {isLoading ? 'Loading tracking information...' : 'No units are currently being tracked.'}
+            </p>
+            <button
+              onClick={fetchDashboardData}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              {isLoading ? 'Loading...' : 'Refresh Data'}
+            </button>
+          </div>
+        )}
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
