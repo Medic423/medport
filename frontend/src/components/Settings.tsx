@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useRoleBasedAccess } from '../hooks/useRoleBasedAccess';
-import DemoRoleSelector from './DemoRoleSelector';
 
 interface ModuleVisibilitySettings {
   [moduleId: string]: {
@@ -33,7 +32,7 @@ interface SettingsProps {
 }
 
 const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
-  const { navigation, modules, loading, canAccessModule, demoRole, changeDemoRole } = useRoleBasedAccess();
+  const { navigation, modules, loading, canAccessModule } = useRoleBasedAccess();
   const [settings, setSettings] = useState<ModuleVisibilitySettings>({});
   const [operationalSettings, setOperationalSettings] = useState<OperationalSettings | null>(null);
   const [availableRoles] = useState(['ADMIN', 'COORDINATOR', 'BILLING_STAFF', 'TRANSPORT_AGENCY', 'HOSPITAL_COORDINATOR']);
@@ -137,16 +136,7 @@ const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
     updateModuleVisibility(moduleId, !currentSettings.visible, currentSettings.roles);
   };
 
-  const handleRoleChange = async (newRole: string) => {
-    await changeDemoRole(newRole);
-    // Refresh settings data for the new role
-    if (hasFullAccess) {
-      fetchSettings();
-    }
-    if (hasLimitedAccess) {
-      fetchOperationalSettings();
-    }
-  };
+
 
   if (loading) {
     return (
@@ -302,12 +292,6 @@ const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
         {/* Tab Content */}
         {selectedTab === 'overview' && (
           <div className="space-y-6">
-            {/* Demo Role Selector */}
-            <DemoRoleSelector 
-              onRoleChange={handleRoleChange}
-              currentRole={demoRole}
-            />
-            
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Access Level Summary</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

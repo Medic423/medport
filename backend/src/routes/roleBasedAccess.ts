@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { authenticateToken } from '../middleware/auth';
 import { RoleBasedAccessService } from '../services/roleBasedAccessService';
 import { SessionService } from '../services/sessionService';
+import jwt from 'jsonwebtoken';
 
 const router = Router();
 
@@ -190,24 +191,15 @@ router.get('/operational-settings', authenticateToken, async (req: any, res: Res
   }
 });
 
-// Demo mode support with role selection
+// Demo mode support - handles both demo-token and JWT tokens from demo login
 router.get('/demo/navigation', (req: Request, res: Response) => {
   try {
-    if (req.headers.authorization === 'Bearer demo-token') {
-      // Check for role preference in query params or headers
-      const requestedRole = req.query.role || req.headers['x-demo-role'] || 'ADMIN';
-      const validRoles = ['ADMIN', 'COORDINATOR', 'BILLING_STAFF', 'TRANSPORT_AGENCY', 'HOSPITAL_COORDINATOR'];
-      
-      if (!validRoles.includes(requestedRole as string)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid demo role. Valid roles: ADMIN, COORDINATOR, BILLING_STAFF, TRANSPORT_AGENCY, HOSPITAL_COORDINATOR'
-        });
-      }
-      
-      const userRole = requestedRole as string;
+    const authHeader = req.headers.authorization;
+    
+    if (authHeader === 'Bearer demo-token') {
+      // Legacy demo-token support
+      const userRole = 'ADMIN';
       const userPermissions = SessionService.getUserPermissions(userRole);
-      
       const navigation = RoleBasedAccessService.getNavigationForRole(userRole, userPermissions);
       
       res.json({
@@ -219,6 +211,38 @@ router.get('/demo/navigation', (req: Request, res: Response) => {
           isDemo: true
         }
       });
+    } else if (authHeader && authHeader.startsWith('Bearer ')) {
+      // JWT token from demo login
+      try {
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+        
+        if (decoded.isDemo) {
+          const userRole = decoded.role;
+          const userPermissions = SessionService.getUserPermissions(userRole);
+          const navigation = RoleBasedAccessService.getNavigationForRole(userRole, userPermissions);
+          
+          res.json({
+            success: true,
+            data: {
+              role: userRole,
+              permissions: userPermissions,
+              navigation: navigation,
+              isDemo: true
+            }
+          });
+        } else {
+          res.status(401).json({
+            success: false,
+            message: 'Demo token required'
+          });
+        }
+      } catch (jwtError) {
+        res.status(401).json({
+          success: false,
+          message: 'Invalid demo token'
+        });
+      }
     } else {
       res.status(401).json({
         success: false,
@@ -234,24 +258,15 @@ router.get('/demo/navigation', (req: Request, res: Response) => {
   }
 });
 
-// Demo mode modules support with role selection
+// Demo mode modules support - handles both demo-token and JWT tokens from demo login
 router.get('/demo/modules', (req: Request, res: Response) => {
   try {
-    if (req.headers.authorization === 'Bearer demo-token') {
-      // Check for role preference in query params or headers
-      const requestedRole = req.query.role || req.headers['x-demo-role'] || 'ADMIN';
-      const validRoles = ['ADMIN', 'COORDINATOR', 'BILLING_STAFF', 'TRANSPORT_AGENCY', 'HOSPITAL_COORDINATOR'];
-      
-      if (!validRoles.includes(requestedRole as string)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid demo role. Valid roles: ADMIN, COORDINATOR, BILLING_STAFF, TRANSPORT_AGENCY, HOSPITAL_COORDINATOR'
-        });
-      }
-      
-      const userRole = requestedRole as string;
+    const authHeader = req.headers.authorization;
+    
+    if (authHeader === 'Bearer demo-token') {
+      // Legacy demo-token support
+      const userRole = 'ADMIN';
       const userPermissions = SessionService.getUserPermissions(userRole);
-      
       const modules = RoleBasedAccessService.getUserAccessibleModules(userRole, userPermissions);
       
       res.json({
@@ -263,6 +278,38 @@ router.get('/demo/modules', (req: Request, res: Response) => {
           isDemo: true
         }
       });
+    } else if (authHeader && authHeader.startsWith('Bearer ')) {
+      // JWT token from demo login
+      try {
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+        
+        if (decoded.isDemo) {
+          const userRole = decoded.role;
+          const userPermissions = SessionService.getUserPermissions(userRole);
+          const modules = RoleBasedAccessService.getUserAccessibleModules(userRole, userPermissions);
+          
+          res.json({
+            success: true,
+            data: {
+              role: userRole,
+              permissions: userPermissions,
+              modules: modules,
+              isDemo: true
+            }
+          });
+        } else {
+          res.status(401).json({
+            success: false,
+            message: 'Demo token required'
+          });
+        }
+      } catch (jwtError) {
+        res.status(401).json({
+          success: false,
+          message: 'Invalid demo token'
+        });
+      }
     } else {
       res.status(401).json({
         success: false,
@@ -278,22 +325,14 @@ router.get('/demo/modules', (req: Request, res: Response) => {
   }
 });
 
-// Demo mode operational settings support with role selection
+// Demo mode operational settings support - handles both demo-token and JWT tokens from demo login
 router.get('/demo/operational-settings', (req: Request, res: Response) => {
   try {
-    if (req.headers.authorization === 'Bearer demo-token') {
-      // Check for role preference in query params or headers
-      const requestedRole = req.query.role || req.headers['x-demo-role'] || 'ADMIN';
-      const validRoles = ['ADMIN', 'COORDINATOR', 'BILLING_STAFF', 'TRANSPORT_AGENCY', 'HOSPITAL_COORDINATOR'];
-      
-      if (!validRoles.includes(requestedRole as string)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid demo role. Valid roles: ADMIN, COORDINATOR, BILLING_STAFF, TRANSPORT_AGENCY, HOSPITAL_COORDINATOR'
-        });
-      }
-      
-      const userRole = requestedRole as string;
+    const authHeader = req.headers.authorization;
+    
+    if (authHeader === 'Bearer demo-token') {
+      // Legacy demo-token support
+      const userRole = 'ADMIN';
       const settings = RoleBasedAccessService.getOperationalSettings();
       const accessLevel = RoleBasedAccessService.getSettingsAccessLevel(userRole);
       
@@ -306,6 +345,38 @@ router.get('/demo/operational-settings', (req: Request, res: Response) => {
           isDemo: true
         }
       });
+    } else if (authHeader && authHeader.startsWith('Bearer ')) {
+      // JWT token from demo login
+      try {
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+        
+        if (decoded.isDemo) {
+          const userRole = decoded.role;
+          const settings = RoleBasedAccessService.getOperationalSettings();
+          const accessLevel = RoleBasedAccessService.getSettingsAccessLevel(userRole);
+          
+          res.json({
+            success: true,
+            data: {
+              settings,
+              accessLevel,
+              role: userRole,
+              isDemo: true
+            }
+          });
+        } else {
+          res.status(401).json({
+            success: false,
+            message: 'Demo token required'
+          });
+        }
+      } catch (jwtError) {
+        res.status(401).json({
+          success: false,
+          message: 'Invalid demo token'
+        });
+      }
     } else {
       res.status(401).json({
         success: false,

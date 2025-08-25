@@ -32,7 +32,6 @@ export const useRoleBasedAccess = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modules, setModules] = useState<ModuleAccess[]>([]);
-  const [demoRole, setDemoRole] = useState<string>('ADMIN');
 
   // Get navigation for current user
   const fetchNavigation = useCallback(async (token: string) => {
@@ -116,7 +115,7 @@ export const useRoleBasedAccess = () => {
   }, []);
 
   // Demo mode navigation fetch
-  const fetchDemoNavigation = useCallback(async (role?: string) => {
+  const fetchDemoNavigation = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -124,7 +123,7 @@ export const useRoleBasedAccess = () => {
       // Ensure demo mode is set in localStorage
       localStorage.setItem('demoMode', 'true');
 
-      const response = await fetch(`/api/role-based-access/demo/navigation?role=${role || demoRole}`, {
+      const response = await fetch('/api/role-based-access/demo/navigation', {
         headers: {
           'Authorization': 'Bearer demo-token',
           'Content-Type': 'application/json'
@@ -142,7 +141,7 @@ export const useRoleBasedAccess = () => {
         setNavigation(result.data);
         
         // Also fetch modules for demo mode
-        const modulesResponse = await fetch(`/api/role-based-access/demo/modules?role=${role || demoRole}`, {
+        const modulesResponse = await fetch('/api/role-based-access/demo/modules', {
           headers: {
             'Authorization': 'Bearer demo-token',
             'Content-Type': 'application/json'
@@ -240,33 +239,25 @@ export const useRoleBasedAccess = () => {
     return navigation.navigation.map(item => item.name);
   }, [navigation]);
 
-  // Function to change demo role
-  const changeDemoRole = useCallback(async (newRole: string) => {
-    setDemoRole(newRole);
-    if (localStorage.getItem('demoMode') === 'true') {
-      await fetchDemoNavigation(newRole);
-    }
-  }, [fetchDemoNavigation]);
+
 
   return {
     navigation,
     modules,
     loading,
     error,
-    demoRole,
     hasFeatureAccess,
     canAccessModule,
     getNavigationForCategory,
     getAvailableCategories,
     fetchNavigation,
     fetchDemoNavigation,
-    changeDemoRole,
     refreshNavigation: () => {
       const token = localStorage.getItem('token');
       const demoMode = localStorage.getItem('demoMode');
       
       if (demoMode === 'true') {
-        fetchDemoNavigation(demoRole);
+        fetchDemoNavigation();
       } else if (token) {
         fetchNavigation(token);
         fetchModules(token);
