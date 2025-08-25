@@ -45,6 +45,9 @@ const StatusBoard: React.FC = () => {
       }
       
       const data = await response.json();
+      console.log('[MedPort:StatusBoard] API Response:', data);
+      console.log('[MedPort:StatusBoard] Transport Requests:', data.data);
+      console.log('[MedPort:StatusBoard] Total Count:', data.total);
       setTransportRequests(data.data || []);
       setError(null);
     } catch (err) {
@@ -58,6 +61,9 @@ const StatusBoard: React.FC = () => {
   // Apply filters
   useEffect(() => {
     let filtered = [...transportRequests];
+    
+    console.log('[MedPort:StatusBoard] Applying filters to:', transportRequests.length, 'requests');
+    console.log('[MedPort:StatusBoard] Current filters:', filters);
 
     if (filters.status) {
       filtered = filtered.filter(req => req.status === filters.status);
@@ -84,6 +90,7 @@ const StatusBoard: React.FC = () => {
       filtered = filtered.filter(req => req.destinationFacility.id === filters.destinationFacility);
     }
 
+    console.log('[MedPort:StatusBoard] Filtered to:', filtered.length, 'requests');
     setFilteredRequests(filtered);
   }, [transportRequests, filters]);
 
@@ -153,6 +160,19 @@ const StatusBoard: React.FC = () => {
     );
   }
 
+  // Auto-refresh indicator
+  const autoRefreshIndicator = (
+    <div className="mt-6 text-center text-sm text-gray-500">
+      <span className="inline-flex items-center">
+        <span className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
+        Auto-refreshing every 30 seconds
+      </span>
+    </div>
+  );
+
+  // Debug logging
+  console.log('[MedPort:StatusBoard] Rendering with:', transportRequests.length, 'transport requests,', filteredRequests.length, 'filtered requests');
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
@@ -217,12 +237,7 @@ const StatusBoard: React.FC = () => {
       </div>
 
       {/* Auto-refresh indicator */}
-      <div className="mt-6 text-center text-sm text-gray-500">
-        <span className="inline-flex items-center">
-          <span className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
-          Auto-refreshing every 30 seconds
-        </span>
-      </div>
+      {autoRefreshIndicator}
     </div>
   );
 };
