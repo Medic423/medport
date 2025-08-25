@@ -122,7 +122,7 @@ export class RoleBasedAccessService {
         id: 'agency-portal',
         name: 'Agency Portal',
         description: 'Transport agency management and operations',
-        category: 'Financial Planning',
+        category: 'Agency Operations',
         requiredPermissions: ['agency:profile', 'unit:manage'],
         visibleToRoles: ['ADMIN', 'TRANSPORT_AGENCY'],
         isActive: true
@@ -131,7 +131,7 @@ export class RoleBasedAccessService {
         id: 'unit-management',
         name: 'Unit Management',
         description: 'Manage transport units and availability',
-        category: 'Financial Planning',
+        category: 'Agency Operations',
         requiredPermissions: ['unit:manage', 'unit:read'],
         visibleToRoles: ['ADMIN', 'TRANSPORT_AGENCY'],
         isActive: true
@@ -140,7 +140,7 @@ export class RoleBasedAccessService {
         id: 'bid-management',
         name: 'Bid Management',
         description: 'Manage transport bids and assignments',
-        category: 'Financial Planning',
+        category: 'Agency Operations',
         requiredPermissions: ['bid:manage', 'bid:read'],
         visibleToRoles: ['ADMIN', 'TRANSPORT_AGENCY'],
         isActive: true
@@ -149,7 +149,7 @@ export class RoleBasedAccessService {
         id: 'matching-system',
         name: 'Matching System',
         description: 'Transport request matching and coordination',
-        category: 'Financial Planning',
+        category: 'Agency Operations',
         requiredPermissions: ['matching:view', 'matching:manage'],
         visibleToRoles: ['ADMIN', 'TRANSPORT_AGENCY'],
         isActive: true
