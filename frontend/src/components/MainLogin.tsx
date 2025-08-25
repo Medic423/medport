@@ -27,7 +27,7 @@ const MainLogin: React.FC<MainLoginProps> = ({ onNavigate }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
-  const [showDemoInfo, setShowDemoInfo] = useState(false);
+  // Demo info state removed for security
 
   const validateForm = (): boolean => {
     if (!formData.email.trim() || !formData.password) {
@@ -123,23 +123,7 @@ const MainLogin: React.FC<MainLoginProps> = ({ onNavigate }) => {
     }
   };
 
-  const getDemoCredentials = (tab: string) => {
-    switch (tab) {
-      case 'transport-center':
-        return { email: 'coordinator@medport-transport.com', password: 'demo123' };
-      case 'hospital':
-        return { email: 'coordinator@upmc-altoona.com', password: 'demo123' };
-      case 'agency':
-        return { email: 'admin@demo-ems.com', password: 'demo123' };
-      default:
-        return { email: '', password: '' };
-    }
-  };
-
-  const fillDemoCredentials = () => {
-    const credentials = getDemoCredentials(activeTab);
-    setFormData(credentials);
-  };
+  // Demo credential functions removed for security - credentials documented in demo_credentials.md
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -264,34 +248,7 @@ const MainLogin: React.FC<MainLoginProps> = ({ onNavigate }) => {
               </div>
             </form>
 
-            {/* Demo Credentials Info */}
-            <div className="border-t border-gray-200 pt-4">
-              <button
-                onClick={() => setShowDemoInfo(!showDemoInfo)}
-                className="w-full flex items-center justify-center space-x-2 text-sm text-blue-600 hover:text-blue-700 transition-colors duration-200"
-              >
-                <InformationCircleIcon className="w-4 h-4" />
-                <span>Demo Credentials</span>
-              </button>
-
-              {showDemoInfo && (
-                <div className="mt-3 p-3 bg-blue-50 rounded-md">
-                  <p className="text-xs text-blue-800 mb-2">
-                    Use these credentials in the Sign In form above:
-                  </p>
-                  <div className="text-xs text-blue-800 space-y-1">
-                    <p><strong>Email:</strong> {getDemoCredentials(activeTab).email}</p>
-                    <p><strong>Password:</strong> {getDemoCredentials(activeTab).password}</p>
-                  </div>
-                  <button
-                    onClick={fillDemoCredentials}
-                    className="mt-2 text-xs text-blue-600 hover:text-blue-700 underline"
-                  >
-                    Fill Demo Credentials
-                  </button>
-                </div>
-              )}
-            </div>
+            {/* Demo credentials section removed for security - credentials documented in demo_credentials.md */}
           </div>
         </div>
 
