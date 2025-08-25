@@ -51,7 +51,11 @@ const TransportRequestList: React.FC<TransportRequestListProps> = ({
         }
       });
 
-      const response = await fetch(`/api/transport-requests?${queryParams.toString()}`);
+      const response = await fetch(`/api/transport-requests?${queryParams.toString()}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
       
       console.log('[MedPort:TransportRequestList] Response status:', response.status, 'Response ok:', response.ok);
       
@@ -102,7 +106,10 @@ const TransportRequestList: React.FC<TransportRequestListProps> = ({
     try {
       const response = await fetch(`/api/transport-requests/${requestId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
         body: JSON.stringify({ status: newStatus })
       });
 
@@ -136,7 +143,10 @@ const TransportRequestList: React.FC<TransportRequestListProps> = ({
     try {
       const response = await fetch('/api/transport-requests/bulk-update', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
         body: JSON.stringify({
           ids: selectedRequests,
           updates: { status: bulkAction }
@@ -227,10 +237,10 @@ const TransportRequestList: React.FC<TransportRequestListProps> = ({
             </p>
             <div className="space-y-2">
               <button
-                onClick={() => window.location.reload()}
+                onClick={() => window.location.href = '/#status-board'}
                 className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 mr-2"
               >
-                Refresh Page
+                Go to Status Board
               </button>
               <button
                 onClick={() => setError(null)}

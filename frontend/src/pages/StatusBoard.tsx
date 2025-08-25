@@ -19,10 +19,14 @@ const StatusBoard: React.FC = () => {
   });
 
   // Fetch transport requests
-  const fetchTransportRequests = async () => {
+  const loadTransportRequests = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5001/api/transport-requests?limit=100');
+      const response = await fetch('/api/transport-requests?limit=100', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
       
       if (!response.ok) {
         // Handle authentication errors gracefully
@@ -79,14 +83,15 @@ const StatusBoard: React.FC = () => {
   }, [transportRequests, filters]);
 
   // Update request status
-  const updateRequestStatus = async (requestId: string, newStatus: RequestStatus) => {
+  const handleStatusChange = async (requestId: string, newStatus: RequestStatus) => {
     try {
-      const response = await fetch(`http://localhost:5001/api/transport-requests/${requestId}`, {
+      const response = await fetch(`/api/transport-requests/${requestId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ status: newStatus })
       });
 
       if (!response.ok) {
@@ -115,15 +120,15 @@ const StatusBoard: React.FC = () => {
 
   // Refresh data
   const handleRefresh = () => {
-    fetchTransportRequests();
+    loadTransportRequests();
   };
 
   // Initial load
   useEffect(() => {
-    fetchTransportRequests();
+    loadTransportRequests();
     
     // Set up auto-refresh every 30 seconds
-    const interval = setInterval(fetchTransportRequests, 30000);
+    const interval = setInterval(loadTransportRequests, 30000);
     
     return () => clearInterval(interval);
   }, []);
@@ -197,7 +202,7 @@ const StatusBoard: React.FC = () => {
       <div className="mt-6">
         <StatusBoardComponent
           transportRequests={filteredRequests}
-          onStatusUpdate={updateRequestStatus}
+          onStatusUpdate={handleStatusChange}
           loading={loading}
         />
       </div>

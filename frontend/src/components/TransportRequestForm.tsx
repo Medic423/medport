@@ -62,7 +62,11 @@ const TransportRequestForm: React.FC<TransportRequestFormProps> = ({
   const loadFacilities = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5001/api/transport-requests/facilities/search?limit=100');
+      const response = await fetch('/api/transport-requests/facilities/search?limit=100', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
       if (response.ok) {
         try {
           const data = await response.json();
@@ -99,7 +103,12 @@ const TransportRequestForm: React.FC<TransportRequestFormProps> = ({
 
     try {
       const response = await fetch(
-        `http://localhost:5001/api/transport-requests/facilities/search?name=${encodeURIComponent(query)}&limit=20`
+        `/api/transport-requests/facilities/search?name=${encodeURIComponent(query)}&limit=20`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        }
       );
       if (response.ok) {
         try {
