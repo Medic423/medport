@@ -182,6 +182,15 @@ export class RoleBasedAccessService {
         requiredPermissions: ['settings:full', 'settings:limited'],
         visibleToRoles: ['ADMIN', 'COORDINATOR'],
         isActive: true
+      },
+      {
+        id: 'help',
+        name: 'Help & Documentation',
+        description: 'System help, documentation, and feature overview',
+        category: 'Tools and Utilities',
+        visibleToRoles: ['ADMIN', 'COORDINATOR', 'HOSPITAL_COORDINATOR', 'BILLING_STAFF', 'TRANSPORT_AGENCY'],
+        requiredPermissions: ['module:help'],
+        icon: '📚'
       }
     ];
   }
