@@ -28,7 +28,7 @@ interface OperationalSettings {
 }
 
 interface SettingsProps {
-  onNavigate?: (page: 'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system' | 'real-time-tracking' | 'analytics' | 'offline-capabilities' | 'login' | 'transport-center-dashboard' | 'hospital-dashboard' | 'role-based-access-test' | 'settings') => void;
+  onNavigate?: (page: 'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system' | 'real-time-tracking' | 'analytics' | 'offline-capabilities' | 'login' | 'transport-center-dashboard' | 'hospital-dashboard' | 'settings') => void;
 }
 
 const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
@@ -36,7 +36,7 @@ const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
   const [settings, setSettings] = useState<ModuleVisibilitySettings>({});
   const [operationalSettings, setOperationalSettings] = useState<OperationalSettings | null>(null);
   const [availableRoles] = useState(['ADMIN', 'COORDINATOR', 'BILLING_STAFF', 'TRANSPORT_AGENCY', 'HOSPITAL_COORDINATOR']);
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'module-visibility' | 'role-permissions' | 'system-config'>('overview');
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'module-visibility' | 'role-permissions' | 'system-config' | 'debug-testing'>('overview');
   const [updateMessage, setUpdateMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Check if user has full settings access (ADMIN)
@@ -251,6 +251,18 @@ const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                 }`}
               >
                 Role Permissions
+              </button>
+            )}
+            {hasFullAccess && (
+              <button
+                onClick={() => setSelectedTab('debug-testing')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  selectedTab === 'debug-testing'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Debug & Testing
               </button>
             )}
             <button
@@ -584,6 +596,92 @@ const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {selectedTab === 'debug-testing' && hasFullAccess && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Debug & Testing Information</h2>
+              <p className="text-gray-600 mb-6">
+                Detailed debugging information for role-based access control system. This tab provides comprehensive insights into permissions, navigation structure, and module access.
+              </p>
+              
+              {/* Current Role & Permissions Summary */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h3 className="font-semibold text-blue-900">Current Role</h3>
+                  <p className="text-blue-700">{navigation?.role}</p>
+                </div>
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <h3 className="font-semibold text-green-900">Total Permissions</h3>
+                  <p className="text-green-700">{navigation?.permissions?.length || 0} permissions</p>
+                </div>
+                <div className="bg-purple-50 p-4 rounded-lg">
+                  <h3 className="font-semibold text-purple-900">Available Modules</h3>
+                  <p className="text-purple-700">{modules?.length || 0} modules</p>
+                </div>
+              </div>
+
+              {/* Permissions List */}
+              <div className="mb-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-3">User Permissions</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {navigation?.permissions?.map((permission, index) => (
+                    <div key={index} className="bg-gray-100 px-3 py-2 rounded text-sm font-mono">
+                      {permission}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Navigation Structure */}
+              <div className="mb-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-3">Navigation Structure</h3>
+                <div className="space-y-4">
+                  {navigation?.navigation?.map((category) => (
+                    <div key={category.id} className="border border-gray-200 rounded-lg p-4">
+                      <h4 className="text-md font-semibold text-gray-900 mb-3">
+                        {category.name}
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {category.children?.map((item) => (
+                          <div key={item.id} className="bg-gray-50 p-3 rounded border">
+                            <h5 className="font-medium text-gray-900 mb-2">{item.name}</h5>
+                            <p className="text-sm text-gray-600 mb-2">Path: {item.path}</p>
+                            <div className="text-xs text-gray-500">
+                              <p>Required: {item.requiredPermissions.join(', ')}</p>
+                              <p>Visible to: {item.visibleToRoles.join(', ')}</p>
+                              <p>Access: {canAccessModule(item.id) ? '✅ Yes' : '❌ No'}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Module Access Test */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-3">Module Access Test</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {modules?.map((module) => (
+                    <div key={module.id} className="border border-gray-200 rounded-lg p-4">
+                      <h4 className="font-medium text-gray-900 mb-2">{module.name}</h4>
+                      <p className="text-sm text-gray-600 mb-3">{module.description}</p>
+                      <div className="text-xs text-gray-500 space-y-1">
+                        <p><strong>Category:</strong> {module.category}</p>
+                        <p><strong>Required:</strong> {module.requiredPermissions.join(', ')}</p>
+                        <p><strong>Visible to:</strong> {module.visibleToRoles.join(', ')}</p>
+                        <p><strong>Active:</strong> {module.isActive ? '✅ Yes' : '❌ No'}</p>
+                        <p><strong>Access:</strong> {canAccessModule(module.id) ? '✅ Yes' : '❌ No'}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         )}
