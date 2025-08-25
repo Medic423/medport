@@ -147,7 +147,7 @@ const DistanceMatrix: React.FC = () => {
               <div className="mt-2 text-sm text-yellow-700">
                 <p>
                   This is a demonstration of the Distance Matrix system using sample Pennsylvania hospital data. 
-                  The facilities API will be implemented in Phase 2.4. You can test distance calculations, 
+                  The facilities system is now fully implemented and functional. You can test distance calculations, 
                   edit distances, and explore the interface with these demo facilities.
                 </p>
               </div>

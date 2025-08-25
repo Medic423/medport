@@ -875,7 +875,10 @@ socket.io
 - ✅ **Authentication Issues Resolution**: Fixed Transport Request page authentication warnings by adding proper Authorization headers to all API calls
 - ✅ **Component Authentication**: Updated TransportRequestList, TransportRequestForm, and StatusBoard components with proper authentication headers
 - ✅ **Navigation Button Fix**: Changed "Refresh Page" button to "Go to Status Board" button to prevent page reload issues
+- ✅ **Demo Mode Authentication Fix**: Resolved demo mode authentication issues by updating auth middleware to handle both 'demo-token' and 'Bearer demo-token' formats
+- ✅ **Frontend Demo Mode Integration**: Updated all Transport Request components to properly check for demo mode and use appropriate authentication tokens
 - ✅ **Testing & Validation**: Verified new category structure and navigation changes working correctly in both backend and frontend
+- ✅ **Transport Request Page Functionality**: Fixed blank screen issue and facility authentication warnings, now properly displays pending transport requests
 
 **Next Phase**: Phase 6.4.4 - Agency Portal Integration 🏢🔗
 
