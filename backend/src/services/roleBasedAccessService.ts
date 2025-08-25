@@ -190,7 +190,7 @@ export class RoleBasedAccessService {
         category: 'Tools and Utilities',
         visibleToRoles: ['ADMIN', 'COORDINATOR', 'HOSPITAL_COORDINATOR', 'BILLING_STAFF', 'TRANSPORT_AGENCY'],
         requiredPermissions: ['module:help'],
-        icon: '📚'
+        isActive: true
       }
     ];
   }

@@ -13,7 +13,7 @@ const TransportRequests: React.FC = () => {
 
   const handleCreateRequest = async (formData: TransportRequestFormData) => {
     try {
-      const response = await fetch('http://localhost:5001/api/transport-requests', {
+      const response = await fetch('/api/transport-requests', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -54,7 +54,7 @@ const TransportRequests: React.FC = () => {
     if (!editingRequest) return;
 
     try {
-      const response = await fetch(`http://localhost:5001/api/transport-requests/${editingRequest.id}`, {
+      const response = await fetch(`/api/transport-requests/${editingRequest.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -95,13 +95,13 @@ const TransportRequests: React.FC = () => {
     if (!duplicatingRequest) return;
 
     try {
-      const response = await fetch(`http://localhost:5001/api/transport-requests/${duplicatingRequest.id}/duplicate`, {
+      const response = await fetch(`/api/transport-requests/${duplicatingRequest.id}/duplicate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: formData
+        body: JSON.stringify(formData)
       });
 
       if (response.ok) {
@@ -136,7 +136,7 @@ const TransportRequests: React.FC = () => {
     if (!cancellingRequest) return;
 
     try {
-      const response = await fetch(`http://localhost:5001/api/transport-requests/${cancellingRequest}`, {
+      const response = await fetch(`/api/transport-requests/${cancellingRequest}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

@@ -51,7 +51,7 @@ const TransportRequestList: React.FC<TransportRequestListProps> = ({
         }
       });
 
-      const response = await fetch(`http://localhost:5001/api/transport-requests?${queryParams.toString()}`);
+      const response = await fetch(`/api/transport-requests?${queryParams.toString()}`);
       
       console.log('[MedPort:TransportRequestList] Response status:', response.status, 'Response ok:', response.ok);
       
@@ -100,7 +100,7 @@ const TransportRequestList: React.FC<TransportRequestListProps> = ({
 
   const handleStatusChange = async (requestId: string, newStatus: RequestStatus) => {
     try {
-      const response = await fetch(`http://localhost:5001/api/transport-requests/${requestId}`, {
+      const response = await fetch(`/api/transport-requests/${requestId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
@@ -134,7 +134,7 @@ const TransportRequestList: React.FC<TransportRequestListProps> = ({
     if (!bulkAction || selectedRequests.length === 0) return;
 
     try {
-      const response = await fetch('http://localhost:5001/api/transport-requests/bulk-update', {
+      const response = await fetch('/api/transport-requests/bulk-update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
