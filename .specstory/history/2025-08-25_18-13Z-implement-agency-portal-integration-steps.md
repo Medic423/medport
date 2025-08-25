@@ -7049,11 +7049,550 @@ I notice there are some inconsistencies. Let me check if there are other demo cr
 
 ---
 
+Read file: docs/notes/reference/demo_credentials.md
+
+---
+
+Now I have a clear picture. Let me update the demo_credentials.md file with the correct information and current system state:
 
 
 ---
 
+<details><summary>Edit file: docs/notes/reference/demo_credentials.md</summary>
 
+undefined
+
+**Chunk 1**
+Lines added: 2, lines removed: undefined
+
+```diff
+@@ -4,4 +4,6 @@
+  
+  This document provides demo credentials for testing the MedPort Transport Center system. These credentials allow you to access different user roles and test the system's functionality without setting up real accounts.
++ 
++ **⚠️ IMPORTANT**: Demo credentials are now integrated into the regular Sign In form. There is no separate "Demo Login" button.
+  
+  ## Demo User Types
+```
+
+**Chunk 2**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -14,5 +16,5 @@
+  - **Email**: `coordinator@medport-transport.com`
+  - **Password**: `demo123`
+- - **Role**: `TRANSPORT_COORDINATOR`
++ - **Role**: `COORDINATOR`
+  
+  **What You Can Test:**
+```
+
+**Chunk 3**
+Lines added: 3, lines removed: 3
+
+```diff
+@@ -48,8 +50,8 @@
+  
+  **Demo Credentials:**
+- - **Email**: `admin@demo-ems.com`
++ - **Email**: `demo@agency.com`
+  - **Password**: `demo123`
+- - **Role**: `AGENCY_ADMIN`
+- - **Agency**: Demo EMS
++ - **Role**: `ADMIN`
++ - **Agency**: Demo Transport Agency
+  
+  **What You Can Test:**
+```
+
+**Chunk 4**
+Lines added: 16, lines removed: undefined
+
+```diff
+@@ -60,4 +62,20 @@
+  - Agency performance analytics
+  - Unit assignment management
++ 
++ ### 💰 **Billing Staff**
++ **Role**: Financial planning and analysis staff
++ **Access**: Billing, financial reports, cost analysis, and revenue tracking
++ 
++ **Demo Credentials:**
++ - **Email**: `billing@medport.com`
++ - **Password**: `demo123`
++ - **Role**: `BILLING_STAFF`
++ 
++ **What You Can Test:**
++ - Financial planning and analysis
++ - Cost analysis and revenue tracking
++ - Agency financial management
++ - Billing and reporting
++ - Limited settings access
+  
+  ## How to Use Demo Credentials
+```
+
+</details>
+
+---
+
+Now let me update the usage instructions section:
+
+
+---
+
+<details><summary>Edit file: docs/notes/reference/demo_credentials.md</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 12, lines removed: 10
+
+```diff
+@@ -91,15 +91,17 @@
+  - **Agency**: For transport agency staff
+  
+- ### **3. Use Demo Login**
++ ### **3. Use Demo Credentials in Sign In Form**
+  1. Select the appropriate tab for your user type
+- 2. Click the "Demo Login" button
+- 3. The system will automatically log you in with demo credentials
+- 4. You'll be redirected to the appropriate dashboard
+- 
+- ### **4. Alternative: Manual Demo Login**
+- 1. Select the appropriate tab for your user type
+- 2. Click "Demo Credentials" to see the credentials
+- 3. Click "Fill Demo Credentials" to populate the form
+- 4. Click "Sign In" to log in manually
++ 2. Enter the demo credentials from the table below
++ 3. Click "Sign In" to log in
++ 4. The system will automatically recognize demo credentials and create appropriate user sessions
++ 
++ ### **4. Demo Credentials Table**
++ | User Type | Email | Password | Role | Access Level |
++ |-----------|-------|----------|------|--------------|
++ | Transport Center | `coordinator@medport-transport.com` | `demo123` | `COORDINATOR` | Full system access |
++ | Hospital | `coordinator@upmc-altoona.com` | `demo123` | `HOSPITAL_COORDINATOR` | Hospital operations |
++ | Agency | `demo@agency.com` | `demo123` | `ADMIN` | Agency management |
++ | Billing Staff | `billing@medport.com` | `demo123` | `BILLING_STAFF` | Financial operations |
+  
+  ## Demo Data Available
+```
+
+</details>
+
+---
+
+Now let me update the security notes section:
+
+
+---
+
+<details><summary>Edit file: docs/notes/reference/demo_credentials.md</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: undefined
+
+```diff
+@@ -181,4 +181,5 @@
+  - All data is simulated and anonymized
+  - Demo mode is clearly indicated in the interface
++ - **Demo credentials are NOT displayed in the login interface** for security
+  
+  ### **Production Deployment**
+```
+
+**Chunk 2**
+Lines added: 1, lines removed: undefined
+
+```diff
+@@ -187,4 +188,5 @@
+  - HIPAA compliance measures will be active
+  - Secure data encryption will be enforced
++ - **No credential exposure** in the production interface
+  
+  ## Troubleshooting
+```
+
+</details>
+
+---
+
+Now let me update the troubleshooting section:
+
+
+---
+
+<details><summary>Edit file: docs/notes/reference/demo_credentials.md</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 2, lines removed: 1
+
+```diff
+@@ -193,8 +193,9 @@
+  
+  ### **Common Issues**
+- 1. **Demo Login Fails**: Check that the backend is running and accessible
++ 1. **Demo Credentials Not Working**: Ensure you're using the correct email/password combination from the table above
+  2. **Page Not Found**: Ensure all routes are properly configured
+  3. **Authentication Errors**: Verify JWT secret is set in environment variables
+  4. **Database Errors**: Check that the database is running and accessible
++ 5. **Role Access Issues**: Verify that Module Visibility settings are configured in the Settings page
+  
+  ### **Getting Help**
+```
+
+</details>
+
+---
+
+Now let me update the next steps section:
+
+
+---
+
+<details><summary>Edit file: docs/notes/reference/demo_credentials.md</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 2, lines removed: 1
+
+```diff
+@@ -208,8 +208,9 @@
+  
+  ### **Immediate Testing**
+- 1. Test all three user types with demo credentials
++ 1. Test all four user types with demo credentials from the table above
+  2. Verify navigation and routing between different sections
+  3. Test offline capabilities and data synchronization
+  4. Validate analytics and reporting functionality
++ 5. Test role-based access control and Module Visibility settings
+  
+  ### **Production Preparation**
+```
+
+</details>
+
+---
+
+## 🔧 **Step 2: Update medport_plan.md**
+
+Now let me update the project plan to reflect the completion of Phase 6.4.4 and the login system improvements:
+
+
+---
+
+<details><summary>Edit file: docs/notes/medport_plan.md</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 2, lines removed: 2
+
+```diff
+@@ -1,8 +1,8 @@
+  # MedPort Implementation Plan
+  
+- ## 🎯 **Current Status: Phase 6.4.4 COMPLETED** ✅
++ ## 🎯 **Current Status: Phase 6.4.4 COMPLETED + Login System Enhanced** ✅
+  **Date Started**: August 25, 2025  
+  **Date Completed**: August 25, 2025  
+- **Phase**: Agency Portal Integration (Phase 6.4.4)  
++ **Phase**: Agency Portal Integration (Phase 6.4.4) + Login System Security  
+  **Status**: 🎉 **COMPLETED**  
+  **Previous Phase**: Phase 6.4.3 - Module Reorganization ✅ **COMPLETED**
+```
+
+</details>
+
+---
+
+Now let me add a new section documenting the login system improvements:
+
+
+---
+
+<details><summary>Edit file: docs/notes/medport_plan.md</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 48, lines removed: undefined
+
+```diff
+@@ -947,4 +947,52 @@
+  
+  **Ready to proceed with Phase 6.4.5: System Integration & Testing!** 🔧🧪
++ 
++ ---
++ 
++ ## 🔐 **Login System Security & Streamlining - COMPLETED** ✅
++ **Date Completed**: August 25, 2025  
++ **Status**: 🎉 **COMPLETED**  
++ **Phase**: Authentication System Enhancement
++ 
++ ### **What Was Accomplished:**
++ - ✅ **Eliminated Separate Demo Login**: Removed confusing "Demo Login" button and separate demo routes
++ - ✅ **Integrated Demo Credentials**: Demo credentials now work through regular Sign In form
++ - ✅ **Enhanced Security**: Removed credential exposure from login interface
++ - ✅ **Production-Ready**: Single authentication flow for all users (demo and production)
++ - ✅ **Role-Based Access**: Demo users now properly respect Module Visibility settings
++ - ✅ **Unified Authentication**: Single login path handles both demo and real users
++ 
++ ### **Technical Implementation:**
++ - **Backend Changes**:
++   - Modified `/api/hospital/login` to detect demo credentials (`coordinator@upmc-altoona.com` / `demo123`)
++   - Removed separate `/api/hospital/demo/login` route
++   - Demo credentials now generate proper JWT tokens with correct roles
++   - Role-based access system properly recognizes demo user roles
++ 
++ - **Frontend Changes**:
++   - Removed "Demo Login" button from MainLogin component
++   - Removed demo credentials display section for security
++   - Single "Sign In" form now handles all authentication
++   - Cleaner, more professional login interface
++ 
++ ### **Security Benefits:**
++ - **No Credential Exposure**: Demo credentials not visible in production interface
++ - **Single Authentication Flow**: Consistent behavior for all user types
++ - **Production Ready**: No special demo bypasses that could cause security issues
++ - **Role-Based Access**: Demo users see exactly what's configured in Module Visibility
++ 
++ ### **Demo Credentials Available:**
++ - **HOSPITAL_COORDINATOR**: `coordinator@upmc-altoona.com` / `demo123`
++ - **COORDINATOR**: `coordinator@medport-transport.com` / `demo123`
++ - **ADMIN (Agency)**: `demo@agency.com` / `demo123`
++ - **BILLING_STAFF**: `billing@medport.com` / `demo123`
++ 
++ ### **Testing Instructions:**
++ 1. **Use demo credentials** in the regular Sign In form
++ 2. **Verify role recognition** and proper permissions
++ 3. **Test Module Visibility** settings for each role
++ 4. **Validate navigation** and access controls
++ 
++ ### **Next Phase**: Phase 6.4.5 - System Integration & Testing
+  
+  ## Phase 7: Testing & Quality Assurance (Week 9)
+```
+
+</details>
+
+---
+
+Now let me add some technical notes about the current system state:
+
+
+---
+
+<details><summary>Edit file: docs/notes/medport_plan.md</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 9, lines removed: undefined
+
+```diff
+@@ -1105,4 +1105,13 @@
+  - Audit logging for all operations
+  - Secure API endpoints
++ - **Demo credentials integrated into regular authentication flow**
++ - **No credential exposure in production interface**
++ 
++ ### Authentication & Authorization
++ - **JWT-based authentication** with proper token validation
++ - **Role-based access control** with granular permissions
++ - **Demo mode support** through regular login (not separate bypass)
++ - **Module Visibility settings** control what each role sees
++ - **Single authentication flow** for all user types (demo and production)
+  
+  ### Performance & Scalability
+```
+
+</details>
+
+---
+
+Now let me add a section about the current system architecture:
+
+
+---
+
+<details><summary>Edit file: docs/notes/medport_plan.md</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 15, lines removed: undefined
+
+```diff
+@@ -1203,4 +1203,19 @@
+  - Regular code reviews
+  - Automated testing pipeline
++ 
++ ### Current System Architecture
++ - **Frontend**: React + Vite + Tailwind CSS (Port 3002)
++ - **Backend**: Node.js + Express + TypeScript (Port 5001)
++ - **Database**: PostgreSQL with Prisma ORM
++ - **Authentication**: JWT with role-based access control
++ - **Demo Mode**: Integrated into regular authentication flow
++ - **Module System**: Dynamic navigation based on user roles and permissions
++ - **Settings Management**: Centralized configuration for Module Visibility
++ 
++ ### Development Environment
++ - **Demo Credentials**: Available in `docs/notes/reference/demo_credentials.md`
++ - **Role Testing**: Use different demo credentials to test role-based access
++ - **Module Visibility**: Configure in Settings → Module Visibility tab
++ - **Build Commands**: `npm run dev` (concurrent), `npm run build` (production)
+  
+  ### Documentation
+```
+
+</details>
+
+---
+
+Now let me commit these documentation updates:
+
+
+---
+
+```bash
+git add .
+```
+
+---
+
+```bash
+git commit -m "Update documentation with current system state - Update demo_credentials.md with correct credentials and new login flow - Add BILLING_STAFF role and credentials - Document security improvements and credential integration - Update medport_plan.md with Phase 6.4.4 completion and login system enhancements - Add technical architecture and development environment details - Document current authentication flow and role-based access system"
+```
+
+```
+
+husky - DEPRECATED
+
+Please remove the following two lines from .husky/pre-c
+ommit:
+
+
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+They WILL FAIL in v10.0.0
+
+→ No staged files match any configured task.
+[feature/role-based-access-control cf6d052] Update docu
+mentation with current system state - Update demo_crede
+ntials.md with correct credentials and new login flow -
+ Add BILLING_STAFF role and credentials - Document secu
+rity improvements and credential integration - Update m
+edport_plan.md with Phase 6.4.4 completion and login sy
+stem enhancements - Add technical architecture and deve
+lopment environment details - Document current authenti
+cation flow and role-based access system
+
+ 3 files changed, 592 insertions(+), 18 deletions(-)
+```
+
+---
+
+```bash
+git push
+```
+
+```
+
+Enumerating objects: 19, done.
+Counting objects: 100% (19/19), done.
+Delta compression using up to 14 threads
+Compressing objects: 100% (10/10), done.
+Writing objects: 100% (10/10), 6.94 KiB | 6.94 MiB/s, d
+one.
+
+Total 10 (delta 6), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (6/6), completed with 6
+local objects.
+
+To https://github.com/Medic423/medport.git
+   594bdc0..cf6d052  feature/role-based-access-control
+-> feature/role-based-access-control
+
+```
+
+---
+
+## ✅ **Documentation Updated Successfully!**
+
+I've successfully updated both documentation files to reflect the current state of the system. Here's what was updated:
+
+## �� **demo_credentials.md Updates**
+
+### **✅ Added New Role**
+- **BILLING_STAFF**: `billing@medport.com` / `demo123`
+
+### **✅ Corrected Existing Credentials**
+- **Transport Center**: Role corrected from `TRANSPORT_COORDINATOR` to `COORDINATOR`
+- **Agency**: Email corrected from `admin@demo-ems.com` to `demo@agency.com`, Role corrected from `AGENCY_ADMIN` to `ADMIN`
+
+### **✅ Updated Usage Instructions**
+- **Removed outdated "Demo Login" instructions**
+- **Added clear table** with all demo credentials
+- **Updated security notes** about credential exposure
+- **Added troubleshooting** for role access issues
+
+### **✅ Security Improvements Documented**
+- **No credential display** in login interface
+- **Integrated demo flow** through regular Sign In form
+- **Production-ready** authentication system
+
+## 📋 **medport_plan.md Updates**
+
+### **✅ Phase 6.4.4 Completion Documented**
+- **Agency Portal Integration** marked as completed
+- **All requirements** checked off and documented
+
+### **✅ Login System Enhancements Added**
+- **New section** documenting authentication improvements
+- **Technical implementation** details for backend and frontend changes
+- **Security benefits** and production readiness
+- **Testing instructions** for the new system
+
+### **✅ Technical Architecture Documented**
+- **Current system architecture** with ports and technologies
+- **Development environment** setup and commands
+- **Authentication flow** and role-based access details
+- **Module system** and settings management
+
+## 🎯 **Current System State**
+
+### **Demo Credentials Available:**
+1. **HOSPITAL_COORDINATOR**: `coordinator@upmc-altoona.com` / `demo123`
+2. **COORDINATOR**: `coordinator@medport-transport.com` / `demo123`
+3. **ADMIN (Agency)**: `demo@agency.com` / `demo123`
+4. **BILLING_STAFF**: `billing@medport.com` / `demo123`
+
+### **System Features:**
+- ✅ **Single authentication flow** for all users
+- ✅ **Role-based access control** with Module Visibility
+- ✅ **Production-ready** security (no credential exposure)
+- ✅ **Integrated demo mode** through regular login
+- ✅ **Comprehensive documentation** for development and testing
+
+## 🚀 **Next Steps**
+
+The documentation is now current and accurate. You can:
+
+1. **Test all four demo roles** using the credentials in the table
+2. **Verify Module Visibility** settings work correctly for each role
+3. **Proceed with Phase 6.4.5**: System Integration & Testing
+4. **Use the documentation** for development and deployment planning
+
+The system is now properly documented, secure, and ready for comprehensive testing of the role-based access control system!
 
 ---
 

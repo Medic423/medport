@@ -24,7 +24,7 @@ import AgencyPortal from './pages/AgencyPortal';
 
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system' | 'real-time-tracking' | 'analytics' | 'offline-capabilities' | 'login' | 'transport-center-dashboard' | 'hospital-dashboard' | 'settings' | 'help' | 'agency-portal'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system' | 'real-time-tracking' | 'analytics' | 'offline-capabilities' | 'login' | 'settings' | 'help' | 'agency-portal'>('home');
 
   return (
     <div className="App">
@@ -301,8 +301,7 @@ function App() {
         {currentPage === 'settings' && <SettingsPage />}
         {currentPage === 'help' && <Help />}
         {currentPage === 'login' && <MainLogin onNavigate={(page) => setCurrentPage(page as any)} />}
-        {currentPage === 'transport-center-dashboard' && <div className="min-h-screen bg-gray-50 p-8"><h1 className="text-3xl font-bold">Transport Center Dashboard</h1><p className="text-gray-600">Welcome to the Transport Center dashboard. This will be implemented next.</p></div>}
-        {currentPage === 'hospital-dashboard' && <div className="min-h-screen bg-gray-50 p-8"><h1 className="text-3xl font-bold">Hospital Dashboard</h1><p className="text-gray-600">Welcome to the Hospital dashboard. This will be implemented next.</p></div>}
+        {/* Placeholder dashboards removed - users now navigate to main app interface */}
         {currentPage === 'agency-registration' && <AgencyRegistration onNavigate={(page) => setCurrentPage(page as any)} />}
         {currentPage === 'agency-login' && <AgencyLogin onNavigate={(page) => setCurrentPage(page as any)} />}
         {currentPage === 'agency-dashboard' && <AgencyDashboard onNavigate={(page) => setCurrentPage(page as any)} />}
