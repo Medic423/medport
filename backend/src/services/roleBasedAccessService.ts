@@ -127,6 +127,33 @@ export class RoleBasedAccessService {
         visibleToRoles: ['ADMIN', 'TRANSPORT_AGENCY'],
         isActive: true
       },
+      {
+        id: 'unit-management',
+        name: 'Unit Management',
+        description: 'Manage transport units and availability',
+        category: 'Financial Planning',
+        requiredPermissions: ['unit:manage', 'unit:read'],
+        visibleToRoles: ['ADMIN', 'TRANSPORT_AGENCY'],
+        isActive: true
+      },
+      {
+        id: 'bid-management',
+        name: 'Bid Management',
+        description: 'Manage transport bids and assignments',
+        category: 'Financial Planning',
+        requiredPermissions: ['bid:manage', 'bid:read'],
+        visibleToRoles: ['ADMIN', 'TRANSPORT_AGENCY'],
+        isActive: true
+      },
+      {
+        id: 'matching-system',
+        name: 'Matching System',
+        description: 'Transport request matching and coordination',
+        category: 'Financial Planning',
+        requiredPermissions: ['matching:view', 'matching:manage'],
+        visibleToRoles: ['ADMIN', 'TRANSPORT_AGENCY'],
+        isActive: true
+      },
 
       // Tools and Utilities - Supporting tools and system administration
       {

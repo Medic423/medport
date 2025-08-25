@@ -20,10 +20,14 @@ import OfflineIndicator from './components/OfflineIndicator';
 import MainLogin from './components/MainLogin';
 import SettingsPage from './pages/Settings';
 import Help from './pages/Help';
+import UnitManagement from './components/UnitManagement';
+import BidManagement from './components/BidManagement';
+import MatchingSystem from './components/MatchingSystem';
+import AgencyPortal from './pages/AgencyPortal';
 
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system' | 'real-time-tracking' | 'analytics' | 'offline-capabilities' | 'login' | 'transport-center-dashboard' | 'hospital-dashboard' | 'settings' | 'help'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system' | 'real-time-tracking' | 'analytics' | 'offline-capabilities' | 'login' | 'transport-center-dashboard' | 'hospital-dashboard' | 'settings' | 'help' | 'agency-portal' | 'unit-management' | 'bid-management' | 'matching-system'>('home');
 
   return (
     <div className="App">
@@ -167,6 +171,30 @@ function App() {
                     >
                       Resource Management
                     </button>
+                    <button
+                      onClick={() => setCurrentPage('agency-portal')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Agency Portal
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage('unit-management')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Unit Management
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage('bid-management')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Bid Management
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage('matching-system')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Matching System
+                    </button>
                   </div>
                 </div>
               </div>
@@ -227,17 +255,7 @@ function App() {
                 </div>
               </div>
 
-              {/* Agency Portal */}
-              <button
-                onClick={() => setCurrentPage('agency-login')}
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  currentPage === 'agency-login'
-                    ? 'bg-blue-700 text-white'
-                    : 'text-blue-100 hover:bg-blue-500 hover:text-white'
-                }`}
-              >
-                Agency Portal
-              </button>
+
             </div>
           </div>
         </div>
@@ -303,6 +321,10 @@ function App() {
         {currentPage === 'agency-registration' && <AgencyRegistration onNavigate={(page) => setCurrentPage(page as any)} />}
         {currentPage === 'agency-login' && <AgencyLogin onNavigate={(page) => setCurrentPage(page as any)} />}
         {currentPage === 'agency-dashboard' && <AgencyDashboard onNavigate={(page) => setCurrentPage(page as any)} />}
+        {currentPage === 'agency-portal' && <AgencyPortal onNavigate={(page) => setCurrentPage(page as any)} />}
+        {currentPage === 'unit-management' && <UnitManagement />}
+        {currentPage === 'bid-management' && <BidManagement />}
+        {currentPage === 'matching-system' && <MatchingSystem />}
 
       </main>
     </div>

@@ -106,6 +106,68 @@ router.post('/register', async (req, res) => {
   }
 });
 
+// Agency Statistics (Protected)
+router.get('/stats', authenticateToken, async (req, res) => {
+  try {
+    console.log('[AGENCY-STATS] Fetching agency statistics');
+    
+    // Check if this is a demo request
+    const authHeader = req.headers.authorization;
+    const isDemoMode = authHeader === 'Bearer demo-token';
+    
+    if (isDemoMode) {
+      // Return demo data
+      const demoStats = {
+        totalUnits: 8,
+        availableUnits: 5,
+        totalTransports: 156,
+        completedTransports: 142,
+        completionRate: 91.0,
+        totalRevenue: 125000,
+        pendingBids: 3
+      };
+      
+      console.log('[AGENCY-STATS] Demo mode - returning demo data');
+      
+      return res.json({
+        success: true,
+        message: 'Demo agency statistics retrieved successfully',
+        data: demoStats
+      });
+    }
+    
+    // For now, return demo data since we need to implement proper agency-user relationship
+    // In a real implementation, you would:
+    // 1. Add agencyId field to User model
+    // 2. Query based on the user's agency
+    // 3. Calculate real statistics from the database
+    
+    const demoStats = {
+      totalUnits: 8,
+      availableUnits: 5,
+      totalTransports: 156,
+      completedTransports: 142,
+      completionRate: 91.0,
+      totalRevenue: 125000,
+      pendingBids: 3
+    };
+    
+    console.log('[AGENCY-STATS] Returning demo data for now');
+    
+    res.json({
+      success: true,
+      message: 'Agency statistics retrieved successfully (demo data)',
+      data: demoStats
+    });
+  } catch (error) {
+    console.error('[AGENCY-STATS] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve agency statistics'
+    });
+  }
+});
+
 // Agency Login (Public)
 router.post('/login', async (req, res) => {
   try {
