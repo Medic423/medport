@@ -203,7 +203,59 @@ router.post('/login', async (req, res) => {
     
     const validatedData = hospitalLoginSchema.parse(req.body);
 
-    // Find user
+    // Check if this is a demo credential
+    if (validatedData.email === 'coordinator@upmc-altoona.com' && validatedData.password === 'demo123') {
+      console.log('[HOSPITAL-LOGIN] Demo credentials detected, creating demo user session');
+      
+      // Create demo hospital data
+      const demoHospital = {
+        id: 'demo-hospital-001',
+        name: 'UPMC Altoona',
+        type: 'HOSPITAL',
+        email: 'demo@upmc-altoona.com'
+      };
+
+      const demoUser = {
+        id: 'demo-hospital-user-001',
+        name: 'Demo Hospital Coordinator',
+        email: 'coordinator@upmc-altoona.com',
+        role: 'HOSPITAL_COORDINATOR'
+      };
+
+      const demoOrg = {
+        id: 'demo-hospital-org-001',
+        name: 'UPMC Altoona'
+      };
+
+      // Generate demo token
+      const token = jwt.sign(
+        { 
+          id: demoUser.id, 
+          email: demoUser.email, 
+          role: demoUser.role,
+          hospitalId: demoHospital.id,
+          organizationId: demoOrg.id,
+          isDemo: true
+        },
+        process.env.JWT_SECRET!,
+        { expiresIn: '24h' }
+      );
+
+      console.log('[HOSPITAL-LOGIN] Demo login successful');
+
+      return res.json({
+        success: true,
+        message: 'Demo login successful',
+        data: {
+          user: demoUser,
+          hospital: demoHospital,
+          organization: demoOrg,
+          token: token
+        }
+      });
+    }
+
+    // Regular database authentication for non-demo users
     const user = await prisma.user.findUnique({
       where: { email: validatedData.email }
     });
@@ -289,65 +341,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Demo Hospital Login
-router.post('/demo/login', async (req, res) => {
-  try {
-    console.log('[HOSPITAL-DEMO-LOGIN] Demo login attempt');
-    
-    // Create demo hospital data
-    const demoHospital = {
-      id: 'demo-hospital-001',
-      name: 'UPMC Altoona',
-      type: 'HOSPITAL',
-      email: 'demo@upmc-altoona.com'
-    };
-
-    const demoUser = {
-      id: 'demo-hospital-user-001',
-      name: 'Demo Hospital Coordinator',
-      email: 'coordinator@upmc-altoona.com',
-      role: 'HOSPITAL_COORDINATOR'
-    };
-
-    const demoOrg = {
-      id: 'demo-hospital-org-001',
-      name: 'UPMC Altoona'
-    };
-
-    // Generate demo token
-    const token = jwt.sign(
-      { 
-        id: demoUser.id, 
-        email: demoUser.email, 
-        role: demoUser.role,
-        hospitalId: demoHospital.id,
-        organizationId: demoOrg.id,
-        isDemo: true
-      },
-      process.env.JWT_SECRET!,
-      { expiresIn: '24h' }
-    );
-
-    console.log('[HOSPITAL-DEMO-LOGIN] Success');
-
-    res.json({
-      success: true,
-      message: 'Demo login successful',
-      data: {
-        user: demoUser,
-        hospital: demoHospital,
-        organization: demoOrg,
-        token: token
-      }
-    });
-  } catch (error) {
-    console.error('[HOSPITAL-DEMO-LOGIN] Error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
-    });
-  }
-});
+// Demo login route removed - now handled in regular login route
 
 // Get hospital profile (Protected)
 router.get('/profile', authenticateToken, async (req: any, res) => {

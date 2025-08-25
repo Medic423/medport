@@ -103,62 +103,7 @@ const MainLogin: React.FC<MainLoginProps> = ({ onNavigate }) => {
     }
   };
 
-  const handleDemoLogin = async () => {
-    setIsSubmitting(true);
-    setSubmitError('');
-
-    try {
-      let endpoint = '';
-      let redirectPage = '';
-
-      switch (activeTab) {
-        case 'transport-center':
-          endpoint = '/api/transport-center/demo/login';
-          redirectPage = 'transport-center-dashboard';
-          break;
-        case 'hospital':
-          endpoint = '/api/hospital/demo/login';
-          redirectPage = 'hospital-dashboard';
-          break;
-        case 'agency':
-          endpoint = '/api/agency/demo/login';
-          redirectPage = 'agency-dashboard';
-          break;
-      }
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer demo-token', 'Content-Type': 'application/json' },
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        // Store demo authentication data
-        const tokenKey = `${activeTab}Token`;
-        const userKey = `${activeTab}User`;
-        const orgKey = activeTab === 'agency' ? 'agency' : 
-                      activeTab === 'hospital' ? 'hospital' : 'organization';
-        
-        localStorage.setItem(tokenKey, result.data.token);
-        localStorage.setItem(userKey, JSON.stringify(result.data.user));
-        if (result.data[orgKey]) {
-          localStorage.setItem(orgKey, JSON.stringify(result.data[orgKey]));
-        }
-        localStorage.setItem('demoMode', 'true');
-        
-        // Redirect to appropriate dashboard
-        onNavigate(redirectPage);
-      } else {
-        setSubmitError(result.message || 'Demo login failed');
-      }
-    } catch (error) {
-      console.error('Demo login error:', error);
-      setSubmitError('Demo login failed. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  // Demo login functionality removed - now handled in regular login flow
 
   const getTabIcon = (tab: string) => {
     switch (tab) {
@@ -316,15 +261,6 @@ const MainLogin: React.FC<MainLoginProps> = ({ onNavigate }) => {
                     </>
                   )}
                 </button>
-
-                <button
-                  type="button"
-                  onClick={handleDemoLogin}
-                  disabled={isSubmitting}
-                  className="w-full flex items-center justify-center space-x-2 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                >
-                  <span>Demo Login</span>
-                </button>
               </div>
             </form>
 
@@ -341,7 +277,7 @@ const MainLogin: React.FC<MainLoginProps> = ({ onNavigate }) => {
               {showDemoInfo && (
                 <div className="mt-3 p-3 bg-blue-50 rounded-md">
                   <p className="text-xs text-blue-800 mb-2">
-                    Use these credentials for testing:
+                    Use these credentials in the Sign In form above:
                   </p>
                   <div className="text-xs text-blue-800 space-y-1">
                     <p><strong>Email:</strong> {getDemoCredentials(activeTab).email}</p>
