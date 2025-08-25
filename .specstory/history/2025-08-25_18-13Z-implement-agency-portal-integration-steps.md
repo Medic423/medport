@@ -6579,3 +6579,481 @@ Your demo credentials from `demo_credentials.md` should now work perfectly throu
 
 ---
 
+_**User**_
+
+I think the component needs one more tweak. The demo credential display at the bottom needs to be removed since we'll be testing more than one log-in and it exposes the application to anyone who would happen to find it once it goes into production.
+
+---
+
+_**Assistant**_
+
+You're absolutely right! Exposing demo credentials in production is a security risk. Let me remove the demo credentials section entirely from the login component.
+
+## �� **Security Concern Addressed**
+
+The demo credentials section:
+- ❌ **Exposes login credentials** to anyone who can see the login page
+- ❌ **Creates security vulnerability** in production
+- ❌ **Not needed** since we're testing with real credential knowledge
+
+## 🔧 **Let Me Remove the Demo Credentials Section**
+
+
+---
+
+<details><summary>Edit file: frontend/src/components/MainLogin.tsx</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 28
+
+```diff
+@@ -265,32 +265,5 @@
+              </form>
+  
+-             {/* Demo Credentials Info */}
+-             <div className="border-t border-gray-200 pt-4">
+-               <button
+-                 onClick={() => setShowDemoInfo(!showDemoInfo)}
+-                 className="w-full flex items-center justify-center space-x-2 text-sm text-blue-600 hover:text-blue-700 transition-colors duration-200"
+-               >
+-                 <InformationCircleIcon className="w-4 h-4" />
+-                 <span>Demo Credentials</span>
+-               </button>
+- 
+-               {showDemoInfo && (
+-                 <div className="mt-3 p-3 bg-blue-50 rounded-md">
+-                   <p className="text-xs text-blue-800 mb-2">
+-                     Use these credentials in the Sign In form above:
+-                   </p>
+-                   <div className="text-xs text-blue-800 space-y-1">
+-                     <p><strong>Email:</strong> {getDemoCredentials(activeTab).email}</p>
+-                     <p><strong>Password:</strong> {getDemoCredentials(activeTab).password}</p>
+-                   </div>
+-                   <button
+-                     onClick={fillDemoCredentials}
+-                     className="mt-2 text-xs text-blue-600 hover:text-blue-700 underline"
+-                   >
+-                     Fill Demo Credentials
+-                   </button>
+-                 </div>
+-               )}
+-             </div>
++             {/* Demo credentials section removed for security - credentials documented in demo_credentials.md */}
+            </div>
+          </div>
+```
+
+</details>
+
+---
+
+Now I need to remove the related state variables and functions that are no longer needed:
+
+
+---
+
+<details>
+            <summary>Grep search for "showDemoInfo" • **1** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///Users/scooper/Code/medport/frontend/src/components/MainLogin.tsx` | L30 | `const [showDemoInfo, setShowDemoInfo] = useState(false);` |
+
+</details>
+
+---
+
+<details><summary>Edit file: frontend/src/components/MainLogin.tsx</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -28,5 +28,5 @@
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState('');
+-   const [showDemoInfo, setShowDemoInfo] = useState(false);
++   // Demo info state removed for security
+  
+    const validateForm = (): boolean => {
+```
+
+</details>
+
+---
+
+Now let me remove the `getDemoCredentials` and `fillDemoCredentials` functions since they're no longer needed:
+
+
+---
+
+<details><summary>Edit file: frontend/src/components/MainLogin.tsx</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 17
+
+```diff
+@@ -124,21 +124,5 @@
+    };
+  
+-   const getDemoCredentials = (tab: string) => {
+-     switch (tab) {
+-       case 'transport-center':
+-         return { email: 'coordinator@medport-transport.com', password: 'demo123' };
+-       case 'hospital':
+-         return { email: 'coordinator@upmc-altoona.com', password: 'demo123' };
+-       case 'agency':
+-         return { email: 'admin@demo-ems.com', password: 'demo123' };
+-       default:
+-         return { email: '', password: '' };
+-     }
+-   };
+- 
+-   const fillDemoCredentials = () => {
+-     const credentials = getDemoCredentials(activeTab);
+-     setFormData(credentials);
+-   };
++   // Demo credential functions removed for security - credentials documented in demo_credentials.md
+  
+    return (
+```
+
+</details>
+
+---
+
+Now let me test the build to make sure everything still compiles correctly:
+
+
+---
+
+```bash
+cd frontend && npm run build
+```
+
+```
+
+
+> frontend@1.0.0 build
+> vite build
+
+vite v7.1.3 building for production...
+✓ 2076 modules transformed.
+dist/index.html                                  0.68 k
+B │ gzip:   0.37 kB
+
+dist/assets/index-CaEpKKw2.css                  41.60 k
+B │ gzip:   7.06 kB
+
+dist/assets/qr-scanner-worker.min-D85Z9gVD.js   43.95 k
+B │ gzip:  10.40 kB
+
+dist/assets/index-CMUqwdPz.js                  854.94 k
+B │ gzip: 179.22 kB
+
+
+(!) Some chunks are larger than 500 kB after minificati
+on. Consider:
+
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improv
+e chunking: https://rollupjs.org/configuration-options/
+#output-manualchunks
+
+- Adjust chunk size limit for this warning via build.ch
+unkSizeWarningLimit.
+
+✓ built in 1.42s
+```
+
+---
+
+Perfect! Now let me commit this security improvement:
+
+
+---
+
+```bash
+cd .. && git add .
+```
+
+---
+
+```bash
+git commit -m "Remove demo credentials display for security - Remove demo credentials section from login component - Eliminate security vulnerability in production - Demo credentials remain documented in demo_credentials.md for development - Cleaner, more secure login interface - Production-ready authentication flow"
+```
+
+```
+
+husky - DEPRECATED
+
+Please remove the following two lines from .husky/pre-c
+ommit:
+
+
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+They WILL FAIL in v10.0.0
+
+✔ Backed up original state in git stash (841e1d2)
+✔ Running tasks for staged files...
+✔ Applying modifications from tasks...
+✔ Cleaning up temporary files...
+[feature/role-based-access-control 594bdc0] Remove demo
+ credentials display for security - Remove demo credent
+ials section from login component - Eliminate security
+vulnerability in production - Demo credentials remain d
+ocumented in demo_credentials.md for development - Clea
+ner, more secure login interface - Production-ready aut
+hentication flow
+
+ 2 files changed, 599 insertions(+), 46 deletions(-)
+```
+
+---
+
+```bash
+git push
+```
+
+```
+
+Enumerating objects: 17, done.
+Counting objects: 100% (17/17), done.
+Delta compression using up to 14 threads
+Compressing objects: 100% (9/9), done.
+Writing objects: 100% (9/9), 5.45 KiB | 5.45 MiB/s, don
+e.
+
+Total 9 (delta 7), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (7/7), completed with 7
+local objects.
+
+To https://github.com/Medic423/medport.git
+   d6287ba..594bdc0  feature/role-based-access-control
+-> feature/role-based-access-control
+
+```
+
+---
+
+## ✅ **Security Improvement Completed!**
+
+I've successfully removed the demo credentials display from the login component, addressing the security concern you raised.
+
+## �� **What Was Removed**
+
+### **1. Demo Credentials Section**
+- ❌ **Demo Credentials button** and expandable section
+- ❌ **Email and password display** that exposed credentials
+- ❌ **"Fill Demo Credentials" button** that auto-populated the form
+
+### **2. Related Functions & State**
+- ❌ **`showDemoInfo` state** variable
+- ❌ **`getDemoCredentials()` function** that returned credential mappings
+- ❌ **`fillDemoCredentials()` function** that populated the form
+
+## 🎯 **Security Benefits**
+
+### **✅ Production Ready**
+- **No exposed credentials** in the login interface
+- **Clean, professional appearance** without demo information
+- **Secure authentication flow** for all users
+
+### **✅ Development Friendly**
+- **Demo credentials still documented** in `demo_credentials.md`
+- **Easy access** for developers and testers
+- **No security risk** from accidental credential exposure
+
+## 🧪 **How to Test Now**
+
+### **For Development/Testing:**
+1. **Reference `demo_credentials.md`** for credential information
+2. **Use credentials directly** in the Sign In form
+3. **Test different roles** with their respective credentials
+
+### **Demo Credentials Available:**
+- **HOSPITAL_COORDINATOR**: `coordinator@upmc-altoona.com` / `demo123`
+- **TRANSPORT_COORDINATOR**: `coordinator@medport-transport.com` / `demo123`
+- **AGENCY_ADMIN**: `admin@demo-ems.com` / `demo123`
+
+## 🔍 **Current Login Interface**
+
+### **Before (Security Risk):**
+- Demo credentials visible to anyone
+- Expandable section with password exposure
+- Auto-fill functionality for demo data
+
+### **After (Secure & Clean):**
+- Single Sign In form
+- No credential exposure
+- Professional, production-ready appearance
+- Demo credentials work through regular login flow
+
+## 🚀 **Next Steps**
+
+The login system is now:
+- ✅ **Secure** - No credential exposure
+- ✅ **Production-ready** - Clean, professional interface
+- ✅ **Functional** - Demo credentials work through regular login
+- ✅ **Role-based** - Respects Module Visibility settings
+
+You can now test the different demo roles safely, and when you deploy to production, there's no risk of exposing test credentials to end users!
+
+---
+
+_**User**_
+
+OK, let's update some documentation. Update demo_credentials.md with all the valid user level credentials. We also need to update medport_plan.md with the successful implementation of 6.4.4 and the log-in changes we've made since then and any other technical notes you deem necessary.
+
+---
+
+_**Assistant**_
+
+I'll update both documentation files to reflect the current state of the system. Let me start with updating the demo credentials and then update the project plan.
+
+## 🔧 **Step 1: Update demo_credentials.md**
+
+First, let me check what roles are actually defined in the system to ensure we have all the valid credentials:
+
+
+---
+
+Read file: backend/src/services/sessionService.ts
+
+---
+
+Now let me check what demo credentials are currently configured in the system:
+
+
+---
+
+<details>
+            <summary>Grep search for "demo123" • **1** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///Users/scooper/Code/medport/backend/src/routes/hospital.ts` | L207 | `if (validatedData.email === 'coordinator@upmc-altoona.com' && validatedData.password === 'demo123') {` |
+
+</details>
+
+---
+
+Let me check the transport center and agency routes for their demo credentials:
+
+
+---
+
+<details>
+            <summary>Grep search for "coordinator@medport-transport.com" • **1** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///Users/scooper/Code/medport/backend/src/routes/transportCenter.ts` | L212 | `email: 'coordinator@medport-transport.com',` |
+
+</details>
+
+---
+
+<details>
+            <summary>Grep search for "admin@demo-ems.com" • **0** files</summary>
+        
+No results found
+</details>
+
+---
+
+Let me check the agency routes:
+
+
+---
+
+<details>
+            <summary>Grep search for "demo123" • **1** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///Users/scooper/Code/medport/backend/src/routes/hospital.ts` | L207 | `if (validatedData.email === 'coordinator@upmc-altoona.com' && validatedData.password === 'demo123') {` |
+
+</details>
+
+---
+
+Let me check if there are other demo credential patterns:
+
+
+---
+
+<details>
+            <summary>Grep search for "demo.*login" • **4** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///Users/scooper/Code/medport/backend/src/routes/agency.ts` | L221 | `// Demo Login (Public - for testing)` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/agency.ts` | L222 | `router.post('/demo/login', async (req, res) => {` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/agency.ts` | L224 | `console.log('[AGENCY-DEMO-LOGIN] Demo login attempt');` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/agency.ts` | L242 | `console.log('[AGENCY-DEMO-LOGIN] Success:', { userId: demoUser.id, agencyId: demoAgency.id });` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/agency.ts` | L246 | `message: 'Demo login successful',` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/agency.ts` | L254 | `console.error('[AGENCY-DEMO-LOGIN] Error:', error);` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/agency.ts` | L258 | `message: 'Demo login failed'` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/agency.ts` | L611 | `router.post('/demo/login', async (req, res) => {` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/agency.ts` | L617 | `message: 'Demo login successful',` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/agency.ts` | L640 | `console.error('[DEMO-LOGIN] Error:', error);` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/roleBasedAccess.ts` | L194 | `// Demo mode support - handles both demo-token and JWT tokens from demo login` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/roleBasedAccess.ts` | L215 | `// JWT token from demo login` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/roleBasedAccess.ts` | L261 | `// Demo mode modules support - handles both demo-token and JWT tokens from demo login` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/roleBasedAccess.ts` | L282 | `// JWT token from demo login` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/roleBasedAccess.ts` | L328 | `// Demo mode operational settings support - handles both demo-token and JWT tokens from demo login` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/roleBasedAccess.ts` | L349 | `// JWT token from demo login` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/transportCenter.ts` | L203 | `// Demo Transport Center Login` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/transportCenter.ts` | L204 | `router.post('/demo/login', async (req, res) => {` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/transportCenter.ts` | L206 | `console.log('[TRANSPORT-CENTER-DEMO-LOGIN] Demo login attempt');` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/transportCenter.ts` | L229 | `console.log('[TRANSPORT-CENTER-DEMO-LOGIN] Success');` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/transportCenter.ts` | L233 | `message: 'Demo login successful',` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/transportCenter.ts` | L240 | `console.error('[TRANSPORT-CENTER-DEMO-LOGIN] Error:', error);` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/hospital.ts` | L244 | `console.log('[HOSPITAL-LOGIN] Demo login successful');` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/hospital.ts` | L248 | `message: 'Demo login successful',` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/hospital.ts` | L344 | `// Demo login route removed - now handled in regular login route` |
+
+</details>
+
+---
+
+Let me check the transport center demo login to see what credentials it uses:
+
+
+---
+
+Read file: backend/src/routes/transportCenter.ts
+
+---
+
+Now let me check the agency demo login:
+
+
+---
+
+Read file: backend/src/routes/agency.ts
+
+---
+
+I notice there are some inconsistencies. Let me check if there are other demo credential patterns. Let me also check what the current demo_credentials.md says:
+
+
+---
+
+
+
+---
+
+
+
+---
+

@@ -4,6 +4,8 @@
 
 This document provides demo credentials for testing the MedPort Transport Center system. These credentials allow you to access different user roles and test the system's functionality without setting up real accounts.
 
+**⚠️ IMPORTANT**: Demo credentials are now integrated into the regular Sign In form. There is no separate "Demo Login" button.
+
 ## Demo User Types
 
 ### 🏥 **Transport Center Coordinators**
@@ -13,7 +15,7 @@ This document provides demo credentials for testing the MedPort Transport Center
 **Demo Credentials:**
 - **Email**: `coordinator@medport-transport.com`
 - **Password**: `demo123`
-- **Role**: `TRANSPORT_COORDINATOR`
+- **Role**: `COORDINATOR`
 
 **What You Can Test:**
 - System overview and dashboard
@@ -47,10 +49,10 @@ This document provides demo credentials for testing the MedPort Transport Center
 **Access**: Unit management, assignment acceptance, route optimization, and agency analytics
 
 **Demo Credentials:**
-- **Email**: `admin@demo-ems.com`
+- **Email**: `demo@agency.com`
 - **Password**: `demo123`
-- **Role**: `AGENCY_ADMIN`
-- **Agency**: Demo EMS
+- **Role**: `ADMIN`
+- **Agency**: Demo Transport Agency
 
 **What You Can Test:**
 - Unit management and status updates
@@ -59,6 +61,22 @@ This document provides demo credentials for testing the MedPort Transport Center
 - Real-time tracking
 - Agency performance analytics
 - Unit assignment management
+
+### 💰 **Billing Staff**
+**Role**: Financial planning and analysis staff
+**Access**: Billing, financial reports, cost analysis, and revenue tracking
+
+**Demo Credentials:**
+- **Email**: `billing@medport.com`
+- **Password**: `demo123`
+- **Role**: `BILLING_STAFF`
+
+**What You Can Test:**
+- Financial planning and analysis
+- Cost analysis and revenue tracking
+- Agency financial management
+- Billing and reporting
+- Limited settings access
 
 ## How to Use Demo Credentials
 
@@ -72,17 +90,19 @@ This document provides demo credentials for testing the MedPort Transport Center
 - **Hospital**: For hospital staff and coordinators
 - **Agency**: For transport agency staff
 
-### **3. Use Demo Login**
+### **3. Use Demo Credentials in Sign In Form**
 1. Select the appropriate tab for your user type
-2. Click the "Demo Login" button
-3. The system will automatically log you in with demo credentials
-4. You'll be redirected to the appropriate dashboard
+2. Enter the demo credentials from the table below
+3. Click "Sign In" to log in
+4. The system will automatically recognize demo credentials and create appropriate user sessions
 
-### **4. Alternative: Manual Demo Login**
-1. Select the appropriate tab for your user type
-2. Click "Demo Credentials" to see the credentials
-3. Click "Fill Demo Credentials" to populate the form
-4. Click "Sign In" to log in manually
+### **4. Demo Credentials Table**
+| User Type | Email | Password | Role | Access Level |
+|-----------|-------|----------|------|--------------|
+| Transport Center | `coordinator@medport-transport.com` | `demo123` | `COORDINATOR` | Full system access |
+| Hospital | `coordinator@upmc-altoona.com` | `demo123` | `HOSPITAL_COORDINATOR` | Hospital operations |
+| Agency | `demo@agency.com` | `demo123` | `ADMIN` | Agency management |
+| Billing Staff | `billing@medport.com` | `demo123` | `BILLING_STAFF` | Financial operations |
 
 ## Demo Data Available
 
@@ -160,20 +180,23 @@ This document provides demo credentials for testing the MedPort Transport Center
 - No real patient or medical data
 - All data is simulated and anonymized
 - Demo mode is clearly indicated in the interface
+- **Demo credentials are NOT displayed in the login interface** for security
 
 ### **Production Deployment**
 - Demo credentials will be disabled
 - Real authentication will be required
 - HIPAA compliance measures will be active
 - Secure data encryption will be enforced
+- **No credential exposure** in the production interface
 
 ## Troubleshooting
 
 ### **Common Issues**
-1. **Demo Login Fails**: Check that the backend is running and accessible
+1. **Demo Credentials Not Working**: Ensure you're using the correct email/password combination from the table above
 2. **Page Not Found**: Ensure all routes are properly configured
 3. **Authentication Errors**: Verify JWT secret is set in environment variables
 4. **Database Errors**: Check that the database is running and accessible
+5. **Role Access Issues**: Verify that Module Visibility settings are configured in the Settings page
 
 ### **Getting Help**
 - Check the browser console for error messages
@@ -184,10 +207,11 @@ This document provides demo credentials for testing the MedPort Transport Center
 ## Next Steps
 
 ### **Immediate Testing**
-1. Test all three user types with demo credentials
+1. Test all four user types with demo credentials from the table above
 2. Verify navigation and routing between different sections
 3. Test offline capabilities and data synchronization
 4. Validate analytics and reporting functionality
+5. Test role-based access control and Module Visibility settings
 
 ### **Production Preparation**
 1. Set up real user authentication
