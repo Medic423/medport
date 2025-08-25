@@ -190,11 +190,22 @@ router.get('/operational-settings', authenticateToken, async (req: any, res: Res
   }
 });
 
-// Demo mode support
+// Demo mode support with role selection
 router.get('/demo/navigation', (req: Request, res: Response) => {
   try {
     if (req.headers.authorization === 'Bearer demo-token') {
-      const userRole = 'ADMIN';
+      // Check for role preference in query params or headers
+      const requestedRole = req.query.role || req.headers['x-demo-role'] || 'ADMIN';
+      const validRoles = ['ADMIN', 'COORDINATOR', 'BILLING_STAFF', 'TRANSPORT_AGENCY', 'HOSPITAL_COORDINATOR'];
+      
+      if (!validRoles.includes(requestedRole as string)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid demo role. Valid roles: ADMIN, COORDINATOR, BILLING_STAFF, TRANSPORT_AGENCY, HOSPITAL_COORDINATOR'
+        });
+      }
+      
+      const userRole = requestedRole as string;
       const userPermissions = SessionService.getUserPermissions(userRole);
       
       const navigation = RoleBasedAccessService.getNavigationForRole(userRole, userPermissions);
@@ -223,11 +234,22 @@ router.get('/demo/navigation', (req: Request, res: Response) => {
   }
 });
 
-// Demo mode modules support
+// Demo mode modules support with role selection
 router.get('/demo/modules', (req: Request, res: Response) => {
   try {
     if (req.headers.authorization === 'Bearer demo-token') {
-      const userRole = 'ADMIN';
+      // Check for role preference in query params or headers
+      const requestedRole = req.query.role || req.headers['x-demo-role'] || 'ADMIN';
+      const validRoles = ['ADMIN', 'COORDINATOR', 'BILLING_STAFF', 'TRANSPORT_AGENCY', 'HOSPITAL_COORDINATOR'];
+      
+      if (!validRoles.includes(requestedRole as string)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid demo role. Valid roles: ADMIN, COORDINATOR, BILLING_STAFF, TRANSPORT_AGENCY, HOSPITAL_COORDINATOR'
+        });
+      }
+      
+      const userRole = requestedRole as string;
       const userPermissions = SessionService.getUserPermissions(userRole);
       
       const modules = RoleBasedAccessService.getUserAccessibleModules(userRole, userPermissions);
@@ -256,11 +278,22 @@ router.get('/demo/modules', (req: Request, res: Response) => {
   }
 });
 
-// Demo mode operational settings support
+// Demo mode operational settings support with role selection
 router.get('/demo/operational-settings', (req: Request, res: Response) => {
   try {
     if (req.headers.authorization === 'Bearer demo-token') {
-      const userRole = 'ADMIN';
+      // Check for role preference in query params or headers
+      const requestedRole = req.query.role || req.headers['x-demo-role'] || 'ADMIN';
+      const validRoles = ['ADMIN', 'COORDINATOR', 'BILLING_STAFF', 'TRANSPORT_AGENCY', 'HOSPITAL_COORDINATOR'];
+      
+      if (!validRoles.includes(requestedRole as string)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid demo role. Valid roles: ADMIN, COORDINATOR, BILLING_STAFF, TRANSPORT_AGENCY, HOSPITAL_COORDINATOR'
+        });
+      }
+      
+      const userRole = requestedRole as string;
       const settings = RoleBasedAccessService.getOperationalSettings();
       const accessLevel = RoleBasedAccessService.getSettingsAccessLevel(userRole);
       

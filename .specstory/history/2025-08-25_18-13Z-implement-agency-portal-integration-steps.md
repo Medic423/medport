@@ -2628,3 +2628,504 @@ The agency portal integration is now complete and provides a seamless, professio
 
 ---
 
+_**User**_
+
+We need to make a few adjustments here. The Agency needs to be in the header menu bar. It's a seperate module that doesn't really fit in Financial Planning. 
+
+---
+
+_**Assistant**_
+
+You're absolutely right! The Agency Portal should be a separate module in the header menu bar, not buried in the Financial Planning dropdown. Let me fix this by moving the Agency Portal to its own prominent position in the main navigation.
+
+## Step 1: Remove Agency Portal from Financial Planning dropdown
+
+First, let me remove the agency portal modules from the Financial Planning dropdown:
+
+
+---
+
+<details><summary>Edit file: frontend/src/App.tsx</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: undefined, lines removed: 24
+
+```diff
+@@ -172,28 +172,4 @@
+                        Resource Management
+                      </button>
+-                     <button
+-                       onClick={() => setCurrentPage('agency-portal')}
+-                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+-                     >
+-                       Agency Portal
+-                     </button>
+-                     <button
+-                       onClick={() => setCurrentPage('unit-management')}
+-                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+-                     >
+-                       Unit Management
+-                     </button>
+-                     <button
+-                       onClick={() => setCurrentPage('bid-management')}
+-                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+-                     >
+-                       Bid Management
+-                     </button>
+-                     <button
+-                       onClick={() => setCurrentPage('matching-system')}
+-                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+-                     >
+-                       Matching System
+-                     </button>
+                    </div>
+                  </div>
+```
+
+</details>
+
+---
+
+## Step 2: Add Agency Portal as a separate button in the main navigation
+
+Now let me add the Agency Portal as a prominent button in the main navigation header:
+
+
+---
+
+<details><summary>Edit file: frontend/src/App.tsx</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 12, lines removed: undefined
+
+```diff
+@@ -175,4 +175,16 @@
+                  </div>
+                </div>
++ 
++               {/* Agency Portal */}
++               <button
++                 onClick={() => setCurrentPage('agency-portal')}
++                 className={`px-3 py-2 rounded-md text-sm font-medium ${
++                   currentPage === 'agency-portal'
++                     ? 'bg-blue-700 text-white'
++                     : 'text-blue-100 hover:bg-blue-500 hover:text-white'
++                 }`}
++               >
++                 Agency Portal
++               </button>
+  
+                {/* Tools and Utilities Dropdown */}
+```
+
+</details>
+
+---
+
+## Step 3: Update the role-based access service to move agency portal to its own category
+
+Now let me update the backend to move the agency portal modules to their own category instead of being under "Financial Planning":
+
+
+---
+
+<details><summary>Edit file: backend/src/services/roleBasedAccessService.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -123,5 +123,5 @@
+          name: 'Agency Portal',
+          description: 'Transport agency management and operations',
+-         category: 'Financial Planning',
++         category: 'Agency Operations',
+          requiredPermissions: ['agency:profile', 'unit:manage'],
+          visibleToRoles: ['ADMIN', 'TRANSPORT_AGENCY'],
+```
+
+**Chunk 2**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -132,5 +132,5 @@
+          name: 'Unit Management',
+          description: 'Manage transport units and availability',
+-         category: 'Financial Planning',
++         category: 'Agency Operations',
+          requiredPermissions: ['unit:manage', 'unit:read'],
+          visibleToRoles: ['ADMIN', 'TRANSPORT_AGENCY'],
+```
+
+**Chunk 3**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -141,5 +141,5 @@
+          name: 'Bid Management',
+          description: 'Manage transport bids and assignments',
+-         category: 'Financial Planning',
++         category: 'Agency Operations',
+          requiredPermissions: ['bid:manage', 'bid:read'],
+          visibleToRoles: ['ADMIN', 'TRANSPORT_AGENCY'],
+```
+
+**Chunk 4**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -150,5 +150,5 @@
+          name: 'Matching System',
+          description: 'Transport request matching and coordination',
+-         category: 'Financial Planning',
++         category: 'Agency Operations',
+          requiredPermissions: ['matching:view', 'matching:manage'],
+          visibleToRoles: ['ADMIN', 'TRANSPORT_AGENCY'],
+```
+
+</details>
+
+---
+
+## Step 4: Remove the individual agency module routes from App.tsx
+
+Since the Agency Portal is now a single button that leads to the comprehensive dashboard, I should remove the individual agency module routes:
+
+
+---
+
+<details><summary>Edit file: frontend/src/App.tsx</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: undefined, lines removed: 3
+
+```diff
+@@ -311,7 +311,4 @@
+          {currentPage === 'agency-dashboard' && <AgencyDashboard onNavigate={(page) => setCurrentPage(page as any)} />}
+          {currentPage === 'agency-portal' && <AgencyPortal onNavigate={(page) => setCurrentPage(page as any)} />}
+-         {currentPage === 'unit-management' && <UnitManagement />}
+-         {currentPage === 'bid-management' && <BidManagement />}
+-         {currentPage === 'matching-system' && <MatchingSystem />}
+  
+        </main>
+```
+
+</details>
+
+---
+
+## Step 5: Update the TypeScript type definition
+
+Now I need to remove the unused page types from the currentPage state:
+
+
+---
+
+<details><summary>Edit file: frontend/src/App.tsx</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -28,5 +28,5 @@
+  
+  function App() {
+-   const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system' | 'real-time-tracking' | 'analytics' | 'offline-capabilities' | 'login' | 'transport-center-dashboard' | 'hospital-dashboard' | 'settings' | 'help' | 'agency-portal' | 'unit-management' | 'bid-management' | 'matching-system'>('home');
++   const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system' | 'real-time-tracking' | 'analytics' | 'offline-capabilities' | 'login' | 'transport-center-dashboard' | 'hospital-dashboard' | 'settings' | 'help' | 'agency-portal'>('home');
+  
+    return (
+```
+
+</details>
+
+---
+
+## Step 6: Remove unused imports
+
+Since we're no longer using the individual agency components directly, I can remove their imports:
+
+
+---
+
+<details><summary>Edit file: frontend/src/App.tsx</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: undefined, lines removed: 3
+
+```diff
+@@ -21,7 +21,4 @@
+  import SettingsPage from './pages/Settings';
+  import Help from './pages/Help';
+- import UnitManagement from './components/UnitManagement';
+- import BidManagement from './components/BidManagement';
+- import MatchingSystem from './components/MatchingSystem';
+  import AgencyPortal from './pages/AgencyPortal';
+  
+```
+
+</details>
+
+---
+
+## Step 7: Test the changes
+
+Now let me test the changes by building the frontend to make sure there are no TypeScript errors:
+
+
+---
+
+```bash
+cd frontend && npm run build
+```
+
+```
+
+
+> frontend@1.0.0 build
+> vite build
+
+vite v7.1.3 building for production...
+✓ 2076 modules transformed.
+dist/index.html                                  0.68 k
+B │ gzip:   0.37 kB
+
+dist/assets/index-CaEpKKw2.css                  41.60 k
+B │ gzip:   7.06 kB
+
+dist/assets/qr-scanner-worker.min-D85Z9gVD.js   43.95 k
+B │ gzip:  10.40 kB
+
+dist/assets/index-Zb3IbSGm.js                  857.83 k
+B │ gzip: 179.64 kB
+
+
+(!) Some chunks are larger than 500 kB after minificati
+on. Consider:
+
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improv
+e chunking: https://rollupjs.org/configuration-options/
+#output-manualchunks
+
+- Adjust chunk size limit for this warning via build.ch
+unkSizeWarningLimit.
+
+✓ built in 1.41s
+```
+
+---
+
+Perfect! The frontend builds successfully. Now let me test the backend to make sure the role-based access service changes work correctly:
+
+
+---
+
+```bash
+cd ../backend && npm run build
+```
+
+```
+scooper@MacBook-Pro-5 frontend % cd ../backend && npm r
+un build
+
+> backend@1.0.0 build
+> tsc
+
+scooper@MacBook-Pro-5 backend %
+```
+
+---
+
+Excellent! Both frontend and backend build successfully. Now let me commit these changes:
+
+
+---
+
+```bash
+cd .. && git add .
+```
+
+```
+scooper@MacBook-Pro-5 backend % cd .. && git add .
+scooper@MacBook-Pro-5 medport %
+```
+
+---
+
+```bash
+git commit -m "Refactor Agency Portal: Move to main navigation header as separate module - Remove Agency Portal from Financial Planning dropdown - Add Agency Portal as prominent button in main navigation - Update role-based access service to use 'Agency Operations' category - Clean up unused imports and page types - Maintain integrated dashboard functionality within Agency Portal"
+```
+
+```
+
+husky - DEPRECATED
+
+Please remove the following two lines from .husky/pre-c
+ommit:
+
+
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+They WILL FAIL in v10.0.0
+
+✔ Backed up original state in git stash (79a7b75)
+✔ Hiding unstaged changes to partially staged files.…
+✔ Running tasks for staged files...
+✔ Applying modifications from tasks...
+✔ Restoring unstaged changes to partially staged fil…
+✔ Cleaning up temporary files...
+[feature/role-based-access-control 1c931e1] Refactor Ag
+ency Portal: Move to main navigation header as separate
+ module - Remove Agency Portal from Financial Planning
+dropdown - Add Agency Portal as prominent button in mai
+n navigation - Update role-based access service to use
+'Agency Operations' category - Clean up unused imports
+and page types - Maintain integrated dashboard function
+ality within Agency Portal
+
+ 3 files changed, 2206 insertions(+), 35 deletions(-)
+```
+
+---
+
+```bash
+git push
+```
+
+```
+
+Enumerating objects: 23, done.
+Counting objects: 100% (23/23), done.
+Delta compression using up to 14 threads
+Compressing objects: 100% (12/12), done.
+Writing objects: 100% (12/12), 18.45 KiB | 18.45 MiB/s,
+ done.
+
+Total 12 (delta 9), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (9/9), completed with 9
+local objects.
+
+To https://github.com/Medic423/medport.git
+   7f7ccee..1c931e1  feature/role-based-access-control
+-> feature/role-based-access-control
+
+```
+
+---
+
+## ✅ **Agency Portal Navigation Refactoring - COMPLETED!**
+
+I've successfully refactored the Agency Portal to be a prominent, separate module in the main navigation header. Here's what was changed:
+
+## 🔄 **What Was Refactored:**
+
+### **1. Navigation Structure Changes**
+- **Removed Agency Portal** from Financial Planning dropdown (it didn't fit there logically)
+- **Added Agency Portal** as a prominent button in the main navigation header
+- **Positioned between** Financial Planning and Tools & Utilities for optimal visibility
+
+### **2. Backend Category Updates**
+- **Changed category** from "Financial Planning" to "Agency Operations" in the role-based access service
+- **Better logical grouping** for agency-specific functionality
+- **Maintains proper permissions** and role-based access controls
+
+### **3. Frontend Cleanup**
+- **Removed unused imports** for individual agency components
+- **Cleaned up page types** in the currentPage state
+- **Maintained integrated functionality** within the Agency Portal dashboard
+
+## 🎯 **New Navigation Structure:**
+
+```
+[Status Board] [Core Operations ▼] [Dispatch Operations ▼] [Financial Planning ▼] [Agency Portal] [Tools & Utilities ▼]
+```
+
+The Agency Portal is now:
+- **Prominently displayed** as a main navigation button
+- **Easily accessible** for agency users
+- **Logically separated** from financial planning functions
+- **Maintains all functionality** through the integrated dashboard
+
+## �� **Testing Results:**
+- ✅ **Frontend builds successfully** with no TypeScript errors
+- ✅ **Backend compiles correctly** with updated role-based access service
+- ✅ **Navigation structure** is clean and logical
+- ✅ **All functionality preserved** within the Agency Portal component
+
+## �� **Benefits of This Refactoring:**
+
+1. **Better User Experience**: Agency users can find their portal immediately in the main navigation
+2. **Logical Organization**: Agency operations are separate from financial planning
+3. **Cleaner Interface**: No more buried functionality in dropdown menus
+4. **Maintained Integration**: All agency features still accessible through the comprehensive dashboard
+5. **Professional Appearance**: More prominent positioning reflects the importance of agency operations
+
+The Agency Portal is now properly positioned as a first-class module in the MedPort system, making it much easier for agency users to access their dedicated functionality while maintaining the clean, professional navigation structure.
+
+---
+
+_**User**_
+
+Excellent; works as expected. Now I want to test the individual log-ins and test their "Settings" to make sure they are seeing the proper displays. Is the page they see generated dynamically? Do we have that middleware that displays the proper components? 
+
+---
+
+_**Assistant**_
+
+Great question! Let me examine the current authentication and role-based access system to understand how the Settings page is dynamically generated based on user roles.
+
+## Step 1: Check the current authentication and role-based access system
+
+Let me examine the Settings component and how it determines what to display:
+
+
+---
+
+Read file: frontend/src/pages/Settings.tsx
+
+---
+
+Now let me check the actual Settings component:
+
+
+---
+
+Read file: frontend/src/components/Settings.tsx
+
+---
+
+Let me continue reading the Settings component to see how it handles different roles:
+
+
+---
+
+Read file: frontend/src/components/Settings.tsx
+
+---
+
+Let me continue reading to see how the tabs are conditionally displayed:
+
+
+---
+
+Read file: frontend/src/components/Settings.tsx
+
+---
+
+
+
+---
+
