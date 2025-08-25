@@ -42,8 +42,8 @@ const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
 
   // Check if user has full settings access (ADMIN)
   const hasFullAccess = navigation?.role === 'ADMIN';
-  // Check if user has limited settings access (COORDINATOR)
-  const hasLimitedAccess = navigation?.role === 'COORDINATOR';
+  // Check if user has limited settings access (COORDINATOR, BILLING_STAFF)
+  const hasLimitedAccess = navigation?.role === 'COORDINATOR' || navigation?.role === 'BILLING_STAFF';
 
   useEffect(() => {
     if (hasFullAccess) {
@@ -192,6 +192,8 @@ const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
               <p className="text-gray-600 mt-1">
                 {hasFullAccess 
                   ? 'System configuration and module visibility controls for Transport Command'
+                  : navigation?.role === 'BILLING_STAFF'
+                  ? 'Financial configuration and billing settings for Billing Staff'
                   : 'Operational configuration for Transport Center Coordinators'
                 }
               </p>
@@ -199,7 +201,12 @@ const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
             <div className="flex items-center space-x-3">
               <div className="bg-blue-100 px-3 py-1 rounded-full">
                 <span className="text-blue-800 text-sm font-medium">
-                  {navigation?.role === 'ADMIN' ? 'Transport Command' : 'Transport Center Coordinator'}
+                  {navigation?.role === 'ADMIN' 
+                    ? 'Transport Command' 
+                    : navigation?.role === 'BILLING_STAFF'
+                    ? 'Billing Staff'
+                    : 'Transport Center Coordinator'
+                  }
                 </span>
               </div>
               <button

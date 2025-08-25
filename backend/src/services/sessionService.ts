@@ -231,9 +231,12 @@ export class SessionService {
         'facility:read',
         'financial:full',
         'analytics:financial',
+        'analytics:view',
         'revenue:track',
         'cost:analyze',
-        'agency:financial'
+        'agency:financial',
+        'settings:limited',
+        'module:help'
       ],
       TRANSPORT_AGENCY: [
         // Agency-specific operations

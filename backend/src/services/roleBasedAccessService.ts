@@ -207,7 +207,7 @@ export class RoleBasedAccessService {
         description: 'System configuration and module visibility controls',
         category: 'Tools and Utilities',
         requiredPermissions: ['settings:full', 'settings:limited'],
-        visibleToRoles: ['ADMIN', 'COORDINATOR'],
+        visibleToRoles: ['ADMIN', 'COORDINATOR', 'BILLING_STAFF'],
         isActive: true
       },
       {
