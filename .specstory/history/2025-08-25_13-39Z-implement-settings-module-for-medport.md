@@ -2364,7 +2364,257 @@ Lines added: 1, lines removed: 1
 
 ---
 
-Now I need to remove the role-based-access-test route from
+Now I need to remove the role-based-access-test route from the routing logic:
+
+
+---
+
+<details><summary>Edit file: frontend/src/App.tsx</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -480,5 +480,5 @@
+          {currentPage === 'agency-login' && <AgencyLogin onNavigate={(page) => setCurrentPage(page as any)} />}
+          {currentPage === 'agency-dashboard' && <AgencyDashboard onNavigate={(page) => setCurrentPage(page as any)} />}
+-         {currentPage === 'role-based-access-test' && <RoleBasedAccessTest />}
++ 
+        </main>
+      </div>
+```
+
+</details>
+
+---
+
+Now I need to remove the RoleBasedAccessTest import since it's no longer used:
+
+
+---
+
+<details><summary>Edit file: frontend/src/App.tsx</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -19,5 +19,5 @@
+  import OfflineIndicator from './components/OfflineIndicator';
+  import MainLogin from './components/MainLogin';
+- import RoleBasedAccessTest from './components/RoleBasedAccessTest';
++ 
+  import Settings from './pages/Settings';
+  
+```
+
+</details>
+
+---
+
+I still have the TypeScript error with the Settings component. Let me check what's happening and fix the interface issue. The problem is that the Settings component interface doesn't match what's being passed. Let me fix this:
+
+
+---
+
+<details><summary>Edit file: frontend/src/components/Settings.tsx</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -29,5 +29,5 @@
+  
+  interface SettingsProps {
+-   onNavigate?: (page: 'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system' | 'real-time-tracking' | 'analytics' | 'offline-capabilities' | 'login' | 'transport-center-dashboard' | 'hospital-dashboard' | 'role-based-access-test' | 'settings') => void;
++   onNavigate?: (page: 'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system' | 'real-time-tracking' | 'analytics' | 'offline-capabilities' | 'login' | 'transport-center-dashboard' | 'hospital-dashboard' | 'settings') => void;
+  }
+  
+```
+
+</details>
+
+---
+
+Now let me test if the frontend builds successfully:
+
+
+---
+
+```bash
+cd frontend && npm run build
+```
+
+```
+
+
+> frontend@1.0.0 build
+> vite build
+
+vite v7.1.3 building for production...
+✓ 2074 modules transformed.
+dist/index.html                                  0.68 kB │ gzip:   0.37 kB
+dist/assets/index-5Eiukhfd.css                  41.42 kB │ gzip:   7.03 kB
+dist/assets/qr-scanner-worker.min-D85Z9gVD.js   43.95 kB │ gzip:  10.40 kB
+dist/assets/index-B1HtT-A_.js                  842.41 kB │ gzip: 178.03 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-option
+s/#output-manualchunks
+
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 1.37s
+```
+
+---
+
+Great! The frontend builds successfully. Now let me delete the RoleBasedAccessTest component since it's no longer needed:
+
+
+---
+
+undefined
+
+---
+
+Now let me commit these changes:
+
+
+---
+
+```bash
+cd /Users/scooper/Code/medport && git add .
+```
+
+```
+scooper@MacBook-Pro-5 frontend % cd /Users/scooper/Code/medport && git add .
+scooper@MacBook-Pro-5 medport %
+```
+
+---
+
+```bash
+git commit -m "Integrate Test RBAC functionality into Settings module
+
+- Remove standalone Test RBAC button from main navigation
+- Add Debug & Testing tab to Settings module (ADMIN only)
+- Integrate comprehensive debugging information for role-based access control
+- Remove RoleBasedAccessTest component (no longer needed)
+- Clean up navigation and routing logic
+- Maintain all debugging functionality within Settings module"
+```
+
+```
+< all debugging functionality within Settings module"
+husky - DEPRECATED
+
+Please remove the following two lines from .husky/pre-commit:
+
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+They WILL FAIL in v10.0.0
+
+✔ Backed up original state in git stash (b016dd2)
+✔ Running tasks for staged files...
+✔ Applying modifications from tasks...
+✔ Cleaning up temporary files...
+[feature/role-based-access-control 0fa0601] Integrate Test RBAC functionality into Settings module
+ 4 files changed, 2227 insertions(+), 185 deletions(-)
+ delete mode 100644 frontend/src/components/RoleBasedAccessTest.tsx
+```
+
+---
+
+```bash
+git push origin feature/role-based-access-control
+```
+
+```
+scooper@MacBook-Pro-5 medport % git push origin feature/role-based-access-control
+Enumerating objects: 19, done.
+Counting objects: 100% (19/19), done.
+Delta compression using up to 14 threads
+Compressing objects: 100% (10/10), done.
+Writing objects: 100% (10/10), 18.04 KiB | 18.04 MiB/s, done.
+Total 10 (delta 7), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (7/7), completed with 7 local objects.
+To https://github.com/Medic423/medport.git
+   b26a953..0fa0601  feature/role-based-access-control -> feature/role-based-access-control
+```
+
+---
+
+Perfect! Now let me provide you with a summary of what we've accomplished:
+
+## �� **Test RBAC Module Integration - COMPLETED SUCCESSFULLY!** ✅
+
+### **What We Did:**
+
+**�� Integrated Test RBAC into Settings Module:**
+- ✅ **Removed standalone "Test RBAC" button** from the main navigation bar
+- ✅ **Added "Debug & Testing" tab** to the Settings module (visible only to ADMIN users)
+- ✅ **Preserved all debugging functionality** from the original RoleBasedAccessTest component
+- ✅ **Deleted the RoleBasedAccessTest component** (no longer needed)
+
+### **Benefits of This Approach:**
+
+1. **🎛️ Centralized Configuration**: All settings and debugging tools are now in one place
+2. **🔐 Role-Based Access**: Debug & Testing tab is only visible to ADMIN users (Transport Command)
+3. **�� Cleaner Navigation**: Removed redundant button from the main navigation
+4. **🔧 Maintained Functionality**: All debugging capabilities are preserved and enhanced
+5. **�� Better UX**: Users don't need to navigate between different modules for related functionality
+
+### **Current Settings Module Structure:**
+
+**For ADMIN (Transport Command):**
+- **Overview**: Access level summary and module access overview
+- **Module Visibility**: Control which modules are visible to different roles
+- **Role Permissions**: Manage permissions for different user roles
+- **Debug & Testing**: Comprehensive debugging information for role-based access control ⭐ **NEW**
+- **System Configuration**: General settings, transport operations, and advanced configuration
+
+**For COORDINATOR (Transport Center Coordinator):**
+- **Overview**: Access level summary and module access overview
+- **System Configuration**: General settings and transport operations configuration
+
+### **Debug & Testing Tab Features:**
+
+The new Debug & Testing tab provides:
+- **Current Role & Permissions Summary**: Visual overview of user access
+- **User Permissions List**: Complete list of all permissions with visual formatting
+- **Navigation Structure**: Detailed breakdown of navigation categories and items
+- **Module Access Test**: Comprehensive testing of module access for each available module
+- **Access Validation**: Real-time checking of `canAccessModule()` function results
+
+### **Files Modified:**
+
+**Updated:**
+- `frontend/src/components/Settings.tsx` - Added Debug & Testing tab
+- `frontend/src/App.tsx` - Removed Test RBAC button and routing
+- `frontend/src/pages/Settings.tsx` - No changes needed
+
+**Deleted:**
+- `frontend/src/components/RoleBasedAccessTest.tsx` - No longer needed
+
+### **Result:**
+
+🎉 **The "Test RBAC" functionality is now fully integrated into the Settings module!**
+
+- **No more redundant navigation button**
+- **All debugging capabilities preserved**
+- **Better organized and more professional interface**
+- **Role-based access control maintained**
+- **Cleaner, more intuitive user experience**
+
+The Settings module now serves as a comprehensive configuration and debugging center, making it easier for administrators to manage both system settings and troubleshoot role-based access control issues from a single location. This is a much more professional and organized approach than having separate testing and configuration modules.
 
 ---
 

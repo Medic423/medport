@@ -55,7 +55,8 @@ const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
 
   const fetchSettings = async () => {
     try {
-      const response = await fetch('/api/role-based-access/settings', {
+      // Use demo endpoint for demo mode
+      const response = await fetch('/api/role-based-access/demo/settings', {
         headers: {
           'Authorization': 'Bearer demo-token' // Demo mode
         }
@@ -72,7 +73,8 @@ const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
 
   const fetchOperationalSettings = async () => {
     try {
-      const response = await fetch('/api/role-based-access/operational-settings', {
+      // Use demo endpoint for demo mode
+      const response = await fetch('/api/role-based-access/demo/operational-settings', {
         headers: {
           'Authorization': 'Bearer demo-token' // Demo mode
         }

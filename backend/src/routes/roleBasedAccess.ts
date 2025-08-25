@@ -194,7 +194,7 @@ router.get('/operational-settings', authenticateToken, async (req: any, res: Res
 router.get('/demo/navigation', (req: Request, res: Response) => {
   try {
     if (req.headers.authorization === 'Bearer demo-token') {
-      const userRole = 'COORDINATOR';
+      const userRole = 'ADMIN';
       const userPermissions = SessionService.getUserPermissions(userRole);
       
       const navigation = RoleBasedAccessService.getNavigationForRole(userRole, userPermissions);
@@ -227,7 +227,7 @@ router.get('/demo/navigation', (req: Request, res: Response) => {
 router.get('/demo/modules', (req: Request, res: Response) => {
   try {
     if (req.headers.authorization === 'Bearer demo-token') {
-      const userRole = 'COORDINATOR';
+      const userRole = 'ADMIN';
       const userPermissions = SessionService.getUserPermissions(userRole);
       
       const modules = RoleBasedAccessService.getUserAccessibleModules(userRole, userPermissions);
@@ -260,7 +260,7 @@ router.get('/demo/modules', (req: Request, res: Response) => {
 router.get('/demo/operational-settings', (req: Request, res: Response) => {
   try {
     if (req.headers.authorization === 'Bearer demo-token') {
-      const userRole = 'COORDINATOR';
+      const userRole = 'ADMIN';
       const settings = RoleBasedAccessService.getOperationalSettings();
       const accessLevel = RoleBasedAccessService.getSettingsAccessLevel(userRole);
       
@@ -284,6 +284,36 @@ router.get('/demo/operational-settings', (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Failed to get demo operational settings data'
+    });
+  }
+});
+
+// Demo mode settings support
+router.get('/demo/settings', (req: Request, res: Response) => {
+  try {
+    if (req.headers.authorization === 'Bearer demo-token') {
+      const userRole = 'ADMIN';
+      const settings = RoleBasedAccessService.getModuleVisibilitySettings();
+      
+      res.json({
+        success: true,
+        data: {
+          settings,
+          availableRoles: ['ADMIN', 'COORDINATOR', 'BILLING_STAFF', 'TRANSPORT_AGENCY', 'HOSPITAL_COORDINATOR'],
+          isDemo: true
+        }
+      });
+    } else {
+      res.status(401).json({
+        success: false,
+        message: 'Demo token required'
+      });
+    }
+  } catch (error) {
+    console.error('[ROLE_BASED_ACCESS] Demo settings error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get demo settings data'
     });
   }
 });
