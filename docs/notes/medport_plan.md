@@ -719,6 +719,96 @@ socket.io
   - [x] Implement progressive data loading
   - [x] Create offline mode indicators
 
+## Phase 6.4: Role-Based Access Control & Module Organization (Week 8)
+
+### 6.4.1 Role-Based Access Control Foundation ✅ **COMPLETED**
+- [x] **Enhanced ADMIN Role**: Modified existing ADMIN role to include Transport Command capabilities
+- [x] **Role-Based Access Service**: Complete service for managing module access and permissions
+- [x] **API Endpoints**: RESTful API for role-based navigation and module access
+- [x] **Frontend Hook**: React hook for consuming role-based access data
+- [x] **Demo Mode Integration**: Fixed demo mode to properly fetch both navigation and modules data
+- [x] **Permission Checking**: Fixed the `canAccessModule` function to work correctly
+- [x] **Test Component**: Comprehensive test interface to verify the system functionality
+
+**Phase 6.4.1 Implementation Summary: ✅ COMPLETED SUCCESSFULLY**
+
+**Backend Components:**
+- `RoleBasedAccessService`: Complete service with module access management, navigation generation, and permission checking
+- `RoleBasedAccessAPI` (`/api/role-based-access/*`): Comprehensive RESTful endpoints with JWT authentication and demo mode support
+- Enhanced `SessionService`: Updated permissions for ADMIN role with Transport Command capabilities
+- Demo mode support for development and testing without production credentials
+
+**Frontend Components:**
+- `useRoleBasedAccess`: Comprehensive React hook for role-based access control and navigation management
+- `RoleBasedAccessTest`: Professional test interface for verifying system functionality
+- Integration with existing authentication and demo mode systems
+
+**Key Features Delivered:**
+- **Enhanced ADMIN Role**: Full system access with Transport Command capabilities (settings:full, module:all, role:manage, system:configure)
+- **Role-Based Navigation**: Dynamic navigation generation based on user role and permissions
+- **Module Access Control**: Granular permission checking for all system modules
+- **Demo Mode Support**: Full demo mode support for development and testing
+- **Permission System**: Comprehensive permission management with role-based access control
+- **Professional Interface**: Production-ready test interface with comprehensive debugging
+
+**Technical Achievements:**
+- Complete role-based access control system with permission management
+- RESTful API endpoints with proper error handling and validation
+- Frontend hook with real-time data loading and state management
+- Demo mode integration for seamless development and testing
+- TypeScript implementation with full type safety and error handling
+- Integration with existing authentication and session management systems
+- Professional-grade interface ready for production use
+
+**Testing & Validation:**
+- All backend API endpoints tested and working correctly
+- Frontend components fully responsive and cross-browser compatible
+- Demo mode functioning perfectly for development and testing
+- Permission checking system validated with correct access results
+- Integration with existing navigation and routing systems
+- Professional-grade test interface ready for production use
+
+**Current Status**: ✅ **PHASE 6.4.1 COMPLETED SUCCESSFULLY** - Role-based access control foundation fully functional with proper permission checking and demo mode support. Ready for Phase 6.4.2.
+
+### 6.4.2 Settings Module Implementation
+- [ ] **Settings Module Creation**: Create centralized configuration interface for module visibility and permissions
+- [ ] **Role-Based Settings Access**: Implement different access levels for ADMIN vs COORDINATOR roles
+- [ ] **Module Visibility Controls**: Add toggles for showing/hiding modules for each role
+- [ ] **Transport Center Coordinator Configuration**: Limited settings access for operational configuration
+- [ ] **Settings Integration**: Connect settings to existing role-based access system
+- [ ] **Settings Testing**: Validate settings functionality and role-based access
+
+### 6.4.3 Module Reorganization
+- [ ] **Navigation Reorganization**: Restructure navigation by role and operational category
+- [ ] **Role-Specific Module Versions**: Create tailored module interfaces for different user roles
+- [ ] **Module Access Controls**: Implement granular access controls for each module
+- [ ] **Category Restructuring**: Reorganize modules into "Dispatch Operations," "Financial Planning," and "Tools and Utilities"
+- [ ] **Module Testing**: Test role-based module access and navigation structure
+
+### 6.4.4 Agency Portal Integration
+- [ ] **Remove Agency Portal Login Screen**: Eliminate separate login interface for agencies
+- [ ] **Main Navigation Integration**: Integrate agency portal access through main navigation
+- [ ] **Role-Based Agency Access**: Ensure agencies only see their relevant modules
+- [ ] **Portal Testing**: Validate agency access flow and module visibility
+- [ ] **Navigation Cleanup**: Remove redundant navigation items and streamline interface
+
+### 6.4.5 System Integration & Testing
+- [ ] **End-to-End Testing**: Comprehensive testing of all role-based access features
+- [ ] **Performance Validation**: Ensure system performance with role-based navigation
+- [ ] **User Experience Testing**: Validate intuitive navigation for each role
+- [ ] **Security Testing**: Verify proper access controls and permission enforcement
+- [ ] **Production Readiness**: Final validation and preparation for production deployment
+
+**Phase 6.4 Implementation Priority:**
+
+**Phase 6.4.1: ✅ COMPLETED** - Role-Based Access Control Foundation
+**Phase 6.4.2: 🔄 NEXT PRIORITY** - Settings Module Implementation  
+**Phase 6.4.3: 📋 PLANNED** - Module Reorganization
+**Phase 6.4.4: 📋 PLANNED** - Agency Portal Integration
+**Phase 6.4.5: 📋 PLANNED** - System Integration & Testing
+
+**Next Phase**: Phase 6.4.2 - Settings Module Implementation 🎛️⚙️
+
 ## Phase 7: Testing & Quality Assurance (Week 9)
 
 ### 7.1 Testing & Quality Assurance

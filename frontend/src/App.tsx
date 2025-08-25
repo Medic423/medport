@@ -18,10 +18,11 @@ import Analytics from './pages/Analytics';
 import OfflineCapabilities from './pages/OfflineCapabilities';
 import OfflineIndicator from './components/OfflineIndicator';
 import MainLogin from './components/MainLogin';
+import RoleBasedAccessTest from './components/RoleBasedAccessTest';
 
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system' | 'real-time-tracking' | 'analytics' | 'offline-capabilities' | 'login' | 'transport-center-dashboard' | 'hospital-dashboard'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system' | 'real-time-tracking' | 'analytics' | 'offline-capabilities' | 'login' | 'transport-center-dashboard' | 'hospital-dashboard' | 'role-based-access-test'>('home');
 
   return (
     <div className="App">
@@ -39,6 +40,12 @@ function App() {
                 className="px-3 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-500 hover:text-white"
               >
                 Login
+              </button>
+              <button
+                onClick={() => setCurrentPage('role-based-access-test')}
+                className="px-3 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-500 hover:text-white"
+              >
+                Test RBAC
               </button>
             </div>
             <div className="flex space-x-2">
@@ -461,6 +468,7 @@ function App() {
         {currentPage === 'agency-registration' && <AgencyRegistration onNavigate={(page) => setCurrentPage(page as any)} />}
         {currentPage === 'agency-login' && <AgencyLogin onNavigate={(page) => setCurrentPage(page as any)} />}
         {currentPage === 'agency-dashboard' && <AgencyDashboard onNavigate={(page) => setCurrentPage(page as any)} />}
+        {currentPage === 'role-based-access-test' && <RoleBasedAccessTest />}
       </main>
     </div>
   );

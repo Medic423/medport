@@ -189,6 +189,7 @@ export class SessionService {
   static getUserPermissions(role: string): string[] {
     const permissions: Record<string, string[]> = {
       ADMIN: [
+        // Transport Command capabilities (full system access)
         'user:create',
         'user:read',
         'user:update',
@@ -196,27 +197,64 @@ export class SessionService {
         'facility:manage',
         'agency:manage',
         'route:optimize',
-        'system:admin'
+        'system:admin',
+        'settings:full',
+        'module:all',
+        'role:manage',
+        'system:configure',
+        'analytics:full',
+        'financial:full',
+        'dispatch:full',
+        'tracking:full'
       ],
       COORDINATOR: [
+        // Transport Center Coordinator capabilities
         'transport:create',
         'transport:read',
         'transport:update',
         'route:view',
         'facility:read',
-        'agency:read'
+        'agency:read',
+        'dispatch:manage',
+        'unit:assign',
+        'tracking:view',
+        'analytics:view',
+        'financial:limited',
+        'settings:limited',
+        'notifications:manage'
       ],
       BILLING_STAFF: [
+        // Financial planning and analysis
         'billing:read',
         'billing:update',
         'reports:view',
-        'facility:read'
+        'facility:read',
+        'financial:full',
+        'analytics:financial',
+        'revenue:track',
+        'cost:analyze',
+        'agency:financial'
       ],
       TRANSPORT_AGENCY: [
+        // Agency-specific operations
         'transport:read',
         'route:bid',
         'unit:manage',
-        'agency:profile'
+        'agency:profile',
+        'bidding:manage',
+        'unit:status',
+        'route:view',
+        'analytics:agency'
+      ],
+      HOSPITAL_COORDINATOR: [
+        // Hospital-specific operations
+        'transport:create',
+        'transport:read',
+        'transport:update',
+        'status:view',
+        'emergency:optimize',
+        'facility:read',
+        'analytics:hospital'
       ]
     };
 
