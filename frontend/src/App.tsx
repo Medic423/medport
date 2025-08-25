@@ -19,10 +19,11 @@ import OfflineCapabilities from './pages/OfflineCapabilities';
 import OfflineIndicator from './components/OfflineIndicator';
 import MainLogin from './components/MainLogin';
 import RoleBasedAccessTest from './components/RoleBasedAccessTest';
+import Settings from './pages/Settings';
 
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system' | 'real-time-tracking' | 'analytics' | 'offline-capabilities' | 'login' | 'transport-center-dashboard' | 'hospital-dashboard' | 'role-based-access-test'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system' | 'real-time-tracking' | 'analytics' | 'offline-capabilities' | 'login' | 'transport-center-dashboard' | 'hospital-dashboard' | 'role-based-access-test' | 'settings'>('home');
 
   return (
     <div className="App">
@@ -196,6 +197,12 @@ function App() {
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       Offline Capabilities
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage('settings')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Settings
                     </button>
                   </div>
                 </div>
@@ -442,6 +449,14 @@ function App() {
                     <div className="text-amber-600 font-semibold mb-2">Offline Capabilities</div>
                     <div className="text-sm text-amber-600">Work without internet</div>
                   </button>
+                  
+                  <button
+                    onClick={() => setCurrentPage('settings')}
+                    className="p-6 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-200 text-center"
+                  >
+                    <div className="text-gray-600 font-semibold mb-2">Settings</div>
+                    <div className="text-sm text-gray-600">System configuration</div>
+                  </button>
                 </div>
               </div>
             </div>
@@ -462,6 +477,7 @@ function App() {
         {currentPage === 'real-time-tracking' && <RealTimeTracking />}
         {currentPage === 'analytics' && <Analytics />}
         {currentPage === 'offline-capabilities' && <OfflineCapabilities />}
+        {currentPage === 'settings' && <Settings onNavigate={setCurrentPage} />}
         {currentPage === 'login' && <MainLogin onNavigate={(page) => setCurrentPage(page as any)} />}
         {currentPage === 'transport-center-dashboard' && <div className="min-h-screen bg-gray-50 p-8"><h1 className="text-3xl font-bold">Transport Center Dashboard</h1><p className="text-gray-600">Welcome to the Transport Center dashboard. This will be implemented next.</p></div>}
         {currentPage === 'hospital-dashboard' && <div className="min-h-screen bg-gray-50 p-8"><h1 className="text-3xl font-bold">Hospital Dashboard</h1><p className="text-gray-600">Welcome to the Hospital dashboard. This will be implemented next.</p></div>}

@@ -157,6 +157,39 @@ router.put('/settings/:moduleId', authenticateToken, async (req: any, res: Respo
   }
 });
 
+// Get operational settings (Transport Center Coordinators)
+router.get('/operational-settings', authenticateToken, async (req: any, res: Response) => {
+  try {
+    const userRole = req.user.role;
+    
+    // Only ADMIN and COORDINATOR can view operational settings
+    if (!['ADMIN', 'COORDINATOR'].includes(userRole)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Insufficient permissions to view operational settings'
+      });
+    }
+    
+    const settings = RoleBasedAccessService.getOperationalSettings();
+    const accessLevel = RoleBasedAccessService.getSettingsAccessLevel(userRole);
+    
+    res.json({
+      success: true,
+      data: {
+        settings,
+        accessLevel,
+        role: userRole
+      }
+    });
+  } catch (error) {
+    console.error('[ROLE_BASED_ACCESS] Operational settings error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get operational settings'
+    });
+  }
+});
+
 // Demo mode support
 router.get('/demo/navigation', (req: Request, res: Response) => {
   try {
@@ -219,6 +252,38 @@ router.get('/demo/modules', (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Failed to get demo modules data'
+    });
+  }
+});
+
+// Demo mode operational settings support
+router.get('/demo/operational-settings', (req: Request, res: Response) => {
+  try {
+    if (req.headers.authorization === 'Bearer demo-token') {
+      const userRole = 'COORDINATOR';
+      const settings = RoleBasedAccessService.getOperationalSettings();
+      const accessLevel = RoleBasedAccessService.getSettingsAccessLevel(userRole);
+      
+      res.json({
+        success: true,
+        data: {
+          settings,
+          accessLevel,
+          role: userRole,
+          isDemo: true
+        }
+      });
+    } else {
+      res.status(401).json({
+        success: false,
+        message: 'Demo token required'
+      });
+    }
+  } catch (error) {
+    console.error('[ROLE_BASED_ACCESS] Demo operational settings error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get demo operational settings data'
     });
   }
 });

@@ -305,6 +305,44 @@ export class RoleBasedAccessService {
   }
 
   /**
+   * Get settings access level for a user role
+   */
+  static getSettingsAccessLevel(role: string): 'full' | 'limited' | 'none' {
+    switch (role) {
+      case 'ADMIN':
+        return 'full';
+      case 'COORDINATOR':
+        return 'limited';
+      default:
+        return 'none';
+    }
+  }
+
+  /**
+   * Get operational settings for Transport Center Coordinators
+   */
+  static getOperationalSettings(): Record<string, any> {
+    return {
+      systemName: 'MedPort',
+      demoMode: true,
+      theme: 'light',
+      language: 'en',
+      apiRateLimit: 100,
+      sessionTimeout: 30,
+      notifications: {
+        email: true,
+        sms: true,
+        push: false
+      },
+      transport: {
+        autoAssignment: true,
+        conflictResolution: 'automatic',
+        revenueOptimization: true
+      }
+    };
+  }
+
+  /**
    * Update module visibility settings
    */
   static async updateModuleVisibility(
