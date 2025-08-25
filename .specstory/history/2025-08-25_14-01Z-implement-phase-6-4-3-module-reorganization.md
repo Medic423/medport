@@ -9981,11 +9981,1344 @@ Let me check if there's a console error or if the data is actually being fetched
 
 ---
 
+```bash
+curl -s "http://localhost:5001/api/transport-requests?limit=100" -H "Authorization: Bearer demo-token" | head -20
+```
+
+```
+
+.9817,"lng":-75.155},"phone":null,"email":null,"operati
+ngHours":null,"capabilities":["EMERGENCY","ICU","SURGER
+Y","TRAUMA"],"isActive":true,"createdAt":"2025-08-23T15
+:28:23.546Z","updatedAt":"2025-08-23T15:28:23.546Z"},"d
+estinationFacility":{"id":"cmeoez3sr0003cchsoz457x0c","
+name":"Einstein Medical Center","type":"HOSPITAL","addr
+ess":"5501 Old York Rd","city":"Philadelphia","state":"
+PA","zipCode":"19141","coordinates":{"lat":40.0376,"lng
+":-75.142},"phone":null,"email":null,"operatingHours":n
+ull,"capabilities":["EMERGENCY","ICU","SURGERY","PEDIAT
+RICS"],"isActive":true,"createdAt":"2025-08-23T15:28:23
+.547Z","updatedAt":"2025-08-23T15:28:23.547Z"},"created
+By":{"id":"cmeobo6y50000ccmsuhdq8435","email":"demo@med
+port.com","password":"$2b$12$C5lAgYN4V5woJOl9TT8zz.lp/i
+ZXEHDh1NSy8c8i.xH1pWZA8BbAS","name":"Demo Coordinator",
+"role":"COORDINATOR","isActive":true,"createdAt":"2025-
+08-23T13:55:55.566Z","updatedAt":"2025-08-24T13:36:42.4
+87Z"},"assignedAgency":null,"assignedUnit":{"id":"cmepq
+hpkw0008cc79k5kykrli","agencyId":"cmepqhpks0005cc79t354
+ndhn","unitNumber":"BLS-001","type":"BLS","capabilities
+":null,"currentStatus":"IN_USE","currentLocation":{"lat
+":39.9447,"lng":-75.155},"shiftStart":null,"shiftEnd":n
+ull,"isActive":true,"createdAt":"2025-08-24T13:38:33.53
+6Z","updatedAt":"2025-08-24T14:05:02.142Z"}},{"id":"cme
+oez3t3000mcchsjn04kwbo","patientId":"demo-patient-003",
+"originFacilityId":"cmeoez3sn0000cchsil9fsrb3","destina
+tionFacilityId":"cmeoez3sq0002cchsia101t1t","transportL
+evel":"ALS","priority":"HIGH","status":"SCHEDULED","spe
+cialRequirements":"Cardiac monitoring","requestTimestam
+p":"2025-08-23T15:28:23.559Z","pickupTimestamp":"2025-0
+1-23T14:00:00.000Z","completionTimestamp":"2025-01-23T1
+5:00:00.000Z","assignedAgencyId":null,"assignedUnitId":
+"cmepqhpkz000ccc79ddrb9ruj","createdById":"cmeobo6y5000
+0ccmsuhdq8435","createdAt":"2025-08-23T15:28:23.559Z","
+updatedAt":"2025-08-24T14:05:02.157Z","routeOptimizatio
+nScore":70,"chainingOpportunities":["MULTI_STOP","SPATI
+AL"],"timeFlexibility":60,"revenuePotential":180,"origi
+nFacility":{"id":"cmeoez3sn0000cchsil9fsrb3","name":"Pe
+nnsylvania Hospital","type":"HOSPITAL","address":"800 S
+pruce St","city":"Philadelphia","state":"PA","zipCode":
+"19107","coordinates":{"lat":39.9447,"lng":-75.155},"ph
+one":null,"email":null,"operatingHours":null,"capabilit
+ies":["EMERGENCY","ICU","SURGERY","REHAB"],"isActive":t
+rue,"createdAt":"2025-08-23T15:28:23.544Z","updatedAt":
+"2025-08-23T15:28:23.544Z"},"destinationFacility":{"id"
+:"cmeoez3sq0002cchsia101t1t","name":"Temple University
+Hospital","type":"HOSPITAL","address":"3401 N Broad St"
+,"city":"Philadelphia","state":"PA","zipCode":"19140","
+coordinates":{"lat":39.9817,"lng":-75.155},"phone":null
+,"email":null,"operatingHours":null,"capabilities":["EM
+ERGENCY","ICU","SURGERY","TRAUMA"],"isActive":true,"cre
+atedAt":"2025-08-23T15:28:23.546Z","updatedAt":"2025-08
+-23T15:28:23.546Z"},"createdBy":{"id":"cmeobo6y50000ccm
+suhdq8435","email":"demo@medport.com","password":"$2b$1
+2$C5lAgYN4V5woJOl9TT8zz.lp/iZXEHDh1NSy8c8i.xH1pWZA8BbAS
+","name":"Demo Coordinator","role":"COORDINATOR","isAct
+ive":true,"createdAt":"2025-08-23T13:55:55.566Z","updat
+edAt":"2025-08-24T13:36:42.487Z"},"assignedAgency":null
+,"assignedUnit":{"id":"cmepqhpkz000ccc79ddrb9ruj","agen
+cyId":"cmepqhpks0005cc79t354ndhn","unitNumber":"ALS-001
+","type":"ALS","capabilities":null,"currentStatus":"IN_
+USE","currentLocation":{"lat":39.9817,"lng":-75.155},"s
+hiftStart":null,"shiftEnd":null,"isActive":true,"create
+dAt":"2025-08-24T13:38:33.539Z","updatedAt":"2025-08-24
+T14:05:02.157Z"}},{"id":"cmeoez3t2000kcchsc41fgi0q","pa
+tientId":"demo-patient-002","originFacilityId":"cmeoez3
+sp0001cchs4w85nhnh","destinationFacilityId":"cmeoez3sn0
+000cchsil9fsrb3","transportLevel":"BLS","priority":"MED
+IUM","status":"SCHEDULED","specialRequirements":"Oxygen
+ required","requestTimestamp":"2025-08-23T15:28:23.558Z
+","pickupTimestamp":"2025-01-23T11:30:00.000Z","complet
+ionTimestamp":"2025-01-23T12:30:00.000Z","assignedAgenc
+yId":null,"assignedUnitId":"cmeofzcah000acc4m7myglh7a",
+"createdById":"cmeobo6y50000ccmsuhdq8435","createdAt":"
+2025-08-23T15:28:23.558Z","updatedAt":"2025-08-24T14:05
+:02.139Z","routeOptimizationScore":80,"chainingOpportun
+ities":["RETURN_TRIP","TEMPORAL"],"timeFlexibility":45,
+"revenuePotential":160,"originFacility":{"id":"cmeoez3s
+p0001cchs4w85nhnh","name":"Jefferson University Hospita
+l","type":"HOSPITAL","address":"111 S 11th St","city":"
+Philadelphia","state":"PA","zipCode":"19107","coordinat
+es":{"lat":39.9489,"lng":-75.1578},"phone":null,"email"
+:null,"operatingHours":null,"capabilities":["EMERGENCY"
+,"ICU","SURGERY","CARDIOLOGY"],"isActive":true,"created
+At":"2025-08-23T15:28:23.546Z","updatedAt":"2025-08-23T
+15:28:23.546Z"},"destinationFacility":{"id":"cmeoez3sn0
+000cchsil9fsrb3","name":"Pennsylvania Hospital","type":
+"HOSPITAL","address":"800 Spruce St","city":"Philadelph
+ia","state":"PA","zipCode":"19107","coordinates":{"lat"
+:39.9447,"lng":-75.155},"phone":null,"email":null,"oper
+atingHours":null,"capabilities":["EMERGENCY","ICU","SUR
+GERY","REHAB"],"isActive":true,"createdAt":"2025-08-23T
+15:28:23.544Z","updatedAt":"2025-08-23T15:28:23.544Z"},
+"createdBy":{"id":"cmeobo6y50000ccmsuhdq8435","email":"
+demo@medport.com","password":"$2b$12$C5lAgYN4V5woJOl9TT
+8zz.lp/iZXEHDh1NSy8c8i.xH1pWZA8BbAS","name":"Demo Coord
+inator","role":"COORDINATOR","isActive":true,"createdAt
+":"2025-08-23T13:55:55.566Z","updatedAt":"2025-08-24T13
+:36:42.487Z"},"assignedAgency":null,"assignedUnit":{"id
+":"cmeofzcah000acc4m7myglh7a","agencyId":"cmeofzcac0005
+cc4mrfbcta68","unitNumber":"BLS-002","type":"BLS","capa
+bilities":null,"currentStatus":"IN_USE","currentLocatio
+n":{"lat":39.9489,"lng":-75.1578},"shiftStart":null,"sh
+iftEnd":null,"isActive":true,"createdAt":"2025-08-23T15
+:56:34.170Z","updatedAt":"2025-08-24T14:05:02.138Z"}},{
+"id":"cmeoez3t1000icchsik50uc1f","patientId":"demo-pati
+ent-001","originFacilityId":"cmeoez3sn0000cchsil9fsrb3"
+,"destinationFacilityId":"cmeoez3sp0001cchs4w85nhnh","t
+ransportLevel":"BLS","priority":"MEDIUM","status":"SCHE
+DULED","specialRequirements":"Wheelchair accessible","r
+equestTimestamp":"2025-08-23T15:28:23.557Z","pickupTime
+stamp":"2025-01-23T10:00:00.000Z","completionTimestamp"
+:"2025-01-23T11:00:00.000Z","assignedAgencyId":null,"as
+signedUnitId":"cmepqhpky000acc79h5hkb492","createdById"
+:"cmeobo6y50000ccmsuhdq8435","createdAt":"2025-08-23T15
+:28:23.557Z","updatedAt":"2025-08-24T14:05:02.134Z","ro
+uteOptimizationScore":75,"chainingOpportunities":["TEMP
+ORAL","SPATIAL"],"timeFlexibility":30,"revenuePotential
+":150,"originFacility":{"id":"cmeoez3sn0000cchsil9fsrb3
+","name":"Pennsylvania Hospital","type":"HOSPITAL","add
+ress":"800 Spruce St","city":"Philadelphia","state":"PA
+","zipCode":"19107","coordinates":{"lat":39.9447,"lng":
+-75.155},"phone":null,"email":null,"operatingHours":nul
+l,"capabilities":["EMERGENCY","ICU","SURGERY","REHAB"],
+"isActive":true,"createdAt":"2025-08-23T15:28:23.544Z",
+"updatedAt":"2025-08-23T15:28:23.544Z"},"destinationFac
+ility":{"id":"cmeoez3sp0001cchs4w85nhnh","name":"Jeffer
+son University Hospital","type":"HOSPITAL","address":"1
+11 S 11th St","city":"Philadelphia","state":"PA","zipCo
+de":"19107","coordinates":{"lat":39.9489,"lng":-75.1578
+},"phone":null,"email":null,"operatingHours":null,"capa
+bilities":["EMERGENCY","ICU","SURGERY","CARDIOLOGY"],"i
+sActive":true,"createdAt":"2025-08-23T15:28:23.546Z","u
+pdatedAt":"2025-08-23T15:28:23.546Z"},"createdBy":{"id"
+:"cmeobo6y50000ccmsuhdq8435","email":"demo@medport.com"
+,"password":"$2b$12$C5lAgYN4V5woJOl9TT8zz.lp/iZXEHDh1NS
+y8c8i.xH1pWZA8BbAS","name":"Demo Coordinator","role":"C
+OORDINATOR","isActive":true,"createdAt":"2025-08-23T13:
+55:55.566Z","updatedAt":"2025-08-24T13:36:42.487Z"},"as
+signedAgency":null,"assignedUnit":{"id":"cmepqhpky000ac
+c79h5hkb492","agencyId":"cmepqhpks0005cc79t354ndhn","un
+itNumber":"BLS-002","type":"BLS","capabilities":null,"c
+urrentStatus":"IN_USE","currentLocation":{"lat":39.9489
+,"lng":-75.1578},"shiftStart":null,"shiftEnd":null,"isA
+ctive":true,"createdAt":"2025-08-24T13:38:33.539Z","upd
+atedAt":"2025-08-24T14:05:02.133Z"}},{"id":"cmeoeyfl100
+0sccetfaaqyrnj","patientId":"demo-patient-006","originF
+acilityId":"cmeoeyfkl0004ccetd3tb4j51","destinationFaci
+lityId":"cmeoeyfkg0000ccetzestr3js","transportLevel":"B
+LS","priority":"MEDIUM","status":"SCHEDULED","specialRe
+quirements":"Basic transport","requestTimestamp":"2025-
+08-23T15:27:52.165Z","pickupTimestamp":"2025-01-23T17:3
+0:00.000Z","completionTimestamp":"2025-01-23T18:30:00.0
+00Z","assignedAgencyId":null,"assignedUnitId":"cmeoez3s
+x000acchs8az8x7z7","createdById":"cmeobo6y50000ccmsuhdq
+8435","createdAt":"2025-08-23T15:27:52.165Z","updatedAt
+":"2025-08-24T14:05:02.128Z","routeOptimizationScore":7
+2,"chainingOpportunities":["RETURN_TRIP","SPATIAL"],"ti
+meFlexibility":35,"revenuePotential":155,"originFacilit
+y":{"id":"cmeoeyfkl0004ccetd3tb4j51","name":"Penn Presb
+yterian Medical Center","type":"HOSPITAL","address":"51
+ N 39th St","city":"Philadelphia","state":"PA","zipCode
+":"19104","coordinates":{"lat":39.9589,"lng":-75.2},"ph
+one":null,"email":null,"operatingHours":null,"capabilit
+ies":["EMERGENCY","ICU","SURGERY","ORTHOPEDICS"],"isAct
+ive":true,"createdAt":"2025-08-23T15:27:52.149Z","updat
+edAt":"2025-08-23T15:27:52.149Z"},"destinationFacility"
+:{"id":"cmeoeyfkg0000ccetzestr3js","name":"Pennsylvania
+ Hospital","type":"HOSPITAL","address":"800 Spruce St",
+"city":"Philadelphia","state":"PA","zipCode":"19107","c
+oordinates":{"lat":39.9447,"lng":-75.155},"phone":null,
+"email":null,"operatingHours":null,"capabilities":["EME
+RGENCY","ICU","SURGERY","REHAB"],"isActive":true,"creat
+edAt":"2025-08-23T15:27:52.144Z","updatedAt":"2025-08-2
+3T15:27:52.144Z"},"createdBy":{"id":"cmeobo6y50000ccmsu
+hdq8435","email":"demo@medport.com","password":"$2b$12$
+C5lAgYN4V5woJOl9TT8zz.lp/iZXEHDh1NSy8c8i.xH1pWZA8BbAS",
+"name":"Demo Coordinator","role":"COORDINATOR","isActiv
+e":true,"createdAt":"2025-08-23T13:55:55.566Z","updated
+At":"2025-08-24T13:36:42.487Z"},"assignedAgency":null,"
+assignedUnit":{"id":"cmeoez3sx000acchs8az8x7z7","agency
+Id":"cmeoez3ss0005cchsxti6z9x9","unitNumber":"BLS-002",
+"type":"BLS","capabilities":null,"currentStatus":"IN_US
+E","currentLocation":{"lat":39.9489,"lng":-75.1578},"sh
+iftStart":null,"shiftEnd":null,"isActive":true,"created
+At":"2025-08-23T15:28:23.553Z","updatedAt":"2025-08-24T
+14:05:02.127Z"}},{"id":"cmeoeyfl0000qccet6q2vrsdq","pat
+ientId":"demo-patient-005","originFacilityId":"cmeoeyfk
+k0003ccetdzhh5syh","destinationFacilityId":"cmeoeyfkl00
+04ccetd3tb4j51","transportLevel":"CCT","priority":"URGE
+NT","status":"SCHEDULED","specialRequirements":"Ventila
+tor support","requestTimestamp":"2025-08-23T15:27:52.16
+4Z","pickupTimestamp":"2025-01-23T16:00:00.000Z","compl
+etionTimestamp":"2025-01-23T17:00:00.000Z","assignedAge
+ncyId":null,"assignedUnitId":"cmeoez3sz000gcchsg9a9c993
+","createdById":"cmeobo6y50000ccmsuhdq8435","createdAt"
+:"2025-08-23T15:27:52.164Z","updatedAt":"2025-08-24T14:
+05:02.199Z","routeOptimizationScore":85,"chainingOpport
+unities":["REVENUE_MAX","TEMPORAL"],"timeFlexibility":2
+5,"revenuePotential":220,"originFacility":{"id":"cmeoey
+fkk0003ccetdzhh5syh","name":"Einstein Medical Center","
+type":"HOSPITAL","address":"5501 Old York Rd","city":"P
+hiladelphia","state":"PA","zipCode":"19141","coordinate
+s":{"lat":40.0376,"lng":-75.142},"phone":null,"email":n
+ull,"operatingHours":null,"capabilities":["EMERGENCY","
+ICU","SURGERY","PEDIATRICS"],"isActive":true,"createdAt
+":"2025-08-23T15:27:52.148Z","updatedAt":"2025-08-23T15
+:27:52.148Z"},"destinationFacility":{"id":"cmeoeyfkl000
+4ccetd3tb4j51","name":"Penn Presbyterian Medical Center
+","type":"HOSPITAL","address":"51 N 39th St","city":"Ph
+iladelphia","state":"PA","zipCode":"19104","coordinates
+":{"lat":39.9589,"lng":-75.2},"phone":null,"email":null
+,"operatingHours":null,"capabilities":["EMERGENCY","ICU
+","SURGERY","ORTHOPEDICS"],"isActive":true,"createdAt":
+"2025-08-23T15:27:52.149Z","updatedAt":"2025-08-23T15:2
+7:52.149Z"},"createdBy":{"id":"cmeobo6y50000ccmsuhdq843
+5","email":"demo@medport.com","password":"$2b$12$C5lAgY
+N4V5woJOl9TT8zz.lp/iZXEHDh1NSy8c8i.xH1pWZA8BbAS","name"
+:"Demo Coordinator","role":"COORDINATOR","isActive":tru
+e,"createdAt":"2025-08-23T13:55:55.566Z","updatedAt":"2
+025-08-24T13:36:42.487Z"},"assignedAgency":null,"assign
+edUnit":{"id":"cmeoez3sz000gcchsg9a9c993","agencyId":"c
+meoez3su0006cchse0w146qh","unitNumber":"CCT-002","type"
+:"CCT","capabilities":null,"currentStatus":"IN_USE","cu
+rrentLocation":{"lat":39.9589,"lng":-75.2},"shiftStart"
+:null,"shiftEnd":null,"isActive":true,"createdAt":"2025
+-08-23T15:28:23.555Z","updatedAt":"2025-08-24T14:05:02.
+198Z"}},{"id":"cmeoeyfkz000occet05ylnd06","patientId":"
+demo-patient-004","originFacilityId":"cmeoeyfkj0002ccet
+ej0cjkwz","destinationFacilityId":"cmeoeyfkk0003ccetdzh
+h5syh","transportLevel":"BLS","priority":"MEDIUM","stat
+us":"PENDING","specialRequirements":"Stretcher transpor
+t","requestTimestamp":"2025-08-23T15:27:52.163Z","picku
+pTimestamp":"2025-01-23T15:30:00.000Z","completionTimes
+tamp":"2025-01-23T16:30:00.000Z","assignedAgencyId":nul
+l,"assignedUnitId":null,"createdById":"cmeobo6y50000ccm
+suhdq8435","createdAt":"2025-08-23T15:27:52.163Z","upda
+tedAt":"2025-08-24T12:51:32.807Z","routeOptimizationSco
+re":65,"chainingOpportunities":["GEOGRAPHIC","TEMPORAL"
+],"timeFlexibility":40,"revenuePotential":140,"originFa
+cility":{"id":"cmeoeyfkj0002ccetej0cjkwz","name":"Templ
+e University Hospital","type":"HOSPITAL","address":"340
+1 N Broad St","city":"Philadelphia","state":"PA","zipCo
+de":"19140","coordinates":{"lat":39.9817,"lng":-75.155}
+,"phone":null,"email":null,"operatingHours":null,"capab
+ilities":["EMERGENCY","ICU","SURGERY","TRAUMA"],"isActi
+ve":true,"createdAt":"2025-08-23T15:27:52.148Z","update
+dAt":"2025-08-23T15:27:52.148Z"},"destinationFacility":
+{"id":"cmeoeyfkk0003ccetdzhh5syh","name":"Einstein Medi
+cal Center","type":"HOSPITAL","address":"5501 Old York
+Rd","city":"Philadelphia","state":"PA","zipCode":"19141
+","coordinates":{"lat":40.0376,"lng":-75.142},"phone":n
+ull,"email":null,"operatingHours":null,"capabilities":[
+"EMERGENCY","ICU","SURGERY","PEDIATRICS"],"isActive":tr
+ue,"createdAt":"2025-08-23T15:27:52.148Z","updatedAt":"
+2025-08-23T15:27:52.148Z"},"createdBy":{"id":"cmeobo6y5
+0000ccmsuhdq8435","email":"demo@medport.com","password"
+:"$2b$12$C5lAgYN4V5woJOl9TT8zz.lp/iZXEHDh1NSy8c8i.xH1pW
+ZA8BbAS","name":"Demo Coordinator","role":"COORDINATOR"
+,"isActive":true,"createdAt":"2025-08-23T13:55:55.566Z"
+,"updatedAt":"2025-08-24T13:36:42.487Z"},"assignedAgenc
+y":null,"assignedUnit":null},{"id":"cmeoeyfkx000mccetom
+e62g0i","patientId":"demo-patient-003","originFacilityI
+d":"cmeoeyfkg0000ccetzestr3js","destinationFacilityId":
+"cmeoeyfkj0002ccetej0cjkwz","transportLevel":"ALS","pri
+ority":"HIGH","status":"SCHEDULED","specialRequirements
+":"Cardiac monitoring","requestTimestamp":"2025-08-23T1
+5:27:52.162Z","pickupTimestamp":"2025-01-23T14:00:00.00
+0Z","completionTimestamp":"2025-01-23T15:00:00.000Z","a
+ssignedAgencyId":null,"assignedUnitId":"cmeoftfx6000ccc
+rzmbru4kr3","createdById":"cmeobo6y50000ccmsuhdq8435","
+createdAt":"2025-08-23T15:27:52.162Z","updatedAt":"2025
+-08-24T14:05:02.154Z","routeOptimizationScore":70,"chai
+ningOpportunities":["MULTI_STOP","SPATIAL"],"timeFlexib
+ility":60,"revenuePotential":180,"originFacility":{"id"
+:"cmeoeyfkg0000ccetzestr3js","name":"Pennsylvania Hospi
+tal","type":"HOSPITAL","address":"800 Spruce St","city"
+:"Philadelphia","state":"PA","zipCode":"19107","coordin
+ates":{"lat":39.9447,"lng":-75.155},"phone":null,"email
+":null,"operatingHours":null,"capabilities":["EMERGENCY
+","ICU","SURGERY","REHAB"],"isActive":true,"createdAt":
+"2025-08-23T15:27:52.144Z","updatedAt":"2025-08-23T15:2
+7:52.144Z"},"destinationFacility":{"id":"cmeoeyfkj0002c
+cetej0cjkwz","name":"Temple University Hospital","type"
+:"HOSPITAL","address":"3401 N Broad St","city":"Philade
+lphia","state":"PA","zipCode":"19140","coordinates":{"l
+at":39.9817,"lng":-75.155},"phone":null,"email":null,"o
+peratingHours":null,"capabilities":["EMERGENCY","ICU","
+SURGERY","TRAUMA"],"isActive":true,"createdAt":"2025-08
+-23T15:27:52.148Z","updatedAt":"2025-08-23T15:27:52.148
+Z"},"createdBy":{"id":"cmeobo6y50000ccmsuhdq8435","emai
+l":"demo@medport.com","password":"$2b$12$C5lAgYN4V5woJO
+l9TT8zz.lp/iZXEHDh1NSy8c8i.xH1pWZA8BbAS","name":"Demo C
+oordinator","role":"COORDINATOR","isActive":true,"creat
+edAt":"2025-08-23T13:55:55.566Z","updatedAt":"2025-08-2
+4T13:36:42.487Z"},"assignedAgency":null,"assignedUnit":
+{"id":"cmeoftfx6000cccrzmbru4kr3","agencyId":"cmeoftfx1
+0005ccrzwlvsdjn3","unitNumber":"ALS-001","type":"ALS","
+capabilities":null,"currentStatus":"IN_USE","currentLoc
+ation":{"lat":39.9817,"lng":-75.155},"shiftStart":null,
+"shiftEnd":null,"isActive":true,"createdAt":"2025-08-23
+T15:51:58.939Z","updatedAt":"2025-08-24T14:05:02.153Z"}
+},{"id":"cmeoeyfkw000kccetsoqgdaw5","patientId":"demo-p
+atient-002","originFacilityId":"cmeoeyfki0001ccet9tyx2c
+8k","destinationFacilityId":"cmeoeyfkg0000ccetzestr3js"
+,"transportLevel":"BLS","priority":"MEDIUM","status":"P
+ENDING","specialRequirements":"Oxygen required","reques
+tTimestamp":"2025-08-23T15:27:52.161Z","pickupTimestamp
+":"2025-01-23T11:30:00.000Z","completionTimestamp":"202
+5-01-23T12:30:00.000Z","assignedAgencyId":null,"assigne
+dUnitId":null,"createdById":"cmeobo6y50000ccmsuhdq8435"
+,"createdAt":"2025-08-23T15:27:52.161Z","updatedAt":"20
+25-08-24T12:51:32.807Z","routeOptimizationScore":80,"ch
+ainingOpportunities":["RETURN_TRIP","TEMPORAL"],"timeFl
+exibility":45,"revenuePotential":160,"originFacility":{
+"id":"cmeoeyfki0001ccet9tyx2c8k","name":"Jefferson Univ
+ersity Hospital","type":"HOSPITAL","address":"111 S 11t
+h St","city":"Philadelphia","state":"PA","zipCode":"191
+07","coordinates":{"lat":39.9489,"lng":-75.1578},"phone
+":null,"email":null,"operatingHours":null,"capabilities
+":["EMERGENCY","ICU","SURGERY","CARDIOLOGY"],"isActive"
+:true,"createdAt":"2025-08-23T15:27:52.147Z","updatedAt
+":"2025-08-23T15:27:52.147Z"},"destinationFacility":{"i
+d":"cmeoeyfkg0000ccetzestr3js","name":"Pennsylvania Hos
+pital","type":"HOSPITAL","address":"800 Spruce St","cit
+y":"Philadelphia","state":"PA","zipCode":"19107","coord
+inates":{"lat":39.9447,"lng":-75.155},"phone":null,"ema
+il":null,"operatingHours":null,"capabilities":["EMERGEN
+CY","ICU","SURGERY","REHAB"],"isActive":true,"createdAt
+":"2025-08-23T15:27:52.144Z","updatedAt":"2025-08-23T15
+:27:52.144Z"},"createdBy":{"id":"cmeobo6y50000ccmsuhdq8
+435","email":"demo@medport.com","password":"$2b$12$C5lA
+gYN4V5woJOl9TT8zz.lp/iZXEHDh1NSy8c8i.xH1pWZA8BbAS","nam
+e":"Demo Coordinator","role":"COORDINATOR","isActive":t
+rue,"createdAt":"2025-08-23T13:55:55.566Z","updatedAt":
+"2025-08-24T13:36:42.487Z"},"assignedAgency":null,"assi
+gnedUnit":null},{"id":"cmeoeyfkt000iccetmuhfv9n4","pati
+entId":"demo-patient-001","originFacilityId":"cmeoeyfkg
+0000ccetzestr3js","destinationFacilityId":"cmeoeyfki000
+1ccet9tyx2c8k","transportLevel":"BLS","priority":"MEDIU
+M","status":"PENDING","specialRequirements":"Wheelchair
+ accessible","requestTimestamp":"2025-08-23T15:27:52.15
+8Z","pickupTimestamp":"2025-01-23T10:00:00.000Z","compl
+etionTimestamp":"2025-01-23T11:00:00.000Z","assignedAge
+ncyId":null,"assignedUnitId":null,"createdById":"cmeobo
+6y50000ccmsuhdq8435","createdAt":"2025-08-23T15:27:52.1
+58Z","updatedAt":"2025-08-24T12:51:32.807Z","routeOptim
+izationScore":75,"chainingOpportunities":["TEMPORAL","S
+PATIAL"],"timeFlexibility":30,"revenuePotential":150,"o
+riginFacility":{"id":"cmeoeyfkg0000ccetzestr3js","name"
+:"Pennsylvania Hospital","type":"HOSPITAL","address":"8
+00 Spruce St","city":"Philadelphia","state":"PA","zipCo
+de":"19107","coordinates":{"lat":39.9447,"lng":-75.155}
+,"phone":null,"email":null,"operatingHours":null,"capab
+ilities":["EMERGENCY","ICU","SURGERY","REHAB"],"isActiv
+e":true,"createdAt":"2025-08-23T15:27:52.144Z","updated
+At":"2025-08-23T15:27:52.144Z"},"destinationFacility":{
+"id":"cmeoeyfki0001ccet9tyx2c8k","name":"Jefferson Univ
+ersity Hospital","type":"HOSPITAL","address":"111 S 11t
+h St","city":"Philadelphia","state":"PA","zipCode":"191
+07","coordinates":{"lat":39.9489,"lng":-75.1578},"phone
+":null,"email":null,"operatingHours":null,"capabilities
+":["EMERGENCY","ICU","SURGERY","CARDIOLOGY"],"isActive"
+:true,"createdAt":"2025-08-23T15:27:52.147Z","updatedAt
+":"2025-08-23T15:27:52.147Z"},"createdBy":{"id":"cmeobo
+6y50000ccmsuhdq8435","email":"demo@medport.com","passwo
+rd":"$2b$12$C5lAgYN4V5woJOl9TT8zz.lp/iZXEHDh1NSy8c8i.xH
+1pWZA8BbAS","name":"Demo Coordinator","role":"COORDINAT
+OR","isActive":true,"createdAt":"2025-08-23T13:55:55.56
+6Z","updatedAt":"2025-08-24T13:36:42.487Z"},"assignedAg
+ency":null,"assignedUnit":null},{"id":"cmeoex31u000qccb
+fkeisjohr","patientId":"demo-patient-006","originFacili
+tyId":"cmeoex31h0004ccbfi1p0tugs","destinationFacilityI
+d":"cmeoex31d0000ccbfpu43zxl8","transportLevel":"BLS","
+priority":"MEDIUM","status":"SCHEDULED","specialRequire
+ments":"Basic transport","requestTimestamp":"2025-08-23
+T15:26:49.267Z","pickupTimestamp":"2025-01-23T17:30:00.
+000Z","completionTimestamp":"2025-01-23T18:30:00.000Z",
+"assignedAgencyId":null,"assignedUnitId":"cmeoftfx6000a
+ccrz25prsjhn","createdById":"cmeobo6y50000ccmsuhdq8435"
+,"createdAt":"2025-08-23T15:26:49.267Z","updatedAt":"20
+25-08-24T14:05:02.121Z","routeOptimizationScore":72,"ch
+ainingOpportunities":["RETURN_TRIP","SPATIAL"],"timeFle
+xibility":35,"revenuePotential":155,"originFacility":{"
+id":"cmeoex31h0004ccbfi1p0tugs","name":"Penn Presbyteri
+an Medical Center","type":"HOSPITAL","address":"51 N 39
+th St","city":"Philadelphia","state":"PA","zipCode":"19
+104","coordinates":{"lat":39.9589,"lng":-75.2},"phone":
+null,"email":null,"operatingHours":null,"capabilities":
+["EMERGENCY","ICU","SURGERY","ORTHOPEDICS"],"isActive":
+true,"createdAt":"2025-08-23T15:26:49.254Z","updatedAt"
+:"2025-08-23T15:26:49.254Z"},"destinationFacility":{"id
+":"cmeoex31d0000ccbfpu43zxl8","name":"Pennsylvania Hosp
+ital","type":"HOSPITAL","address":"800 Spruce St","city
+":"Philadelphia","state":"PA","zipCode":"19107","coordi
+nates":{"lat":39.9447,"lng":-75.155},"phone":null,"emai
+l":null,"operatingHours":null,"capabilities":["EMERGENC
+Y","ICU","SURGERY","REHAB"],"isActive":true,"createdAt"
+:"2025-08-23T15:26:49.249Z","updatedAt":"2025-08-23T15:
+26:49.249Z"},"createdBy":{"id":"cmeobo6y50000ccmsuhdq84
+35","email":"demo@medport.com","password":"$2b$12$C5lAg
+YN4V5woJOl9TT8zz.lp/iZXEHDh1NSy8c8i.xH1pWZA8BbAS","name
+":"Demo Coordinator","role":"COORDINATOR","isActive":tr
+ue,"createdAt":"2025-08-23T13:55:55.566Z","updatedAt":"
+2025-08-24T13:36:42.487Z"},"assignedAgency":null,"assig
+nedUnit":{"id":"cmeoftfx6000accrz25prsjhn","agencyId":"
+cmeoftfx10005ccrzwlvsdjn3","unitNumber":"BLS-002","type
+":"BLS","capabilities":null,"currentStatus":"IN_USE","c
+urrentLocation":{"lat":39.9489,"lng":-75.1578},"shiftSt
+art":null,"shiftEnd":null,"isActive":true,"createdAt":"
+2025-08-23T15:51:58.938Z","updatedAt":"2025-08-24T14:05
+:02.120Z"}},{"id":"cmeoex31t000occbfjl5gndzx","patientI
+d":"demo-patient-005","originFacilityId":"cmeoex31h0003
+ccbf9rwf6x67","destinationFacilityId":"cmeoex31h0004ccb
+fi1p0tugs","transportLevel":"CCT","priority":"URGENT","
+status":"SCHEDULED","specialRequirements":"Ventilator s
+upport","requestTimestamp":"2025-08-23T15:26:49.265Z","
+pickupTimestamp":"2025-01-23T16:00:00.000Z","completion
+Timestamp":"2025-01-23T17:00:00.000Z","assignedAgencyId
+":null,"assignedUnitId":"cmeofzcaj000ecc4mo8n2w6tg","cr
+eatedById":"cmeobo6y50000ccmsuhdq8435","createdAt":"202
+5-08-23T15:26:49.265Z","updatedAt":"2025-08-24T14:05:02
+.195Z","routeOptimizationScore":85,"chainingOpportuniti
+es":["REVENUE_MAX","TEMPORAL"],"timeFlexibility":25,"re
+venuePotential":220,"originFacility":{"id":"cmeoex31h00
+03ccbf9rwf6x67","name":"Einstein Medical Center","type"
+:"HOSPITAL","address":"5501 Old York Rd","city":"Philad
+elphia","state":"PA","zipCode":"19141","coordinates":{"
+lat":40.0376,"lng":-75.142},"phone":null,"email":null,"
+operatingHours":null,"capabilities":["EMERGENCY","ICU",
+"SURGERY","PEDIATRICS"],"isActive":true,"createdAt":"20
+25-08-23T15:26:49.253Z","updatedAt":"2025-08-23T15:26:4
+9.253Z"},"destinationFacility":{"id":"cmeoex31h0004ccbf
+i1p0tugs","name":"Penn Presbyterian Medical Center","ty
+pe":"HOSPITAL","address":"51 N 39th St","city":"Philade
+lphia","state":"PA","zipCode":"19104","coordinates":{"l
+at":39.9589,"lng":-75.2},"phone":null,"email":null,"ope
+ratingHours":null,"capabilities":["EMERGENCY","ICU","SU
+RGERY","ORTHOPEDICS"],"isActive":true,"createdAt":"2025
+-08-23T15:26:49.254Z","updatedAt":"2025-08-23T15:26:49.
+254Z"},"createdBy":{"id":"cmeobo6y50000ccmsuhdq8435","e
+mail":"demo@medport.com","password":"$2b$12$C5lAgYN4V5w
+oJOl9TT8zz.lp/iZXEHDh1NSy8c8i.xH1pWZA8BbAS","name":"Dem
+o Coordinator","role":"COORDINATOR","isActive":true,"cr
+eatedAt":"2025-08-23T13:55:55.566Z","updatedAt":"2025-0
+8-24T13:36:42.487Z"},"assignedAgency":null,"assignedUni
+t":{"id":"cmeofzcaj000ecc4mo8n2w6tg","agencyId":"cmeofz
+cac0005cc4mrfbcta68","unitNumber":"CCT-001","type":"CCT
+","capabilities":null,"currentStatus":"IN_USE","current
+Location":{"lat":40.0376,"lng":-75.142},"shiftStart":nu
+ll,"shiftEnd":null,"isActive":true,"createdAt":"2025-08
+-23T15:56:34.171Z","updatedAt":"2025-08-24T14:05:02.195
+Z"}},{"id":"cmeoex31s000mccbfc1fvvu8i","patientId":"dem
+o-patient-004","originFacilityId":"cmeoex31g0002ccbfn4z
+oouaa","destinationFacilityId":"cmeoex31h0003ccbf9rwf6x
+67","transportLevel":"BLS","priority":"MEDIUM","status"
+:"PENDING","specialRequirements":"Stretcher transport",
+"requestTimestamp":"2025-08-23T15:26:49.264Z","pickupTi
+mestamp":"2025-01-23T15:30:00.000Z","completionTimestam
+p":"2025-01-23T16:30:00.000Z","assignedAgencyId":null,"
+assignedUnitId":null,"createdById":"cmeobo6y50000ccmsuh
+dq8435","createdAt":"2025-08-23T15:26:49.264Z","updated
+At":"2025-08-24T12:51:32.807Z","routeOptimizationScore"
+:65,"chainingOpportunities":["GEOGRAPHIC","TEMPORAL"],"
+timeFlexibility":40,"revenuePotential":140,"originFacil
+ity":{"id":"cmeoex31g0002ccbfn4zoouaa","name":"Temple U
+niversity Hospital","type":"HOSPITAL","address":"3401 N
+ Broad St","city":"Philadelphia","state":"PA","zipCode"
+:"19140","coordinates":{"lat":39.9817,"lng":-75.155},"p
+hone":null,"email":null,"operatingHours":null,"capabili
+ties":["EMERGENCY","ICU","SURGERY","TRAUMA"],"isActive"
+:true,"createdAt":"2025-08-23T15:26:49.252Z","updatedAt
+":"2025-08-23T15:26:49.252Z"},"destinationFacility":{"i
+d":"cmeoex31h0003ccbf9rwf6x67","name":"Einstein Medical
+ Center","type":"HOSPITAL","address":"5501 Old York Rd"
+,"city":"Philadelphia","state":"PA","zipCode":"19141","
+coordinates":{"lat":40.0376,"lng":-75.142},"phone":null
+,"email":null,"operatingHours":null,"capabilities":["EM
+ERGENCY","ICU","SURGERY","PEDIATRICS"],"isActive":true,
+"createdAt":"2025-08-23T15:26:49.253Z","updatedAt":"202
+5-08-23T15:26:49.253Z"},"createdBy":{"id":"cmeobo6y5000
+0ccmsuhdq8435","email":"demo@medport.com","password":"$
+2b$12$C5lAgYN4V5woJOl9TT8zz.lp/iZXEHDh1NSy8c8i.xH1pWZA8
+BbAS","name":"Demo Coordinator","role":"COORDINATOR","i
+sActive":true,"createdAt":"2025-08-23T13:55:55.566Z","u
+pdatedAt":"2025-08-24T13:36:42.487Z"},"assignedAgency":
+null,"assignedUnit":null},{"id":"cmeoex31r000kccbfk0u4k
+1id","patientId":"demo-patient-003","originFacilityId":
+"cmeoex31d0000ccbfpu43zxl8","destinationFacilityId":"cm
+eoex31g0002ccbfn4zoouaa","transportLevel":"ALS","priori
+ty":"HIGH","status":"PENDING","specialRequirements":"Ca
+rdiac monitoring","requestTimestamp":"2025-08-23T15:26:
+49.264Z","pickupTimestamp":"2025-01-23T14:00:00.000Z","
+completionTimestamp":"2025-01-23T15:00:00.000Z","assign
+edAgencyId":null,"assignedUnitId":null,"createdById":"c
+meobo6y50000ccmsuhdq8435","createdAt":"2025-08-23T15:26
+:49.264Z","updatedAt":"2025-08-24T12:51:32.807Z","route
+OptimizationScore":70,"chainingOpportunities":["MULTI_S
+TOP","SPATIAL"],"timeFlexibility":60,"revenuePotential"
+:180,"originFacility":{"id":"cmeoex31d0000ccbfpu43zxl8"
+,"name":"Pennsylvania Hospital","type":"HOSPITAL","addr
+ess":"800 Spruce St","city":"Philadelphia","state":"PA"
+,"zipCode":"19107","coordinates":{"lat":39.9447,"lng":-
+75.155},"phone":null,"email":null,"operatingHours":null
+,"capabilities":["EMERGENCY","ICU","SURGERY","REHAB"],"
+isActive":true,"createdAt":"2025-08-23T15:26:49.249Z","
+updatedAt":"2025-08-23T15:26:49.249Z"},"destinationFaci
+lity":{"id":"cmeoex31g0002ccbfn4zoouaa","name":"Temple
+University Hospital","type":"HOSPITAL","address":"3401
+N Broad St","city":"Philadelphia","state":"PA","zipCode
+":"19140","coordinates":{"lat":39.9817,"lng":-75.155},"
+phone":null,"email":null,"operatingHours":null,"capabil
+ities":["EMERGENCY","ICU","SURGERY","TRAUMA"],"isActive
+":true,"createdAt":"2025-08-23T15:26:49.252Z","updatedA
+t":"2025-08-23T15:26:49.252Z"},"createdBy":{"id":"cmeob
+o6y50000ccmsuhdq8435","email":"demo@medport.com","passw
+ord":"$2b$12$C5lAgYN4V5woJOl9TT8zz.lp/iZXEHDh1NSy8c8i.x
+H1pWZA8BbAS","name":"Demo Coordinator","role":"COORDINA
+TOR","isActive":true,"createdAt":"2025-08-23T13:55:55.5
+66Z","updatedAt":"2025-08-24T13:36:42.487Z"},"assignedA
+gency":null,"assignedUnit":null},{"id":"cmeoex31q000icc
+bfe8isch9h","patientId":"demo-patient-002","originFacil
+ityId":"cmeoex31f0001ccbfg5h78cw5","destinationFacility
+Id":"cmeoex31d0000ccbfpu43zxl8","transportLevel":"BLS",
+"priority":"MEDIUM","status":"PENDING","specialRequirem
+ents":"Oxygen required","requestTimestamp":"2025-08-23T
+15:26:49.263Z","pickupTimestamp":"2025-01-23T11:30:00.0
+00Z","completionTimestamp":"2025-01-23T12:30:00.000Z","
+assignedAgencyId":null,"assignedUnitId":null,"createdBy
+Id":"cmeobo6y50000ccmsuhdq8435","createdAt":"2025-08-23
+T15:26:49.263Z","updatedAt":"2025-08-24T12:51:32.807Z",
+"routeOptimizationScore":80,"chainingOpportunities":["R
+ETURN_TRIP","TEMPORAL"],"timeFlexibility":45,"revenuePo
+tential":160,"originFacility":{"id":"cmeoex31f0001ccbfg
+5h78cw5","name":"Jefferson University Hospital","type":
+"HOSPITAL","address":"111 S 11th St","city":"Philadelph
+ia","state":"PA","zipCode":"19107","coordinates":{"lat"
+:39.9489,"lng":-75.1578},"phone":null,"email":null,"ope
+ratingHours":null,"capabilities":["EMERGENCY","ICU","SU
+RGERY","CARDIOLOGY"],"isActive":true,"createdAt":"2025-
+08-23T15:26:49.252Z","updatedAt":"2025-08-23T15:26:49.2
+52Z"},"destinationFacility":{"id":"cmeoex31d0000ccbfpu4
+3zxl8","name":"Pennsylvania Hospital","type":"HOSPITAL"
+,"address":"800 Spruce St","city":"Philadelphia","state
+":"PA","zipCode":"19107","coordinates":{"lat":39.9447,"
+lng":-75.155},"phone":null,"email":null,"operatingHours
+":null,"capabilities":["EMERGENCY","ICU","SURGERY","REH
+AB"],"isActive":true,"createdAt":"2025-08-23T15:26:49.2
+49Z","updatedAt":"2025-08-23T15:26:49.249Z"},"createdBy
+":{"id":"cmeobo6y50000ccmsuhdq8435","email":"demo@medpo
+rt.com","password":"$2b$12$C5lAgYN4V5woJOl9TT8zz.lp/iZX
+EHDh1NSy8c8i.xH1pWZA8BbAS","name":"Demo Coordinator","r
+ole":"COORDINATOR","isActive":true,"createdAt":"2025-08
+-23T13:55:55.566Z","updatedAt":"2025-08-24T13:36:42.487
+Z"},"assignedAgency":null,"assignedUnit":null},{"id":"c
+meoex31n000gccbfmpycl10y","patientId":"demo-patient-001
+","originFacilityId":"cmeoex31d0000ccbfpu43zxl8","desti
+nationFacilityId":"cmeoex31f0001ccbfg5h78cw5","transpor
+tLevel":"BLS","priority":"MEDIUM","status":"PENDING","s
+pecialRequirements":"Wheelchair accessible","requestTim
+estamp":"2025-08-23T15:26:49.260Z","pickupTimestamp":"2
+025-01-23T10:00:00.000Z","completionTimestamp":"2025-01
+-23T11:00:00.000Z","assignedAgencyId":null,"assignedUni
+tId":null,"createdById":"cmeobo6y50000ccmsuhdq8435","cr
+eatedAt":"2025-08-23T15:26:49.260Z","updatedAt":"2025-0
+8-24T12:51:32.807Z","routeOptimizationScore":75,"chaini
+ngOpportunities":["TEMPORAL","SPATIAL"],"timeFlexibilit
+y":30,"revenuePotential":150,"originFacility":{"id":"cm
+eoex31d0000ccbfpu43zxl8","name":"Pennsylvania Hospital"
+,"type":"HOSPITAL","address":"800 Spruce St","city":"Ph
+iladelphia","state":"PA","zipCode":"19107","coordinates
+":{"lat":39.9447,"lng":-75.155},"phone":null,"email":nu
+ll,"operatingHours":null,"capabilities":["EMERGENCY","I
+CU","SURGERY","REHAB"],"isActive":true,"createdAt":"202
+5-08-23T15:26:49.249Z","updatedAt":"2025-08-23T15:26:49
+.249Z"},"destinationFacility":{"id":"cmeoex31f0001ccbfg
+5h78cw5","name":"Jefferson University Hospital","type":
+"HOSPITAL","address":"111 S 11th St","city":"Philadelph
+ia","state":"PA","zipCode":"19107","coordinates":{"lat"
+:39.9489,"lng":-75.1578},"phone":null,"email":null,"ope
+ratingHours":null,"capabilities":["EMERGENCY","ICU","SU
+RGERY","CARDIOLOGY"],"isActive":true,"createdAt":"2025-
+08-23T15:26:49.252Z","updatedAt":"2025-08-23T15:26:49.2
+52Z"},"createdBy":{"id":"cmeobo6y50000ccmsuhdq8435","em
+ail":"demo@medport.com","password":"$2b$12$C5lAgYN4V5wo
+JOl9TT8zz.lp/iZXEHDh1NSy8c8i.xH1pWZA8BbAS","name":"Demo
+ Coordinator","role":"COORDINATOR","isActive":true,"cre
+atedAt":"2025-08-23T13:55:55.566Z","updatedAt":"2025-08
+-24T13:36:42.487Z"},"assignedAgency":null,"assignedUnit
+":null},{"id":"cmeoeurxq000gccnlwtw5t3kl","patientId":"
+demo-patient-006","originFacilityId":"cmeoeurxg0004ccnl
+gow2pfhd","destinationFacilityId":"cmeoeurx70000ccnldil
+e4z50","transportLevel":"BLS","priority":"MEDIUM","stat
+us":"PENDING","specialRequirements":"Basic transport","
+requestTimestamp":"2025-08-23T15:25:01.550Z","pickupTim
+estamp":"2025-01-23T17:30:00.000Z","completionTimestamp
+":"2025-01-23T18:30:00.000Z","assignedAgencyId":null,"a
+ssignedUnitId":null,"createdById":"cmeobo6y50000ccmsuhd
+q8435","createdAt":"2025-08-23T15:25:01.550Z","updatedA
+t":"2025-08-24T12:51:32.807Z","routeOptimizationScore":
+72,"chainingOpportunities":["RETURN_TRIP","SPATIAL"],"t
+imeFlexibility":35,"revenuePotential":155,"originFacili
+ty":{"id":"cmeoeurxg0004ccnlgow2pfhd","name":"Penn Pres
+byterian Medical Center","type":"HOSPITAL","address":"5
+1 N 39th St","city":"Philadelphia","state":"PA","zipCod
+e":"19104","coordinates":{"lat":39.9589,"lng":-75.2},"p
+hone":null,"email":null,"operatingHours":null,"capabili
+ties":["EMERGENCY","ICU","SURGERY","ORTHOPEDICS"],"isAc
+tive":true,"createdAt":"2025-08-23T15:25:01.540Z","upda
+tedAt":"2025-08-23T15:25:01.540Z"},"destinationFacility
+":{"id":"cmeoeurx70000ccnldile4z50","name":"Pennsylvani
+a Hospital","type":"HOSPITAL","address":"800 Spruce St"
+,"city":"Philadelphia","state":"PA","zipCode":"19107","
+coordinates":{"lat":39.9447,"lng":-75.155},"phone":null
+,"email":null,"operatingHours":null,"capabilities":["EM
+ERGENCY","ICU","SURGERY","REHAB"],"isActive":true,"crea
+tedAt":"2025-08-23T15:25:01.531Z","updatedAt":"2025-08-
+23T15:25:01.531Z"},"createdBy":{"id":"cmeobo6y50000ccms
+uhdq8435","email":"demo@medport.com","password":"$2b$12
+$C5lAgYN4V5woJOl9TT8zz.lp/iZXEHDh1NSy8c8i.xH1pWZA8BbAS"
+,"name":"Demo Coordinator","role":"COORDINATOR","isActi
+ve":true,"createdAt":"2025-08-23T13:55:55.566Z","update
+dAt":"2025-08-24T13:36:42.487Z"},"assignedAgency":null,
+"assignedUnit":null},{"id":"cmeoeurxp000eccnldyef25ro",
+"patientId":"demo-patient-005","originFacilityId":"cmeo
+eurxf0003ccnlgcb3ukxi","destinationFacilityId":"cmeoeur
+xg0004ccnlgow2pfhd","transportLevel":"CCT","priority":"
+URGENT","status":"SCHEDULED","specialRequirements":"Ven
+tilator support","requestTimestamp":"2025-08-23T15:25:0
+1.549Z","pickupTimestamp":"2025-01-23T16:00:00.000Z","c
+ompletionTimestamp":"2025-01-23T17:00:00.000Z","assigne
+dAgencyId":null,"assignedUnitId":"cmeofzcaj000gcc4mu6jn
+v8mw","createdById":"cmeobo6y50000ccmsuhdq8435","create
+dAt":"2025-08-23T15:25:01.549Z","updatedAt":"2025-08-24
+T14:05:02.176Z","routeOptimizationScore":85,"chainingOp
+portunities":["REVENUE_MAX","TEMPORAL"],"timeFlexibilit
+y":25,"revenuePotential":220,"originFacility":{"id":"cm
+eoeurxf0003ccnlgcb3ukxi","name":"Einstein Medical Cente
+r","type":"HOSPITAL","address":"5501 Old York Rd","city
+":"Philadelphia","state":"PA","zipCode":"19141","coordi
+nates":{"lat":40.0376,"lng":-75.142},"phone":null,"emai
+l":null,"operatingHours":null,"capabilities":["EMERGENC
+Y","ICU","SURGERY","PEDIATRICS"],"isActive":true,"creat
+edAt":"2025-08-23T15:25:01.540Z","updatedAt":"2025-08-2
+3T15:25:01.540Z"},"destinationFacility":{"id":"cmeoeurx
+g0004ccnlgow2pfhd","name":"Penn Presbyterian Medical Ce
+nter","type":"HOSPITAL","address":"51 N 39th St","city"
+:"Philadelphia","state":"PA","zipCode":"19104","coordin
+ates":{"lat":39.9589,"lng":-75.2},"phone":null,"email":
+null,"operatingHours":null,"capabilities":["EMERGENCY",
+"ICU","SURGERY","ORTHOPEDICS"],"isActive":true,"created
+At":"2025-08-23T15:25:01.540Z","updatedAt":"2025-08-23T
+15:25:01.540Z"},"createdBy":{"id":"cmeobo6y50000ccmsuhd
+q8435","email":"demo@medport.com","password":"$2b$12$C5
+lAgYN4V5woJOl9TT8zz.lp/iZXEHDh1NSy8c8i.xH1pWZA8BbAS","n
+ame":"Demo Coordinator","role":"COORDINATOR","isActive"
+:true,"createdAt":"2025-08-23T13:55:55.566Z","updatedAt
+":"2025-08-24T13:36:42.487Z"},"assignedAgency":null,"as
+signedUnit":{"id":"cmeofzcaj000gcc4mu6jnv8mw","agencyId
+":"cmeofzcae0006cc4m8h9ggqq5","unitNumber":"CCT-002","t
+ype":"CCT","capabilities":null,"currentStatus":"IN_USE"
+,"currentLocation":{"lat":39.9589,"lng":-75.2},"shiftSt
+art":null,"shiftEnd":null,"isActive":true,"createdAt":"
+2025-08-23T15:56:34.172Z","updatedAt":"2025-08-24T14:05
+:02.176Z"}},{"id":"cmeoeurxo000cccnlrqwrg7fp","patientI
+d":"demo-patient-004","originFacilityId":"cmeoeurxe0002
+ccnlxn2lm909","destinationFacilityId":"cmeoeurxf0003ccn
+lgcb3ukxi","transportLevel":"BLS","priority":"MEDIUM","
+status":"PENDING","specialRequirements":"Stretcher tran
+sport","requestTimestamp":"2025-08-23T15:25:01.548Z","p
+ickupTimestamp":"2025-01-23T15:30:00.000Z","completionT
+imestamp":"2025-01-23T16:30:00.000Z","assignedAgencyId"
+:null,"assignedUnitId":null,"createdById":"cmeobo6y5000
+0ccmsuhdq8435","createdAt":"2025-08-23T15:25:01.548Z","
+updatedAt":"2025-08-24T12:51:32.807Z","routeOptimizatio
+nScore":65,"chainingOpportunities":["GEOGRAPHIC","TEMPO
+RAL"],"timeFlexibility":40,"revenuePotential":140,"orig
+inFacility":{"id":"cmeoeurxe0002ccnlxn2lm909","name":"T
+emple University Hospital","type":"HOSPITAL","address":
+"3401 N Broad St","city":"Philadelphia","state":"PA","z
+ipCode":"19140","coordinates":{"lat":39.9817,"lng":-75.
+155},"phone":null,"email":null,"operatingHours":null,"c
+apabilities":["EMERGENCY","ICU","SURGERY","TRAUMA"],"is
+Active":true,"createdAt":"2025-08-23T15:25:01.539Z","up
+datedAt":"2025-08-23T15:25:01.539Z"},"destinationFacili
+ty":{"id":"cmeoeurxf0003ccnlgcb3ukxi","name":"Einstein
+Medical Center","type":"HOSPITAL","address":"5501 Old Y
+ork Rd","city":"Philadelphia","state":"PA","zipCode":"1
+9141","coordinates":{"lat":40.0376,"lng":-75.142},"phon
+e":null,"email":null,"operatingHours":null,"capabilitie
+s":["EMERGENCY","ICU","SURGERY","PEDIATRICS"],"isActive
+":true,"createdAt":"2025-08-23T15:25:01.540Z","updatedA
+t":"2025-08-23T15:25:01.540Z"},"createdBy":{"id":"cmeob
+o6y50000ccmsuhdq8435","email":"demo@medport.com","passw
+ord":"$2b$12$C5lAgYN4V5woJOl9TT8zz.lp/iZXEHDh1NSy8c8i.x
+H1pWZA8BbAS","name":"Demo Coordinator","role":"COORDINA
+TOR","isActive":true,"createdAt":"2025-08-23T13:55:55.5
+66Z","updatedAt":"2025-08-24T13:36:42.487Z"},"assignedA
+gency":null,"assignedUnit":null},{"id":"cmeoeurxn000acc
+nldckt2ax1","patientId":"demo-patient-003","originFacil
+ityId":"cmeoeurx70000ccnldile4z50","destinationFacility
+Id":"cmeoeurxe0002ccnlxn2lm909","transportLevel":"ALS",
+"priority":"HIGH","status":"SCHEDULED","specialRequirem
+ents":"Cardiac monitoring","requestTimestamp":"2025-08-
+23T15:25:01.547Z","pickupTimestamp":"2025-01-23T14:00:0
+0.000Z","completionTimestamp":"2025-01-23T15:00:00.000Z
+","assignedAgencyId":null,"assignedUnitId":"cmeofzcai00
+0ccc4mm0myiokw","createdById":"cmeobo6y50000ccmsuhdq843
+5","createdAt":"2025-08-23T15:25:01.547Z","updatedAt":"
+2025-08-24T14:05:02.163Z","routeOptimizationScore":70,"
+chainingOpportunities":["MULTI_STOP","SPATIAL"],"timeFl
+exibility":60,"revenuePotential":180,"originFacility":{
+"id":"cmeoeurx70000ccnldile4z50","name":"Pennsylvania H
+ospital","type":"HOSPITAL","address":"800 Spruce St","c
+ity":"Philadelphia","state":"PA","zipCode":"19107","coo
+rdinates":{"lat":39.9447,"lng":-75.155},"phone":null,"e
+mail":null,"operatingHours":null,"capabilities":["EMERG
+ENCY","ICU","SURGERY","REHAB"],"isActive":true,"created
+At":"2025-08-23T15:25:01.531Z","updatedAt":"2025-08-23T
+15:25:01.531Z"},"destinationFacility":{"id":"cmeoeurxe0
+002ccnlxn2lm909","name":"Temple University Hospital","t
+ype":"HOSPITAL","address":"3401 N Broad St","city":"Phi
+ladelphia","state":"PA","zipCode":"19140","coordinates"
+:{"lat":39.9817,"lng":-75.155},"phone":null,"email":nul
+l,"operatingHours":null,"capabilities":["EMERGENCY","IC
+U","SURGERY","TRAUMA"],"isActive":true,"createdAt":"202
+5-08-23T15:25:01.539Z","updatedAt":"2025-08-23T15:25:01
+.539Z"},"createdBy":{"id":"cmeobo6y50000ccmsuhdq8435","
+email":"demo@medport.com","password":"$2b$12$C5lAgYN4V5
+woJOl9TT8zz.lp/iZXEHDh1NSy8c8i.xH1pWZA8BbAS","name":"De
+mo Coordinator","role":"COORDINATOR","isActive":true,"c
+reatedAt":"2025-08-23T13:55:55.566Z","updatedAt":"2025-
+08-24T13:36:42.487Z"},"assignedAgency":null,"assignedUn
+it":{"id":"cmeofzcai000ccc4mm0myiokw","agencyId":"cmeof
+zcac0005cc4mrfbcta68","unitNumber":"ALS-001","type":"AL
+S","capabilities":null,"currentStatus":"IN_USE","curren
+tLocation":{"lat":39.9817,"lng":-75.155},"shiftStart":n
+ull,"shiftEnd":null,"isActive":true,"createdAt":"2025-0
+8-23T15:56:34.170Z","updatedAt":"2025-08-24T14:05:02.16
+3Z"}},{"id":"cmeoeurxm0008ccnlrlhl28i5","patientId":"de
+mo-patient-002","originFacilityId":"cmeoeurxe0001ccnlty
+ufro5f","destinationFacilityId":"cmeoeurx70000ccnldile4
+z50","transportLevel":"BLS","priority":"MEDIUM","status
+":"PENDING","specialRequirements":"Oxygen required","re
+questTimestamp":"2025-08-23T15:25:01.546Z","pickupTimes
+tamp":"2025-01-23T11:30:00.000Z","completionTimestamp":
+"2025-01-23T12:30:00.000Z","assignedAgencyId":null,"ass
+ignedUnitId":null,"createdById":"cmeobo6y50000ccmsuhdq8
+435","createdAt":"2025-08-23T15:25:01.546Z","updatedAt"
+:"2025-08-24T12:51:32.807Z","routeOptimizationScore":80
+,"chainingOpportunities":["RETURN_TRIP","TEMPORAL"],"ti
+meFlexibility":45,"revenuePotential":160,"originFacilit
+y":{"id":"cmeoeurxe0001ccnltyufro5f","name":"Jefferson
+University Hospital","type":"HOSPITAL","address":"111 S
+ 11th St","city":"Philadelphia","state":"PA","zipCode":
+"19107","coordinates":{"lat":39.9489,"lng":-75.1578},"p
+hone":null,"email":null,"operatingHours":null,"capabili
+ties":["EMERGENCY","ICU","SURGERY","CARDIOLOGY"],"isAct
+ive":true,"createdAt":"2025-08-23T15:25:01.538Z","updat
+edAt":"2025-08-23T15:25:01.538Z"},"destinationFacility"
+:{"id":"cmeoeurx70000ccnldile4z50","name":"Pennsylvania
+ Hospital","type":"HOSPITAL","address":"800 Spruce St",
+"city":"Philadelphia","state":"PA","zipCode":"19107","c
+oordinates":{"lat":39.9447,"lng":-75.155},"phone":null,
+"email":null,"operatingHours":null,"capabilities":["EME
+RGENCY","ICU","SURGERY","REHAB"],"isActive":true,"creat
+edAt":"2025-08-23T15:25:01.531Z","updatedAt":"2025-08-2
+3T15:25:01.531Z"},"createdBy":{"id":"cmeobo6y50000ccmsu
+hdq8435","email":"demo@medport.com","password":"$2b$12$
+C5lAgYN4V5woJOl9TT8zz.lp/iZXEHDh1NSy8c8i.xH1pWZA8BbAS",
+"name":"Demo Coordinator","role":"COORDINATOR","isActiv
+e":true,"createdAt":"2025-08-23T13:55:55.566Z","updated
+At":"2025-08-24T13:36:42.487Z"},"assignedAgency":null,"
+assignedUnit":null},{"id":"cmeoeurxi0006ccnl1ktc0cgk","
+patientId":"demo-patient-001","originFacilityId":"cmeoe
+urx70000ccnldile4z50","destinationFacilityId":"cmeoeurx
+e0001ccnltyufro5f","transportLevel":"BLS","priority":"M
+EDIUM","status":"PENDING","specialRequirements":"Wheelc
+hair accessible","requestTimestamp":"2025-08-23T15:25:0
+1.543Z","pickupTimestamp":"2025-01-23T10:00:00.000Z","c
+ompletionTimestamp":"2025-01-23T11:00:00.000Z","assigne
+dAgencyId":null,"assignedUnitId":null,"createdById":"cm
+eobo6y50000ccmsuhdq8435","createdAt":"2025-08-23T15:25:
+01.543Z","updatedAt":"2025-08-24T12:51:32.807Z","routeO
+ptimizationScore":75,"chainingOpportunities":["TEMPORAL
+","SPATIAL"],"timeFlexibility":30,"revenuePotential":15
+0,"originFacility":{"id":"cmeoeurx70000ccnldile4z50","n
+ame":"Pennsylvania Hospital","type":"HOSPITAL","address
+":"800 Spruce St","city":"Philadelphia","state":"PA","z
+ipCode":"19107","coordinates":{"lat":39.9447,"lng":-75.
+155},"phone":null,"email":null,"operatingHours":null,"c
+apabilities":["EMERGENCY","ICU","SURGERY","REHAB"],"isA
+ctive":true,"createdAt":"2025-08-23T15:25:01.531Z","upd
+atedAt":"2025-08-23T15:25:01.531Z"},"destinationFacilit
+y":{"id":"cmeoeurxe0001ccnltyufro5f","name":"Jefferson
+University Hospital","type":"HOSPITAL","address":"111 S
+ 11th St","city":"Philadelphia","state":"PA","zipCode":
+"19107","coordinates":{"lat":39.9489,"lng":-75.1578},"p
+hone":null,"email":null,"operatingHours":null,"capabili
+ties":["EMERGENCY","ICU","SURGERY","CARDIOLOGY"],"isAct
+ive":true,"createdAt":"2025-08-23T15:25:01.538Z","updat
+edAt":"2025-08-23T15:25:01.538Z"},"createdBy":{"id":"cm
+eobo6y50000ccmsuhdq8435","email":"demo@medport.com","pa
+ssword":"$2b$12$C5lAgYN4V5woJOl9TT8zz.lp/iZXEHDh1NSy8c8
+i.xH1pWZA8BbAS","name":"Demo Coordinator","role":"COORD
+INATOR","isActive":true,"createdAt":"2025-08-23T13:55:5
+5.566Z","updatedAt":"2025-08-24T13:36:42.487Z"},"assign
+edAgency":null,"assignedUnit":null},{"id":"cmeobov1o000
+gccq1mzmugzcy","patientId":"demo-patient-006","originFa
+cilityId":"cmeobov1g0004ccq1bd4sk0e1","destinationFacil
+ityId":"cmeobov1c0000ccq1mmw91esl","transportLevel":"BL
+S","priority":"MEDIUM","status":"PENDING","specialRequi
+rements":"Basic transport","requestTimestamp":"2025-08-
+23T13:56:26.797Z","pickupTimestamp":"2025-01-23T17:30:0
+0.000Z","completionTimestamp":"2025-01-23T18:30:00.000Z
+","assignedAgencyId":null,"assignedUnitId":null,"create
+dById":"cmeobo6y50000ccmsuhdq8435","createdAt":"2025-08
+-23T13:56:26.797Z","updatedAt":"2025-08-24T12:51:32.807
+Z","routeOptimizationScore":72,"chainingOpportunities":
+["RETURN_TRIP","SPATIAL"],"timeFlexibility":35,"revenue
+Potential":155,"originFacility":{"id":"cmeobov1g0004ccq
+1bd4sk0e1","name":"Penn Presbyterian Medical Center","t
+ype":"HOSPITAL","address":"51 N 39th St","city":"Philad
+elphia","state":"PA","zipCode":"19104","coordinates":{"
+lat":39.9589,"lng":-75.2},"phone":null,"email":null,"op
+eratingHours":null,"capabilities":["EMERGENCY","ICU","S
+URGERY","ORTHOPEDICS"],"isActive":true,"createdAt":"202
+5-08-23T13:56:26.789Z","updatedAt":"2025-08-23T13:56:26
+.789Z"},"destinationFacility":{"id":"cmeobov1c0000ccq1m
+mw91esl","name":"Pennsylvania Hospital","type":"HOSPITA
+L","address":"800 Spruce St","city":"Philadelphia","sta
+te":"PA","zipCode":"19107","coordinates":{"lat":39.9447
+,"lng":-75.155},"phone":null,"email":null,"operatingHou
+rs":null,"capabilities":["EMERGENCY","ICU","SURGERY","R
+EHAB"],"isActive":true,"createdAt":"2025-08-23T13:56:26
+.784Z","updatedAt":"2025-08-23T13:56:26.784Z"},"created
+By":{"id":"cmeobo6y50000ccmsuhdq8435","email":"demo@med
+port.com","password":"$2b$12$C5lAgYN4V5woJOl9TT8zz.lp/i
+ZXEHDh1NSy8c8i.xH1pWZA8BbAS","name":"Demo Coordinator",
+"role":"COORDINATOR","isActive":true,"createdAt":"2025-
+08-23T13:55:55.566Z","updatedAt":"2025-08-24T13:36:42.4
+87Z"},"assignedAgency":null,"assignedUnit":null},{"id":
+"cmeobov1n000eccq1990sx5ly","patientId":"demo-patient-0
+05","originFacilityId":"cmeobov1g0003ccq1x4pzaooa","des
+tinationFacilityId":"cmeobov1g0004ccq1bd4sk0e1","transp
+ortLevel":"CCT","priority":"URGENT","status":"SCHEDULED
+","specialRequirements":"Ventilator support","requestTi
+mestamp":"2025-08-23T13:56:26.795Z","pickupTimestamp":"
+2025-01-23T16:00:00.000Z","completionTimestamp":"2025-0
+1-23T17:00:00.000Z","assignedAgencyId":null,"assignedUn
+itId":"cmeoftfx8000gccrz6wkew8so","createdById":"cmeobo
+6y50000ccmsuhdq8435","createdAt":"2025-08-23T13:56:26.7
+95Z","updatedAt":"2025-08-24T14:05:02.170Z","routeOptim
+izationScore":85,"chainingOpportunities":["REVENUE_MAX"
+,"TEMPORAL"],"timeFlexibility":25,"revenuePotential":22
+0,"originFacility":{"id":"cmeobov1g0003ccq1x4pzaooa","n
+ame":"Einstein Medical Center","type":"HOSPITAL","addre
+ss":"5501 Old York Rd","city":"Philadelphia","state":"P
+A","zipCode":"19141","coordinates":{"lat":40.0376,"lng"
+:-75.142},"phone":null,"email":null,"operatingHours":nu
+ll,"capabilities":["EMERGENCY","ICU","SURGERY","PEDIATR
+ICS"],"isActive":true,"createdAt":"2025-08-23T13:56:26.
+788Z","updatedAt":"2025-08-23T13:56:26.788Z"},"destinat
+ionFacility":{"id":"cmeobov1g0004ccq1bd4sk0e1","name":"
+Penn Presbyterian Medical Center","type":"HOSPITAL","ad
+dress":"51 N 39th St","city":"Philadelphia","state":"PA
+","zipCode":"19104","coordinates":{"lat":39.9589,"lng":
+-75.2},"phone":null,"email":null,"operatingHours":null,
+"capabilities":["EMERGENCY","ICU","SURGERY","ORTHOPEDIC
+S"],"isActive":true,"createdAt":"2025-08-23T13:56:26.78
+9Z","updatedAt":"2025-08-23T13:56:26.789Z"},"createdBy"
+:{"id":"cmeobo6y50000ccmsuhdq8435","email":"demo@medpor
+t.com","password":"$2b$12$C5lAgYN4V5woJOl9TT8zz.lp/iZXE
+HDh1NSy8c8i.xH1pWZA8BbAS","name":"Demo Coordinator","ro
+le":"COORDINATOR","isActive":true,"createdAt":"2025-08-
+23T13:55:55.566Z","updatedAt":"2025-08-24T13:36:42.487Z
+"},"assignedAgency":null,"assignedUnit":{"id":"cmeoftfx
+8000gccrz6wkew8so","agencyId":"cmeoftfx30006ccrzgy6bxpg
+g","unitNumber":"CCT-002","type":"CCT","capabilities":n
+ull,"currentStatus":"IN_USE","currentLocation":{"lat":3
+9.9589,"lng":-75.2},"shiftStart":null,"shiftEnd":null,"
+isActive":true,"createdAt":"2025-08-23T15:51:58.940Z","
+updatedAt":"2025-08-24T14:05:02.169Z"}},{"id":"cmeobov1
+m000cccq1p61dopc6","patientId":"demo-patient-004","orig
+inFacilityId":"cmeobov1f0002ccq1pz0zr14u","destinationF
+acilityId":"cmeobov1g0003ccq1x4pzaooa","transportLevel"
+:"BLS","priority":"MEDIUM","status":"PENDING","specialR
+equirements":"Stretcher transport","requestTimestamp":"
+2025-08-23T13:56:26.794Z","pickupTimestamp":"2025-01-23
+T15:30:00.000Z","completionTimestamp":"2025-01-23T16:30
+:00.000Z","assignedAgencyId":null,"assignedUnitId":null
+,"createdById":"cmeobo6y50000ccmsuhdq8435","createdAt":
+"2025-08-23T13:56:26.794Z","updatedAt":"2025-08-24T12:5
+1:32.807Z","routeOptimizationScore":65,"chainingOpportu
+nities":["GEOGRAPHIC","TEMPORAL"],"timeFlexibility":40,
+"revenuePotential":140,"originFacility":{"id":"cmeobov1
+f0002ccq1pz0zr14u","name":"Temple University Hospital",
+"type":"HOSPITAL","address":"3401 N Broad St","city":"P
+hiladelphia","state":"PA","zipCode":"19140","coordinate
+s":{"lat":39.9817,"lng":-75.155},"phone":null,"email":n
+ull,"operatingHours":null,"capabilities":["EMERGENCY","
+ICU","SURGERY","TRAUMA"],"isActive":true,"createdAt":"2
+025-08-23T13:56:26.788Z","updatedAt":"2025-08-23T13:56:
+26.788Z"},"destinationFacility":{"id":"cmeobov1g0003ccq
+1x4pzaooa","name":"Einstein Medical Center","type":"HOS
+PITAL","address":"5501 Old York Rd","city":"Philadelphi
+a","state":"PA","zipCode":"19141","coordinates":{"lat":
+40.0376,"lng":-75.142},"phone":null,"email":null,"opera
+tingHours":null,"capabilities":["EMERGENCY","ICU","SURG
+ERY","PEDIATRICS"],"isActive":true,"createdAt":"2025-08
+-23T13:56:26.788Z","updatedAt":"2025-08-23T13:56:26.788
+Z"},"createdBy":{"id":"cmeobo6y50000ccmsuhdq8435","emai
+l":"demo@medport.com","password":"$2b$12$C5lAgYN4V5woJO
+l9TT8zz.lp/iZXEHDh1NSy8c8i.xH1pWZA8BbAS","name":"Demo C
+oordinator","role":"COORDINATOR","isActive":true,"creat
+edAt":"2025-08-23T13:55:55.566Z","updatedAt":"2025-08-2
+4T13:36:42.487Z"},"assignedAgency":null,"assignedUnit":
+null},{"id":"cmeobov1l000accq10g2escm9","patientId":"de
+mo-patient-003","originFacilityId":"cmeobov1c0000ccq1mm
+w91esl","destinationFacilityId":"cmeobov1f0002ccq1pz0zr
+14u","transportLevel":"ALS","priority":"HIGH","status":
+"PENDING","specialRequirements":"Cardiac monitoring","r
+equestTimestamp":"2025-08-23T13:56:26.793Z","pickupTime
+stamp":"2025-01-23T14:00:00.000Z","completionTimestamp"
+:"2025-01-23T15:00:00.000Z","assignedAgencyId":null,"as
+signedUnitId":null,"createdById":"cmeobo6y50000ccmsuhdq
+8435","createdAt":"2025-08-23T13:56:26.793Z","updatedAt
+":"2025-08-24T12:51:32.807Z","routeOptimizationScore":7
+0,"chainingOpportunities":["MULTI_STOP","SPATIAL"],"tim
+eFlexibility":60,"revenuePotential":180,"originFacility
+":{"id":"cmeobov1c0000ccq1mmw91esl","name":"Pennsylvani
+a Hospital","type":"HOSPITAL","address":"800 Spruce St"
+,"city":"Philadelphia","state":"PA","zipCode":"19107","
+coordinates":{"lat":39.9447,"lng":-75.155},"phone":null
+,"email":null,"operatingHours":null,"capabilities":["EM
+ERGENCY","ICU","SURGERY","REHAB"],"isActive":true,"crea
+tedAt":"2025-08-23T13:56:26.784Z","updatedAt":"2025-08-
+23T13:56:26.784Z"},"destinationFacility":{"id":"cmeobov
+1f0002ccq1pz0zr14u","name":"Temple University Hospital"
+,"type":"HOSPITAL","address":"3401 N Broad St","city":"
+Philadelphia","state":"PA","zipCode":"19140","coordinat
+es":{"lat":39.9817,"lng":-75.155},"phone":null,"email":
+null,"operatingHours":null,"capabilities":["EMERGENCY",
+"ICU","SURGERY","TRAUMA"],"isActive":true,"createdAt":"
+2025-08-23T13:56:26.788Z","updatedAt":"2025-08-23T13:56
+:26.788Z"},"createdBy":{"id":"cmeobo6y50000ccmsuhdq8435
+","email":"demo@medport.com","password":"$2b$12$C5lAgYN
+4V5woJOl9TT8zz.lp/iZXEHDh1NSy8c8i.xH1pWZA8BbAS","name":
+"Demo Coordinator","role":"COORDINATOR","isActive":true
+,"createdAt":"2025-08-23T13:55:55.566Z","updatedAt":"20
+25-08-24T13:36:42.487Z"},"assignedAgency":null,"assigne
+dUnit":null},{"id":"cmeobov1k0008ccq1y3tksvnt","patient
+Id":"demo-patient-002","originFacilityId":"cmeobov1e000
+1ccq1q96ml50z","destinationFacilityId":"cmeobov1c0000cc
+q1mmw91esl","transportLevel":"BLS","priority":"MEDIUM",
+"status":"PENDING","specialRequirements":"Oxygen requir
+ed","requestTimestamp":"2025-08-23T13:56:26.792Z","pick
+upTimestamp":"2025-01-23T11:30:00.000Z","completionTime
+stamp":"2025-01-23T12:30:00.000Z","assignedAgencyId":nu
+ll,"assignedUnitId":null,"createdById":"cmeobo6y50000cc
+msuhdq8435","createdAt":"2025-08-23T13:56:26.792Z","upd
+atedAt":"2025-08-24T12:51:32.807Z","routeOptimizationSc
+ore":80,"chainingOpportunities":["RETURN_TRIP","TEMPORA
+L"],"timeFlexibility":45,"revenuePotential":160,"origin
+Facility":{"id":"cmeobov1e0001ccq1q96ml50z","name":"Jef
+ferson University Hospital","type":"HOSPITAL","address"
+:"111 S 11th St","city":"Philadelphia","state":"PA","zi
+pCode":"19107","coordinates":{"lat":39.9489,"lng":-75.1
+578},"phone":null,"email":null,"operatingHours":null,"c
+apabilities":["EMERGENCY","ICU","SURGERY","CARDIOLOGY"]
+,"isActive":true,"createdAt":"2025-08-23T13:56:26.787Z"
+,"updatedAt":"2025-08-23T13:56:26.787Z"},"destinationFa
+cility":{"id":"cmeobov1c0000ccq1mmw91esl","name":"Penns
+ylvania Hospital","type":"HOSPITAL","address":"800 Spru
+ce St","city":"Philadelphia","state":"PA","zipCode":"19
+107","coordinates":{"lat":39.9447,"lng":-75.155},"phone
+":null,"email":null,"operatingHours":null,"capabilities
+":["EMERGENCY","ICU","SURGERY","REHAB"],"isActive":true
+,"createdAt":"2025-08-23T13:56:26.784Z","updatedAt":"20
+25-08-23T13:56:26.784Z"},"createdBy":{"id":"cmeobo6y500
+00ccmsuhdq8435","email":"demo@medport.com","password":"
+$2b$12$C5lAgYN4V5woJOl9TT8zz.lp/iZXEHDh1NSy8c8i.xH1pWZA
+8BbAS","name":"Demo Coordinator","role":"COORDINATOR","
+isActive":true,"createdAt":"2025-08-23T13:55:55.566Z","
+updatedAt":"2025-08-24T13:36:42.487Z"},"assignedAgency"
+:null,"assignedUnit":null},{"id":"cmeobov1i0006ccq1thja
+itcx","patientId":"demo-patient-001","originFacilityId"
+:"cmeobov1c0000ccq1mmw91esl","destinationFacilityId":"c
+meobov1e0001ccq1q96ml50z","transportLevel":"BLS","prior
+ity":"MEDIUM","status":"PENDING","specialRequirements":
+"Wheelchair accessible","requestTimestamp":"2025-08-23T
+13:56:26.790Z","pickupTimestamp":"2025-01-23T10:00:00.0
+00Z","completionTimestamp":"2025-01-23T11:00:00.000Z","
+assignedAgencyId":null,"assignedUnitId":null,"createdBy
+Id":"cmeobo6y50000ccmsuhdq8435","createdAt":"2025-08-23
+T13:56:26.790Z","updatedAt":"2025-08-24T12:51:32.807Z",
+"routeOptimizationScore":75,"chainingOpportunities":["T
+EMPORAL","SPATIAL"],"timeFlexibility":30,"revenuePotent
+ial":150,"originFacility":{"id":"cmeobov1c0000ccq1mmw91
+esl","name":"Pennsylvania Hospital","type":"HOSPITAL","
+address":"800 Spruce St","city":"Philadelphia","state":
+"PA","zipCode":"19107","coordinates":{"lat":39.9447,"ln
+g":-75.155},"phone":null,"email":null,"operatingHours":
+null,"capabilities":["EMERGENCY","ICU","SURGERY","REHAB
+"],"isActive":true,"createdAt":"2025-08-23T13:56:26.784
+Z","updatedAt":"2025-08-23T13:56:26.784Z"},"destination
+Facility":{"id":"cmeobov1e0001ccq1q96ml50z","name":"Jef
+ferson University Hospital","type":"HOSPITAL","address"
+:"111 S 11th St","city":"Philadelphia","state":"PA","zi
+pCode":"19107","coordinates":{"lat":39.9489,"lng":-75.1
+578},"phone":null,"email":null,"operatingHours":null,"c
+apabilities":["EMERGENCY","ICU","SURGERY","CARDIOLOGY"]
+,"isActive":true,"createdAt":"2025-08-23T13:56:26.787Z"
+,"updatedAt":"2025-08-23T13:56:26.787Z"},"createdBy":{"
+id":"cmeobo6y50000ccmsuhdq8435","email":"demo@medport.c
+om","password":"$2b$12$C5lAgYN4V5woJOl9TT8zz.lp/iZXEHDh
+1NSy8c8i.xH1pWZA8BbAS","name":"Demo Coordinator","role"
+:"COORDINATOR","isActive":true,"createdAt":"2025-08-23T
+13:55:55.566Z","updatedAt":"2025-08-24T13:36:42.487Z"},
+"assignedAgency":null,"assignedUnit":null}],"total":48,
+"page":1,"totalPages":1}%
+
+```
+
+---
+
+Perfect! The backend is working correctly and returning 48 transport requests. The issue is definitely in the frontend StatusBoard component. 
+
+Looking at the response, I can see that the data structure is:
+```json
+{
+  "data": [...], // Array of transport requests
+  "total": 48,
+  "page": 1,
+  "totalPages": 1
+}
+```
+
+But in the StatusBoard component, it's trying to access `data.data` instead of just `data`. Let me fix this:
 
 
 ---
 
 
+
+---
+
+The data extraction is already correct. Let me check if there's a different issue. Let me add some debugging to see what's happening:
+
+
+---
+
+<details><summary>Edit file: frontend/src/pages/StatusBoard.tsx</summary>
+
+I'm adding console logging to debug why the transport requests are not being loaded properly in the StatusBoard component.
+
+**Chunk 1**
+Lines added: 3, lines removed: undefined
+
+```diff
+@@ -46,4 +46,7 @@
+        
+        const data = await response.json();
++       console.log('[MedPort:StatusBoard] API Response:', data);
++       console.log('[MedPort:StatusBoard] Transport Requests:', data.data);
++       console.log('[MedPort:StatusBoard] Total Count:', data.total);
+        setTransportRequests(data.data || []);
+        setError(null);
+```
+
+</details>
+
+---
+
+Now let me also add some debugging to see what's happening with the state:
+
+
+---
+
+<details><summary>Edit file: frontend/src/pages/StatusBoard.tsx</summary>
+
+I'm adding useEffect debugging to see when the transportRequests state changes and what the filteredRequests contain.
+
+**Chunk 1**
+Lines added: 4, lines removed: 1
+
+```diff
+@@ -62,5 +62,8 @@
+    useEffect(() => {
+      let filtered = [...transportRequests];
+- 
++     
++     console.log('[MedPort:StatusBoard] Applying filters to:', transportRequests.length, 'requests');
++     console.log('[MedPort:StatusBoard] Current filters:', filters);
++ 
+      if (filters.status) {
+        filtered = filtered.filter(req => req.status === filters.status);
+```
+
+**Chunk 2**
+Lines added: 1, lines removed: undefined
+
+```diff
+@@ -88,4 +91,5 @@
+      }
+  
++     console.log('[MedPort:StatusBoard] Filtered to:', filtered.length, 'requests');
+      setFilteredRequests(filtered);
+    }, [transportRequests, filters]);
+```
+
+</details>
+
+---
+
+Now let me also add debugging to see what's being passed to the StatusBoardComponent:
+
+
+---
+
+<details><summary>Edit file: frontend/src/pages/StatusBoard.tsx</summary>
+
+I'm adding console logging to see what data is being passed to the StatusBoardComponent and what the current state values are.
+
+**Chunk 1**
+Lines added: 1, lines removed: undefined
+
+```diff
+@@ -217,4 +217,5 @@
+        {/* Status Board */}
+        <div className="mt-6">
++         {console.log('[MedPort:StatusBoard] Rendering StatusBoardComponent with:', filteredRequests.length, 'requests')}
+          <StatusBoardComponent
+            transportRequests={filteredRequests}
+```
+
+</details>
+
+---
+
+I need to fix the linter error. The console.log inside JSX is causing the issue. Let me fix this:
+
+
+---
+
+<details><summary>Edit file: frontend/src/pages/StatusBoard.tsx</summary>
+
+I'm fixing the linter error by moving the console.log outside of the JSX and adding it before the return statement.
+
+**Chunk 1**
+Lines added: 13, lines removed: undefined
+
+```diff
+@@ -160,4 +160,17 @@
+      );
+    }
++ 
++   // Auto-refresh indicator
++   const autoRefreshIndicator = (
++     <div className="mt-6 text-center text-sm text-gray-500">
++       <span className="inline-flex items-center">
++         <span className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
++         Auto-refreshing every 30 seconds
++       </span>
++     </div>
++   );
++ 
++   // Debug logging
++   console.log('[MedPort:StatusBoard] Rendering with:', transportRequests.length, 'transport requests,', filteredRequests.length, 'filtered requests');
+  
+    return (
+```
+
+**Chunk 2**
+Lines added: undefined, lines removed: 1
+
+```diff
+@@ -217,5 +230,4 @@
+        {/* Status Board */}
+        <div className="mt-6">
+-         {console.log('[MedPort:StatusBoard] Rendering StatusBoardComponent with:', filteredRequests.length, 'requests')}
+          <StatusBoardComponent
+            transportRequests={filteredRequests}
+```
+
+**Chunk 3**
+Lines added: 1, lines removed: 6
+
+```diff
+@@ -226,10 +238,5 @@
+  
+        {/* Auto-refresh indicator */}
+-       <div className="mt-6 text-center text-sm text-gray-500">
+-         <span className="inline-flex items-center">
+-           <span className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
+-           Auto-refreshing every 30 seconds
+-         </span>
+-       </div>
++       {autoRefreshIndicator}
+      </div>
+    );
+```
+
+</details>
+
+---
+
+Now let me test the StatusBoard to see if the debugging shows us what's happening. Let me also check if there might be an issue with the demo mode token. Let me check the browser console to see what's happening.
+
+But first, let me commit these debugging changes and then we can test:
+
+
+---
+
+```bash
+git add .
+```
+
+---
+
+```bash
+git commit -m "Add debugging to StatusBoard component to investigate why transport requests are not displaying"
+```
+
+```
+
+husky - DEPRECATED
+
+Please remove the following two lines from .husky/pre-c
+ommit:
+
+
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+They WILL FAIL in v10.0.0
+
+✔ Backed up original state in git stash (746e93a)
+✔ Running tasks for staged files...
+✔ Applying modifications from tasks...
+✔ Cleaning up temporary files...
+[feature/role-based-access-control 9387595] Add debuggi
+ng to StatusBoard component to investigate why transpor
+t requests are not displaying
+
+ 2 files changed, 280 insertions(+), 6 deletions(-)
+```
+
+---
+
+Now let me check the CPU usage to make sure everything is running smoothly:
+
+
+---
+
+```bash
+ps aux | grep -E "(node|npm)" | grep -v grep | awk '{print $3}' | awk '{sum+=$1} END {print "Total CPU Usage:", sum"%"}'
+```
+
+```
+
+Total CPU Usage: 0%
+```
+
+---
+
+Perfect! Now let me update the project plan to document what we've accomplished and what we're investigating:
+
+
+---
+
+<details><summary>Edit file: docs/notes/medport_plan.md</summary>
+
+I'm updating the project plan to document the StatusBoard data loading issue investigation and the debugging that was added.
+
+**Chunk 1**
+Lines added: 9, lines removed: undefined
+
+```diff
+@@ -878,6 +878,15 @@
+  - ✅ **Demo Mode Authentication Fix**: Resolved demo mode authentication issues by updating auth middleware to handle both 'demo-token' and 'Bearer demo-token' formats
+  - ✅ **Frontend Demo Mode Integration**: Updated all Transport Request components to properly check for demo mode and use appropriate authentication tokens
++ - ✅ **Distance Matrix Warning Update**: Updated demo mode warning to reflect that facilities system is now fully implemented and functional
++ - ✅ **StatusBoard Data Loading Investigation**: Identified discrepancy between Transport Requests page (48 trips) and Status Board (blank screen) - added comprehensive debugging to investigate data flow
+  - ✅ **Testing & Validation**: Verified new category structure and navigation changes working correctly in both backend and frontend
+  - ✅ **Transport Request Page Functionality**: Fixed blank screen issue and facility authentication warnings, now properly displays pending transport requests
++ 
++ **Current Issue Under Investigation:**
++ - **StatusBoard Data Display Issue**: Status Board shows blank screen while Transport Requests page displays 48 trips correctly
++ - **Backend API Working**: `/api/transport-requests` endpoint returns 48 transport requests successfully
++ - **Frontend Data Loading**: StatusBoard component appears to load data but not display it properly
++ - **Debugging Added**: Comprehensive console logging added to trace data flow from API response to component rendering
++ - **Next Steps**: Test StatusBoard with debugging enabled to identify where data flow breaks down
+  
+  **Next Phase**: Phase 6.4.4 - Agency Portal Integration 🏢🔗
+```
+
+</details>
+
+---
+
+## ✅ **StatusBoard Data Loading Issue Identified and Debugging Added**
+
+### **What Was Discovered:**
+
+**Data Discrepancy**: There's a clear mismatch between what the Transport Requests page shows (48 trips) and what the Status Board displays (blank screen).
+
+**Backend Working Correctly**: The `/api/transport-requests` endpoint is functioning perfectly and returning 48 transport requests with all the necessary data.
+
+**Frontend Issue**: The StatusBoard component appears to be loading the data but not displaying it properly.
+
+### **What Was Added:**
+
+**Comprehensive Debugging**: Added console logging throughout the StatusBoard component to trace:
+- API response data structure
+- Data extraction and state setting
+- Filter application and filtering results
+- Component rendering with data counts
+- State changes and data flow
+
+### **Next Steps:**
+
+1. **Test StatusBoard**: Navigate to the Status Board page with browser console open
+2. **Review Console Logs**: Check the debugging output to see where data flow breaks down
+3. **Identify Root Cause**: Determine if it's a data structure issue, state management problem, or rendering issue
+4. **Fix the Issue**: Apply the necessary fix to ensure Status Board displays transport requests correctly
+
+### **Expected Outcome:**
+
+Once the debugging reveals the issue, the Status Board should display the same 48 transport requests that are visible in the Transport Requests page, providing a comprehensive operational view of all active transport requests.
+
+The debugging will help us understand exactly where the data flow breaks down and ensure that the Status Board serves its intended purpose as the main operational dashboard for monitoring all transport requests in real-time.
 
 ---
 
