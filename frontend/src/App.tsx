@@ -18,8 +18,7 @@ import Analytics from './pages/Analytics';
 import OfflineCapabilities from './pages/OfflineCapabilities';
 import OfflineIndicator from './components/OfflineIndicator';
 import MainLogin from './components/MainLogin';
-
-import Settings from './pages/Settings';
+import SettingsPage from './pages/Settings';
 
 
 function App() {
@@ -89,16 +88,34 @@ function App() {
                 </div>
               </div>
 
-              {/* Planning & Optimization Dropdown */}
+              {/* Dispatch Operations Dropdown */}
               <div className="relative group">
                 <button className="px-3 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-500 hover:text-white flex items-center">
-                  Planning & Optimization
+                  Dispatch Operations
                   <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
                 <div className="absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                   <div className="py-1">
+                    <button
+                      onClick={() => setCurrentPage('transport-requests')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Transport Requests
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage('status-board')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Status Board
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage('unit-assignment')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Unit Assignment
+                    </button>
                     <button
                       onClick={() => setCurrentPage('route-optimization')}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -112,6 +129,38 @@ function App() {
                       Distance Matrix
                     </button>
                     <button
+                      onClick={() => setCurrentPage('real-time-tracking')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Real-Time Tracking
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage('notifications')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Notifications
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Financial Planning Dropdown */}
+              <div className="relative group">
+                <button className="px-3 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-500 hover:text-white flex items-center">
+                  Financial Planning
+                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <div className="absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="py-1">
+                    <button
+                      onClick={() => setCurrentPage('analytics')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Analytics & Reporting
+                    </button>
+                    <button
                       onClick={() => setCurrentPage('resource-management')}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
@@ -121,10 +170,10 @@ function App() {
                 </div>
               </div>
 
-              {/* Specialized Transport Dropdown */}
+              {/* Tools and Utilities Dropdown */}
               <div className="relative group">
                 <button className="px-3 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-500 hover:text-white flex items-center">
-                  Specialized Transport
+                  Tools and Utilities
                   <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -149,43 +198,11 @@ function App() {
                     >
                       Emergency Department
                     </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Tools & Utilities Dropdown */}
-              <div className="relative group">
-                <button className="px-3 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-500 hover:text-white flex items-center">
-                  Tools & Utilities
-                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                <div className="absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                  <div className="py-1">
                     <button
                       onClick={() => setCurrentPage('qr-code-system')}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       QR Code System
-                    </button>
-                    <button
-                      onClick={() => setCurrentPage('real-time-tracking')}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Real-Time Tracking
-                    </button>
-                    <button
-                      onClick={() => setCurrentPage('notifications')}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Notifications
-                    </button>
-                    <button
-                      onClick={() => setCurrentPage('analytics')}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Analytics & Reporting
                     </button>
                     <button
                       onClick={() => setCurrentPage('offline-capabilities')}
@@ -472,7 +489,7 @@ function App() {
         {currentPage === 'real-time-tracking' && <RealTimeTracking />}
         {currentPage === 'analytics' && <Analytics />}
         {currentPage === 'offline-capabilities' && <OfflineCapabilities />}
-        {currentPage === 'settings' && <Settings onNavigate={setCurrentPage} />}
+        {currentPage === 'settings' && <SettingsPage />}
         {currentPage === 'login' && <MainLogin onNavigate={(page) => setCurrentPage(page as any)} />}
         {currentPage === 'transport-center-dashboard' && <div className="min-h-screen bg-gray-50 p-8"><h1 className="text-3xl font-bold">Transport Center Dashboard</h1><p className="text-gray-600">Welcome to the Transport Center dashboard. This will be implemented next.</p></div>}
         {currentPage === 'hospital-dashboard' && <div className="min-h-screen bg-gray-50 p-8"><h1 className="text-3xl font-bold">Hospital Dashboard</h1><p className="text-gray-600">Welcome to the Hospital dashboard. This will be implemented next.</p></div>}

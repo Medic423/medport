@@ -34,12 +34,12 @@ export class RoleBasedAccessService {
    */
   static getAvailableModules(): ModuleAccess[] {
     return [
-      // Core Operations
+      // Dispatch Operations - Core transport coordination and management
       {
         id: 'transport-requests',
         name: 'Transport Requests',
         description: 'Create and manage transport requests',
-        category: 'Core Operations',
+        category: 'Dispatch Operations',
         requiredPermissions: ['transport:create', 'transport:read'],
         visibleToRoles: ['ADMIN', 'COORDINATOR', 'HOSPITAL_COORDINATOR'],
         isActive: true
@@ -48,7 +48,7 @@ export class RoleBasedAccessService {
         id: 'status-board',
         name: 'Status Board',
         description: 'View transport request status and unit assignments',
-        category: 'Core Operations',
+        category: 'Dispatch Operations',
         requiredPermissions: ['transport:read'],
         visibleToRoles: ['ADMIN', 'COORDINATOR', 'HOSPITAL_COORDINATOR'],
         isActive: true
@@ -57,18 +57,16 @@ export class RoleBasedAccessService {
         id: 'unit-assignment',
         name: 'Unit Assignment',
         description: 'Assign transport units to requests and optimize assignments',
-        category: 'Core Operations',
+        category: 'Dispatch Operations',
         requiredPermissions: ['unit:assign', 'dispatch:manage'],
         visibleToRoles: ['ADMIN', 'COORDINATOR'],
         isActive: true
       },
-
-      // Planning & Optimization
       {
         id: 'route-optimization',
         name: 'Route Optimization',
         description: 'Optimize routes for maximum efficiency and revenue',
-        category: 'Planning & Optimization',
+        category: 'Dispatch Operations',
         requiredPermissions: ['route:optimize', 'route:view'],
         visibleToRoles: ['ADMIN', 'COORDINATOR', 'TRANSPORT_AGENCY'],
         isActive: true
@@ -77,57 +75,8 @@ export class RoleBasedAccessService {
         id: 'distance-matrix',
         name: 'Distance Matrix',
         description: 'Calculate distances between facilities and optimize routing',
-        category: 'Planning & Optimization',
+        category: 'Dispatch Operations',
         requiredPermissions: ['route:view'],
-        visibleToRoles: ['ADMIN', 'COORDINATOR'],
-        isActive: true
-      },
-      {
-        id: 'resource-management',
-        name: 'Resource Management',
-        description: 'Manage transport resources and capacity planning',
-        category: 'Planning & Optimization',
-        requiredPermissions: ['facility:read', 'agency:read'],
-        visibleToRoles: ['ADMIN', 'COORDINATOR'],
-        isActive: true
-      },
-
-      // Specialized Transport
-      {
-        id: 'advanced-transport',
-        name: 'Advanced Transport',
-        description: 'Multi-patient and specialized transport coordination',
-        category: 'Specialized Transport',
-        requiredPermissions: ['transport:create', 'transport:read'],
-        visibleToRoles: ['ADMIN', 'COORDINATOR'],
-        isActive: true
-      },
-      {
-        id: 'air-medical',
-        name: 'Air Medical',
-        description: 'Air medical transport coordination and resource management',
-        category: 'Specialized Transport',
-        requiredPermissions: ['transport:create', 'transport:read'],
-        visibleToRoles: ['ADMIN', 'COORDINATOR'],
-        isActive: true
-      },
-      {
-        id: 'emergency-department',
-        name: 'Emergency Department',
-        description: 'Emergency department optimization and coordination',
-        category: 'Specialized Transport',
-        requiredPermissions: ['emergency:optimize'],
-        visibleToRoles: ['ADMIN', 'COORDINATOR', 'HOSPITAL_COORDINATOR'],
-        isActive: true
-      },
-
-      // Tools & Utilities
-      {
-        id: 'qr-code-system',
-        name: 'QR Code System',
-        description: 'Generate and scan QR codes for transport requests',
-        category: 'Tools & Utilities',
-        requiredPermissions: ['transport:read'],
         visibleToRoles: ['ADMIN', 'COORDINATOR'],
         isActive: true
       },
@@ -135,7 +84,7 @@ export class RoleBasedAccessService {
         id: 'real-time-tracking',
         name: 'Real-Time Tracking',
         description: 'Track transport units in real-time with GPS integration',
-        category: 'Tools & Utilities',
+        category: 'Dispatch Operations',
         requiredPermissions: ['tracking:view'],
         visibleToRoles: ['ADMIN', 'COORDINATOR'],
         isActive: true
@@ -144,47 +93,92 @@ export class RoleBasedAccessService {
         id: 'notifications',
         name: 'Notifications',
         description: 'Manage system notifications and communications',
-        category: 'Tools & Utilities',
+        category: 'Dispatch Operations',
         requiredPermissions: ['notifications:manage'],
         visibleToRoles: ['ADMIN', 'COORDINATOR'],
         isActive: true
       },
+
+      // Financial Planning - Revenue optimization, cost analysis, and financial management
       {
         id: 'analytics',
         name: 'Analytics & Reporting',
         description: 'View system analytics and performance reports',
-        category: 'Tools & Utilities',
+        category: 'Financial Planning',
         requiredPermissions: ['analytics:view', 'analytics:financial'],
         visibleToRoles: ['ADMIN', 'COORDINATOR', 'BILLING_STAFF'],
+        isActive: true
+      },
+      {
+        id: 'resource-management',
+        name: 'Resource Management',
+        description: 'Manage transport resources and capacity planning',
+        category: 'Financial Planning',
+        requiredPermissions: ['facility:read', 'agency:read'],
+        visibleToRoles: ['ADMIN', 'COORDINATOR'],
+        isActive: true
+      },
+      {
+        id: 'agency-portal',
+        name: 'Agency Portal',
+        description: 'Transport agency management and operations',
+        category: 'Financial Planning',
+        requiredPermissions: ['agency:profile', 'unit:manage'],
+        visibleToRoles: ['ADMIN', 'TRANSPORT_AGENCY'],
+        isActive: true
+      },
+
+      // Tools and Utilities - Supporting tools and system administration
+      {
+        id: 'advanced-transport',
+        name: 'Advanced Transport',
+        description: 'Multi-patient and specialized transport coordination',
+        category: 'Tools and Utilities',
+        requiredPermissions: ['transport:create', 'transport:read'],
+        visibleToRoles: ['ADMIN', 'COORDINATOR'],
+        isActive: true
+      },
+      {
+        id: 'air-medical',
+        name: 'Air Medical',
+        description: 'Air medical transport coordination and resource management',
+        category: 'Tools and Utilities',
+        requiredPermissions: ['transport:create', 'transport:read'],
+        visibleToRoles: ['ADMIN', 'COORDINATOR'],
+        isActive: true
+      },
+      {
+        id: 'emergency-department',
+        name: 'Emergency Department',
+        description: 'Emergency department optimization and coordination',
+        category: 'Tools and Utilities',
+        requiredPermissions: ['emergency:optimize'],
+        visibleToRoles: ['ADMIN', 'COORDINATOR', 'HOSPITAL_COORDINATOR'],
+        isActive: true
+      },
+      {
+        id: 'qr-code-system',
+        name: 'QR Code System',
+        description: 'Generate and scan QR codes for transport requests',
+        category: 'Tools and Utilities',
+        requiredPermissions: ['transport:read'],
+        visibleToRoles: ['ADMIN', 'COORDINATOR'],
         isActive: true
       },
       {
         id: 'offline-capabilities',
         name: 'Offline Capabilities',
         description: 'Access system features when offline',
-        category: 'Tools & Utilities',
+        category: 'Tools and Utilities',
         requiredPermissions: ['transport:read'],
         visibleToRoles: ['ADMIN', 'COORDINATOR', 'HOSPITAL_COORDINATOR'],
         isActive: true
       },
-
-      // Agency Portal
-      {
-        id: 'agency-portal',
-        name: 'Agency Portal',
-        description: 'Transport agency management and operations',
-        category: 'Agency Operations',
-        requiredPermissions: ['agency:profile', 'unit:manage'],
-        visibleToRoles: ['ADMIN', 'TRANSPORT_AGENCY'],
-        isActive: true
-      },
-
-      // Settings & Administration
       {
         id: 'settings',
         name: 'Settings',
         description: 'System configuration and module visibility controls',
-        category: 'Administration',
+        category: 'Tools and Utilities',
         requiredPermissions: ['settings:full', 'settings:limited'],
         visibleToRoles: ['ADMIN', 'COORDINATOR'],
         isActive: true
