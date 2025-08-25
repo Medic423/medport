@@ -12,8 +12,8 @@ export interface AuthRequest extends Request {
 export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers['authorization'];
   
-  // Demo mode support
-  if (authHeader === 'demo-token') {
+  // Demo mode support - handle both formats
+  if (authHeader === 'demo-token' || authHeader === 'Bearer demo-token') {
     console.log('AUTH: Demo mode authentication bypassed');
     req.user = {
       id: 'demo-user',

@@ -22,9 +22,14 @@ const StatusBoard: React.FC = () => {
   const loadTransportRequests = async () => {
     try {
       setLoading(true);
+      
+      // Check for demo mode and get appropriate token
+      const isDemoMode = localStorage.getItem('demoMode') === 'true';
+      const token = isDemoMode ? 'demo-token' : localStorage.getItem('token');
+
       const response = await fetch('/api/transport-requests?limit=100', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
       
@@ -85,11 +90,15 @@ const StatusBoard: React.FC = () => {
   // Update request status
   const handleStatusChange = async (requestId: string, newStatus: RequestStatus) => {
     try {
+      // Check for demo mode and get appropriate token
+      const isDemoMode = localStorage.getItem('demoMode') === 'true';
+      const token = isDemoMode ? 'demo-token' : localStorage.getItem('token');
+
       const response = await fetch(`/api/transport-requests/${requestId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ status: newStatus })
       });

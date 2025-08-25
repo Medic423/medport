@@ -62,9 +62,14 @@ const TransportRequestForm: React.FC<TransportRequestFormProps> = ({
   const loadFacilities = async () => {
     try {
       setLoading(true);
+      
+      // Check for demo mode and get appropriate token
+      const isDemoMode = localStorage.getItem('demoMode') === 'true';
+      const token = isDemoMode ? 'demo-token' : localStorage.getItem('token');
+
       const response = await fetch('/api/transport-requests/facilities/search?limit=100', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
       if (response.ok) {
@@ -102,11 +107,15 @@ const TransportRequestForm: React.FC<TransportRequestFormProps> = ({
     }
 
     try {
+      // Check for demo mode and get appropriate token
+      const isDemoMode = localStorage.getItem('demoMode') === 'true';
+      const token = isDemoMode ? 'demo-token' : localStorage.getItem('token');
+
       const response = await fetch(
         `/api/transport-requests/facilities/search?name=${encodeURIComponent(query)}&limit=20`,
         {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${token}`
           }
         }
       );

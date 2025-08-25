@@ -13,11 +13,15 @@ const TransportRequests: React.FC = () => {
 
   const handleCreateRequest = async (formData: TransportRequestFormData) => {
     try {
+      // Check for demo mode and get appropriate token
+      const isDemoMode = localStorage.getItem('demoMode') === 'true';
+      const token = isDemoMode ? 'demo-token' : localStorage.getItem('token');
+
       const response = await fetch('/api/transport-requests', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(formData)
       });
@@ -54,11 +58,15 @@ const TransportRequests: React.FC = () => {
     if (!editingRequest) return;
 
     try {
+      // Check for demo mode and get appropriate token
+      const isDemoMode = localStorage.getItem('demoMode') === 'true';
+      const token = isDemoMode ? 'demo-token' : localStorage.getItem('token');
+
       const response = await fetch(`/api/transport-requests/${editingRequest.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(formData)
       });
@@ -95,11 +103,15 @@ const TransportRequests: React.FC = () => {
     if (!duplicatingRequest) return;
 
     try {
+      // Check for demo mode and get appropriate token
+      const isDemoMode = localStorage.getItem('demoMode') === 'true';
+      const token = isDemoMode ? 'demo-token' : localStorage.getItem('token');
+
       const response = await fetch(`/api/transport-requests/${duplicatingRequest.id}/duplicate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(formData)
       });

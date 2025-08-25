@@ -51,9 +51,13 @@ const TransportRequestList: React.FC<TransportRequestListProps> = ({
         }
       });
 
+      // Check for demo mode and get appropriate token
+      const isDemoMode = localStorage.getItem('demoMode') === 'true';
+      const token = isDemoMode ? 'demo-token' : localStorage.getItem('token');
+
       const response = await fetch(`/api/transport-requests?${queryParams.toString()}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
       
@@ -104,11 +108,15 @@ const TransportRequestList: React.FC<TransportRequestListProps> = ({
 
   const handleStatusChange = async (requestId: string, newStatus: RequestStatus) => {
     try {
+      // Check for demo mode and get appropriate token
+      const isDemoMode = localStorage.getItem('demoMode') === 'true';
+      const token = isDemoMode ? 'demo-token' : localStorage.getItem('token');
+
       const response = await fetch(`/api/transport-requests/${requestId}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ status: newStatus })
       });
@@ -141,11 +149,15 @@ const TransportRequestList: React.FC<TransportRequestListProps> = ({
     if (!bulkAction || selectedRequests.length === 0) return;
 
     try {
+      // Check for demo mode and get appropriate token
+      const isDemoMode = localStorage.getItem('demoMode') === 'true';
+      const token = isDemoMode ? 'demo-token' : localStorage.getItem('token');
+
       const response = await fetch('/api/transport-requests/bulk-update', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           ids: selectedRequests,
