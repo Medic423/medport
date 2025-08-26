@@ -18,7 +18,7 @@ import AgencyPortal from './pages/AgencyPortal';
 import UnitManagement from './components/UnitManagement';
 import BidManagement from './components/BidManagement';
 import MatchingSystem from './components/MatchingSystem';
-import Help from './pages/Help';
+
 import MainLogin from './components/MainLogin';
 import { useRoleBasedAccess } from './hooks/useRoleBasedAccess';
 
@@ -199,7 +199,7 @@ function App() {
         {currentPage === 'unit-management' && <UnitManagement />}
         {currentPage === 'bid-management' && <BidManagement />}
         {currentPage === 'matching-system' && <MatchingSystem />}
-        {currentPage === 'help' && <Help />}
+
       </main>
     </div>
   );

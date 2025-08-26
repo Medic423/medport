@@ -259,7 +259,7 @@ export class SessionService {
         'cost:analyze',
         'agency:financial',
         'settings:limited',
-        'module:help'
+
       ],
       TRANSPORT_AGENCY: [
         // Agency-specific operations
