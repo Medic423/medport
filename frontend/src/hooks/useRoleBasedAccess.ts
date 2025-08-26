@@ -263,7 +263,7 @@ export const useRoleBasedAccess = () => {
       }
     } catch (err) {
       console.error('[ROLE_BASED_ACCESS] Landing page fetch error:', err);
-      return 'help'; // Fallback to help page
+      return 'status-board'; // Fallback to status-board instead of help
     }
   }, []);
 
@@ -294,7 +294,7 @@ export const useRoleBasedAccess = () => {
       }
     } catch (err) {
       console.error('[ROLE_BASED_ACCESS] Demo landing page fetch error:', err);
-      return 'help'; // Fallback to help page
+      return 'status-board'; // Fallback to status-board instead of help
     }
   }, []);
 

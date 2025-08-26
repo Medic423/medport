@@ -548,7 +548,8 @@ export class RoleBasedAccessService {
     const accessibleModules = this.getUserAccessibleModules(role, userPermissions);
     
     if (accessibleModules.length === 0) {
-      return 'help';
+      console.warn(`[ROLE_BASED_ACCESS] No accessible modules found for role: ${role}`);
+      return 'status-board'; // Default to status-board instead of help
     }
 
     return accessibleModules[0].id;
