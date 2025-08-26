@@ -320,14 +320,16 @@ export class RoleBasedAccessService {
   /**
    * Get module visibility settings for Transport Command
    */
-  static getModuleVisibilitySettings(): Record<string, { visible: boolean; roles: string[] }> {
+  static getModuleVisibilitySettings(): Record<string, { visible: boolean; roles: string[]; category: string; parentCategory?: string }> {
     const modules = this.getAvailableModules();
-    const settings: Record<string, { visible: boolean; roles: string[] }> = {};
+    const settings: Record<string, { visible: boolean; roles: string[]; category: string; parentCategory?: string }> = {};
 
     modules.forEach(module => {
       settings[module.id] = {
         visible: module.isActive,
-        roles: module.visibleToRoles
+        roles: module.visibleToRoles,
+        category: module.category,
+        parentCategory: undefined // No parent categories in current structure, but field is available for future use
       };
     });
 

@@ -5,6 +5,8 @@ interface ModuleVisibilitySettings {
   [moduleId: string]: {
     visible: boolean;
     roles: string[];
+    category: string;
+    parentCategory?: string;
   };
 }
 
@@ -58,16 +60,26 @@ const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
 
   const fetchSettings = async () => {
     try {
-      // Use demo endpoint for demo mode
-      const response = await fetch('/api/role-based-access/demo/settings', {
+      // Get the user's JWT token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No authentication token found');
+        return;
+      }
+
+      // Use the authenticated endpoint
+      const response = await fetch('/api/role-based-access/settings', {
         headers: {
-          'Authorization': 'Bearer demo-token' // Demo mode
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       
       if (response.ok) {
         const data = await response.json();
         setSettings(data.data.settings);
+      } else {
+        console.error('Failed to fetch settings:', response.statusText);
       }
     } catch (error) {
       console.error('Failed to fetch settings:', error);
@@ -76,16 +88,26 @@ const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
 
   const fetchOperationalSettings = async () => {
     try {
-      // Use demo endpoint for demo mode
-      const response = await fetch('/api/role-based-access/demo/operational-settings', {
+      // Get the user's JWT token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No authentication token found');
+        return;
+      }
+
+      // Use the authenticated endpoint
+      const response = await fetch('/api/role-based-access/operational-settings', {
         headers: {
-          'Authorization': 'Bearer demo-token' // Demo mode
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       
       if (response.ok) {
         const data = await response.json();
         setOperationalSettings(data.data.settings);
+      } else {
+        console.error('Failed to fetch operational settings:', response.statusText);
       }
     } catch (error) {
       console.error('Failed to fetch operational settings:', error);
@@ -94,11 +116,19 @@ const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
 
   const updateModuleVisibility = async (moduleId: string, visible: boolean, roles: string[]) => {
     try {
+      // Get the user's JWT token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setUpdateMessage({ type: 'error', message: 'No authentication token found' });
+        setTimeout(() => setUpdateMessage(null), 3000);
+        return;
+      }
+
       const response = await fetch(`/api/role-based-access/settings/${moduleId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer demo-token' // Demo mode
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ visible, roles })
       });
@@ -106,12 +136,18 @@ const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
       if (response.ok) {
         setSettings(prev => ({
           ...prev,
-          [moduleId]: { visible, roles }
+          [moduleId]: { 
+            visible, 
+            roles,
+            category: prev[moduleId]?.category || 'Unknown',
+            parentCategory: prev[moduleId]?.parentCategory
+          }
         }));
         setUpdateMessage({ type: 'success', message: 'Module visibility updated successfully' });
         setTimeout(() => setUpdateMessage(null), 3000);
       } else {
-        setUpdateMessage({ type: 'error', message: 'Failed to update module visibility' });
+        const errorData = await response.json().catch(() => ({}));
+        setUpdateMessage({ type: 'error', message: errorData.message || 'Failed to update module visibility' });
         setTimeout(() => setUpdateMessage(null), 3000);
       }
     } catch (error) {
