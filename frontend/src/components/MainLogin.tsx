@@ -34,13 +34,13 @@ const MainLogin: React.FC<MainLoginProps> = ({ onLoginSuccess }) => {
 
       switch (activeTab) {
         case 'transport-center':
-          endpoint = '/api/auth/demo/login';
+          endpoint = '/api/transport-center/login';
           break;
         case 'hospital':
           endpoint = '/api/hospital/login';
           break;
         case 'agency':
-          endpoint = '/api/agency/demo/login';
+          endpoint = '/api/agency/login';
           break;
       }
 
@@ -60,15 +60,25 @@ const MainLogin: React.FC<MainLoginProps> = ({ onLoginSuccess }) => {
       userData = await response.json();
       
       if (userData.success) {
-        // Store authentication data
-        localStorage.setItem('token', userData.data.token);
-        localStorage.setItem('userRole', userData.data.user.role);
-        localStorage.setItem('userEmail', userData.data.user.email);
+        // Store authentication data based on login type
+        if (activeTab === 'agency') {
+          // Agency-specific storage
+          localStorage.setItem('agencyToken', userData.data.token);
+          localStorage.setItem('agencyUser', JSON.stringify(userData.data.user));
+          localStorage.setItem('agency', JSON.stringify(userData.data.agency));
+          localStorage.setItem('userRole', userData.data.user.role);
+          localStorage.setItem('userEmail', userData.data.user.email);
+        } else {
+          // Transport Center/Hospital storage
+          localStorage.setItem('token', userData.data.token);
+          localStorage.setItem('userRole', userData.data.user.role);
+          localStorage.setItem('userEmail', userData.data.user.email);
+        }
         
-        // Determine landing page based on user role
+        // Determine landing page based on user role and login type
         let landingPage: string;
-        if (userData.data.user.isDemo) {
-          landingPage = await getDemoLandingPage();
+        if (activeTab === 'agency') {
+          landingPage = 'agency-portal'; // Agency users go to agency portal
         } else {
           landingPage = await getLandingPage(userData.data.token);
         }
