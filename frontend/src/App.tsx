@@ -18,6 +18,8 @@ import AgencyPortal from './pages/AgencyPortal';
 import UnitManagement from './components/UnitManagement';
 import BidManagement from './components/BidManagement';
 import MatchingSystem from './components/MatchingSystem';
+import QRCodeSystem from './pages/QRCodeSystem';
+import OfflineCapabilities from './pages/OfflineCapabilities';
 
 import MainLogin from './components/MainLogin';
 import { useRoleBasedAccess } from './hooks/useRoleBasedAccess';
@@ -199,6 +201,8 @@ function App() {
         {currentPage === 'unit-management' && <UnitManagement />}
         {currentPage === 'bid-management' && <BidManagement />}
         {currentPage === 'matching-system' && <MatchingSystem />}
+        {currentPage === 'qr-code-system' && <QRCodeSystem />}
+        {currentPage === 'offline-capabilities' && <OfflineCapabilities />}
 
       </main>
     </div>

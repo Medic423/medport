@@ -64,7 +64,7 @@ const BidManagement: React.FC = () => {
   });
 
   const agency = JSON.parse(localStorage.getItem('agency') || '{}');
-  const agencyToken = localStorage.getItem('agency_token');
+  const agencyToken = localStorage.getItem('agencyToken');
   const isDemoMode = localStorage.getItem('demoMode') === 'true';
 
   useEffect(() => {
