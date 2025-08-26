@@ -40,26 +40,24 @@ const DistanceMatrixAdmin: React.FC<DistanceMatrixAdminProps> = ({ facilities })
 
   const loadSystemStats = async () => {
     try {
-      if (facilities.some(f => f.id.startsWith('demo-'))) {
-        // Demo stats
-        setSystemStats({
-          totalEntries: 3,
-          averageDistance: 50.4,
-          averageTime: 58,
-          distanceRange: { min: 38.7, max: 67.3 },
-          timeRange: { min: 44, max: 78 },
-          facilityCount: 5,
-          lastUpdated: new Date().toISOString(),
-          cacheSize: 0,
-          cacheHitRate: 0.8
-        });
-        return;
+      // Get authentication token
+      const token = localStorage.getItem('token');
+      const demoMode = localStorage.getItem('demoMode');
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (demoMode === 'true') {
+        headers['Authorization'] = 'Bearer demo-token';
+      } else if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      } else {
+        throw new Error('No authentication token found');
       }
 
       const response = await fetch('/api/distance/stats', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+        headers
       });
       
       if (response.ok) {
@@ -88,16 +86,7 @@ const DistanceMatrixAdmin: React.FC<DistanceMatrixAdminProps> = ({ facilities })
         return;
       }
 
-      if (facilities.some(f => f.id.startsWith('demo-'))) {
-        // Demo validation
-        const demoResult: ValidationResult = {
-          isValid: true,
-          errors: [],
-          warnings: ['Demo mode: Validation is simulated']
-        };
-        setValidationResult(demoResult);
-        return;
-      }
+
 
       const response = await fetch('/api/distance/validate', {
         method: 'POST',
@@ -130,16 +119,7 @@ const DistanceMatrixAdmin: React.FC<DistanceMatrixAdminProps> = ({ facilities })
     try {
       setLoading(true);
       
-      if (facilities.some(f => f.id.startsWith('demo-'))) {
-        // Demo optimization
-        const demoResult: OptimizationResult = {
-          entriesRemoved: 0,
-          entriesUpdated: 3,
-          inconsistencies: ['Demo mode: Optimization is simulated']
-        };
-        setOptimizationResult(demoResult);
-        return;
-      }
+
 
       const response = await fetch('/api/distance/optimize', {
         method: 'POST',
@@ -171,10 +151,7 @@ const DistanceMatrixAdmin: React.FC<DistanceMatrixAdminProps> = ({ facilities })
     try {
       setLoading(true);
       
-      if (facilities.some(f => f.id.startsWith('demo-'))) {
-        alert('Demo mode: Cache cleared (simulated)');
-        return;
-      }
+
 
       const response = await fetch('/api/distance/cache', {
         method: 'DELETE',
@@ -201,46 +178,26 @@ const DistanceMatrixAdmin: React.FC<DistanceMatrixAdminProps> = ({ facilities })
     try {
       setLoading(true);
       
-      if (facilities.some(f => f.id.startsWith('demo-'))) {
-        // Demo export
-        const demoData = {
-          facilities: facilities,
-          distances: [
-            { from: 'demo-1', to: 'demo-2', distance: 45.2, time: 52 },
-            { from: 'demo-1', to: 'demo-3', distance: 38.7, time: 44 },
-            { from: 'demo-2', to: 'demo-4', distance: 67.3, time: 78 }
-          ],
-          stats: systemStats
-        };
-        
-        if (format === 'csv') {
-          // Simple CSV export for demo
-          const csvContent = 'Facility,Type,City,State\n' +
-            facilities.map(f => `${f.name},${f.type},${f.city},${f.state}`).join('\n');
-          
-          const blob = new Blob([csvContent], { type: 'text/csv' });
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'demo-system-data.csv';
-          a.click();
-          window.URL.revokeObjectURL(url);
-        } else {
-          const blob = new Blob([JSON.stringify(demoData, null, 2)], { type: 'application/json' });
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'demo-system-data.json';
-          a.click();
-          window.URL.revokeObjectURL(url);
-        }
-        return;
+
+
+      // Get authentication token
+      const token = localStorage.getItem('token');
+      const demoMode = localStorage.getItem('demoMode');
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (demoMode === 'true') {
+        headers['Authorization'] = 'Bearer demo-token';
+      } else if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      } else {
+        throw new Error('No authentication token found');
       }
 
       const response = await fetch(`/api/distance/export?format=${format}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+        headers
       });
 
       if (response.ok) {

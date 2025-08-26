@@ -18,71 +18,32 @@ const DistanceMatrix: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      // For now, use demo data since facilities API doesn't exist yet
-      const demoFacilities: Facility[] = [
-        {
-          id: 'demo-1',
-          name: 'UPMC Altoona Hospital',
-          type: 'HOSPITAL',
-          address: '620 Howard Avenue',
-          city: 'Altoona',
-          state: 'PA',
-          zipCode: '16601',
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        },
-        {
-          id: 'demo-2',
-          name: 'Conemaugh Memorial Medical Center',
-          type: 'HOSPITAL',
-          address: '1086 Franklin Street',
-          city: 'Johnstown',
-          state: 'PA',
-          zipCode: '15905',
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        },
-        {
-          id: 'demo-3',
-          name: 'Penn Highlands DuBois',
-          type: 'HOSPITAL',
-          address: '100 Hospital Avenue',
-          city: 'DuBois',
-          state: 'PA',
-          zipCode: '15801',
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        },
-        {
-          id: 'demo-4',
-          name: 'Mount Nittany Medical Center',
-          type: 'HOSPITAL',
-          address: '1800 East Park Avenue',
-          city: 'State College',
-          state: 'PA',
-          zipCode: '16803',
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        },
-        {
-          id: 'demo-5',
-          name: 'Geisinger Medical Center',
-          type: 'HOSPITAL',
-          address: '100 North Academy Avenue',
-          city: 'Danville',
-          state: 'PA',
-          zipCode: '17822',
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        }
-      ];
+      // Get authentication token
+      const token = localStorage.getItem('token');
+      const demoMode = localStorage.getItem('demoMode');
       
-      setFacilities(demoFacilities);
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (demoMode === 'true') {
+        headers['Authorization'] = 'Bearer demo-token';
+      } else if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      } else {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await fetch('/api/facilities', {
+        headers
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to load facilities: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      setFacilities(result.data);
       setLoading(false);
     } catch (error) {
       console.error('Error loading facilities:', error);
