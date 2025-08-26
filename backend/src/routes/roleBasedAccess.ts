@@ -217,6 +217,117 @@ router.get('/operational-settings', authenticateToken, async (req: any, res: Res
   }
 });
 
+// Get category-level visibility settings (Transport Command only)
+router.get('/category-settings', authenticateToken, async (req: any, res: Response) => {
+  try {
+    const userRole = req.user.role;
+    
+    // Only ADMIN (Transport Command) can view category settings
+    if (userRole !== 'ADMIN') {
+      return res.status(403).json({
+        success: false,
+        message: 'Insufficient permissions to view category settings'
+      });
+    }
+    
+    const categorySettings = RoleBasedAccessService.getCategoryVisibilitySettings();
+    const modulesByCategory = RoleBasedAccessService.getModulesByCategory();
+    
+    res.json({
+      success: true,
+      data: {
+        categorySettings,
+        modulesByCategory,
+        availableRoles: ['ADMIN', 'COORDINATOR', 'BILLING_STAFF', 'TRANSPORT_AGENCY', 'HOSPITAL_COORDINATOR']
+      }
+    });
+  } catch (error) {
+    console.error('[ROLE_BASED_ACCESS] Category settings error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get category settings data'
+    });
+  }
+});
+
+// Update category visibility settings (Transport Command only)
+router.put('/category-settings/:category', authenticateToken, async (req: any, res: Response) => {
+  try {
+    const { category } = req.params;
+    const { visible, roles } = req.body;
+    const userRole = req.user.role;
+    
+    // Only ADMIN (Transport Command) can update category settings
+    if (userRole !== 'ADMIN') {
+      return res.status(403).json({
+        success: false,
+        message: 'Insufficient permissions to update category settings'
+      });
+    }
+    
+    // Validate input
+    if (typeof visible !== 'boolean' || !Array.isArray(roles)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid input: visible must be boolean, roles must be array'
+      });
+    }
+    
+    await RoleBasedAccessService.updateCategoryVisibility(category, visible, roles);
+    
+    res.json({
+      success: true,
+      message: 'Category visibility updated successfully',
+      data: {
+        category,
+        visible,
+        roles
+      }
+    });
+  } catch (error) {
+    console.error('[ROLE_BASED_ACCESS] Update category settings error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update category visibility'
+    });
+  }
+});
+
+// Get enhanced settings with both module and category information (Transport Command only)
+router.get('/enhanced-settings', authenticateToken, async (req: any, res: Response) => {
+  try {
+    const userRole = req.user.role;
+    
+    // Only ADMIN (Transport Command) can view enhanced settings
+    if (userRole !== 'ADMIN') {
+      return res.status(403).json({
+        success: false,
+        message: 'Insufficient permissions to view enhanced settings'
+      });
+    }
+    
+    const moduleSettings = RoleBasedAccessService.getModuleVisibilitySettings();
+    const categorySettings = RoleBasedAccessService.getCategoryVisibilitySettings();
+    const modulesByCategory = RoleBasedAccessService.getModulesByCategory();
+    
+    res.json({
+      success: true,
+      data: {
+        moduleSettings: moduleSettings,
+        categorySettings: categorySettings,
+        modulesByCategory: modulesByCategory,
+        availableRoles: ['ADMIN', 'COORDINATOR', 'BILLING_STAFF', 'TRANSPORT_AGENCY', 'HOSPITAL_COORDINATOR']
+      }
+    });
+  } catch (error) {
+    console.error('[ROLE_BASED_ACCESS] Enhanced settings error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get enhanced settings data'
+    });
+  }
+});
+
 // Demo mode support - handles both demo-token and JWT tokens from demo login
 router.get('/demo/navigation', (req: Request, res: Response) => {
   try {

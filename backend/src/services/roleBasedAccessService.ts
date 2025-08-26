@@ -337,6 +337,94 @@ export class RoleBasedAccessService {
   }
 
   /**
+   * Get category-level visibility settings
+   * Returns a map of categories with their visibility status and associated modules
+   */
+  static getCategoryVisibilitySettings(): Record<string, { 
+    visible: boolean; 
+    modules: string[]; 
+    moduleCount: number;
+    visibleModuleCount: number;
+  }> {
+    const modules = this.getAvailableModules();
+    const categoryMap: Record<string, { 
+      visible: boolean; 
+      modules: string[]; 
+      moduleCount: number;
+      visibleModuleCount: number;
+    }> = {};
+
+    // Group modules by category
+    modules.forEach(module => {
+      if (!categoryMap[module.category]) {
+        categoryMap[module.category] = {
+          visible: true, // Default to visible
+          modules: [],
+          moduleCount: 0,
+          visibleModuleCount: 0
+        };
+      }
+      
+      categoryMap[module.category].modules.push(module.id);
+      categoryMap[module.category].moduleCount++;
+      
+      if (module.isActive) {
+        categoryMap[module.category].visibleModuleCount++;
+      }
+    });
+
+    // Determine category visibility based on module visibility
+    Object.keys(categoryMap).forEach(category => {
+      const cat = categoryMap[category];
+      // Category is visible if at least one module is visible
+      cat.visible = cat.visibleModuleCount > 0;
+    });
+
+    return categoryMap;
+  }
+
+  /**
+   * Get modules by category
+   * Returns a map of categories with their associated modules
+   */
+  static getModulesByCategory(): Record<string, ModuleAccess[]> {
+    const modules = this.getAvailableModules();
+    const categoryMap: Record<string, ModuleAccess[]> = {};
+
+    modules.forEach(module => {
+      if (!categoryMap[module.category]) {
+        categoryMap[module.category] = [];
+      }
+      categoryMap[module.category].push(module);
+    });
+
+    return categoryMap;
+  }
+
+  /**
+   * Update category visibility (affects all modules in the category)
+   */
+  static async updateCategoryVisibility(
+    category: string, 
+    visible: boolean, 
+    roles: string[]
+  ): Promise<void> {
+    const modules = this.getAvailableModules();
+    const categoryModules = modules.filter(module => module.category === category);
+    
+    // Update visibility for all modules in the category
+    for (const module of categoryModules) {
+      await this.updateModuleVisibility(module.id, visible, roles);
+    }
+
+    console.log(`[ROLE_BASED_ACCESS] Category ${category} visibility updated:`, {
+      visible,
+      roles,
+      affectedModules: categoryModules.length
+    });
+  }
+
+  /**
    * Get settings access level for a user role
    */
   static getSettingsAccessLevel(role: string): 'full' | 'limited' | 'none' {
