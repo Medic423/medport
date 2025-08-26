@@ -8,6 +8,27 @@ This document provides demo credentials for testing the MedPort Transport Center
 
 ## Demo User Types
 
+### 🚀 **Developer Account (Full Access)**
+**Role**: System developer with complete access to all functions
+**Access**: **FULL SYSTEM ACCESS** - All modules, settings, and administrative functions
+
+**Demo Credentials:**
+- **Email**: `developer@medport-transport.com`
+- **Password**: `dev123`
+- **Role**: `ADMIN`
+- **Access Level**: **SUPER ADMIN** - Complete system control
+
+**What You Can Test:**
+- **ALL SYSTEM FUNCTIONS** - Complete access to every module
+- System administration and user management
+- Module visibility settings and role-based access control
+- All transport coordination features
+- Complete analytics and reporting
+- Agency and hospital management
+- Route optimization and real-time tracking
+- Settings and configuration management
+- **Development and testing of all features**
+
 ### 🏥 **Transport Center Coordinators**
 **Role**: System administrators who manage the overall transport coordination
 **Access**: Full system access, dispatch management, analytics, and coordination tools
@@ -16,6 +37,7 @@ This document provides demo credentials for testing the MedPort Transport Center
 - **Email**: `coordinator@medport-transport.com`
 - **Password**: `demo123`
 - **Role**: `COORDINATOR`
+- **Access Level**: High - Most system functions
 
 **What You Can Test:**
 - System overview and dashboard
@@ -35,6 +57,7 @@ This document provides demo credentials for testing the MedPort Transport Center
 - **Password**: `demo123`
 - **Role**: `HOSPITAL_COORDINATOR`
 - **Hospital**: UPMC Altoona
+- **Access Level**: Medium - Hospital operations focus
 
 **What You Can Test:**
 - Create transport requests
@@ -53,6 +76,7 @@ This document provides demo credentials for testing the MedPort Transport Center
 - **Password**: `demo123`
 - **Role**: `ADMIN`
 - **Agency**: Demo Transport Agency
+- **Access Level**: High - Agency management focus
 
 **What You Can Test:**
 - Unit management and status updates
@@ -70,6 +94,7 @@ This document provides demo credentials for testing the MedPort Transport Center
 - **Email**: `billing@medport.com`
 - **Password**: `demo123`
 - **Role**: `BILLING_STAFF`
+- **Access Level**: Medium - Financial operations focus
 
 **What You Can Test:**
 - Financial planning and analysis
@@ -81,8 +106,8 @@ This document provides demo credentials for testing the MedPort Transport Center
 ## How to Use Demo Credentials
 
 ### **1. Access the Login Screen**
-1. Navigate to the MedPort application
-2. Click the "Login" button in the header
+1. Navigate to the MedPort application at http://localhost:3002
+2. The login page is now the default landing page
 3. You'll see three tabs: Transport Center, Hospital, and Agency
 
 ### **2. Select Your User Type**
@@ -97,12 +122,33 @@ This document provides demo credentials for testing the MedPort Transport Center
 4. The system will automatically recognize demo credentials and create appropriate user sessions
 
 ### **4. Demo Credentials Table**
-| User Type | Email | Password | Role | Access Level |
-|-----------|-------|----------|------|--------------|
-| Transport Center | `coordinator@medport-transport.com` | `demo123` | `COORDINATOR` | Full system access |
-| Hospital | `coordinator@upmc-altoona.com` | `demo123` | `HOSPITAL_COORDINATOR` | Hospital operations |
-| Agency | `demo@agency.com` | `demo123` | `ADMIN` | Agency management |
-| Billing Staff | `billing@medport.com` | `demo123` | `BILLING_STAFF` | Financial operations |
+| User Type | Email | Password | Role | Access Level | Primary Use |
+|-----------|-------|----------|------|--------------|-------------|
+| **Developer** | `developer@medport-transport.com` | `dev123` | `ADMIN` | **SUPER ADMIN** | **Development & Testing** |
+| Transport Center | `coordinator@medport-transport.com` | `demo123` | `COORDINATOR` | High | System coordination |
+| Hospital | `coordinator@upmc-altoona.com` | `demo123` | `HOSPITAL_COORDINATOR` | Medium | Hospital operations |
+| Agency | `demo@agency.com` | `demo123` | `ADMIN` | High | Agency management |
+| Billing Staff | `billing@medport.com` | `demo123` | `BILLING_STAFF` | Medium | Financial operations |
+
+## Current System Status
+
+### **✅ Available Demo Endpoints:**
+1. **Transport Center Demo**: `/api/transport-center/demo/login` - Creates COORDINATOR role
+2. **Hospital Demo**: `/api/hospital/login` - Supports demo credentials for HOSPITAL_COORDINATOR role
+3. **Agency Demo**: `/api/agency/demo/login` - Creates ADMIN role
+
+### **🔧 Development Access:**
+- **Developer Account**: `developer@medport-transport.com` / `dev123` provides **FULL ACCESS** to all system functions
+- **Role**: ADMIN with complete system control
+- **Purpose**: Development, testing, and system administration
+- **Access**: All modules, settings, and administrative functions
+
+### **📋 Module Access by Role:**
+- **ADMIN**: Complete access to all modules and settings
+- **COORDINATOR**: High-level access to most system functions
+- **HOSPITAL_COORDINATOR**: Hospital-focused operations
+- **BILLING_STAFF**: Financial and reporting functions
+- **TRANSPORT_AGENCY**: Agency-specific operations
 
 ## Demo Data Available
 
@@ -131,6 +177,13 @@ This document provides demo credentials for testing the MedPort Transport Center
 - Historical performance data
 
 ## Testing Scenarios
+
+### **Developer Testing (Full Access)**
+1. **Complete System Access**: Test all modules and functions
+2. **Role-Based Access Control**: Verify module visibility settings
+3. **System Administration**: Test user management and settings
+4. **All Features**: Comprehensive testing of every system component
+5. **Development Workflow**: Full access for continued development
 
 ### **Transport Center Testing**
 1. **System Overview**: View total transports, pending requests, and active units
@@ -207,11 +260,12 @@ This document provides demo credentials for testing the MedPort Transport Center
 ## Next Steps
 
 ### **Immediate Testing**
-1. Test all four user types with demo credentials from the table above
-2. Verify navigation and routing between different sections
-3. Test offline capabilities and data synchronization
-4. Validate analytics and reporting functionality
-5. Test role-based access control and Module Visibility settings
+1. **Start with Developer Account**: Use `developer@medport-transport.com` / `dev123` for full access
+2. Test all four user types with demo credentials from the table above
+3. Verify navigation and routing between different sections
+4. Test offline capabilities and data synchronization
+5. Validate analytics and reporting functionality
+6. Test role-based access control and Module Visibility settings
 
 ### **Production Preparation**
 1. Set up real user authentication
@@ -229,6 +283,8 @@ This document provides demo credentials for testing the MedPort Transport Center
 
 ## Conclusion
 
-The demo credentials provide a comprehensive testing environment for the MedPort Transport Center system. Use these credentials to explore all features, test different user roles, and validate the system's functionality before production deployment.
+The demo credentials provide a comprehensive testing environment for the MedPort Transport Center system. The **Developer Account** (`developer@medport-transport.com` / `dev123`) provides **FULL ACCESS** to all system functions for development and testing purposes.
+
+Use these credentials to explore all features, test different user roles, and validate the system's functionality before production deployment.
 
 For questions or support, contact the development team or refer to the main documentation.

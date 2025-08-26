@@ -1203,6 +1203,109 @@ socket.io
 - Regular code reviews
 - Automated testing pipeline
 
+---
+
+## 🚀 **Phase 6.5: Plan to Restore Clean, Dedicated Login Flow and RBAC-Driven Landing**
+
+**Date Started**: August 26, 2025  
+**Status**: 🔄 **PLANNING PHASE**  
+**Previous Phase**: Phase 6.4.4 - Agency Portal Integration ✅ **COMPLETED**
+
+### **Problem Statement:**
+The current system has login functionality mixed into the main navigation bar, causing:
+- Complex state management issues
+- localStorage conflicts between authentication and navigation
+- Confusing user experience with login options always visible
+- Navigation refresh problems due to mixed state
+
+### **Root Cause Analysis:**
+1. **Login Mixed with Main Navigation**: Login was integrated into the main navigation bar instead of being a separate, dedicated page
+2. **State Management Complexity**: Authentication state was mixed with navigation state, creating complex bugs
+3. **User Experience Confusion**: Users saw login options mixed with operational navigation
+4. **Architectural Issues**: Violation of separation of concerns principle
+
+### **Solution Approach:**
+Implement a clean, dedicated login flow with proper separation between authentication and application navigation.
+
+### **Phase 6.5 Implementation Plan:**
+
+#### **Phase 1: Dedicated Login Page (Restore, No Navbar Login)**
+- **Objective**: Create/restore a dedicated login route/page as the app's entry point
+- **Components**: 
+  - `MainLogin.tsx` as the entry point (not via navbar)
+  - Remove any login button from the primary navigation
+- **Authentication Flows Supported**:
+  - Transport Center
+  - Hospitals  
+  - Agencies
+  - Developer/Demo bypass (only on login page, never in navbar)
+- **Acceptance Criteria**:
+  - Visiting the root shows the login page
+  - No login elements appear in the main navbar
+
+#### **Phase 2: Post-Login Routing (Role- and Visibility-Aware)**
+- **Objective**: Implement single post-auth router with role-based landing
+- **Implementation**:
+  - Read userType + role from login result or demo credentials mapping
+  - Load module visibility via `useRoleBasedAccess` or corresponding API
+  - Determine "first accessible module" as the landing page
+- **Role-to-Landing Examples**:
+  - Transport Center (Command): `status-board`
+  - Hospitals: `transport-requests` or agency/hospital dashboard
+  - Agencies: `agency-portal`
+- **Acceptance Criteria**:
+  - After login, user lands on correct module for their role and visibility
+  - Refresh preserves current page without falling back to non-existent "home"
+
+#### **Phase 3: Module Visibility + RBAC Re-Enable (Minimal Viable)**
+- **Objective**: Reconnect Settings to confirm visibility is flowing
+- **Implementation**:
+  - Only ADMIN/Command sees full Settings
+  - Coordinators/Hospitals/Agencies see minimal appropriate set
+- **Acceptance Criteria**:
+  - Toggling visibility in Settings affects navbar modules
+  - Navbar hides modules based on visibility settings
+
+#### **Phase 4: Developer/Demo Access (Safe, Isolated)**
+- **Objective**: Add developer/demo option safely isolated to login page
+- **Implementation**:
+  - Available only on login page (not navbar)
+  - Either "Developer (Bypass)" button or "Command" preset in Transport Center path
+  - Clear visual indicator on login page only
+- **Acceptance Criteria**:
+  - Demo/dev mode does not pollute application navigation
+  - Switching off demo resets auth state cleanly
+
+#### **Phase 5: Stability, Documentation, and Checkpoints**
+- **Objective**: Add guards and documentation
+- **Implementation**:
+  - Avoid storing invalid `currentPage` in localStorage
+  - Default to first visible module
+  - Keep login state separate from navigation state
+- **Documentation**: Update `medport_plan.md` with changes after each phase confirmation
+
+### **Implementation Order and Checkpoints:**
+1. **Phase 1**: Dedicated login page as landing (test → confirm)
+2. **Phase 2**: Post-login routing to role/visibility-based landing (test → confirm)  
+3. **Phase 3**: Re-enable module visibility (minimal path) (test → confirm)
+4. **Phase 4**: Add developer/demo only on login page (test → confirm)
+5. **Phase 5**: Final QA + documentation updates (after confirmation)
+
+### **Technical Notes:**
+- Use `demo_credentials.md` to map Transport Center, Hospital, Agency (and Command) flows
+- Keep current clean navbar; no login or developer buttons in it
+- Maintain separation between authentication state and navigation state
+- Each phase requires user testing and confirmation before proceeding
+
+### **Success Criteria:**
+- ✅ Clean separation between login and main application
+- ✅ Role-based landing pages based on module visibility
+- ✅ No localStorage conflicts between auth and navigation
+- ✅ Developer/demo access isolated to login page only
+- ✅ Settings module controls navbar visibility correctly
+
+**Ready to proceed with Phase 1: Dedicated Login Page Implementation** 🚪🔐
+
 ### Current System Architecture
 - **Frontend**: React + Vite + Tailwind CSS (Port 3002)
 - **Backend**: Node.js + Express + TypeScript (Port 5001)

@@ -56,16 +56,16 @@ const MainLogin: React.FC<MainLoginProps> = ({ onNavigate }) => {
 
       switch (activeTab) {
         case 'transport-center':
-          endpoint = '/api/transport-center/login';
-          redirectPage = 'home';
+          endpoint = '/api/auth/demo/login';
+          redirectPage = 'status-board';
           break;
         case 'hospital':
           endpoint = '/api/hospital/login';
-          redirectPage = 'home';
+          redirectPage = 'status-board';
           break;
         case 'agency':
-          endpoint = '/api/agency/login';
-          redirectPage = 'home';
+          endpoint = '/api/agency/demo/login';
+          redirectPage = 'status-board';
           break;
       }
 

@@ -303,4 +303,135 @@ router.get('/users/stats', authenticateToken, requireRole(['ADMIN']), async (req
   }
 });
 
+// Demo login for development and testing
+router.post('/demo/login', async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
+    
+    console.log('[AUTH-DEMO-LOGIN] Demo login attempt:', { email });
+
+    // Check if this is a developer demo credential
+    if (email === 'developer@medport-transport.com' && password === 'dev123') {
+      console.log('[AUTH-DEMO-LOGIN] Developer credentials detected, creating developer session');
+      
+      // Create developer user data
+      const developerUser = {
+        id: 'developer-001',
+        name: 'System Developer',
+        email: 'developer@medport-transport.com',
+        role: 'ADMIN'
+      };
+
+      // Generate demo token
+      const token = jwt.sign(
+        { 
+          id: developerUser.id, 
+          email: developerUser.email, 
+          role: developerUser.role,
+          isDemo: true,
+          isDeveloper: true
+        },
+        process.env.JWT_SECRET!,
+        { expiresIn: '24h' }
+      );
+
+      console.log('[AUTH-DEMO-LOGIN] Developer login successful');
+
+      return res.json({
+        success: true,
+        message: 'Developer demo login successful',
+        data: {
+          user: developerUser,
+          token: token
+        }
+      });
+    }
+
+    // Check if this is a regular demo credential
+    if (email === 'coordinator@medport-transport.com' && password === 'demo123') {
+      console.log('[AUTH-DEMO-LOGIN] Coordinator demo credentials detected');
+      
+      // Create coordinator user data
+      const coordinatorUser = {
+        id: 'demo-coordinator-001',
+        name: 'Demo Transport Coordinator',
+        email: 'coordinator@medport-transport.com',
+        role: 'COORDINATOR'
+      };
+
+      // Generate demo token
+      const token = jwt.sign(
+        { 
+          id: coordinatorUser.id, 
+          email: coordinatorUser.email, 
+          role: coordinatorUser.role,
+          isDemo: true
+        },
+        process.env.JWT_SECRET!,
+        { expiresIn: '24h' }
+      );
+
+      console.log('[AUTH-DEMO-LOGIN] Coordinator demo login successful');
+
+      return res.json({
+        success: true,
+        message: 'Coordinator demo login successful',
+        data: {
+          user: coordinatorUser,
+          token: token
+        }
+      });
+    }
+
+    // Check if this is a billing staff demo credential
+    if (email === 'billing@medport.com' && password === 'demo123') {
+      console.log('[AUTH-DEMO-LOGIN] Billing staff demo credentials detected');
+      
+      // Create billing staff user data
+      const billingUser = {
+        id: 'demo-billing-001',
+        name: 'Demo Billing Staff',
+        email: 'billing@medport.com',
+        role: 'BILLING_STAFF'
+      };
+
+      // Generate demo token
+      const token = jwt.sign(
+        { 
+          id: billingUser.id, 
+          email: billingUser.email, 
+          role: billingUser.role,
+          isDemo: true
+        },
+        process.env.JWT_SECRET!,
+        { expiresIn: '24h' }
+      );
+
+      console.log('[AUTH-DEMO-LOGIN] Billing staff demo login successful');
+
+      return res.json({
+        success: true,
+        message: 'Billing staff demo login successful',
+        data: {
+          user: billingUser,
+          token: token
+        }
+      });
+    }
+
+    // If no demo credentials match, return error
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid demo credentials'
+    });
+
+  } catch (error) {
+    console.error('[AUTH-DEMO-LOGIN] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+});
+
 export default router;
