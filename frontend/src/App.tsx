@@ -25,6 +25,16 @@ import AgencyPortal from './pages/AgencyPortal';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<'home' | 'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system' | 'real-time-tracking' | 'analytics' | 'offline-capabilities' | 'login' | 'settings' | 'help' | 'agency-portal'>('home');
+  const [isDemoMode, setIsDemoMode] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  // Check demo mode and user role on mount
+  React.useEffect(() => {
+    const demoMode = localStorage.getItem('demoMode') === 'true';
+    const storedUserRole = localStorage.getItem('userRole');
+    setIsDemoMode(demoMode);
+    setUserRole(storedUserRole);
+  }, []);
 
   return (
     <div className="App">
@@ -37,12 +47,53 @@ function App() {
             </div>
             <div className="flex items-center space-x-4">
               <OfflineIndicator showDetails={true} />
-              <button
-                onClick={() => setCurrentPage('login')}
-                className="px-3 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-500 hover:text-white"
-              >
-                Login
-              </button>
+              
+              {/* Developer Mode Button - Show when not in demo mode */}
+              {!isDemoMode && (
+                <button
+                  onClick={() => {
+                    localStorage.setItem('demoMode', 'true');
+                    localStorage.setItem('userRole', 'DEVELOPER');
+                    window.location.reload();
+                  }}
+                  className="px-3 py-2 rounded-md text-sm font-medium bg-yellow-600 text-white hover:bg-yellow-700"
+                >
+                  Developer Mode
+                </button>
+              )}
+              
+              {/* Demo Mode Indicator - Show when in demo mode */}
+              {isDemoMode && (
+                <div className="flex items-center space-x-2">
+                  <span className="px-3 py-2 rounded-md text-sm font-medium bg-green-600 text-white">
+                    Demo Mode: {userRole || 'USER'}
+                  </span>
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem('demoMode');
+                      localStorage.removeItem('userRole');
+                      localStorage.removeItem('token');
+                      localStorage.removeItem('hospitalToken');
+                      localStorage.removeItem('transportCenterToken');
+                      localStorage.removeItem('agencyToken');
+                      window.location.reload();
+                    }}
+                    className="px-3 py-2 rounded-md text-sm font-medium bg-red-600 text-white hover:bg-red-700"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
+              
+              {/* Login Button - Show when not in demo mode */}
+              {!isDemoMode && (
+                <button
+                  onClick={() => setCurrentPage('login')}
+                  className="px-3 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-500 hover:text-white"
+                >
+                  Login
+                </button>
+              )}
 
             </div>
             <div className="flex space-x-2">
