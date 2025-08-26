@@ -1,105 +1,93 @@
 import React, { useState } from 'react';
+import { useRoleBasedAccess } from '../hooks/useRoleBasedAccess';
 import { 
+  CogIcon, 
   BuildingOfficeIcon, 
   TruckIcon, 
-  CogIcon,
-  EyeIcon,
-  EyeSlashIcon,
-  ArrowRightIcon,
-  InformationCircleIcon
+  EyeIcon, 
+  EyeSlashIcon, 
+  ArrowRightIcon 
 } from '@heroicons/react/24/outline';
 
-interface LoginData {
-  email: string;
-  password: string;
-}
-
 interface MainLoginProps {
-  onNavigate: (page: string) => void;
+  onLoginSuccess: (userData: any) => void;
 }
 
-const MainLogin: React.FC<MainLoginProps> = ({ onNavigate }) => {
+const MainLogin: React.FC<MainLoginProps> = ({ onLoginSuccess }) => {
   const [activeTab, setActiveTab] = useState<'transport-center' | 'hospital' | 'agency'>('transport-center');
-  const [formData, setFormData] = useState<LoginData>({
-    email: '',
-    password: ''
-  });
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState('');
-  // Demo info state removed for security
-
-  const validateForm = (): boolean => {
-    if (!formData.email.trim() || !formData.password) {
-      setSubmitError('Email and password are required');
-      return false;
-    }
-    return true;
-  };
-
-  const handleInputChange = (field: keyof LoginData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (submitError) setSubmitError('');
-  };
+  
+  const { getLandingPage, getDemoLandingPage } = useRoleBasedAccess();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm()) return;
-
-    setIsSubmitting(true);
-    setSubmitError('');
+    setLoading(true);
+    setError(null);
 
     try {
-      let endpoint = '';
-      let redirectPage = '';
+      let endpoint: string;
+      let userData: any;
 
       switch (activeTab) {
         case 'transport-center':
           endpoint = '/api/auth/demo/login';
-          redirectPage = 'status-board';
           break;
         case 'hospital':
           endpoint = '/api/hospital/login';
-          redirectPage = 'status-board';
           break;
         case 'agency':
           endpoint = '/api/agency/demo/login';
-          redirectPage = 'status-board';
           break;
       }
 
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
       });
 
-      const result = await response.json();
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Login failed');
+      }
 
-      if (result.success) {
+      userData = await response.json();
+      
+      if (userData.success) {
         // Store authentication data
-        const tokenKey = `${activeTab}Token`;
-        const userKey = `${activeTab}User`;
-        const orgKey = activeTab === 'agency' ? 'agency' : 
-                      activeTab === 'hospital' ? 'hospital' : 'organization';
+        localStorage.setItem('token', userData.data.token);
+        localStorage.setItem('userRole', userData.data.user.role);
+        localStorage.setItem('userEmail', userData.data.user.email);
         
-        localStorage.setItem(tokenKey, result.data.token);
-        localStorage.setItem(userKey, JSON.stringify(result.data.user));
-        if (result.data[orgKey]) {
-          localStorage.setItem(orgKey, JSON.stringify(result.data[orgKey]));
+        // Determine landing page based on user role
+        let landingPage: string;
+        if (userData.data.user.isDemo) {
+          landingPage = await getDemoLandingPage();
+        } else {
+          landingPage = await getLandingPage(userData.data.token);
         }
         
-        // Redirect to appropriate dashboard
-        onNavigate(redirectPage);
+        console.log('[MAIN_LOGIN] User will land on:', landingPage);
+        
+        // Store landing page for App.tsx to use
+        localStorage.setItem('landingPage', landingPage);
+        
+        // Call the success callback with the user data
+        onLoginSuccess(userData.data.user);
       } else {
-        setSubmitError(result.message || 'Login failed');
+        throw new Error(userData.message || 'Login failed');
       }
-    } catch (error) {
-      console.error('Login error:', error);
-      setSubmitError('Network error. Please try again.');
+    } catch (err) {
+      console.error('[MAIN_LOGIN] Login error:', err);
+      setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
@@ -186,8 +174,8 @@ const MainLogin: React.FC<MainLoginProps> = ({ onNavigate }) => {
                   type="email"
                   autoComplete="email"
                   required
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter your email"
                 />
@@ -204,8 +192,8 @@ const MainLogin: React.FC<MainLoginProps> = ({ onNavigate }) => {
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="current-password"
                     required
-                    value={formData.password}
-                    onChange={(e) => handleInputChange('password', e.target.value)}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter your password"
                   />
@@ -220,9 +208,9 @@ const MainLogin: React.FC<MainLoginProps> = ({ onNavigate }) => {
               </div>
 
               {/* Error Message */}
-              {submitError && (
+              {error && (
                 <div className="text-red-600 text-sm text-center bg-red-50 p-3 rounded-md">
-                  {submitError}
+                  {error}
                 </div>
               )}
 
@@ -230,10 +218,10 @@ const MainLogin: React.FC<MainLoginProps> = ({ onNavigate }) => {
               <div className="space-y-3">
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={loading}
                   className="w-full flex items-center justify-center space-x-2 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                 >
-                  {isSubmitting ? (
+                  {loading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       <span>Signing In...</span>

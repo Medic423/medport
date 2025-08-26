@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import TransportRequests from './pages/TransportRequests';
 import StatusBoard from './pages/StatusBoard';
 import DistanceMatrix from './pages/DistanceMatrix';
@@ -12,247 +12,174 @@ import AgencyDashboard from './pages/AgencyDashboard';
 import RouteOptimization from './pages/RouteOptimization';
 import UnitAssignment from './pages/UnitAssignment';
 import NotificationDashboard from './components/NotificationDashboard';
-import QRCodeSystem from './pages/QRCodeSystem';
-import RealTimeTracking from './pages/RealTimeTracking';
+import Settings from './components/Settings';
 import Analytics from './pages/Analytics';
-import OfflineCapabilities from './pages/OfflineCapabilities';
-import OfflineIndicator from './components/OfflineIndicator';
-import MainLogin from './components/MainLogin';
-import SettingsPage from './pages/Settings';
-import Help from './pages/Help';
 import AgencyPortal from './pages/AgencyPortal';
+import UnitManagement from './components/UnitManagement';
+import BidManagement from './components/BidManagement';
+import MatchingSystem from './components/MatchingSystem';
+import Help from './pages/Help';
+import MainLogin from './components/MainLogin';
+import { useRoleBasedAccess } from './hooks/useRoleBasedAccess';
 
 function App() {
-  // Change default page from 'home' to 'login' to make login the entry point
-  const [currentPage, setCurrentPage] = useState<'transport-requests' | 'status-board' | 'distance-matrix' | 'resource-management' | 'advanced-transport' | 'air-medical' | 'emergency-department' | 'agency-registration' | 'agency-login' | 'agency-dashboard' | 'route-optimization' | 'unit-assignment' | 'notifications' | 'qr-code-system' | 'real-time-tracking' | 'analytics' | 'offline-capabilities' | 'login' | 'settings' | 'help' | 'agency-portal'>('login');
+  const [currentPage, setCurrentPage] = useState<string>('login');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userData, setUserData] = useState<any>(null);
+  
+  const { navigation, loading, error, fetchNavigation } = useRoleBasedAccess();
 
+  useEffect(() => {
+    // Check if user is already authenticated
+    const token = localStorage.getItem('token');
+    const userRole = localStorage.getItem('userRole');
+    const landingPage = localStorage.getItem('landingPage');
+    
+    if (token && userRole) {
+      setIsAuthenticated(true);
+      setUserData({
+        role: userRole,
+        email: localStorage.getItem('userEmail')
+      });
+      
+      // Fetch navigation data for the authenticated user
+      fetchNavigation(token);
+      
+      // Use the stored landing page or default to status-board
+      if (landingPage) {
+        setCurrentPage(landingPage);
+      } else {
+        setCurrentPage('status-board');
+      }
+    } else {
+      // Clear any stale data
+      localStorage.removeItem('landingPage');
+      setCurrentPage('login');
+      setIsAuthenticated(false);
+    }
+  }, [fetchNavigation]);
+
+  const handleLoginSuccess = (userData: any) => {
+    setIsAuthenticated(true);
+    setUserData(userData);
+    
+    // Fetch navigation data for the newly logged in user
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetchNavigation(token);
+    }
+    
+    // Get the landing page from localStorage (set by MainLogin)
+    const landingPage = localStorage.getItem('landingPage');
+    if (landingPage) {
+      setCurrentPage(landingPage);
+    } else {
+      // Fallback to status-board if no landing page is set
+      setCurrentPage('status-board');
+    }
+  };
+
+  const handleLogout = () => {
+    // Clear all authentication data
+    localStorage.removeItem('token');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('landingPage');
+    localStorage.removeItem('demoMode');
+    
+    setIsAuthenticated(false);
+    setUserData(null);
+    setCurrentPage('login');
+  };
+
+  const handleNavigation = (page: string) => {
+    setCurrentPage(page);
+  };
+
+  // If not authenticated, show login page
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <MainLogin onLoginSuccess={handleLoginSuccess} />
+      </div>
+    );
+  }
+
+  // Render the main application with dynamic navigation
   return (
-    <div className="App">
-      {/* Navigation Header - Only show when not on login page */}
-      {currentPage !== 'login' && (
-        <nav className="bg-blue-600 text-white shadow-lg">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex items-center">
-                <h1 className="text-xl font-bold">MedPort</h1>
-              </div>
-              <div className="flex items-center space-x-4">
-                <OfflineIndicator showDetails={true} />
-              </div>
-              <div className="flex space-x-2">
-                {/* Home */}
-                <button
-                  onClick={() => setCurrentPage('status-board')}
-                  className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    currentPage === 'status-board'
-                      ? 'bg-blue-700 text-white'
-                      : 'text-blue-100 hover:bg-blue-500 hover:text-white'
-                  }`}
-                >
-                  Status Board
-                </button>
-
-                {/* Core Operations Dropdown */}
-                <div className="relative group">
-                  <button className="px-3 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-500 hover:text-white flex items-center">
-                    Core Operations
-                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                  <div className="absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                    <div className="py-1">
-                      <button
-                        onClick={() => setCurrentPage('transport-requests')}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Transport Requests
+    <div className="min-h-screen bg-gray-50">
+      {/* Dynamic navigation header based on role-based access */}
+      <nav className="bg-blue-600 text-white shadow-lg fixed top-0 left-0 right-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center">
+              <h1 className="text-xl font-bold">MedPort</h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              {loading ? (
+                <div className="text-blue-100">Loading navigation...</div>
+              ) : error ? (
+                <div className="text-red-200">Navigation error</div>
+              ) : navigation ? (
+                // Render navigation items from role-based access
+                <>
+                  {navigation.navigation.map((category) => (
+                    <div key={category.id} className="relative group">
+                      <button className="px-3 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-500 hover:text-white">
+                        {category.name}
                       </button>
-                      <button
-                        onClick={() => setCurrentPage('status-board')}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Status Board
-                      </button>
-                      <button
-                        onClick={() => setCurrentPage('unit-assignment')}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Unit Assignment
-                      </button>
+                      {/* Dropdown menu for category children */}
+                      <div className="absolute left-0 mt-2 w-64 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                        <div className="py-1">
+                          {category.children?.map((item) => (
+                            <button
+                              key={item.id}
+                              onClick={() => handleNavigation(item.id)}
+                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            >
+                              {item.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-
-                {/* Dispatch Operations Dropdown */}
-                <div className="relative group">
-                  <button className="px-3 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-500 hover:text-white flex items-center">
-                    Dispatch Operations
-                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
+                  ))}
+                  <button
+                    onClick={handleLogout}
+                    className="px-3 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-500 hover:text-white"
+                  >
+                    Logout
                   </button>
-                  <div className="absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                    <div className="py-1">
-                      <button
-                        onClick={() => setCurrentPage('transport-requests')}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Transport Requests
-                      </button>
-                      <button
-                        onClick={() => setCurrentPage('status-board')}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Status Board
-                      </button>
-                      <button
-                        onClick={() => setCurrentPage('unit-assignment')}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Unit Assignment
-                      </button>
-                      <button
-                        onClick={() => setCurrentPage('route-optimization')}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Route Optimization
-                      </button>
-                      <button
-                        onClick={() => setCurrentPage('distance-matrix')}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Distance Matrix
-                      </button>
-                      <button
-                        onClick={() => setCurrentPage('real-time-tracking')}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Real-Time Tracking
-                      </button>
-                      <button
-                        onClick={() => setCurrentPage('notifications')}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Notifications
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Financial Planning Dropdown */}
-                <div className="relative group">
-                  <button className="px-3 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-500 hover:text-white flex items-center">
-                    Financial Planning
-                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
+                </>
+              ) : (
+                // Fallback to basic navigation if role-based data isn't available
+                <>
+                  <button
+                    onClick={() => handleNavigation('status-board')}
+                    className="px-3 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-500 hover:text-white"
+                  >
+                    Status Board
                   </button>
-                  <div className="absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                    <div className="py-1">
-                      <button
-                        onClick={() => setCurrentPage('analytics')}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Analytics & Reporting
-                      </button>
-                      <button
-                        onClick={() => setCurrentPage('resource-management')}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Resource Management
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Agency Portal */}
-                <button
-                  onClick={() => setCurrentPage('agency-portal')}
-                  className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    currentPage === 'agency-portal'
-                      ? 'bg-blue-700 text-white'
-                      : 'text-blue-100 hover:bg-blue-500 hover:text-white'
-                  }`}
-                >
-                  Agency Portal
-                </button>
-
-                {/* Tools and Utilities Dropdown */}
-                <div className="relative group">
-                  <button className="px-3 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-500 hover:text-white flex items-center">
-                    Tools and Utilities
-                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
+                  <button
+                    onClick={() => handleNavigation('transport-requests')}
+                    className="px-3 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-500 hover:text-white"
+                  >
+                    Transport Requests
                   </button>
-                  <div className="absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                    <div className="py-1">
-                      <button
-                        onClick={() => setCurrentPage('advanced-transport')}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Advanced Transport
-                      </button>
-                      <button
-                        onClick={() => setCurrentPage('air-medical')}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Air Medical
-                      </button>
-                      <button
-                        onClick={() => setCurrentPage('emergency-department')}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Emergency Department
-                      </button>
-                      <button
-                        onClick={() => setCurrentPage('qr-code-system')}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        QR Code System
-                      </button>
-                      <button
-                        onClick={() => setCurrentPage('offline-capabilities')}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Offline Capabilities
-                      </button>
-                      <button
-                        onClick={() => setCurrentPage('settings')}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Settings
-                      </button>
-                      <button
-                        onClick={() => setCurrentPage('help')}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Help
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Logout Button - Add logout functionality */}
-                <button
-                  onClick={() => setCurrentPage('login')}
-                  className="px-3 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-500 hover:text-white"
-                >
-                  Logout
-                </button>
-              </div>
+                  <button
+                    onClick={handleLogout}
+                    className="px-3 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-500 hover:text-white"
+                  >
+                    Logout
+                  </button>
+                </>
+              )}
             </div>
           </div>
-        </nav>
-      )}
-
-      {/* Main Content */}
-      <main>
-        {/* Login page is now the default landing page */}
-        {currentPage === 'login' && <MainLogin onNavigate={(page) => setCurrentPage(page as any)} />}
-        
-        {/* All other pages remain the same */}
+        </div>
+      </nav>
+      
+      <main className="pt-16">
         {currentPage === 'transport-requests' && <TransportRequests />}
         {currentPage === 'status-board' && <StatusBoard />}
         {currentPage === 'distance-matrix' && <DistanceMatrix />}
@@ -260,20 +187,19 @@ function App() {
         {currentPage === 'advanced-transport' && <AdvancedTransport />}
         {currentPage === 'air-medical' && <AirMedical />}
         {currentPage === 'emergency-department' && <EmergencyDepartment />}
+        {currentPage === 'agency-registration' && <AgencyRegistration onNavigate={handleNavigation} />}
+        {currentPage === 'agency-login' && <AgencyLogin onNavigate={handleNavigation} />}
+        {currentPage === 'agency-dashboard' && <AgencyDashboard onNavigate={handleNavigation} />}
         {currentPage === 'route-optimization' && <RouteOptimization />}
         {currentPage === 'unit-assignment' && <UnitAssignment />}
         {currentPage === 'notifications' && <NotificationDashboard />}
-        {currentPage === 'qr-code-system' && <QRCodeSystem />}
-        {currentPage === 'real-time-tracking' && <RealTimeTracking />}
+        {currentPage === 'settings' && <Settings />}
         {currentPage === 'analytics' && <Analytics />}
-        {currentPage === 'offline-capabilities' && <OfflineCapabilities />}
-        {currentPage === 'settings' && <SettingsPage />}
+        {currentPage === 'agency-portal' && <AgencyPortal onNavigate={handleNavigation} />}
+        {currentPage === 'unit-management' && <UnitManagement />}
+        {currentPage === 'bid-management' && <BidManagement />}
+        {currentPage === 'matching-system' && <MatchingSystem />}
         {currentPage === 'help' && <Help />}
-        {/* Placeholder dashboards removed - users now navigate to main app interface */}
-        {currentPage === 'agency-registration' && <AgencyRegistration onNavigate={(page) => setCurrentPage(page as any)} />}
-        {currentPage === 'agency-login' && <AgencyLogin onNavigate={(page) => setCurrentPage(page as any)} />}
-        {currentPage === 'agency-dashboard' && <AgencyDashboard onNavigate={(page) => setCurrentPage(page as any)} />}
-        {currentPage === 'agency-portal' && <AgencyPortal onNavigate={(page) => setCurrentPage(page as any)} />}
       </main>
     </div>
   );

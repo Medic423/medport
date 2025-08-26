@@ -314,20 +314,33 @@ router.post('/demo/login', async (req: Request, res: Response) => {
     if (email === 'developer@medport-transport.com' && password === 'dev123') {
       console.log('[AUTH-DEMO-LOGIN] Developer credentials detected, creating developer session');
       
-      // Create developer user data
+      // Create developer user data with full permissions
       const developerUser = {
         id: 'developer-001',
         name: 'System Developer',
         email: 'developer@medport-transport.com',
-        role: 'ADMIN'
+        role: 'ADMIN',
+        permissions: [
+          'user:create', 'user:read', 'user:update', 'user:delete',
+          'facility:manage', 'agency:manage', 'route:optimize',
+          'system:admin', 'settings:full', 'module:all', 'role:manage',
+          'system:configure', 'analytics:full', 'financial:full', 'dispatch:full', 'tracking:full',
+          'transport:read', 'transport:create', 'transport:update', 'transport:delete',
+          'unit:assign', 'unit:manage', 'unit:read',
+          'route:view', 'notifications:manage',
+          'analytics:view', 'analytics:financial',
+          'facility:read', 'agency:read',
+          'agency:profile', 'bid:manage', 'bid:read'
+        ]
       };
 
-      // Generate demo token
+      // Generate demo token with permissions
       const token = jwt.sign(
         { 
           id: developerUser.id, 
           email: developerUser.email, 
           role: developerUser.role,
+          permissions: developerUser.permissions,
           isDemo: true,
           isDeveloper: true
         },

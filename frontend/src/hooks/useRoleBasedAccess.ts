@@ -239,7 +239,64 @@ export const useRoleBasedAccess = () => {
     return navigation.navigation.map(item => item.name);
   }, [navigation]);
 
+  // Get user's landing page based on role and permissions
+  const getLandingPage = useCallback(async (token: string): Promise<string> => {
+    try {
+      const response = await fetch('/api/role-based-access/landing-page', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
 
+      if (!response.ok) {
+        throw new Error(`Failed to fetch landing page: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log('[ROLE_BASED_ACCESS] Landing page data:', result.data);
+        return result.data.landingPage;
+      } else {
+        throw new Error(result.message || 'Failed to fetch landing page');
+      }
+    } catch (err) {
+      console.error('[ROLE_BASED_ACCESS] Landing page fetch error:', err);
+      return 'help'; // Fallback to help page
+    }
+  }, []);
+
+  // Demo mode landing page fetch
+  const getDemoLandingPage = useCallback(async (): Promise<string> => {
+    try {
+      // Ensure demo mode is set in localStorage
+      localStorage.setItem('demoMode', 'true');
+
+      const response = await fetch('/api/role-based-access/demo/landing-page', {
+        headers: {
+          'Authorization': 'Bearer demo-token',
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch demo landing page: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log('[ROLE_BASED_ACCESS] Demo landing page data:', result.data);
+        return result.data.landingPage;
+      } else {
+        throw new Error(result.message || 'Failed to fetch demo landing page');
+      }
+    } catch (err) {
+      console.error('[ROLE_BASED_ACCESS] Demo landing page fetch error:', err);
+      return 'help'; // Fallback to help page
+    }
+  }, []);
 
   return {
     navigation,
@@ -252,6 +309,8 @@ export const useRoleBasedAccess = () => {
     getAvailableCategories,
     fetchNavigation,
     fetchDemoNavigation,
+    getLandingPage,
+    getDemoLandingPage,
     refreshNavigation: () => {
       const token = localStorage.getItem('token');
       const demoMode = localStorage.getItem('demoMode');

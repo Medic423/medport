@@ -56,6 +56,32 @@ router.get('/modules', authenticateToken, async (req: any, res: Response) => {
   }
 });
 
+// Get user's landing page based on role and permissions
+router.get('/landing-page', authenticateToken, async (req: any, res: Response) => {
+  try {
+    const userRole = req.user.role;
+    const userPermissions = SessionService.getUserPermissions(userRole);
+    
+    const landingPage = RoleBasedAccessService.getLandingPageForRole(userRole, userPermissions);
+    
+    res.json({
+      success: true,
+      data: {
+        role: userRole,
+        permissions: userPermissions,
+        landingPage: landingPage,
+        accessibleModules: RoleBasedAccessService.getUserAccessibleModules(userRole, userPermissions)
+      }
+    });
+  } catch (error) {
+    console.error('[ROLE_BASED_ACCESS] Landing page error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get landing page data'
+    });
+  }
+});
+
 // Check if user has access to a specific feature
 router.get('/access/:feature', authenticateToken, async (req: any, res: Response) => {
   try {
@@ -418,6 +444,75 @@ router.get('/demo/settings', (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Failed to get demo settings data'
+    });
+  }
+});
+
+// Demo mode landing page support - handles both demo-token and JWT tokens from demo login
+router.get('/demo/landing-page', (req: Request, res: Response) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (authHeader === 'Bearer demo-token') {
+      // Legacy demo-token support
+      const userRole = 'ADMIN';
+      const userPermissions = SessionService.getUserPermissions(userRole);
+      const landingPage = RoleBasedAccessService.getLandingPageForRole(userRole, userPermissions);
+      
+      res.json({
+        success: true,
+        data: {
+          role: userRole,
+          permissions: userPermissions,
+          landingPage: landingPage,
+          accessibleModules: RoleBasedAccessService.getUserAccessibleModules(userRole, userPermissions),
+          isDemo: true
+        }
+      });
+    } else if (authHeader && authHeader.startsWith('Bearer ')) {
+      // JWT token from demo login
+      try {
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+        
+        if (decoded.isDemo) {
+          const userRole = decoded.role;
+          const userPermissions = SessionService.getUserPermissions(userRole);
+          const landingPage = RoleBasedAccessService.getLandingPageForRole(userRole, userPermissions);
+          
+          res.json({
+            success: true,
+            data: {
+              role: userRole,
+              permissions: userPermissions,
+              landingPage: landingPage,
+              accessibleModules: RoleBasedAccessService.getUserAccessibleModules(userRole, userPermissions),
+              isDemo: true
+            }
+          });
+        } else {
+          res.status(401).json({
+            success: false,
+            message: 'Demo token required'
+          });
+        }
+      } catch (jwtError) {
+        res.status(401).json({
+          success: false,
+          message: 'Invalid demo token'
+        });
+      }
+    } else {
+      res.status(401).json({
+        success: false,
+        message: 'Demo token required'
+      });
+    }
+  } catch (error) {
+    console.error('[ROLE_BASED_ACCESS] Demo landing page error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get demo landing page data'
     });
   }
 });

@@ -39,10 +39,13 @@ const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
   const [selectedTab, setSelectedTab] = useState<'overview' | 'module-visibility' | 'role-permissions' | 'system-config' | 'debug-testing'>('overview');
   const [updateMessage, setUpdateMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
+  // Get user role from localStorage since navigation might not have it
+  const userRole = localStorage.getItem('userRole');
+  
   // Check if user has full settings access (ADMIN)
-  const hasFullAccess = navigation?.role === 'ADMIN';
+  const hasFullAccess = userRole === 'ADMIN';
   // Check if user has limited settings access (COORDINATOR, BILLING_STAFF)
-  const hasLimitedAccess = navigation?.role === 'COORDINATOR' || navigation?.role === 'BILLING_STAFF';
+  const hasLimitedAccess = userRole === 'COORDINATOR' || userRole === 'BILLING_STAFF';
 
   useEffect(() => {
     if (hasFullAccess) {
@@ -180,20 +183,20 @@ const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
               <p className="text-gray-600 mt-1">
-                {hasFullAccess 
-                  ? 'System configuration and module visibility controls for Transport Command'
-                  : navigation?.role === 'BILLING_STAFF'
-                  ? 'Financial configuration and billing settings for Billing Staff'
-                  : 'Operational configuration for Transport Center Coordinators'
-                }
+                                  {hasFullAccess 
+                    ? 'System configuration and module visibility controls for Transport Command'
+                    : userRole === 'BILLING_STAFF'
+                    ? 'Financial configuration and billing settings for Billing Staff'
+                    : 'Operational configuration for Transport Center Coordinators'
+                  }
               </p>
             </div>
             <div className="flex items-center space-x-3">
               <div className="bg-blue-100 px-3 py-1 rounded-full">
                 <span className="text-blue-800 text-sm font-medium">
-                  {navigation?.role === 'ADMIN' 
+                  {userRole === 'ADMIN' 
                     ? 'Transport Command' 
-                    : navigation?.role === 'BILLING_STAFF'
+                    : userRole === 'BILLING_STAFF'
                     ? 'Billing Staff'
                     : 'Transport Center Coordinator'
                   }

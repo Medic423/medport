@@ -205,9 +205,9 @@ export class RoleBasedAccessService {
         id: 'settings',
         name: 'Settings',
         description: 'System configuration and module visibility controls',
-        category: 'Tools and Utilities',
-        requiredPermissions: ['settings:full', 'settings:limited'],
-        visibleToRoles: ['ADMIN', 'COORDINATOR', 'BILLING_STAFF'],
+        category: 'System Administration',
+        requiredPermissions: ['settings:full'],
+        visibleToRoles: ['ADMIN'],
         isActive: true
       },
       {
@@ -386,5 +386,81 @@ export class RoleBasedAccessService {
       visible,
       roles
     });
+  }
+
+  /**
+   * Get the appropriate landing page for a user role
+   * This determines where users land after successful login
+   */
+  static getLandingPageForRole(role: string, userPermissions: string[]): string {
+    const accessibleModules = this.getUserAccessibleModules(role, userPermissions);
+    
+    if (accessibleModules.length === 0) {
+      return 'help'; // Fallback to help page if no modules accessible
+    }
+
+    // Define priority order for landing pages by role
+    const roleLandingPriorities: Record<string, string[]> = {
+      'ADMIN': [
+        'status-board',      // Primary: System overview
+        'transport-requests', // Secondary: Transport management
+        'analytics',         // Tertiary: Financial overview
+        'settings'           // Quaternary: System configuration
+      ],
+      'COORDINATOR': [
+        'status-board',      // Primary: Operational overview
+        'transport-requests', // Secondary: Transport coordination
+        'unit-assignment',   // Tertiary: Unit management
+        'analytics'          // Quaternary: Performance metrics
+      ],
+      'HOSPITAL_COORDINATOR': [
+        'transport-requests', // Primary: Transport request management
+        'status-board',      // Secondary: Request status overview
+        'emergency-department', // Tertiary: ED optimization
+        'help'               // Quaternary: Documentation
+      ],
+      'TRANSPORT_AGENCY': [
+        'agency-portal',     // Primary: Agency dashboard
+        'unit-management',   // Secondary: Unit operations
+        'bid-management',    // Tertiary: Bid management
+        'matching-system'    // Quaternary: Request matching
+      ],
+      'BILLING_STAFF': [
+        'analytics',         // Primary: Financial reports
+        'resource-management', // Secondary: Resource overview
+        'help'               // Tertiary: Documentation
+      ]
+    };
+
+    // Get priority list for this role
+    const priorities = roleLandingPriorities[role] || ['help'];
+    
+    // Find the first accessible module from the priority list
+    for (const moduleId of priorities) {
+      const module = accessibleModules.find(m => m.id === moduleId);
+      if (module) {
+        console.log(`[ROLE_BASED_ACCESS] Landing page for ${role}: ${moduleId}`);
+        return moduleId;
+      }
+    }
+
+    // If no priority modules are accessible, return the first accessible module
+    const firstModule = accessibleModules[0];
+    console.log(`[ROLE_BASED_ACCESS] Fallback landing page for ${role}: ${firstModule.id}`);
+    return firstModule.id;
+  }
+
+  /**
+   * Get user's first accessible module for landing page
+   * This is a simpler version that just returns the first accessible module
+   */
+  static getFirstAccessibleModule(role: string, userPermissions: string[]): string {
+    const accessibleModules = this.getUserAccessibleModules(role, userPermissions);
+    
+    if (accessibleModules.length === 0) {
+      return 'help';
+    }
+
+    return accessibleModules[0].id;
   }
 }

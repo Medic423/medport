@@ -205,7 +205,30 @@ export class SessionService {
         'analytics:full',
         'financial:full',
         'dispatch:full',
-        'tracking:full'
+        'tracking:full',
+        // Transport operations
+        'transport:read',
+        'transport:create',
+        'transport:update',
+        'transport:delete',
+        // Unit operations
+        'unit:assign',
+        'unit:manage',
+        'unit:read',
+        // Route operations
+        'route:view',
+        // Notifications
+        'notifications:manage',
+        // Analytics
+        'analytics:view',
+        'analytics:financial',
+        // Facility and agency
+        'facility:read',
+        'agency:read',
+        'agency:profile',
+        // Bidding
+        'bid:manage',
+        'bid:read'
       ],
       COORDINATOR: [
         // Transport Center Coordinator capabilities
