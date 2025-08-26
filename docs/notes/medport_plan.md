@@ -600,3 +600,100 @@ Implement a clean, dedicated login flow with proper separation between authentic
 - Automated deployment pipeline
 - Rollback procedures
 - Change management documentation
+
+---
+
+## 🚀 **Phase 6.6: Enhanced Module Visibility & Category Management**
+
+### **Objective**: Implement hierarchical category-level visibility controls for more granular module management
+
+**Date Started**: August 26, 2025  
+**Status**: 🎯 **PLANNING PHASE**  
+**Previous Phase**: Phase 6.5 Phase 2 - Role-Based Access Control System ✅ **COMPLETED**
+
+### **Problem Statement:**
+Current Module Visibility tab only shows individual modules without the category structure that users see in navigation. Missing categories like "Financial Planning" and unable to control visibility at category level.
+
+### **Proposed Solution:**
+Implement hierarchical visibility controls that show both categories and sub-modules, allowing admins to:
+- Control visibility at category level (affects all sub-modules)
+- Maintain granular control at individual module level
+- See the complete navigation structure in Settings
+
+### **Implementation Phases:**
+
+#### **Phase 6.6.1: Extend Data Model** 🔧
+- [ ] Add `category` field to module visibility settings
+- [ ] Add `parentCategory` field for sub-modules  
+- [ ] Extend `ModuleVisibilitySettings` interface
+- [ ] **Safety**: No breaking changes to existing functionality
+- **Acceptance Criteria**: Existing module-level settings continue to work
+
+#### **Phase 6.6.2: Update Backend Service** ⚙️
+- [ ] Enhance `RoleBasedAccessService.getModuleVisibilitySettings()`
+- [ ] Add new endpoint for category-level visibility
+- [ ] Maintain existing module-level endpoints
+- [ ] **Safety**: All existing API calls continue to work
+- **Acceptance Criteria**: Backend returns category information without breaking existing functionality
+
+#### **Phase 6.6.3: Frontend UI Enhancement** 🎨
+- [ ] Add category headers in Module Visibility tab
+- [ ] Show sub-modules indented under categories
+- [ ] Add category-level checkboxes (affects all sub-modules)
+- [ ] **Safety**: UI changes don't affect existing functionality
+- **Acceptance Criteria**: Module Visibility tab shows complete category structure
+
+#### **Phase 6.6.4: Navigation Integration** 🧭
+- [ ] Update navigation generation to respect category visibility
+- [ ] Hide entire categories if they're disabled
+- [ ] Maintain existing module-level fallbacks
+- [ ] **Safety**: Navigation gracefully degrades if category settings fail
+- **Acceptance Criteria**: Navigation automatically adapts to category-level settings
+
+### **Expected UI Structure:**
+```
+Financial Planning [✓] (Category checkbox)
+├── Analytics & Reporting [✓] (Module checkbox)
+├── Resource Management [✓] (Module checkbox)
+
+Dispatch Operations [✓] (Category checkbox)  
+├── Transport Requests [✓] (Module checkbox)
+├── Status Board [✓] (Module checkbox)
+├── Route Optimization [✓] (Module checkbox)
+```
+
+### **Safety Measures to Prevent Side Effects:**
+1. **Backward Compatibility**: All existing module-level settings continue to work
+2. **Gradual Rollout**: Implement one phase at a time with testing
+3. **Fallback Logic**: If category settings fail, fall back to module-level settings
+4. **Data Migration**: Existing settings automatically get default category assignments
+5. **Testing Strategy**: Test each phase thoroughly before moving to the next
+
+### **Benefits:**
+- **Better Organization**: Admins can see the full structure
+- **Easier Management**: Toggle entire categories on/off
+- **Granular Control**: Still control individual modules if needed
+- **User Experience**: Navigation automatically adapts to category settings
+- **Scalability**: Easy to add new categories and modules
+
+### **Potential Challenges:**
+1. **Complexity**: More complex state management in the frontend
+2. **Performance**: Slightly more API calls for category-level operations
+3. **Data Consistency**: Need to ensure category and module settings don't conflict
+
+### **Implementation Order:**
+1. **Phase 6.6.1**: Extend data model (Safe - no functional changes)
+2. **Phase 6.6.2**: Backend enhancements (Safe - API compatibility maintained)
+3. **Phase 6.6.3**: Frontend UI changes (Safe - existing functionality preserved)
+4. **Phase 6.6.4**: Navigation integration (Safe - fallback logic implemented)
+
+### **Success Criteria:**
+- [ ] All existing module-level settings continue to work
+- [ ] Category-level visibility controls are functional
+- [ ] Module Visibility tab shows complete navigation structure
+- [ ] Navigation automatically adapts to category settings
+- [ ] No system-wide side effects from implementation
+- [ ] Performance impact is minimal
+- [ ] User experience is improved for admins
+
+**Ready to proceed with Phase 6.6.1: Extend Data Model** 🚀
