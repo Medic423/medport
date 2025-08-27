@@ -50,7 +50,7 @@ const AgencyAnalytics: React.FC = () => {
 
       // Check for demo mode and get appropriate token
       const isDemoMode = localStorage.getItem('demoMode') === 'true';
-      const token = isDemoMode ? 'demo-token' : localStorage.getItem('token');
+      const token = isDemoMode ? 'demo-agency-token' : localStorage.getItem('token');
 
       // Load agency metrics
       const metricsResponse = await fetch(`/api/agency/analytics/metrics?timeRange=${timeRange}`, {

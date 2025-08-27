@@ -52,7 +52,7 @@ const TripAcceptance: React.FC<TripAcceptanceProps> = ({ onNavigate }) => {
 
       // Check for demo mode and get appropriate token
       const isDemoMode = localStorage.getItem('demoMode') === 'true';
-      const token = isDemoMode ? 'demo-token' : localStorage.getItem('token');
+      const token = isDemoMode ? 'demo-agency-token' : localStorage.getItem('token');
 
       const queryParams = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
@@ -85,7 +85,7 @@ const TripAcceptance: React.FC<TripAcceptanceProps> = ({ onNavigate }) => {
   const handleAcceptTrip = async (requestId: string) => {
     try {
       const isDemoMode = localStorage.getItem('demoMode') === 'true';
-      const token = isDemoMode ? 'demo-token' : localStorage.getItem('token');
+      const token = isDemoMode ? 'demo-agency-token' : localStorage.getItem('token');
 
       const response = await fetch(`/api/agency/transport-requests/${requestId}/accept`, {
         method: 'POST',
@@ -110,7 +110,7 @@ const TripAcceptance: React.FC<TripAcceptanceProps> = ({ onNavigate }) => {
   const handleRejectTrip = async (requestId: string, reason: string) => {
     try {
       const isDemoMode = localStorage.getItem('demoMode') === 'true';
-      const token = isDemoMode ? 'demo-token' : localStorage.getItem('token');
+      const token = isDemoMode ? 'demo-agency-token' : localStorage.getItem('token');
 
       const response = await fetch(`/api/agency/transport-requests/${requestId}/reject`, {
         method: 'POST',

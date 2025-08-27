@@ -38,7 +38,7 @@ const CrewScheduling: React.FC = () => {
 
       // Check for demo mode and get appropriate token
       const isDemoMode = localStorage.getItem('demoMode') === 'true';
-      const token = isDemoMode ? 'demo-token' : localStorage.getItem('token');
+      const token = isDemoMode ? 'demo-agency-token' : localStorage.getItem('token');
 
       // Load crew members
       const crewResponse = await fetch('/api/agency/crew', {
@@ -81,7 +81,7 @@ const CrewScheduling: React.FC = () => {
   const handleAssignmentSubmit = async (assignmentData: any) => {
     try {
       const isDemoMode = localStorage.getItem('demoMode') === 'true';
-      const token = isDemoMode ? 'demo-token' : localStorage.getItem('token');
+      const token = isDemoMode ? 'demo-agency-token' : localStorage.getItem('token');
 
       const response = await fetch('/api/agency/assignments', {
         method: 'POST',

@@ -44,7 +44,7 @@ const RevenueOpportunities: React.FC = () => {
 
       // Check for demo mode and get appropriate token
       const isDemoMode = localStorage.getItem('demoMode') === 'true';
-      const token = isDemoMode ? 'demo-token' : localStorage.getItem('token');
+      const token = isDemoMode ? 'demo-agency-token' : localStorage.getItem('token');
 
       const queryParams = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
@@ -77,7 +77,7 @@ const RevenueOpportunities: React.FC = () => {
   const handleImplementOpportunity = async (opportunityId: string) => {
     try {
       const isDemoMode = localStorage.getItem('demoMode') === 'true';
-      const token = isDemoMode ? 'demo-token' : localStorage.getItem('token');
+      const token = isDemoMode ? 'demo-agency-token' : localStorage.getItem('token');
 
       const response = await fetch(`/api/agency/revenue-opportunities/${opportunityId}/implement`, {
         method: 'POST',
@@ -102,7 +102,7 @@ const RevenueOpportunities: React.FC = () => {
   const handleRejectOpportunity = async (opportunityId: string, reason: string) => {
     try {
       const isDemoMode = localStorage.getItem('demoMode') === 'true';
-      const token = isDemoMode ? 'demo-token' : localStorage.getItem('token');
+      const token = isDemoMode ? 'demo-agency-token' : localStorage.getItem('token');
 
       const response = await fetch(`/api/agency/revenue-opportunities/${opportunityId}/reject`, {
         method: 'POST',

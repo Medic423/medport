@@ -5,6 +5,26 @@ import agencyService from '../services/agencyService';
 import transportBiddingService from '../services/transportBiddingService';
 import { authenticateToken } from '../middleware/auth';
 
+// Custom authentication middleware for agency routes
+const authenticateAgencyToken = (req: any, res: any, next: any) => {
+  const authHeader = req.headers['authorization'];
+  
+  // Handle agency demo token
+  if (authHeader === 'Bearer demo-agency-token') {
+    console.log('AUTH: Agency demo mode authentication bypassed');
+    req.user = {
+      id: 'demo-agency-user',
+      email: 'demo@agency.com',
+      role: 'TRANSPORT_AGENCY',
+      agencyId: 'demo-agency-id'
+    };
+    return next();
+  }
+  
+  // Fall back to regular authentication
+  return authenticateToken(req, res, next);
+};
+
 const prisma = new PrismaClient();
 
 const router = express.Router();
@@ -107,7 +127,7 @@ router.post('/register', async (req, res) => {
 });
 
 // Agency Statistics (Protected)
-router.get('/stats', authenticateToken, async (req, res) => {
+router.get('/stats', authenticateAgencyToken, async (req, res) => {
   try {
     console.log('[AGENCY-STATS] Fetching agency statistics');
     
@@ -228,7 +248,7 @@ router.post('/demo/login', async (req, res) => {
       id: 'demo-user-001',
       name: 'Demo User',
       email: 'demo@agency.com',
-      role: 'ADMIN'
+      role: 'TRANSPORT_AGENCY'
     };
     
     const demoAgency = {
@@ -261,7 +281,7 @@ router.post('/demo/login', async (req, res) => {
 });
 
 // Get Agency Profile (Protected)
-router.get('/profile', authenticateToken, async (req, res) => {
+router.get('/profile', authenticateAgencyToken, async (req, res) => {
   try {
     const agencyId = (req as any).user.agencyId;
     
@@ -295,7 +315,7 @@ router.get('/profile', authenticateToken, async (req, res) => {
 });
 
 // Update Agency Profile (Protected)
-router.put('/profile', authenticateToken, async (req, res) => {
+router.put('/profile', authenticateAgencyToken, async (req, res) => {
   try {
     const agencyId = (req as any).user.agencyId;
     
@@ -323,7 +343,7 @@ router.put('/profile', authenticateToken, async (req, res) => {
 });
 
 // Get Agency Stats (Protected)
-router.get('/stats', authenticateToken, async (req, res) => {
+router.get('/stats', authenticateAgencyToken, async (req, res) => {
   try {
     const agencyId = (req as any).user.agencyId;
     
@@ -350,7 +370,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
 });
 
 // Get Agency Units (Protected)
-router.get('/units', authenticateToken, async (req, res) => {
+router.get('/units', authenticateAgencyToken, async (req, res) => {
   try {
     const agencyId = (req as any).user.agencyId;
     
@@ -377,7 +397,7 @@ router.get('/units', authenticateToken, async (req, res) => {
 });
 
 // Update Unit Availability (Protected)
-router.put('/units/:unitId/availability', authenticateToken, async (req, res) => {
+router.put('/units/:unitId/availability', authenticateAgencyToken, async (req, res) => {
   try {
     const agencyId = (req as any).user.agencyId;
     const { unitId } = req.params;
@@ -436,7 +456,7 @@ router.put('/units/:unitId/availability', authenticateToken, async (req, res) =>
 });
 
 // Get Available Transport Requests (Protected)
-router.get('/transports/available', authenticateToken, async (req, res) => {
+router.get('/transports/available', authenticateAgencyToken, async (req, res) => {
   try {
     const agencyId = (req as any).user.agencyId;
     
@@ -470,7 +490,7 @@ router.get('/transports/available', authenticateToken, async (req, res) => {
 });
 
 // Submit Bid (Protected)
-router.post('/transports/:transportId/bid', authenticateToken, async (req, res) => {
+router.post('/transports/:transportId/bid', authenticateAgencyToken, async (req, res) => {
   try {
     const agencyId = (req as any).user.agencyId;
     const userId = (req as any).user.userId;
@@ -524,7 +544,7 @@ router.post('/transports/:transportId/bid', authenticateToken, async (req, res) 
 });
 
 // Get Agency Bid History (Protected)
-router.get('/bids', authenticateToken, async (req, res) => {
+router.get('/bids', authenticateAgencyToken, async (req, res) => {
   try {
     const agencyId = (req as any).user.agencyId;
     
@@ -552,7 +572,7 @@ router.get('/bids', authenticateToken, async (req, res) => {
 });
 
 // Get Bid Statistics (Protected)
-router.get('/bids/stats', authenticateToken, async (req, res) => {
+router.get('/bids/stats', authenticateAgencyToken, async (req, res) => {
   try {
     const agencyId = (req as any).user.agencyId;
     
@@ -579,7 +599,7 @@ router.get('/bids/stats', authenticateToken, async (req, res) => {
 });
 
 // Withdraw Bid (Protected)
-router.put('/bids/:bidId/withdraw', authenticateToken, async (req, res) => {
+router.put('/bids/:bidId/withdraw', authenticateAgencyToken, async (req, res) => {
   try {
     const agencyId = (req as any).user.agencyId;
     const { bidId } = req.params;
@@ -620,14 +640,14 @@ router.post('/demo/login', async (req, res) => {
             id: 'demo-user-id',
             name: 'Demo Agency User',
             email: 'demo@agency.com',
-            role: 'ADMIN'
+            role: 'TRANSPORT_AGENCY'
           },
           agency: {
             id: 'demo-agency-id',
             name: 'Demo Transport Agency',
             email: 'demo@agency.com'
           },
-          token: 'demo-token'
+          token: 'demo-agency-token'
         }
       });
     } else {
@@ -646,13 +666,13 @@ router.post('/demo/login', async (req, res) => {
 });
 
 // Crew Management Routes
-router.get('/crew', authenticateToken, async (req, res) => {
+router.get('/crew', authenticateAgencyToken, async (req, res) => {
   try {
     console.log('[AGENCY-CREW] Fetching crew members');
     
     // Check if this is a demo request
     const authHeader = req.headers.authorization;
-    const isDemoMode = authHeader === 'Bearer demo-token';
+    const isDemoMode = authHeader === 'Bearer demo-agency-token';
     
     if (isDemoMode) {
       // Return demo crew data
@@ -745,13 +765,13 @@ router.get('/crew', authenticateToken, async (req, res) => {
 });
 
 // Crew Assignments Routes
-router.get('/assignments', authenticateToken, async (req, res) => {
+router.get('/assignments', authenticateAgencyToken, async (req, res) => {
   try {
     console.log('[AGENCY-ASSIGNMENTS] Fetching crew assignments');
     
     // Check if this is a demo request
     const authHeader = req.headers.authorization;
-    const isDemoMode = authHeader === 'Bearer demo-token';
+    const isDemoMode = authHeader === 'Bearer demo-agency-token';
     
     if (isDemoMode) {
       // Return demo assignment data
@@ -811,7 +831,7 @@ router.get('/assignments', authenticateToken, async (req, res) => {
   }
 });
 
-router.post('/assignments', authenticateToken, async (req, res) => {
+router.post('/assignments', authenticateAgencyToken, async (req, res) => {
   try {
     console.log('[AGENCY-ASSIGNMENTS] Creating crew assignment:', req.body);
     
@@ -839,13 +859,13 @@ router.post('/assignments', authenticateToken, async (req, res) => {
 });
 
 // Transport Requests Routes (for Trip Acceptance)
-router.get('/transport-requests', authenticateToken, async (req, res) => {
+router.get('/transport-requests', authenticateAgencyToken, async (req, res) => {
   try {
     console.log('[AGENCY-TRANSPORT-REQUESTS] Fetching transport requests');
     
     // Check if this is a demo request
     const authHeader = req.headers.authorization;
-    const isDemoMode = authHeader === 'Bearer demo-token';
+    const isDemoMode = authHeader === 'Bearer demo-agency-token';
     
     if (isDemoMode) {
       // Return demo transport request data
@@ -917,7 +937,7 @@ router.get('/transport-requests', authenticateToken, async (req, res) => {
   }
 });
 
-router.post('/transport-requests/:requestId/accept', authenticateToken, async (req, res) => {
+router.post('/transport-requests/:requestId/accept', authenticateAgencyToken, async (req, res) => {
   try {
     const { requestId } = req.params;
     console.log('[AGENCY-TRANSPORT-REQUESTS] Accepting transport request:', requestId);
@@ -937,7 +957,7 @@ router.post('/transport-requests/:requestId/accept', authenticateToken, async (r
   }
 });
 
-router.post('/transport-requests/:requestId/reject', authenticateToken, async (req, res) => {
+router.post('/transport-requests/:requestId/reject', authenticateAgencyToken, async (req, res) => {
   try {
     const { requestId } = req.params;
     console.log('[AGENCY-TRANSPORT-REQUESTS] Rejecting transport request:', requestId);
@@ -958,13 +978,13 @@ router.post('/transport-requests/:requestId/reject', authenticateToken, async (r
 });
 
 // Revenue Opportunities Routes
-router.get('/revenue-opportunities', authenticateToken, async (req, res) => {
+router.get('/revenue-opportunities', authenticateAgencyToken, async (req, res) => {
   try {
     console.log('[AGENCY-REVENUE] Fetching revenue opportunities');
     
     // Check if this is a demo request
     const authHeader = req.headers.authorization;
-    const isDemoMode = authHeader === 'Bearer demo-token';
+    const isDemoMode = authHeader === 'Bearer demo-agency-token';
     
     if (isDemoMode) {
       // Return demo revenue opportunities data
@@ -1036,7 +1056,7 @@ router.get('/revenue-opportunities', authenticateToken, async (req, res) => {
   }
 });
 
-router.post('/revenue-opportunities/:opportunityId/implement', authenticateToken, async (req, res) => {
+router.post('/revenue-opportunities/:opportunityId/implement', authenticateAgencyToken, async (req, res) => {
   try {
     const { opportunityId } = req.params;
     console.log('[AGENCY-REVENUE] Implementing revenue opportunity:', opportunityId);
@@ -1056,7 +1076,7 @@ router.post('/revenue-opportunities/:opportunityId/implement', authenticateToken
   }
 });
 
-router.post('/revenue-opportunities/:opportunityId/reject', authenticateToken, async (req, res) => {
+router.post('/revenue-opportunities/:opportunityId/reject', authenticateAgencyToken, async (req, res) => {
   try {
     const { opportunityId } = req.params;
     console.log('[AGENCY-REVENUE] Rejecting revenue opportunity:', opportunityId);
@@ -1077,14 +1097,14 @@ router.post('/revenue-opportunities/:opportunityId/reject', authenticateToken, a
 });
 
 // Agency Analytics Routes
-router.get('/analytics/metrics', authenticateToken, async (req, res) => {
+router.get('/analytics/metrics', authenticateAgencyToken, async (req, res) => {
   try {
     const { timeRange } = req.query;
     console.log('[AGENCY-ANALYTICS] Fetching metrics for time range:', timeRange);
     
     // Check if this is a demo request
     const authHeader = req.headers.authorization;
-    const isDemoMode = authHeader === 'Bearer demo-token';
+    const isDemoMode = authHeader === 'Bearer demo-agency-token';
     
     if (isDemoMode) {
       // Return demo metrics data
@@ -1132,14 +1152,14 @@ router.get('/analytics/metrics', authenticateToken, async (req, res) => {
   }
 });
 
-router.get('/analytics/trends', authenticateToken, async (req, res) => {
+router.get('/analytics/trends', authenticateAgencyToken, async (req, res) => {
   try {
     const { timeRange } = req.query;
     console.log('[AGENCY-ANALYTICS] Fetching trends for time range:', timeRange);
     
     // Check if this is a demo request
     const authHeader = req.headers.authorization;
-    const isDemoMode = authHeader === 'Bearer demo-token';
+    const isDemoMode = authHeader === 'Bearer demo-agency-token';
     
     if (isDemoMode) {
       // Return demo trends data
@@ -1177,14 +1197,14 @@ router.get('/analytics/trends', authenticateToken, async (req, res) => {
   }
 });
 
-router.get('/analytics/revenue', authenticateToken, async (req, res) => {
+router.get('/analytics/revenue', authenticateAgencyToken, async (req, res) => {
   try {
     const { timeRange } = req.query;
     console.log('[AGENCY-ANALYTICS] Fetching revenue for time range:', timeRange);
     
     // Check if this is a demo request
     const authHeader = req.headers.authorization;
-    const isDemoMode = authHeader === 'Bearer demo-token';
+    const isDemoMode = authHeader === 'Bearer demo-agency-token';
     
     if (isDemoMode) {
       // Return demo revenue data
