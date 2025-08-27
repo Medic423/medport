@@ -121,15 +121,6 @@ export class RoleBasedAccessService {
 
       // Ambulance Operations - Agency-specific transport operations and management
       {
-        id: 'agency-portal',
-        name: 'Agency Portal',
-        description: 'Transport agency management and operations',
-        category: 'Ambulance Operations',
-        requiredPermissions: ['agency:profile', 'unit:manage'],
-        visibleToRoles: ['ADMIN', 'TRANSPORT_AGENCY'],
-        isActive: true
-      },
-      {
         id: 'unit-management',
         name: 'Unit Management',
         description: 'Manage transport units and availability',

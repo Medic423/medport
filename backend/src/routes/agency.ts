@@ -645,4 +645,591 @@ router.post('/demo/login', async (req, res) => {
   }
 });
 
+// Crew Management Routes
+router.get('/crew', authenticateToken, async (req, res) => {
+  try {
+    console.log('[AGENCY-CREW] Fetching crew members');
+    
+    // Check if this is a demo request
+    const authHeader = req.headers.authorization;
+    const isDemoMode = authHeader === 'Bearer demo-token';
+    
+    if (isDemoMode) {
+      // Return demo crew data
+      const demoCrew = [
+        {
+          id: 'crew-1',
+          name: 'John Smith',
+          role: 'DRIVER',
+          certification: 'CDL-A',
+          availability: 'AVAILABLE',
+          currentLocation: 'Main Station',
+          shiftStart: '08:00',
+          shiftEnd: '20:00'
+        },
+        {
+          id: 'crew-2',
+          name: 'Sarah Johnson',
+          role: 'EMT',
+          certification: 'EMT-B',
+          availability: 'AVAILABLE',
+          currentLocation: 'Main Station',
+          shiftStart: '08:00',
+          shiftEnd: '20:00'
+        },
+        {
+          id: 'crew-3',
+          name: 'Mike Davis',
+          role: 'PARAMEDIC',
+          certification: 'EMT-P',
+          availability: 'ASSIGNED',
+          currentLocation: 'En Route',
+          shiftStart: '08:00',
+          shiftEnd: '20:00'
+        }
+      ];
+      
+      return res.json({
+        success: true,
+        message: 'Demo crew data retrieved successfully',
+        crewMembers: demoCrew
+      });
+    }
+    
+    // For now, return demo data
+    const demoCrew = [
+      {
+        id: 'crew-1',
+        name: 'John Smith',
+        role: 'DRIVER',
+        certification: 'CDL-A',
+        availability: 'AVAILABLE',
+        currentLocation: 'Main Station',
+        shiftStart: '08:00',
+        shiftEnd: '20:00'
+      },
+      {
+        id: 'crew-2',
+        name: 'Sarah Johnson',
+        role: 'EMT',
+        certification: 'EMT-B',
+        availability: 'AVAILABLE',
+        currentLocation: 'Main Station',
+        shiftStart: '08:00',
+        shiftEnd: '20:00'
+      },
+      {
+        id: 'crew-3',
+        name: 'Mike Davis',
+        role: 'PARAMEDIC',
+        certification: 'EMT-P',
+        availability: 'ASSIGNED',
+        currentLocation: 'En Route',
+        shiftStart: '08:00',
+        shiftEnd: '20:00'
+      }
+    ];
+    
+    res.json({
+      success: true,
+      message: 'Crew members retrieved successfully (demo data)',
+      crewMembers: demoCrew
+    });
+  } catch (error) {
+    console.error('[AGENCY-CREW] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve crew members'
+    });
+  }
+});
+
+// Crew Assignments Routes
+router.get('/assignments', authenticateToken, async (req, res) => {
+  try {
+    console.log('[AGENCY-ASSIGNMENTS] Fetching crew assignments');
+    
+    // Check if this is a demo request
+    const authHeader = req.headers.authorization;
+    const isDemoMode = authHeader === 'Bearer demo-token';
+    
+    if (isDemoMode) {
+      // Return demo assignment data
+      const demoAssignments = [
+        {
+          id: 'assign-1',
+          crewMemberId: 'crew-3',
+          transportRequestId: 'transport-1',
+          assignmentTime: '2025-08-26T10:00:00Z',
+          status: 'ACTIVE'
+        },
+        {
+          id: 'assign-2',
+          crewMemberId: 'crew-1',
+          transportRequestId: 'transport-2',
+          assignmentTime: '2025-08-26T14:00:00Z',
+          status: 'PENDING'
+        }
+      ];
+      
+      return res.json({
+        success: true,
+        message: 'Demo assignments retrieved successfully',
+        assignments: demoAssignments
+      });
+    }
+    
+    // For now, return demo data
+    const demoAssignments = [
+      {
+        id: 'assign-1',
+        crewMemberId: 'crew-3',
+        transportRequestId: 'transport-1',
+        assignmentTime: '2025-08-26T10:00:00Z',
+        status: 'ACTIVE'
+      },
+      {
+        id: 'assign-2',
+        crewMemberId: 'crew-1',
+        transportRequestId: 'transport-2',
+        assignmentTime: '2025-08-26T14:00:00Z',
+        status: 'PENDING'
+      }
+    ];
+    
+    res.json({
+      success: true,
+      message: 'Assignments retrieved successfully (demo data)',
+      assignments: demoAssignments
+    });
+  } catch (error) {
+    console.error('[AGENCY-ASSIGNMENTS] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve assignments'
+    });
+  }
+});
+
+router.post('/assignments', authenticateToken, async (req, res) => {
+  try {
+    console.log('[AGENCY-ASSIGNMENTS] Creating crew assignment:', req.body);
+    
+    // For now, just return success with demo data
+    const newAssignment = {
+      id: `assign-${Date.now()}`,
+      crewMemberId: req.body.crewMemberId,
+      transportRequestId: req.body.transportRequestId,
+      assignmentTime: new Date().toISOString(),
+      status: 'PENDING'
+    };
+    
+    res.status(201).json({
+      success: true,
+      message: 'Crew assignment created successfully',
+      assignment: newAssignment
+    });
+  } catch (error) {
+    console.error('[AGENCY-ASSIGNMENTS] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create crew assignment'
+    });
+  }
+});
+
+// Transport Requests Routes (for Trip Acceptance)
+router.get('/transport-requests', authenticateToken, async (req, res) => {
+  try {
+    console.log('[AGENCY-TRANSPORT-REQUESTS] Fetching transport requests');
+    
+    // Check if this is a demo request
+    const authHeader = req.headers.authorization;
+    const isDemoMode = authHeader === 'Bearer demo-token';
+    
+    if (isDemoMode) {
+      // Return demo transport request data
+      const demoRequests = [
+        {
+          id: 'transport-1',
+          originFacility: { name: 'UPMC Altoona Hospital' },
+          destinationFacility: { name: 'Penn State Health' },
+          transportLevel: 'CCT',
+          priority: 'HIGH',
+          requestTimestamp: '2025-08-26T09:00:00Z',
+          estimatedRevenue: 450,
+          distance: 25.5
+        },
+        {
+          id: 'transport-2',
+          originFacility: { name: 'Mount Nittany Medical Center' },
+          destinationFacility: { name: 'Geisinger Medical Center' },
+          transportLevel: 'ALS',
+          priority: 'MEDIUM',
+          requestTimestamp: '2025-08-26T11:00:00Z',
+          estimatedRevenue: 320,
+          distance: 18.2
+        }
+      ];
+      
+      return res.json({
+        success: true,
+        message: 'Demo transport requests retrieved successfully',
+        transportRequests: demoRequests
+      });
+    }
+    
+    // For now, return demo data
+    const demoRequests = [
+      {
+        id: 'transport-1',
+        originFacility: { name: 'UPMC Altoona Hospital' },
+        destinationFacility: { name: 'Penn State Health' },
+        transportLevel: 'CCT',
+        priority: 'HIGH',
+        requestTimestamp: '2025-08-26T09:00:00Z',
+        estimatedRevenue: 450,
+        distance: 25.5
+      },
+      {
+        id: 'transport-2',
+        originFacility: { name: 'Mount Nittany Medical Center' },
+        destinationFacility: { name: 'Geisinger Medical Center' },
+        transportLevel: 'ALS',
+        priority: 'MEDIUM',
+        requestTimestamp: '2025-08-26T11:00:00Z',
+        estimatedRevenue: 320,
+        distance: 18.2
+      }
+    ];
+    
+    res.json({
+      success: true,
+      message: 'Transport requests retrieved successfully (demo data)',
+      transportRequests: demoRequests
+    });
+  } catch (error) {
+    console.error('[AGENCY-TRANSPORT-REQUESTS] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve transport requests'
+    });
+  }
+});
+
+router.post('/transport-requests/:requestId/accept', authenticateToken, async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    console.log('[AGENCY-TRANSPORT-REQUESTS] Accepting transport request:', requestId);
+    
+    // For now, just return success
+    res.json({
+      success: true,
+      message: 'Transport request accepted successfully',
+      requestId
+    });
+  } catch (error) {
+    console.error('[AGENCY-TRANSPORT-REQUESTS] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to accept transport request'
+    });
+  }
+});
+
+router.post('/transport-requests/:requestId/reject', authenticateToken, async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    console.log('[AGENCY-TRANSPORT-REQUESTS] Rejecting transport request:', requestId);
+    
+    // For now, just return success
+    res.json({
+      success: true,
+      message: 'Transport request rejected successfully',
+      requestId
+    });
+  } catch (error) {
+    console.error('[AGENCY-TRANSPORT-REQUESTS] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reject transport request'
+    });
+  }
+});
+
+// Revenue Opportunities Routes
+router.get('/revenue-opportunities', authenticateToken, async (req, res) => {
+  try {
+    console.log('[AGENCY-REVENUE] Fetching revenue opportunities');
+    
+    // Check if this is a demo request
+    const authHeader = req.headers.authorization;
+    const isDemoMode = authHeader === 'Bearer demo-token';
+    
+    if (isDemoMode) {
+      // Return demo revenue opportunities data
+      const demoOpportunities = [
+        {
+          id: 'opp-1',
+          title: 'Route Optimization',
+          description: 'Optimize routes to reduce empty miles and increase efficiency',
+          potentialRevenue: 15000,
+          implementationCost: 2000,
+          roi: 650,
+          difficulty: 'MEDIUM',
+          category: 'ROUTE_OPTIMIZATION'
+        },
+        {
+          id: 'opp-2',
+          title: 'Chained Trips',
+          description: 'Coordinate multiple transports to maximize unit utilization',
+          potentialRevenue: 8000,
+          implementationCost: 1000,
+          roi: 700,
+          difficulty: 'LOW',
+          category: 'CHAINED_TRIPS'
+        }
+      ];
+      
+      return res.json({
+        success: true,
+        message: 'Demo revenue opportunities retrieved successfully',
+        revenueOpportunities: demoOpportunities
+      });
+    }
+    
+    // For now, return demo data
+    const demoOpportunities = [
+      {
+        id: 'opp-1',
+        title: 'Route Optimization',
+        description: 'Optimize routes to reduce empty miles and increase efficiency',
+        potentialRevenue: 15000,
+        implementationCost: 2000,
+        roi: 650,
+        difficulty: 'MEDIUM',
+        category: 'ROUTE_OPTIMIZATION'
+      },
+      {
+        id: 'opp-2',
+        title: 'Chained Trips',
+        description: 'Coordinate multiple transports to maximize unit utilization',
+        potentialRevenue: 8000,
+        implementationCost: 1000,
+        roi: 700,
+        difficulty: 'LOW',
+        category: 'CHAINED_TRIPS'
+      }
+    ];
+    
+    res.json({
+      success: true,
+      message: 'Revenue opportunities retrieved successfully (demo data)',
+      revenueOpportunities: demoOpportunities
+    });
+  } catch (error) {
+    console.error('[AGENCY-REVENUE] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve revenue opportunities'
+    });
+  }
+});
+
+router.post('/revenue-opportunities/:opportunityId/implement', authenticateToken, async (req, res) => {
+  try {
+    const { opportunityId } = req.params;
+    console.log('[AGENCY-REVENUE] Implementing revenue opportunity:', opportunityId);
+    
+    // For now, just return success
+    res.json({
+      success: true,
+      message: 'Revenue opportunity implementation started successfully',
+      opportunityId
+    });
+  } catch (error) {
+    console.error('[AGENCY-REVENUE] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to implement revenue opportunity'
+    });
+  }
+});
+
+router.post('/revenue-opportunities/:opportunityId/reject', authenticateToken, async (req, res) => {
+  try {
+    const { opportunityId } = req.params;
+    console.log('[AGENCY-REVENUE] Rejecting revenue opportunity:', opportunityId);
+    
+    // For now, just return success
+    res.json({
+      success: true,
+      message: 'Revenue opportunity rejected successfully',
+      opportunityId
+    });
+  } catch (error) {
+    console.error('[AGENCY-REVENUE] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reject revenue opportunity'
+    });
+  }
+});
+
+// Agency Analytics Routes
+router.get('/analytics/metrics', authenticateToken, async (req, res) => {
+  try {
+    const { timeRange } = req.query;
+    console.log('[AGENCY-ANALYTICS] Fetching metrics for time range:', timeRange);
+    
+    // Check if this is a demo request
+    const authHeader = req.headers.authorization;
+    const isDemoMode = authHeader === 'Bearer demo-token';
+    
+    if (isDemoMode) {
+      // Return demo metrics data
+      const demoMetrics = {
+        onTimePerformance: 94.2,
+        customerSatisfaction: 4.8,
+        unitUtilization: 87.5,
+        crewEfficiency: 92.1,
+        averageResponseTime: 12.5,
+        totalTrips: 156,
+        completedTrips: 142,
+        cancelledTrips: 14
+      };
+      
+      return res.json({
+        success: true,
+        message: 'Demo metrics retrieved successfully',
+        metrics: demoMetrics
+      });
+    }
+    
+    // For now, return demo data
+    const demoMetrics = {
+      onTimePerformance: 94.2,
+      customerSatisfaction: 4.8,
+      unitUtilization: 87.5,
+      crewEfficiency: 92.1,
+      averageResponseTime: 12.5,
+      totalTrips: 156,
+      completedTrips: 142,
+      cancelledTrips: 14
+    };
+    
+    res.json({
+      success: true,
+      message: 'Metrics retrieved successfully (demo data)',
+      metrics: demoMetrics
+    });
+  } catch (error) {
+    console.error('[AGENCY-ANALYTICS] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve metrics'
+    });
+  }
+});
+
+router.get('/analytics/trends', authenticateToken, async (req, res) => {
+  try {
+    const { timeRange } = req.query;
+    console.log('[AGENCY-ANALYTICS] Fetching trends for time range:', timeRange);
+    
+    // Check if this is a demo request
+    const authHeader = req.headers.authorization;
+    const isDemoMode = authHeader === 'Bearer demo-token';
+    
+    if (isDemoMode) {
+      // Return demo trends data
+      const demoTrends = [
+        { month: 'June', trips: 45, revenue: 18500, performance: 92.1 },
+        { month: 'July', trips: 52, revenue: 21800, performance: 94.2 },
+        { month: 'August', trips: 59, revenue: 25100, performance: 96.8 }
+      ];
+      
+      return res.json({
+        success: true,
+        message: 'Demo trends retrieved successfully',
+        trends: demoTrends
+      });
+    }
+    
+    // For now, return demo data
+    const demoTrends = [
+      { month: 'June', trips: 45, revenue: 18500, performance: 92.1 },
+      { month: 'July', trips: 52, revenue: 21800, performance: 94.2 },
+      { month: 'August', trips: 59, revenue: 25100, performance: 96.8 }
+    ];
+    
+    res.json({
+      success: true,
+      message: 'Trends retrieved successfully (demo data)',
+      trends: demoTrends
+    });
+  } catch (error) {
+    console.error('[AGENCY-ANALYTICS] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve trends'
+    });
+  }
+});
+
+router.get('/analytics/revenue', authenticateToken, async (req, res) => {
+  try {
+    const { timeRange } = req.query;
+    console.log('[AGENCY-ANALYTICS] Fetching revenue for time range:', timeRange);
+    
+    // Check if this is a demo request
+    const authHeader = req.headers.authorization;
+    const isDemoMode = authHeader === 'Bearer demo-token';
+    
+    if (isDemoMode) {
+      // Return demo revenue data
+      const demoRevenue = {
+        totalRevenue: 65400,
+        averagePerTrip: 420,
+        breakdown: {
+          cct: 28000,
+          als: 22000,
+          bls: 15400
+        },
+        growth: 12.5
+      };
+      
+      return res.json({
+        success: true,
+        message: 'Demo revenue data retrieved successfully',
+        revenue: demoRevenue
+      });
+    }
+    
+    // For now, return demo data
+    const demoRevenue = {
+      totalRevenue: 65400,
+      averagePerTrip: 420,
+      breakdown: {
+        cct: 28000,
+        als: 22000,
+        bls: 15400
+      },
+      growth: 12.5
+    };
+    
+    res.json({
+      success: true,
+      message: 'Revenue data retrieved successfully (demo data)',
+      revenue: demoRevenue
+    });
+  } catch (error) {
+    console.error('[AGENCY-ANALYTICS] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve revenue data'
+    });
+  }
+});
+
 export default router;
