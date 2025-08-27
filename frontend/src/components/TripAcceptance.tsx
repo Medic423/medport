@@ -50,9 +50,71 @@ const TripAcceptance: React.FC<TripAcceptanceProps> = ({ onNavigate }) => {
       setLoading(true);
       setError(null);
 
-      // Check for demo mode and get appropriate token
-      const isDemoMode = localStorage.getItem('demoMode') === 'true';
-      const token = isDemoMode ? 'demo-agency-token' : localStorage.getItem('token');
+      const userRole = localStorage.getItem('userRole');
+      const agencyToken = localStorage.getItem('agencyToken');
+      const adminToken = localStorage.getItem('token');
+      
+      // Smart token selection based on user role
+      const authHeader = userRole === 'ADMIN' 
+        ? `Bearer ${adminToken}`
+        : `Bearer ${agencyToken}`;
+      
+      if (!authHeader || authHeader === 'Bearer null') {
+        // Use demo data for now
+        const demoRequests = [
+          {
+            id: 'demo-transport-1',
+            patientId: 'PAT-001',
+            originFacility: { 
+              name: 'UPMC Altoona Hospital',
+              address: '620 Howard Ave',
+              city: 'Altoona',
+              state: 'PA'
+            },
+            destinationFacility: { 
+              name: 'Penn State Health Milton S. Hershey Medical Center',
+              address: '500 University Dr',
+              city: 'Hershey',
+              state: 'PA'
+            },
+            transportLevel: 'CCT',
+            priority: 'HIGH',
+            specialRequirements: 'Ventilator support, ICU nurse required',
+            estimatedDistance: 45.2,
+            estimatedDuration: 65,
+            revenuePotential: 580,
+            status: 'PENDING',
+            createdAt: '2025-08-27T08:00:00Z'
+          },
+          {
+            id: 'demo-transport-2',
+            patientId: 'PAT-002',
+            originFacility: { 
+              name: 'Mount Nittany Medical Center',
+              address: '1800 E Park Ave',
+              city: 'State College',
+              state: 'PA'
+            },
+            destinationFacility: { 
+              name: 'Geisinger Medical Center',
+              address: '100 N Academy Ave',
+              city: 'Danville',
+              state: 'PA'
+            },
+            transportLevel: 'ALS',
+            priority: 'MEDIUM',
+            specialRequirements: 'Cardiac monitoring',
+            estimatedDistance: 32.8,
+            estimatedDuration: 45,
+            revenuePotential: 420,
+            status: 'PENDING',
+            createdAt: '2025-08-27T09:30:00Z'
+          }
+        ];
+        
+        setTransportRequests(demoRequests);
+        return;
+      }
 
       const queryParams = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
@@ -63,7 +125,7 @@ const TripAcceptance: React.FC<TripAcceptanceProps> = ({ onNavigate }) => {
 
       const response = await fetch(`/api/agency/transport-requests?${queryParams.toString()}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': authHeader
         }
       });
 
@@ -84,14 +146,27 @@ const TripAcceptance: React.FC<TripAcceptanceProps> = ({ onNavigate }) => {
 
   const handleAcceptTrip = async (requestId: string) => {
     try {
-      const isDemoMode = localStorage.getItem('demoMode') === 'true';
-      const token = isDemoMode ? 'demo-agency-token' : localStorage.getItem('token');
+      const userRole = localStorage.getItem('userRole');
+      const agencyToken = localStorage.getItem('agencyToken');
+      const adminToken = localStorage.getItem('token');
+      
+      // Smart token selection based on user role
+      const authHeader = userRole === 'ADMIN' 
+        ? `Bearer ${adminToken}`
+        : `Bearer ${agencyToken}`;
+      
+      if (!authHeader || authHeader === 'Bearer null') {
+        // For demo, just show success message
+        alert('Demo mode: Trip would be accepted successfully!');
+        loadTransportRequests(); // Refresh the list
+        return;
+      }
 
       const response = await fetch(`/api/agency/transport-requests/${requestId}/accept`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': authHeader
         }
       });
 
@@ -109,14 +184,27 @@ const TripAcceptance: React.FC<TripAcceptanceProps> = ({ onNavigate }) => {
 
   const handleRejectTrip = async (requestId: string, reason: string) => {
     try {
-      const isDemoMode = localStorage.getItem('demoMode') === 'true';
-      const token = isDemoMode ? 'demo-agency-token' : localStorage.getItem('token');
+      const userRole = localStorage.getItem('userRole');
+      const agencyToken = localStorage.getItem('agencyToken');
+      const adminToken = localStorage.getItem('token');
+      
+      // Smart token selection based on user role
+      const authHeader = userRole === 'ADMIN' 
+        ? `Bearer ${adminToken}`
+        : `Bearer ${agencyToken}`;
+      
+      if (!authHeader || authHeader === 'Bearer null') {
+        // For demo, just show success message
+        alert('Demo mode: Trip would be rejected successfully!');
+        loadTransportRequests(); // Refresh the list
+        return;
+      }
 
       const response = await fetch(`/api/agency/transport-requests/${requestId}/reject`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': authHeader
         },
         body: JSON.stringify({ reason })
       });

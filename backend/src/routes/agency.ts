@@ -1398,6 +1398,123 @@ router.get('/transport-requests', authenticateAgencyToken, async (req, res) => {
   try {
     console.log('[AGENCY-TRANSPORT-REQUESTS] Fetching transport requests');
     
+    const agencyId = (req as any).user.agencyId;
+    
+    if (!agencyId) {
+      if ((req as any).user.role === 'ADMIN') {
+        // Return enhanced demo data for ADMIN users
+        const adminDemoRequests = [
+          {
+            id: 'admin-transport-1',
+            patientId: 'PAT-001',
+            originFacility: { 
+              name: 'UPMC Altoona Hospital',
+              address: '620 Howard Ave',
+              city: 'Altoona',
+              state: 'PA'
+            },
+            destinationFacility: { 
+              name: 'Penn State Health Milton S. Hershey Medical Center',
+              address: '500 University Dr',
+              city: 'Hershey',
+              state: 'PA'
+            },
+            transportLevel: 'CCT',
+            priority: 'HIGH',
+            specialRequirements: 'Ventilator support, ICU nurse required',
+            estimatedDistance: 45.2,
+            estimatedDuration: 65,
+            revenuePotential: 580,
+            status: 'PENDING',
+            createdAt: '2025-08-27T08:00:00Z'
+          },
+          {
+            id: 'admin-transport-2',
+            patientId: 'PAT-002',
+            originFacility: { 
+              name: 'Mount Nittany Medical Center',
+              address: '1800 E Park Ave',
+              city: 'State College',
+              state: 'PA'
+            },
+            destinationFacility: { 
+              name: 'Geisinger Medical Center',
+              address: '100 N Academy Ave',
+              city: 'Danville',
+              state: 'PA'
+            },
+            transportLevel: 'ALS',
+            priority: 'MEDIUM',
+            specialRequirements: 'Cardiac monitoring',
+            estimatedDistance: 32.8,
+            estimatedDuration: 45,
+            revenuePotential: 420,
+            status: 'PENDING',
+            createdAt: '2025-08-27T09:30:00Z'
+          },
+          {
+            id: 'admin-transport-3',
+            patientId: 'PAT-003',
+            originFacility: { 
+              name: 'Conemaugh Memorial Medical Center',
+              address: '1086 Franklin St',
+              city: 'Johnstown',
+              state: 'PA'
+            },
+            destinationFacility: { 
+              name: 'UPMC Presbyterian',
+              address: '200 Lothrop St',
+              city: 'Pittsburgh',
+              state: 'PA'
+            },
+            transportLevel: 'BLS',
+            priority: 'LOW',
+            specialRequirements: 'Wheelchair accessible',
+            estimatedDistance: 78.5,
+            estimatedDuration: 95,
+            revenuePotential: 280,
+            status: 'PENDING',
+            createdAt: '2025-08-27T10:15:00Z'
+          },
+          {
+            id: 'admin-transport-4',
+            patientId: 'PAT-004',
+            originFacility: { 
+              name: 'Penn Highlands Dubois',
+              address: '100 Hospital Ave',
+              city: 'Dubois',
+              state: 'PA'
+            },
+            destinationFacility: { 
+              name: 'UPMC Altoona Hospital',
+              address: '620 Howard Ave',
+              city: 'Altoona',
+              state: 'PA'
+            },
+            transportLevel: 'ALS',
+            priority: 'URGENT',
+            specialRequirements: 'Emergency transport, lights and sirens',
+            estimatedDistance: 28.3,
+            estimatedDuration: 35,
+            revenuePotential: 650,
+            status: 'PENDING',
+            createdAt: '2025-08-27T11:45:00Z'
+          }
+        ];
+        
+        return res.json({
+          success: true,
+          message: 'Admin demo transport requests retrieved successfully',
+          requests: adminDemoRequests
+        });
+      }
+      
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Agency context required.'
+      });
+    }
+    
     // Check if this is a demo request
     const authHeader = req.headers.authorization;
     const isDemoMode = authHeader === 'Bearer demo-agency-token';
@@ -1407,30 +1524,58 @@ router.get('/transport-requests', authenticateAgencyToken, async (req, res) => {
       const demoRequests = [
         {
           id: 'transport-1',
-          originFacility: { name: 'UPMC Altoona Hospital' },
-          destinationFacility: { name: 'Penn State Health' },
+          patientId: 'PAT-001',
+          originFacility: { 
+            name: 'UPMC Altoona Hospital',
+            address: '620 Howard Ave',
+            city: 'Altoona',
+            state: 'PA'
+          },
+          destinationFacility: { 
+            name: 'Penn State Health Milton S. Hershey Medical Center',
+            address: '500 University Dr',
+            city: 'Hershey',
+            state: 'PA'
+          },
           transportLevel: 'CCT',
           priority: 'HIGH',
-          requestTimestamp: '2025-08-26T09:00:00Z',
-          estimatedRevenue: 450,
-          distance: 25.5
+          specialRequirements: 'Ventilator support, ICU nurse required',
+          estimatedDistance: 45.2,
+          estimatedDuration: 65,
+          revenuePotential: 580,
+          status: 'PENDING',
+          createdAt: '2025-08-27T08:00:00Z'
         },
         {
           id: 'transport-2',
-          originFacility: { name: 'Mount Nittany Medical Center' },
-          destinationFacility: { name: 'Geisinger Medical Center' },
+          patientId: 'PAT-002',
+          originFacility: { 
+            name: 'Mount Nittany Medical Center',
+            address: '1800 E Park Ave',
+            city: 'State College',
+            state: 'PA'
+          },
+          destinationFacility: { 
+            name: 'Geisinger Medical Center',
+            address: '100 N Academy Ave',
+            city: 'Danville',
+            state: 'PA'
+          },
           transportLevel: 'ALS',
           priority: 'MEDIUM',
-          requestTimestamp: '2025-08-26T11:00:00Z',
-          estimatedRevenue: 320,
-          distance: 18.2
+          specialRequirements: 'Cardiac monitoring',
+          estimatedDistance: 32.8,
+          estimatedDuration: 45,
+          revenuePotential: 420,
+          status: 'PENDING',
+          createdAt: '2025-08-27T09:30:00Z'
         }
       ];
       
       return res.json({
         success: true,
         message: 'Demo transport requests retrieved successfully',
-        transportRequests: demoRequests
+        requests: demoRequests
       });
     }
     
@@ -1438,30 +1583,58 @@ router.get('/transport-requests', authenticateAgencyToken, async (req, res) => {
     const demoRequests = [
       {
         id: 'transport-1',
-        originFacility: { name: 'UPMC Altoona Hospital' },
-        destinationFacility: { name: 'Penn State Health' },
+        patientId: 'PAT-001',
+        originFacility: { 
+          name: 'UPMC Altoona Hospital',
+          address: '620 Howard Ave',
+          city: 'Altoona',
+          state: 'PA'
+        },
+        destinationFacility: { 
+          name: 'Penn State Health Milton S. Hershey Medical Center',
+          address: '500 University Dr',
+          city: 'Hershey',
+          state: 'PA'
+        },
         transportLevel: 'CCT',
         priority: 'HIGH',
-        requestTimestamp: '2025-08-26T09:00:00Z',
-        estimatedRevenue: 450,
-        distance: 25.5
+        specialRequirements: 'Ventilator support, ICU nurse required',
+        estimatedDistance: 45.2,
+        estimatedDuration: 65,
+        revenuePotential: 580,
+        status: 'PENDING',
+        createdAt: '2025-08-27T08:00:00Z'
       },
       {
         id: 'transport-2',
-        originFacility: { name: 'Mount Nittany Medical Center' },
-        destinationFacility: { name: 'Geisinger Medical Center' },
+        patientId: 'PAT-002',
+        originFacility: { 
+          name: 'Mount Nittany Medical Center',
+          address: '1800 E Park Ave',
+          city: 'State College',
+          state: 'PA'
+        },
+        destinationFacility: { 
+          name: 'Geisinger Medical Center',
+          address: '100 N Academy Ave',
+          city: 'Danville',
+          state: 'PA'
+        },
         transportLevel: 'ALS',
         priority: 'MEDIUM',
-        requestTimestamp: '2025-08-26T11:00:00Z',
-        estimatedRevenue: 320,
-        distance: 18.2
+        specialRequirements: 'Cardiac monitoring',
+        estimatedDistance: 32.8,
+        estimatedDuration: 45,
+        revenuePotential: 420,
+        status: 'PENDING',
+        createdAt: '2025-08-27T09:30:00Z'
       }
     ];
     
     res.json({
       success: true,
       message: 'Transport requests retrieved successfully (demo data)',
-      transportRequests: demoRequests
+      requests: demoRequests
     });
   } catch (error) {
     console.error('[AGENCY-TRANSPORT-REQUESTS] Error:', error);
@@ -1476,6 +1649,26 @@ router.post('/transport-requests/:requestId/accept', authenticateAgencyToken, as
   try {
     const { requestId } = req.params;
     console.log('[AGENCY-TRANSPORT-REQUESTS] Accepting transport request:', requestId);
+    
+    const agencyId = (req as any).user.agencyId;
+    
+    if (!agencyId) {
+      if ((req as any).user.role === 'ADMIN') {
+        // For ADMIN users, return demo acceptance
+        return res.json({
+          success: true,
+          message: 'Admin demo: Transport request accepted successfully',
+          requestId,
+          acceptedBy: 'ADMIN_USER',
+          acceptedAt: new Date().toISOString()
+        });
+      }
+      
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Agency context required.'
+      });
+    }
     
     // For now, just return success
     res.json({
@@ -1495,13 +1688,36 @@ router.post('/transport-requests/:requestId/accept', authenticateAgencyToken, as
 router.post('/transport-requests/:requestId/reject', authenticateAgencyToken, async (req, res) => {
   try {
     const { requestId } = req.params;
-    console.log('[AGENCY-TRANSPORT-REQUESTS] Rejecting transport request:', requestId);
+    const { reason } = req.body;
+    console.log('[AGENCY-TRANSPORT-REQUESTS] Rejecting transport request:', requestId, 'Reason:', reason);
+    
+    const agencyId = (req as any).user.agencyId;
+    
+    if (!agencyId) {
+      if ((req as any).user.role === 'ADMIN') {
+        // For ADMIN users, return demo rejection
+        return res.json({
+          success: true,
+          message: 'Admin demo: Transport request rejected successfully',
+          requestId,
+          rejectedBy: 'ADMIN_USER',
+          rejectedAt: new Date().toISOString(),
+          reason: reason || 'No reason provided'
+        });
+      }
+      
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Agency context required.'
+      });
+    }
     
     // For now, just return success
     res.json({
       success: true,
       message: 'Transport request rejected successfully',
-      requestId
+      requestId,
+      reason: reason || 'No reason provided'
     });
   } catch (error) {
     console.error('[AGENCY-TRANSPORT-REQUESTS] Error:', error);
