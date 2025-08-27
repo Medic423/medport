@@ -126,7 +126,7 @@ export class RoleBasedAccessService {
         description: 'Manage transport units and availability',
         category: 'Ambulance Operations',
         requiredPermissions: ['unit:manage', 'unit:read'],
-        visibleToRoles: ['TRANSPORT_AGENCY'],
+        visibleToRoles: ['ADMIN', 'TRANSPORT_AGENCY'],
         isActive: true
       },
       {
@@ -135,7 +135,7 @@ export class RoleBasedAccessService {
         description: 'Manage transport bids and assignments',
         category: 'Ambulance Operations',
         requiredPermissions: ['bid:manage', 'bid:read'],
-        visibleToRoles: ['TRANSPORT_AGENCY'],
+        visibleToRoles: ['ADMIN', 'TRANSPORT_AGENCY'],
         isActive: true
       },
       {
@@ -144,7 +144,7 @@ export class RoleBasedAccessService {
         description: 'Transport request matching and coordination',
         category: 'Ambulance Operations',
         requiredPermissions: ['matching:view', 'matching:manage'],
-        visibleToRoles: ['TRANSPORT_AGENCY'],
+        visibleToRoles: ['ADMIN', 'TRANSPORT_AGENCY'],
         isActive: true
       },
       {
@@ -153,7 +153,7 @@ export class RoleBasedAccessService {
         description: 'Schedule and manage transport crew assignments',
         category: 'Ambulance Operations',
         requiredPermissions: ['crew:schedule', 'crew:manage'],
-        visibleToRoles: ['TRANSPORT_AGENCY'],
+        visibleToRoles: ['ADMIN', 'TRANSPORT_AGENCY'],
         isActive: true
       },
       {
@@ -162,7 +162,7 @@ export class RoleBasedAccessService {
         description: 'Accept and manage transport trip assignments',
         category: 'Ambulance Operations',
         requiredPermissions: ['trip:accept', 'trip:manage'],
-        visibleToRoles: ['TRANSPORT_AGENCY'],
+        visibleToRoles: ['ADMIN', 'TRANSPORT_AGENCY'],
         isActive: true
       },
       {
@@ -171,7 +171,7 @@ export class RoleBasedAccessService {
         description: 'View and manage revenue optimization opportunities',
         category: 'Ambulance Operations',
         requiredPermissions: ['revenue:view', 'revenue:optimize'],
-        visibleToRoles: ['TRANSPORT_AGENCY'],
+        visibleToRoles: ['ADMIN', 'TRANSPORT_AGENCY'],
         isActive: true
       },
       {
@@ -180,7 +180,7 @@ export class RoleBasedAccessService {
         description: 'Agency-specific performance and financial analytics',
         category: 'Ambulance Operations',
         requiredPermissions: ['analytics:agency', 'analytics:view'],
-        visibleToRoles: ['TRANSPORT_AGENCY'],
+        visibleToRoles: ['ADMIN', 'TRANSPORT_AGENCY'],
         isActive: true
       },
 

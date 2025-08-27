@@ -48,7 +48,9 @@ router.post('/find-matches', authenticateToken, async (req, res) => {
     const mockRequest = {
       id: 'mock-request-id',
       originFacilityId: validatedData.originFacilityId,
+      originFacility: { name: 'Demo Origin Facility' },
       destinationFacilityId: validatedData.destinationFacilityId,
+      destinationFacility: { name: 'Demo Destination Facility' },
       transportLevel: validatedData.transportLevel,
       priority: validatedData.priority,
       specialRequirements: validatedData.specialRequirements,
@@ -91,6 +93,31 @@ router.get('/preferences', authenticateToken, async (req, res) => {
     const agencyId = (req as any).user.agencyId;
     
     if (!agencyId) {
+      if ((req as any).user.role === 'ADMIN') {
+        // Return demo data for ADMIN users
+        const adminDemoPreferences = {
+          agencyId: 'admin-demo-agency',
+          preferredServiceAreas: ['facility-001', 'facility-002', 'facility-003', 'facility-004', 'facility-005'],
+          preferredTransportLevels: ['BLS', 'ALS', 'CCT'],
+          maxDistance: 300,
+          preferredTimeWindows: [
+            { dayOfWeek: 0, startTime: '08:00', endTime: '18:00' },
+            { dayOfWeek: 1, startTime: '08:00', endTime: '18:00' },
+            { dayOfWeek: 2, startTime: '08:00', endTime: '18:00' },
+            { dayOfWeek: 3, startTime: '08:00', endTime: '18:00' },
+            { dayOfWeek: 4, startTime: '08:00', endTime: '18:00' },
+            { dayOfWeek: 5, startTime: '08:00', endTime: '18:00' },
+            { dayOfWeek: 6, startTime: '08:00', endTime: '18:00' }
+          ],
+          revenueThreshold: 150
+        };
+        
+        return res.json({
+          success: true,
+          data: adminDemoPreferences
+        });
+      }
+      
       return res.status(403).json({
         success: false,
         message: 'Access denied. Agency context required.'
@@ -127,6 +154,21 @@ router.put('/preferences', authenticateToken, async (req, res) => {
     const agencyId = (req as any).user.agencyId;
     
     if (!agencyId) {
+      if ((req as any).user.role === 'ADMIN') {
+        // For ADMIN users, return the updated preferences as demo data
+        const validatedData = preferencesSchema.parse(req.body);
+        const adminDemoPreferences = {
+          ...validatedData,
+          agencyId: 'admin-demo-agency'
+        };
+        
+        return res.json({
+          success: true,
+          message: 'Demo preferences updated successfully',
+          data: adminDemoPreferences
+        });
+      }
+      
       return res.status(403).json({
         success: false,
         message: 'Access denied. Agency context required.'
@@ -168,6 +210,84 @@ router.get('/history', authenticateToken, async (req, res) => {
     const agencyId = (req as any).user.agencyId;
     
     if (!agencyId) {
+      if ((req as any).user.role === 'ADMIN') {
+        // Return demo data for ADMIN users
+        const adminDemoHistory = [
+          {
+            bidId: 'admin-bid-001',
+            transportRequest: {
+              originFacility: { name: 'UPMC Altoona Hospital' },
+              destinationFacility: { name: 'Penn Highlands Dubois' },
+              transportLevel: 'ALS',
+              priority: 'HIGH'
+            },
+            status: 'ACCEPTED',
+            submittedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+            acceptedAt: new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString(),
+            revenue: 320
+          },
+          {
+            bidId: 'admin-bid-002',
+            transportRequest: {
+              originFacility: { name: 'Conemaugh Memorial Medical Center' },
+              destinationFacility: { name: 'UPMC Presbyterian' },
+              transportLevel: 'CCT',
+              priority: 'URGENT'
+            },
+            status: 'ACCEPTED',
+            submittedAt: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
+            acceptedAt: new Date(Date.now() - 47 * 60 * 60 * 1000).toISOString(),
+            revenue: 580
+          },
+          {
+            bidId: 'admin-bid-003',
+            transportRequest: {
+              originFacility: { name: 'Geisinger Medical Center' },
+              destinationFacility: { name: 'UPMC Altoona Hospital' },
+              transportLevel: 'BLS',
+              priority: 'MEDIUM'
+            },
+            status: 'PENDING',
+            submittedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+            revenue: 220
+          },
+          {
+            bidId: 'admin-bid-004',
+            transportRequest: {
+              originFacility: { name: 'UPMC Presbyterian' },
+              destinationFacility: { name: 'Penn Highlands Dubois' },
+              transportLevel: 'ALS',
+              priority: 'LOW'
+            },
+            status: 'ACCEPTED',
+            submittedAt: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(),
+            acceptedAt: new Date(Date.now() - 71 * 60 * 60 * 1000).toISOString(),
+            revenue: 280
+          }
+        ];
+        
+        const totalBids = adminDemoHistory.length;
+        const acceptedBids = adminDemoHistory.filter(bid => bid.status === 'ACCEPTED').length;
+        const totalRevenue = adminDemoHistory
+          .filter(bid => bid.status === 'ACCEPTED')
+          .reduce((sum, bid) => sum + bid.revenue, 0);
+        const acceptanceRate = totalBids > 0 ? (acceptedBids / totalBids) * 100 : 0;
+        
+        return res.json({
+          success: true,
+          data: {
+            history: adminDemoHistory,
+            analytics: {
+              totalBids,
+              acceptedBids,
+              totalRevenue,
+              acceptanceRate: Math.round(acceptanceRate * 100) / 100,
+              averageRevenue: acceptedBids > 0 ? Math.round(totalRevenue / acceptedBids) : 0
+            }
+          }
+        });
+      }
+      
       return res.status(403).json({
         success: false,
         message: 'Access denied. Agency context required.'

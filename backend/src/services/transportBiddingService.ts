@@ -186,7 +186,9 @@ export class TransportBiddingService {
               originFacility: true,
               destinationFacility: true
             }
-          }
+          },
+          agency: true,
+          agencyUser: true
         },
         orderBy: { submittedAt: 'desc' },
         take: limit
@@ -450,6 +452,7 @@ export class TransportBiddingService {
       throw error;
     }
   }
+
 }
 
 export default new TransportBiddingService();

@@ -116,11 +116,31 @@ const MatchingSystem: React.FC = () => {
     setError('');
     
     try {
-      const response = await fetch('/api/matching/demo/find-matches', {
+      const userRole = localStorage.getItem('userRole');
+      const agencyToken = localStorage.getItem('agencyToken');
+      const adminToken = localStorage.getItem('token');
+      
+      // Smart token selection based on user role
+      const authHeader = userRole === 'ADMIN' 
+        ? `Bearer ${adminToken}`
+        : `Bearer ${agencyToken}`;
+      
+      // Use the main endpoint for authenticated users, demo endpoint for unauthenticated
+      const endpoint = authHeader && authHeader !== 'Bearer null' 
+        ? '/api/matching/find-matches'
+        : '/api/matching/demo/find-matches';
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (authHeader && authHeader !== 'Bearer null') {
+        headers['Authorization'] = authHeader;
+      }
+
+      const response = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(matchingCriteria),
       });
 
@@ -142,8 +162,16 @@ const MatchingSystem: React.FC = () => {
   // Load preferences
   const loadPreferences = async () => {
     try {
-      const token = localStorage.getItem('agencyToken');
-      if (!token) {
+      const userRole = localStorage.getItem('userRole');
+      const agencyToken = localStorage.getItem('agencyToken');
+      const adminToken = localStorage.getItem('token');
+      
+      // Smart token selection based on user role
+      const authHeader = userRole === 'ADMIN' 
+        ? `Bearer ${adminToken}`
+        : `Bearer ${agencyToken}`;
+      
+      if (!authHeader || authHeader === 'Bearer null') {
         // Use demo data for now
         setPreferences({
           agencyId: 'demo-agency-001',
@@ -166,7 +194,7 @@ const MatchingSystem: React.FC = () => {
 
       const response = await fetch('/api/matching/preferences', {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': authHeader,
         },
       });
 
@@ -183,8 +211,16 @@ const MatchingSystem: React.FC = () => {
   // Load match history
   const loadMatchHistory = async () => {
     try {
-      const token = localStorage.getItem('agencyToken');
-      if (!token) {
+      const userRole = localStorage.getItem('userRole');
+      const agencyToken = localStorage.getItem('agencyToken');
+      const adminToken = localStorage.getItem('token');
+      
+      // Smart token selection based on user role
+      const authHeader = userRole === 'ADMIN' 
+        ? `Bearer ${adminToken}`
+        : `Bearer ${agencyToken}`;
+      
+      if (!authHeader || authHeader === 'Bearer null') {
         // Use demo data for now
         const demoHistory = [
           {
@@ -247,7 +283,7 @@ const MatchingSystem: React.FC = () => {
 
       const response = await fetch('/api/matching/history', {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': authHeader,
         },
       });
 
@@ -265,8 +301,16 @@ const MatchingSystem: React.FC = () => {
   // Update preferences
   const handleUpdatePreferences = async () => {
     try {
-      const token = localStorage.getItem('agencyToken');
-      if (!token) {
+      const userRole = localStorage.getItem('userRole');
+      const agencyToken = localStorage.getItem('agencyToken');
+      const adminToken = localStorage.getItem('token');
+      
+      // Smart token selection based on user role
+      const authHeader = userRole === 'ADMIN' 
+        ? `Bearer ${adminToken}`
+        : `Bearer ${agencyToken}`;
+      
+      if (!authHeader || authHeader === 'Bearer null') {
         // For demo, just update local state
         setPreferences(prev => ({ ...prev }));
         return;
@@ -275,7 +319,7 @@ const MatchingSystem: React.FC = () => {
       const response = await fetch('/api/matching/preferences', {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': authHeader,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(preferences),

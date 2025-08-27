@@ -47,6 +47,19 @@ const UnitManagement: React.FC = () => {
   const agency = JSON.parse(localStorage.getItem('agency') || '{}');
   const agencyToken = localStorage.getItem('agencyToken');
   const isDemoMode = localStorage.getItem('demoMode') === 'true';
+  const userRole = localStorage.getItem('userRole') || '';
+  
+  // Use appropriate token based on user role and mode
+  const getAuthHeader = () => {
+    if (isDemoMode) {
+      return 'Bearer demo-agency-token';
+    }
+    if (userRole === 'ADMIN') {
+      // ADMIN users can access agency endpoints for oversight
+      return `Bearer ${localStorage.getItem('token')}`;
+    }
+    return `Bearer ${agencyToken}`;
+  };
 
   useEffect(() => {
     if (isDemoMode) {
@@ -160,7 +173,7 @@ const UnitManagement: React.FC = () => {
       setIsLoading(true);
       const response = await fetch('/api/agency/units', {
         headers: {
-          'Authorization': `Bearer ${agencyToken}`,
+          'Authorization': getAuthHeader(),
           'Content-Type': 'application/json'
         }
       });
@@ -170,7 +183,7 @@ const UnitManagement: React.FC = () => {
       }
 
       const data = await response.json();
-      setUnits(data.units || []);
+      setUnits(data.data || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load units');
     } finally {
@@ -221,7 +234,7 @@ const UnitManagement: React.FC = () => {
       const response = await fetch(`/api/agency/units/${editingUnit}/availability`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${agencyToken}`,
+          'Authorization': getAuthHeader(),
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(editForm)

@@ -372,9 +372,222 @@ router.get('/stats', authenticateAgencyToken, async (req, res) => {
 // Get Agency Units (Protected)
 router.get('/units', authenticateAgencyToken, async (req, res) => {
   try {
+    const authHeader = req.headers['authorization'];
+    
+    // Handle demo mode
+    if (authHeader === 'Bearer demo-agency-token') {
+      console.log('[AGENCY-UNITS] Demo mode - returning demo units data');
+      
+      const demoUnits = [
+        {
+          id: '1',
+          unitNumber: 'A-101',
+          type: 'BLS',
+          currentStatus: 'AVAILABLE',
+          unitAvailability: {
+            id: '1',
+            status: 'AVAILABLE',
+            location: { lat: 40.5187, lng: -78.3945, address: 'Altoona, PA' },
+            shiftStart: '2025-08-23T06:00:00Z',
+            shiftEnd: '2025-08-23T18:00:00Z',
+            crewMembers: [
+              { name: 'John Smith', role: 'EMT', phone: '555-0101' },
+              { name: 'Sarah Johnson', role: 'Driver', phone: '555-0102' }
+            ],
+            currentAssignment: null,
+            notes: 'Unit ready for service'
+          }
+        },
+        {
+          id: '2',
+          unitNumber: 'A-102',
+          type: 'ALS',
+          currentStatus: 'IN_USE',
+          unitAvailability: {
+            id: '2',
+            status: 'IN_USE',
+            location: { lat: 40.5187, lng: -78.3945, address: 'UPMC Altoona' },
+            shiftStart: '2025-08-23T06:00:00Z',
+            shiftEnd: '2025-08-23T18:00:00Z',
+            crewMembers: [
+              { name: 'Mike Wilson', role: 'Paramedic', phone: '555-0103' },
+              { name: 'Lisa Brown', role: 'EMT', phone: '555-0104' }
+            ],
+            currentAssignment: 'Transport from UPMC Altoona to Penn State Health',
+            notes: 'Currently on transport assignment'
+          }
+        },
+        {
+          id: '3',
+          unitNumber: 'A-103',
+          type: 'CCT',
+          currentStatus: 'AVAILABLE',
+          unitAvailability: {
+            id: '3',
+            status: 'AVAILABLE',
+            location: { lat: 40.5187, lng: -78.3945, address: 'Altoona, PA' },
+            shiftStart: '2025-08-23T06:00:00Z',
+            shiftEnd: '2025-08-23T18:00:00Z',
+            crewMembers: [
+              { name: 'Dr. Robert Chen', role: 'Critical Care Nurse', phone: '555-0105' },
+              { name: 'Tom Davis', role: 'Paramedic', phone: '555-0106' }
+            ],
+            currentAssignment: null,
+            notes: 'CCT unit available for critical care transports'
+          }
+        },
+        {
+          id: '4',
+          unitNumber: 'A-104',
+          type: 'BLS',
+          currentStatus: 'AVAILABLE',
+          unitAvailability: {
+            id: '4',
+            status: 'AVAILABLE',
+            location: { lat: 40.5187, lng: -78.3945, address: 'Altoona, PA' },
+            shiftStart: '2025-08-23T06:00:00Z',
+            shiftEnd: '2025-08-23T18:00:00Z',
+            crewMembers: [
+              { name: 'Amy Wilson', role: 'EMT', phone: '555-0107' },
+              { name: 'Chris Lee', role: 'Driver', phone: '555-0108' }
+            ],
+            currentAssignment: null,
+            notes: 'Unit ready for service'
+          }
+        },
+        {
+          id: '5',
+          unitNumber: 'A-105',
+          type: 'ALS',
+          currentStatus: 'MAINTENANCE',
+          unitAvailability: {
+            id: '5',
+            status: 'MAINTENANCE',
+            location: { lat: 40.5187, lng: -78.3945, address: 'Maintenance Garage' },
+            shiftStart: null,
+            shiftEnd: null,
+            crewMembers: null,
+            currentAssignment: 'Scheduled maintenance - brake system',
+            notes: 'Expected completion: 2025-08-24'
+          }
+        }
+      ];
+      
+      return res.json({
+        success: true,
+        data: demoUnits
+      });
+    }
+    
+    // Handle real agency data
     const agencyId = (req as any).user.agencyId;
     
     if (!agencyId) {
+      // If ADMIN user without agencyId, return demo data (they're viewing for oversight)
+      if ((req as any).user.role === 'ADMIN') {
+        console.log('[AGENCY-UNITS] ADMIN user - returning demo units data for oversight');
+        
+        const adminDemoUnits = [
+          {
+            id: '1',
+            unitNumber: 'A-101',
+            type: 'BLS',
+            currentStatus: 'AVAILABLE',
+            unitAvailability: {
+              id: '1',
+              status: 'AVAILABLE',
+              location: { lat: 40.5187, lng: -78.3945, address: 'Altoona, PA' },
+              shiftStart: '2025-08-23T06:00:00Z',
+              shiftEnd: '2025-08-23T18:00:00Z',
+              crewMembers: [
+                { name: 'John Smith', role: 'EMT', phone: '555-0101' },
+                { name: 'Sarah Johnson', role: 'Driver', phone: '555-0102' }
+              ],
+              currentAssignment: null,
+              notes: 'Unit ready for service'
+            }
+          },
+          {
+            id: '2',
+            unitNumber: 'A-102',
+            type: 'ALS',
+            currentStatus: 'IN_USE',
+            unitAvailability: {
+              id: '2',
+              status: 'IN_USE',
+              location: { lat: 40.5187, lng: -78.3945, address: 'UPMC Altoona' },
+              shiftStart: '2025-08-23T06:00:00Z',
+              shiftEnd: '2025-08-23T18:00:00Z',
+              crewMembers: [
+                { name: 'Mike Wilson', role: 'Paramedic', phone: '555-0103' },
+                { name: 'Lisa Brown', role: 'EMT', phone: '555-0104' }
+              ],
+              currentAssignment: 'Transport from UPMC Altoona to Penn State Health',
+              notes: 'Currently on transport assignment'
+            }
+          },
+          {
+            id: '3',
+            unitNumber: 'A-103',
+            type: 'CCT',
+            currentStatus: 'AVAILABLE',
+            unitAvailability: {
+              id: '3',
+              status: 'AVAILABLE',
+              location: { lat: 40.5187, lng: -78.3945, address: 'Altoona, PA' },
+              shiftStart: '2025-08-23T06:00:00Z',
+              shiftEnd: '2025-08-23T18:00:00Z',
+              crewMembers: [
+                { name: 'Dr. Robert Chen', role: 'Critical Care Nurse', phone: '555-0105' },
+                { name: 'Tom Davis', role: 'Paramedic', phone: '555-0106' }
+              ],
+              currentAssignment: null,
+              notes: 'CCT unit available for critical care transports'
+            }
+          },
+          {
+            id: '4',
+            unitNumber: 'A-104',
+            type: 'BLS',
+            currentStatus: 'AVAILABLE',
+            unitAvailability: {
+              id: '4',
+              status: 'AVAILABLE',
+              location: { lat: 40.5187, lng: -78.3945, address: 'Altoona, PA' },
+              shiftStart: '2025-08-23T06:00:00Z',
+              shiftEnd: '2025-08-23T18:00:00Z',
+              crewMembers: [
+                { name: 'Amy Wilson', role: 'EMT', phone: '555-0107' },
+                { name: 'Chris Lee', role: 'Driver', phone: '555-0108' }
+              ],
+              currentAssignment: null,
+              notes: 'Unit ready for service'
+            }
+          },
+          {
+            id: '5',
+            unitNumber: 'A-105',
+            type: 'ALS',
+            currentStatus: 'MAINTENANCE',
+            unitAvailability: {
+              id: '5',
+              status: 'MAINTENANCE',
+              location: { lat: 40.5187, lng: -78.3945, address: 'Maintenance Garage' },
+              shiftStart: null,
+              shiftEnd: null,
+              crewMembers: null,
+              currentAssignment: 'Scheduled maintenance - brake system',
+              notes: 'Expected completion: 2025-08-24'
+            }
+          }
+        ];
+        
+        return res.json({
+          success: true,
+          data: adminDemoUnits
+        });
+      }
+      
       return res.status(403).json({
         success: false,
         message: 'Access denied. Agency context required.'
@@ -399,10 +612,43 @@ router.get('/units', authenticateAgencyToken, async (req, res) => {
 // Update Unit Availability (Protected)
 router.put('/units/:unitId/availability', authenticateAgencyToken, async (req, res) => {
   try {
+    const authHeader = req.headers['authorization'];
+    
+    // Handle demo mode
+    if (authHeader === 'Bearer demo-agency-token') {
+      console.log('[UNIT-AVAILABILITY-UPDATE] Demo mode - unit update simulated');
+      
+      // In demo mode, just return success without actually updating database
+      return res.json({
+        success: true,
+        message: 'Unit availability updated successfully (demo mode)',
+        data: {
+          id: req.params.unitId,
+          ...req.body,
+          lastUpdated: new Date().toISOString()
+        }
+      });
+    }
+    
+    // Handle real agency data
     const agencyId = (req as any).user.agencyId;
     const { unitId } = req.params;
     
     if (!agencyId) {
+      // If ADMIN user without agencyId, simulate update (they're viewing for oversight)
+      if ((req as any).user.role === 'ADMIN') {
+        console.log('[UNIT-AVAILABILITY-UPDATE] ADMIN user - unit update simulated for oversight');
+        return res.json({
+          success: true,
+          message: 'Unit availability updated successfully (ADMIN oversight mode)',
+          data: {
+            id: unitId,
+            ...req.body,
+            lastUpdated: new Date().toISOString()
+          }
+        });
+      }
+      
       return res.status(403).json({
         success: false,
         message: 'Access denied. Agency context required.'
@@ -549,6 +795,111 @@ router.get('/bids', authenticateAgencyToken, async (req, res) => {
     const agencyId = (req as any).user.agencyId;
     
     if (!agencyId) {
+      // If ADMIN user without agencyId, return demo data (they're viewing for oversight)
+      if ((req as any).user.role === 'ADMIN') {
+        console.log('[AGENCY-BIDS] ADMIN user - returning demo bids data for oversight');
+        
+        const adminDemoBids = [
+          {
+            id: '1',
+            transportRequest: {
+              id: '1',
+              patientId: 'P-001',
+              originFacility: {
+                name: 'UPMC Altoona',
+                city: 'Altoona',
+                state: 'PA'
+              },
+              destinationFacility: {
+                name: 'Penn State Health',
+                city: 'Hershey',
+                state: 'PA'
+              },
+              transportLevel: 'CCT',
+              priority: 'HIGH',
+              status: 'PENDING',
+              requestTimestamp: '2025-08-23T10:30:00Z',
+              estimatedDistance: 85
+            },
+            bidAmount: 450,
+            estimatedArrival: '2025-08-23T11:30:00Z',
+            unitType: 'CCT',
+            specialCapabilities: { ventilator: true, cardiacMonitoring: true },
+            notes: 'CCT unit available with full critical care support',
+            status: 'ACCEPTED',
+            submittedAt: '2025-08-23T10:35:00Z',
+            responseTime: '15 minutes',
+            acceptedAt: '2025-08-23T10:50:00Z'
+          },
+          {
+            id: '2',
+            transportRequest: {
+              id: '2',
+              patientId: 'P-002',
+              originFacility: {
+                name: 'Mount Nittany Medical Center',
+                city: 'State College',
+                state: 'PA'
+              },
+              destinationFacility: {
+                name: 'UPMC Altoona',
+                city: 'Altoona',
+                state: 'PA'
+              },
+              transportLevel: 'ALS',
+              priority: 'MEDIUM',
+              status: 'PENDING',
+              requestTimestamp: '2025-08-23T09:15:00Z',
+              estimatedDistance: 45
+            },
+            bidAmount: 275,
+            estimatedArrival: '2025-08-23T10:00:00Z',
+            unitType: 'ALS',
+            specialCapabilities: { cardiacMonitoring: true, ivTherapy: true },
+            notes: 'ALS unit with cardiac monitoring capabilities',
+            status: 'PENDING',
+            submittedAt: '2025-08-23T09:20:00Z'
+          },
+          {
+            id: '3',
+            transportRequest: {
+              id: '3',
+              patientId: 'P-003',
+              originFacility: {
+                name: 'Conemaugh Memorial Medical Center',
+                city: 'Johnstown',
+                state: 'PA'
+              },
+              destinationFacility: {
+                name: 'UPMC Presbyterian',
+                city: 'Pittsburgh',
+                state: 'PA'
+              },
+              transportLevel: 'CCT',
+              priority: 'URGENT',
+              status: 'PENDING',
+              requestTimestamp: '2025-08-23T11:00:00Z',
+              estimatedDistance: 120
+            },
+            bidAmount: 600,
+            estimatedArrival: '2025-08-23T12:30:00Z',
+            unitType: 'CCT',
+            specialCapabilities: { ecmo: true, ventilator: true },
+            notes: 'CCT unit with ECMO support available',
+            status: 'REJECTED',
+            submittedAt: '2025-08-23T11:05:00Z',
+            responseTime: '20 minutes',
+            rejectedAt: '2025-08-23T11:25:00Z',
+            rejectionReason: 'Another agency accepted with faster response time'
+          }
+        ];
+        
+        return res.json({
+          success: true,
+          data: adminDemoBids
+        });
+      }
+      
       return res.status(403).json({
         success: false,
         message: 'Access denied. Agency context required.'
@@ -577,6 +928,29 @@ router.get('/bids/stats', authenticateAgencyToken, async (req, res) => {
     const agencyId = (req as any).user.agencyId;
     
     if (!agencyId) {
+      // If ADMIN user without agencyId, return demo stats (they're viewing for oversight)
+      if ((req as any).user.role === 'ADMIN') {
+        console.log('[BID-STATS] ADMIN user - returning demo bid stats for oversight');
+        
+        const adminDemoStats = {
+          totalBids: 3,
+          acceptedBids: 1,
+          rejectedBids: 1,
+          pendingBids: 1,
+          expiredBids: 0,
+          withdrawnBids: 0,
+          acceptanceRate: 33.3,
+          averageResponseTime: 17.5,
+          totalRevenue: 450,
+          averageBidAmount: 441.67
+        };
+        
+        return res.json({
+          success: true,
+          data: adminDemoStats
+        });
+      }
+      
       return res.status(403).json({
         success: false,
         message: 'Access denied. Agency context required.'
@@ -605,6 +979,21 @@ router.put('/bids/:bidId/withdraw', authenticateAgencyToken, async (req, res) =>
     const { bidId } = req.params;
     
     if (!agencyId) {
+      // If ADMIN user without agencyId, simulate withdrawal (they're viewing for oversight)
+      if ((req as any).user.role === 'ADMIN') {
+        console.log('[BID-WITHDRAW] ADMIN user - bid withdrawal simulated for oversight');
+        return res.json({
+          success: true,
+          message: 'Bid withdrawn successfully (ADMIN oversight mode)',
+          data: {
+            id: bidId,
+            status: 'WITHDRAWN',
+            reviewNotes: 'Bid withdrawn by agency (simulated for ADMIN oversight)',
+            updatedAt: new Date().toISOString()
+          }
+        });
+      }
+      
       return res.status(403).json({
         success: false,
         message: 'Access denied. Agency context required.'

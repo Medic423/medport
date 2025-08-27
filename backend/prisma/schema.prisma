@@ -1042,6 +1042,7 @@ enum BidStatus {
   ACCEPTED
   REJECTED
   EXPIRED
+  WITHDRAWN
 }
 
 // Real-time Tracking Enums (Phase 6.1)

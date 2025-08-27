@@ -66,6 +66,7 @@ const BidManagement: React.FC = () => {
   const agency = JSON.parse(localStorage.getItem('agency') || '{}');
   const agencyToken = localStorage.getItem('agencyToken');
   const isDemoMode = localStorage.getItem('demoMode') === 'true';
+  const userRole = localStorage.getItem('userRole') || '';
 
   useEffect(() => {
     if (isDemoMode) {
@@ -265,9 +266,15 @@ const BidManagement: React.FC = () => {
   const loadBids = async () => {
     try {
       setIsLoading(true);
+      
+      // Use appropriate token based on user role
+      const authHeader = userRole === 'ADMIN' 
+        ? `Bearer ${localStorage.getItem('token')}`
+        : `Bearer ${agencyToken}`;
+
       const response = await fetch('/api/agency/bids', {
         headers: {
-          'Authorization': `Bearer ${agencyToken}`,
+          'Authorization': authHeader,
           'Content-Type': 'application/json'
         }
       });
@@ -277,19 +284,19 @@ const BidManagement: React.FC = () => {
       }
 
       const data = await response.json();
-      setBids(data.bids || []);
+      setBids(data.data || []); // Note: backend returns data.data
       
       // Load stats
-      const statsResponse = await fetch('/api/agency/stats', {
+      const statsResponse = await fetch('/api/agency/bids/stats', {
         headers: {
-          'Authorization': `Bearer ${agencyToken}`,
+          'Authorization': authHeader,
           'Content-Type': 'application/json'
         }
       });
 
       if (statsResponse.ok) {
         const statsData = await statsResponse.json();
-        setStats(statsData.stats);
+        setStats(statsData.data); // Note: backend returns data.data
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load bids');
@@ -364,10 +371,15 @@ const BidManagement: React.FC = () => {
         return;
       }
 
+      // Use appropriate token based on user role
+      const authHeader = userRole === 'ADMIN' 
+        ? `Bearer ${localStorage.getItem('token')}`
+        : `Bearer ${agencyToken}`;
+
       const response = await fetch(`/api/agency/bids/${selectedBid.id}/withdraw`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${agencyToken}`,
+          'Authorization': authHeader,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ reason: withdrawReason })
