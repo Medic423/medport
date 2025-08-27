@@ -96,6 +96,71 @@ Ambulance Operations ▼
 
 **The Ambulance Operations menu is now fully functional with all modules working correctly!** 🎉
 
+---
+
+## 🔒 **AMBULANCE OPERATIONS MENU VISIBILITY FIXED** ✅
+
+**Date**: August 27, 2025  
+**Status**: 🎉 **COMPLETE - MENU NOW PROPERLY RESTRICTED**  
+**Issue**: Ambulance Operations menu was showing up for all users instead of just agency users
+
+### **What Was Fixed:**
+
+#### **1. ✅ Role-Based Access Control:**
+- **Removed `ADMIN` role** from all Ambulance Operations modules
+- **Restricted access** to `TRANSPORT_AGENCY` role only
+- **Result**: Transport center staff no longer see agency-specific modules
+
+#### **2. ✅ Demo Token System Separation:**
+- **Created separate demo token**: `demo-agency-token` for agency routes
+- **Maintained existing demo token**: `demo-token` for transport center routes
+- **Result**: No more role confusion between different user types
+
+#### **3. ✅ Custom Authentication Middleware:**
+- **Implemented `authenticateAgencyToken`** for agency-specific routes
+- **Proper role assignment**: Agency demo users get `TRANSPORT_AGENCY` role
+- **Fallback authentication**: Regular JWT tokens still work for real users
+
+### **Technical Implementation:**
+
+#### **Backend Changes:**
+- **Updated `roleBasedAccessService.ts`**: Removed `ADMIN` from Ambulance Operations `visibleToRoles`
+- **Enhanced `agency.ts` routes**: Added custom authentication middleware
+- **Separate demo tokens**: `demo-token` vs `demo-agency-token`
+
+#### **Frontend Changes:**
+- **Updated agency components**: Now use `demo-agency-token` for demo mode
+- **Components affected**: CrewScheduling, TripAcceptance, RevenueOpportunities, AgencyAnalytics
+- **Maintained compatibility**: Transport center components still use `demo-token`
+
+### **Current Menu Visibility:**
+
+#### **Transport Center Staff (ADMIN/COORDINATOR roles):**
+```
+MedPort Transport Center
+├── Dispatch Operations ✅
+├── Financial Planning ✅
+└── Tools & Utilities ✅
+❌ **Ambulance Operations NOT VISIBLE**
+```
+
+#### **Agency Users (TRANSPORT_AGENCY role):**
+```
+MedPort Transport Center
+├── Dispatch Operations ✅
+├── Financial Planning ✅
+├── Ambulance Operations ✅
+└── Tools & Utilities ✅
+```
+
+### **Testing Results:**
+- **Backend**: All agency API endpoints working with new demo token
+- **Role Separation**: Transport center users no longer see Ambulance Operations
+- **Agency Access**: Agency users can access all their modules correctly
+- **Demo Tokens**: Both token systems working independently
+
+**The Ambulance Operations menu is now properly restricted to agency users only!** 🎉
+
 **Phase 6.5 Phase 2 Implementation Summary: ✅ COMPLETED SUCCESSFULLY**
 
 **Backend Components:**
