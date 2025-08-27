@@ -36,14 +36,76 @@ const CrewScheduling: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // Check for demo mode and get appropriate token
-      const isDemoMode = localStorage.getItem('demoMode') === 'true';
-      const token = isDemoMode ? 'demo-agency-token' : localStorage.getItem('token');
+      const userRole = localStorage.getItem('userRole');
+      const agencyToken = localStorage.getItem('agencyToken');
+      const adminToken = localStorage.getItem('token');
+      
+      // Smart token selection based on user role
+      const authHeader = userRole === 'ADMIN' 
+        ? `Bearer ${adminToken}`
+        : `Bearer ${agencyToken}`;
+      
+      if (!authHeader || authHeader === 'Bearer null') {
+        // Use demo data for now
+        const demoCrew = [
+          {
+            id: 'demo-crew-1',
+            name: 'John Smith',
+            role: 'DRIVER',
+            certification: 'CDL-A',
+            availability: 'AVAILABLE',
+            currentLocation: 'Main Station',
+            shiftStart: '08:00',
+            shiftEnd: '20:00'
+          },
+          {
+            id: 'demo-crew-2',
+            name: 'Sarah Johnson',
+            role: 'EMT',
+            certification: 'EMT-B',
+            availability: 'AVAILABLE',
+            currentLocation: 'Main Station',
+            shiftStart: '08:00',
+            shiftEnd: '20:00'
+          },
+          {
+            id: 'demo-crew-3',
+            name: 'Mike Davis',
+            role: 'PARAMEDIC',
+            certification: 'EMT-P',
+            availability: 'ASSIGNED',
+            currentLocation: 'En Route',
+            shiftStart: '08:00',
+            shiftEnd: '20:00'
+          }
+        ];
+        
+        const demoAssignments = [
+          {
+            id: 'demo-assign-1',
+            crewMemberId: 'demo-crew-3',
+            transportRequestId: 'demo-transport-1',
+            assignmentTime: '2025-08-26T10:00:00Z',
+            status: 'ACTIVE'
+          },
+          {
+            id: 'demo-assign-2',
+            crewMemberId: 'demo-crew-1',
+            transportRequestId: 'demo-transport-2',
+            assignmentTime: '2025-08-26T14:00:00Z',
+            status: 'PENDING'
+          }
+        ];
+        
+        setCrewMembers(demoCrew);
+        setAssignments(demoAssignments);
+        return;
+      }
 
       // Load crew members
       const crewResponse = await fetch('/api/agency/crew', {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': authHeader
         }
       });
 
@@ -55,7 +117,7 @@ const CrewScheduling: React.FC = () => {
       // Load assignments
       const assignmentResponse = await fetch('/api/agency/assignments', {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': authHeader
         }
       });
 
@@ -80,14 +142,28 @@ const CrewScheduling: React.FC = () => {
 
   const handleAssignmentSubmit = async (assignmentData: any) => {
     try {
-      const isDemoMode = localStorage.getItem('demoMode') === 'true';
-      const token = isDemoMode ? 'demo-agency-token' : localStorage.getItem('token');
+      const userRole = localStorage.getItem('userRole');
+      const agencyToken = localStorage.getItem('agencyToken');
+      const adminToken = localStorage.getItem('token');
+      
+      // Smart token selection based on user role
+      const authHeader = userRole === 'ADMIN' 
+        ? `Bearer ${adminToken}`
+        : `Bearer ${agencyToken}`;
+      
+      if (!authHeader || authHeader === 'Bearer null') {
+        // For demo, just show success message
+        alert('Demo mode: Crew assignment would be created successfully!');
+        setShowAssignmentForm(false);
+        setSelectedCrewMember(null);
+        return;
+      }
 
       const response = await fetch('/api/agency/assignments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': authHeader
         },
         body: JSON.stringify(assignmentData)
       });

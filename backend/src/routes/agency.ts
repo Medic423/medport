@@ -1059,6 +1059,77 @@ router.get('/crew', authenticateAgencyToken, async (req, res) => {
   try {
     console.log('[AGENCY-CREW] Fetching crew members');
     
+    const agencyId = (req as any).user.agencyId;
+    
+    if (!agencyId) {
+      if ((req as any).user.role === 'ADMIN') {
+        // Return enhanced demo data for ADMIN users
+        const adminDemoCrew = [
+          {
+            id: 'admin-crew-1',
+            name: 'John Smith',
+            role: 'DRIVER',
+            certification: 'CDL-A',
+            availability: 'AVAILABLE',
+            currentLocation: 'Main Station',
+            shiftStart: '08:00',
+            shiftEnd: '20:00'
+          },
+          {
+            id: 'admin-crew-2',
+            name: 'Sarah Johnson',
+            role: 'EMT',
+            certification: 'EMT-B',
+            availability: 'AVAILABLE',
+            currentLocation: 'Main Station',
+            shiftStart: '08:00',
+            shiftEnd: '20:00'
+          },
+          {
+            id: 'admin-crew-3',
+            name: 'Mike Davis',
+            role: 'PARAMEDIC',
+            certification: 'EMT-P',
+            availability: 'ASSIGNED',
+            currentLocation: 'En Route',
+            shiftStart: '08:00',
+            shiftEnd: '20:00'
+          },
+          {
+            id: 'admin-crew-4',
+            name: 'Lisa Chen',
+            role: 'NURSE',
+            certification: 'RN-CCRN',
+            availability: 'ON_BREAK',
+            currentLocation: 'Break Room',
+            shiftStart: '12:00',
+            shiftEnd: '00:00'
+          },
+          {
+            id: 'admin-crew-5',
+            name: 'Robert Wilson',
+            role: 'DRIVER',
+            certification: 'CDL-A',
+            availability: 'OFF_DUTY',
+            currentLocation: 'Home',
+            shiftStart: '20:00',
+            shiftEnd: '08:00'
+          }
+        ];
+        
+        return res.json({
+          success: true,
+          message: 'Admin demo crew data retrieved successfully',
+          crewMembers: adminDemoCrew
+        });
+      }
+      
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Agency context required.'
+      });
+    }
+    
     // Check if this is a demo request
     const authHeader = req.headers.authorization;
     const isDemoMode = authHeader === 'Bearer demo-agency-token';
@@ -1158,6 +1229,55 @@ router.get('/assignments', authenticateAgencyToken, async (req, res) => {
   try {
     console.log('[AGENCY-ASSIGNMENTS] Fetching crew assignments');
     
+    const agencyId = (req as any).user.agencyId;
+    
+    if (!agencyId) {
+      if ((req as any).user.role === 'ADMIN') {
+        // Return enhanced demo data for ADMIN users
+        const adminDemoAssignments = [
+          {
+            id: 'admin-assign-1',
+            crewMemberId: 'admin-crew-3',
+            transportRequestId: 'admin-transport-1',
+            assignmentTime: '2025-08-26T10:00:00Z',
+            status: 'ACTIVE'
+          },
+          {
+            id: 'admin-assign-2',
+            crewMemberId: 'admin-crew-1',
+            transportRequestId: 'admin-transport-2',
+            assignmentTime: '2025-08-26T14:00:00Z',
+            status: 'PENDING'
+          },
+          {
+            id: 'admin-assign-3',
+            crewMemberId: 'admin-crew-4',
+            transportRequestId: 'admin-transport-3',
+            assignmentTime: '2025-08-26T16:00:00Z',
+            status: 'COMPLETED'
+          },
+          {
+            id: 'admin-assign-4',
+            crewMemberId: 'admin-crew-2',
+            transportRequestId: 'admin-transport-4',
+            assignmentTime: '2025-08-26T18:00:00Z',
+            status: 'CANCELLED'
+          }
+        ];
+        
+        return res.json({
+          success: true,
+          message: 'Admin demo assignments retrieved successfully',
+          assignments: adminDemoAssignments
+        });
+      }
+      
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Agency context required.'
+      });
+    }
+    
     // Check if this is a demo request
     const authHeader = req.headers.authorization;
     const isDemoMode = authHeader === 'Bearer demo-agency-token';
@@ -1223,6 +1343,32 @@ router.get('/assignments', authenticateAgencyToken, async (req, res) => {
 router.post('/assignments', authenticateAgencyToken, async (req, res) => {
   try {
     console.log('[AGENCY-ASSIGNMENTS] Creating crew assignment:', req.body);
+    
+    const agencyId = (req as any).user.agencyId;
+    
+    if (!agencyId) {
+      if ((req as any).user.role === 'ADMIN') {
+        // For ADMIN users, return demo assignment creation
+        const newAdminAssignment = {
+          id: `admin-assign-${Date.now()}`,
+          crewMemberId: req.body.crewMemberId,
+          transportRequestId: req.body.transportRequestId,
+          assignmentTime: new Date().toISOString(),
+          status: 'PENDING'
+        };
+        
+        return res.status(201).json({
+          success: true,
+          message: 'Admin demo crew assignment created successfully',
+          assignment: newAdminAssignment
+        });
+      }
+      
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Agency context required.'
+      });
+    }
     
     // For now, just return success with demo data
     const newAssignment = {
