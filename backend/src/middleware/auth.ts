@@ -18,7 +18,7 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
     req.user = {
       id: 'demo-user',
       email: 'demo@medport.com',
-      role: 'COORDINATOR'
+      role: 'ADMIN'
     };
     return next();
   }

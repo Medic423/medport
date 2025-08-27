@@ -228,7 +228,17 @@ export class SessionService {
         'agency:profile',
         // Bidding
         'bid:manage',
-        'bid:read'
+        'bid:read',
+        // Ambulance Operations permissions
+        'matching:view',
+        'matching:manage',
+        'crew:schedule',
+        'crew:manage',
+        'trip:accept',
+        'trip:manage',
+        'revenue:view',
+        'revenue:optimize',
+        'analytics:agency'
       ],
       COORDINATOR: [
         // Transport Center Coordinator capabilities
