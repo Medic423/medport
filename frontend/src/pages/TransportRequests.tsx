@@ -10,6 +10,12 @@ const TransportRequests: React.FC = () => {
   const [duplicatingRequest, setDuplicatingRequest] = useState<TransportRequestWithDetails | null>(null);
   const [cancellingRequest, setCancellingRequest] = useState<string | null>(null);
   const [cancelReason, setCancelReason] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Function to refresh the transport requests list
+  const refreshTransportRequests = () => {
+    setRefreshKey(prev => prev + 1);
+  };
 
   const handleCreateRequest = async (formData: TransportRequestFormData) => {
     try {
@@ -31,12 +37,16 @@ const TransportRequests: React.FC = () => {
           const result = await response.json();
           console.log('[MedPort:TransportRequests] Request created:', result);
           setShowForm(false);
-          // Refresh the list
-          window.location.reload();
+          // Show success message and refresh data
+          alert('Transport request created successfully!');
+          // Refresh the transport requests list without page reload
+          refreshTransportRequests();
         } catch (parseError) {
           console.error('[MedPort:TransportRequests] Failed to parse success response:', parseError);
           setShowForm(false);
-          window.location.reload();
+          alert('Transport request created successfully!');
+          // Refresh the transport requests list without page reload
+          refreshTransportRequests();
         }
       } else {
         let errorMessage = 'Failed to create transport request';
@@ -76,12 +86,17 @@ const TransportRequests: React.FC = () => {
           const result = await response.json();
           console.log('[MedPort:TransportRequests] Request updated:', result);
           setEditingRequest(null);
-          // Refresh the list
-          window.location.reload();
+          // Show success message and refresh data
+          alert('Transport request updated successfully!');
+          // Refresh the transport requests list without page reload
+          refreshTransportRequests();
         } catch (parseError) {
           console.error('[MedPort:TransportRequests] Failed to parse success response:', parseError);
           setEditingRequest(null);
-          window.location.reload();
+          alert('Transport request updated successfully!');
+          setShowForm(false);
+          // Refresh the transport requests list without page reload
+          refreshTransportRequests();
         }
       } else {
         let errorMessage = 'Failed to update transport request';
@@ -121,12 +136,16 @@ const TransportRequests: React.FC = () => {
           const result = await response.json();
           console.log('[MedPort:TransportRequests] Request duplicated:', result);
           setDuplicatingRequest(null);
-          // Refresh the list
-          window.location.reload();
+          // Show success message and refresh data
+          alert('Transport request duplicated successfully!');
+          // Refresh the transport requests list without page reload
+          refreshTransportRequests();
         } catch (parseError) {
           console.error('[MedPort:TransportRequests] Failed to parse success response:', parseError);
           setDuplicatingRequest(null);
-          window.location.reload();
+          alert('Transport request duplicated successfully!');
+          // Refresh the transport requests list without page reload
+          refreshTransportRequests();
         }
       } else {
         let errorMessage = 'Failed to duplicate transport request';
@@ -163,13 +182,17 @@ const TransportRequests: React.FC = () => {
           console.log('[MedPort:TransportRequests] Request cancelled:', result);
           setCancellingRequest(null);
           setCancelReason('');
-          // Refresh the list
-          window.location.reload();
+          // Show success message and refresh data
+          alert('Transport request cancelled successfully!');
+          // Refresh the transport requests list without page reload
+          refreshTransportRequests();
         } catch (parseError) {
           console.error('[MedPort:TransportRequests] Failed to parse success response:', parseError);
           setCancellingRequest(null);
           setCancelReason('');
-          window.location.reload();
+          alert('Transport request cancelled successfully!');
+          // Refresh the transport requests list without page reload
+          refreshTransportRequests();
         }
       } else {
         let errorMessage = 'Failed to cancel transport request';
@@ -268,6 +291,7 @@ const TransportRequests: React.FC = () => {
           />
         ) : (
           <TransportRequestList
+            key={refreshKey}
             onEditRequest={setEditingRequest}
             onViewRequest={setViewingRequest}
             onStatusChange={handleStatusChange}
