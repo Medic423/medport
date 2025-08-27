@@ -118,11 +118,13 @@ export class RoleBasedAccessService {
         visibleToRoles: ['ADMIN', 'COORDINATOR'],
         isActive: true
       },
+
+      // Ambulance Operations - Agency-specific transport operations and management
       {
         id: 'agency-portal',
         name: 'Agency Portal',
         description: 'Transport agency management and operations',
-        category: 'Tools and Utilities',
+        category: 'Ambulance Operations',
         requiredPermissions: ['agency:profile', 'unit:manage'],
         visibleToRoles: ['TRANSPORT_AGENCY'],
         isActive: true
@@ -131,7 +133,7 @@ export class RoleBasedAccessService {
         id: 'unit-management',
         name: 'Unit Management',
         description: 'Manage transport units and availability',
-        category: 'Tools and Utilities',
+        category: 'Ambulance Operations',
         requiredPermissions: ['unit:manage', 'unit:read'],
         visibleToRoles: ['TRANSPORT_AGENCY'],
         isActive: true
@@ -140,7 +142,7 @@ export class RoleBasedAccessService {
         id: 'bid-management',
         name: 'Bid Management',
         description: 'Manage transport bids and assignments',
-        category: 'Tools and Utilities',
+        category: 'Ambulance Operations',
         requiredPermissions: ['bid:manage', 'bid:read'],
         visibleToRoles: ['TRANSPORT_AGENCY'],
         isActive: true
@@ -149,8 +151,44 @@ export class RoleBasedAccessService {
         id: 'matching-system',
         name: 'Matching System',
         description: 'Transport request matching and coordination',
-        category: 'Tools and Utilities',
+        category: 'Ambulance Operations',
         requiredPermissions: ['matching:view', 'matching:manage'],
+        visibleToRoles: ['TRANSPORT_AGENCY'],
+        isActive: true
+      },
+      {
+        id: 'crew-scheduling',
+        name: 'Crew Scheduling',
+        description: 'Schedule and manage transport crew assignments',
+        category: 'Ambulance Operations',
+        requiredPermissions: ['crew:schedule', 'crew:manage'],
+        visibleToRoles: ['TRANSPORT_AGENCY'],
+        isActive: true
+      },
+      {
+        id: 'trip-acceptance',
+        name: 'Trip Acceptance',
+        description: 'Accept and manage transport trip assignments',
+        category: 'Ambulance Operations',
+        requiredPermissions: ['trip:accept', 'trip:manage'],
+        visibleToRoles: ['TRANSPORT_AGENCY'],
+        isActive: true
+      },
+      {
+        id: 'revenue-opportunities',
+        name: 'Revenue Opportunities',
+        description: 'View and manage revenue optimization opportunities',
+        category: 'Ambulance Operations',
+        requiredPermissions: ['revenue:view', 'revenue:optimize'],
+        visibleToRoles: ['TRANSPORT_AGENCY'],
+        isActive: true
+      },
+      {
+        id: 'agency-analytics',
+        name: 'Agency Analytics',
+        description: 'Agency-specific performance and financial analytics',
+        category: 'Ambulance Operations',
+        requiredPermissions: ['analytics:agency', 'analytics:view'],
         visibleToRoles: ['TRANSPORT_AGENCY'],
         isActive: true
       },

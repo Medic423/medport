@@ -18,6 +18,10 @@ import AgencyPortal from './pages/AgencyPortal';
 import UnitManagement from './components/UnitManagement';
 import BidManagement from './components/BidManagement';
 import MatchingSystem from './components/MatchingSystem';
+import CrewScheduling from './components/CrewScheduling';
+import TripAcceptance from './components/TripAcceptance';
+import RevenueOpportunities from './components/RevenueOpportunities';
+import AgencyAnalytics from './components/AgencyAnalytics';
 import QRCodeSystem from './pages/QRCodeSystem';
 import OfflineCapabilities from './pages/OfflineCapabilities';
 
@@ -201,6 +205,10 @@ function App() {
         {currentPage === 'unit-management' && <UnitManagement />}
         {currentPage === 'bid-management' && <BidManagement />}
         {currentPage === 'matching-system' && <MatchingSystem />}
+        {currentPage === 'crew-scheduling' && <CrewScheduling />}
+        {currentPage === 'trip-acceptance' && <TripAcceptance />}
+        {currentPage === 'revenue-opportunities' && <RevenueOpportunities />}
+        {currentPage === 'agency-analytics' && <AgencyAnalytics />}
         {currentPage === 'qr-code-system' && <QRCodeSystem />}
         {currentPage === 'offline-capabilities' && <OfflineCapabilities />}
 
