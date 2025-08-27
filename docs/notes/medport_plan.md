@@ -1114,3 +1114,102 @@ Dispatch Operations [✓] (Category checkbox)
 Now we can safely work on enhancing the "Settings → Module Visibility" functionality with confidence that we can always return to this stable state.
 
 **The system is now safely preserved and ready for the next development phase!** 🎉
+
+---
+
+## 🚑 **AMBULANCE OPERATIONS CATEGORY IMPLEMENTED** ✅
+
+**Date**: August 26, 2025  
+**Status**: 🎉 **COMPLETE AGENCY FUNCTIONALITY RESTORED**  
+**Issue**: Agency users were missing critical functionality for accepting trips, scheduling crew, and viewing revenue opportunities
+
+### **What Was Implemented:**
+
+#### **1. ✅ New "Ambulance Operations" Navigation Category:**
+- **Created**: Dedicated navigation category for agency-specific functionality
+- **Moved**: Agency modules from "Tools and Utilities" to "Ambulance Operations"
+- **Result**: Clean, logical separation between transport center and agency operations
+
+#### **2. ✅ Crew Scheduling Component:**
+- **Functionality**: Transport crew assignments and scheduling management
+- **Features**: Crew member status tracking, availability management, shift scheduling
+- **API Integration**: `/api/agency/crew` and `/api/agency/assignments` endpoints
+- **Demo Mode**: Full demo mode support for development and testing
+
+#### **3. ✅ Trip Acceptance Component:**
+- **Functionality**: Accept and reject transport trip assignments
+- **Features**: Transport request filtering, revenue potential display, trip details
+- **API Integration**: `/api/agency/transport-requests` with accept/reject endpoints
+- **Demo Mode**: Full demo mode support for development and testing
+
+#### **4. ✅ Revenue Opportunities Component:**
+- **Functionality**: View and manage revenue optimization opportunities
+- **Features**: Route optimization, chained trips, capacity utilization, empty miles reduction
+- **Metrics**: ROI analysis, implementation difficulty, cost savings
+- **API Integration**: `/api/agency/revenue-opportunities` endpoint
+- **Demo Mode**: Full demo mode support for development and testing
+
+#### **5. ✅ Agency Analytics Component:**
+- **Functionality**: Agency-specific performance and financial analytics
+- **Features**: Trip trends, revenue breakdown, performance indicators, financial summary
+- **Metrics**: On-time performance, customer satisfaction, unit utilization, crew efficiency
+- **API Integration**: `/api/agency/analytics` endpoints for metrics, trends, and revenue
+- **Demo Mode**: Full demo mode support for development and testing
+
+### **Navigation Structure Reorganization:**
+
+#### **Before (3 Categories):**
+- **Dispatch Operations**: Transport coordination and routing
+- **Financial Planning**: Analytics, resource management, and financial operations  
+- **Tools and Utilities**: Supporting tools + agency modules (confusing)
+
+#### **After (4 Categories):**
+- **Dispatch Operations**: Transport coordination and routing
+- **Financial Planning**: Analytics, resource management, and financial operations
+- **Ambulance Operations**: Agency-specific functionality (NEW)
+  - Agency Portal
+  - Unit Management
+  - Bid Management
+  - Matching System
+  - Crew Scheduling
+  - Trip Acceptance
+  - Revenue Opportunities
+  - Agency Analytics
+- **Tools and Utilities**: Supporting tools (QR Code, Offline Capabilities, etc.)
+
+### **Technical Implementation:**
+
+1. **Backend Service Updates**: 
+   - Updated `RoleBasedAccessService` with new "Ambulance Operations" category
+   - Added new agency modules with proper permissions and role visibility
+   - Maintained backward compatibility for existing functionality
+
+2. **Frontend Components**: 
+   - Created 4 new React components with TypeScript interfaces
+   - Proper authentication handling for both demo and production modes
+   - Responsive design with Tailwind CSS
+   - Error handling and loading states
+
+3. **API Endpoints**: 
+   - All components designed to work with existing agency API structure
+   - Demo mode support through `demo-token` authentication
+   - Proper error handling and user feedback
+
+### **Current Status:**
+- **✅ Navigation Structure**: Clean, logical organization with 4 distinct categories
+- **✅ Agency Functionality**: Complete agency operations restored and enhanced
+- **✅ Component Creation**: 4 new components with full functionality
+- **✅ Frontend Compilation**: No TypeScript errors, successful build
+- **✅ Demo Mode Support**: All components support demo mode for development
+- **✅ Authentication**: Proper token handling for both demo and production
+
+### **Benefits of Reorganization:**
+- **Clear User Experience**: Agency users see relevant operations in dedicated category
+- **Logical Organization**: Modules grouped by actual function and user type
+- **Role Separation**: Transport center staff see transport operations, agencies see agency operations
+- **Scalability**: Easy to add new agency modules to appropriate category
+- **Maintainability**: Cleaner code organization and navigation structure
+
+**The agency functionality is now complete and properly organized!** 🎉
+
+**Next Phase**: Continue with Role-Based Menu Configuration on the feature branch
