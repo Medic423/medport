@@ -120,8 +120,7 @@ export const useRoleBasedAccess = () => {
       setLoading(true);
       setError(null);
 
-      // Ensure demo mode is set in localStorage
-      localStorage.setItem('demoMode', 'true');
+      // Note: demo mode should only be set when explicitly requested, not automatically
 
       const response = await fetch('/api/role-based-access/demo/navigation', {
         headers: {
@@ -270,8 +269,7 @@ export const useRoleBasedAccess = () => {
   // Demo mode landing page fetch
   const getDemoLandingPage = useCallback(async (): Promise<string> => {
     try {
-      // Ensure demo mode is set in localStorage
-      localStorage.setItem('demoMode', 'true');
+      // Note: demo mode should only be set when explicitly requested, not automatically
 
       const response = await fetch('/api/role-based-access/demo/landing-page', {
         headers: {

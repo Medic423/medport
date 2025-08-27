@@ -205,21 +205,6 @@ const TransportRequestForm: React.FC<TransportRequestFormProps> = ({
       return;
     }
 
-    // Check if we're in demo mode (no facilities loaded)
-    if (facilities.length === 0) {
-      // Demo mode - use placeholder facility IDs
-      const submitData = {
-        ...formData,
-        originFacilityId: 'demo-origin-001',
-        destinationFacilityId: 'demo-destination-001'
-      };
-      
-      // Show demo message
-      alert('Demo Mode: This is a demonstration. In a real system, you would be able to select actual facilities and submit the request.');
-      console.log('[MedPort:Demo] Form submitted with demo data:', submitData);
-      return;
-    }
-
     // Find facility IDs from names
     const originFacility = facilities.find(f => f.name === formData.originFacilityId);
     const destinationFacility = facilities.find(f => f.name === formData.destinationFacilityId);

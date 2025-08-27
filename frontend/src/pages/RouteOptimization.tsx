@@ -95,11 +95,7 @@ const RouteOptimization: React.FC = () => {
     const demoMode = localStorage.getItem('demoMode') === 'true';
     setIsDemoMode(demoMode);
     
-    // If no token and not in demo mode, automatically enable demo mode
-    if (!localStorage.getItem('token') && !demoMode) {
-      localStorage.setItem('demoMode', 'true');
-      setIsDemoMode(true);
-    }
+    // Note: Demo mode should only be set explicitly, not automatically
   }, []);
 
   const handleOptimizationRequest = async (request: RouteOptimizationRequest) => {
@@ -118,9 +114,8 @@ const RouteOptimization: React.FC = () => {
       } else if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       } else {
-        // Set demo mode and try again
-        localStorage.setItem('demoMode', 'true');
-        headers['Authorization'] = 'demo-token';
+        // No authentication available - should not automatically set demo mode
+        throw new Error('Authentication required. Please log in.');
       }
 
       const response = await fetch('/api/route-optimization/optimize', {
@@ -177,9 +172,8 @@ const RouteOptimization: React.FC = () => {
       } else if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       } else {
-        // Set demo mode and try again
-        localStorage.setItem('demoMode', 'true');
-        headers['Authorization'] = 'demo-token';
+        // No authentication available - should not automatically set demo mode
+        throw new Error('Authentication required. Please log in.');
       }
 
       const response = await fetch('/api/route-optimization/quick-optimize', {
