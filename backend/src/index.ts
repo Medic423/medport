@@ -33,7 +33,13 @@ const server = createServer(app);
 const PORT = process.env.PORT || 5001;
 
 app.use(helmet());
-app.use(cors());
+// CORS configuration
+const corsOptions = {
+  origin: process.env.CORS_ORIGIN || "http://localhost:3002",
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Routes
