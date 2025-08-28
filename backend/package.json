@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "nodemon src/index.ts",
     "build": "tsc",
+    "build:prod": "tsc && npm run postbuild",
+    "postbuild": "cp -r prisma dist/ && npx prisma generate",
     "start": "node dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint src/**/*.ts --ext .ts",

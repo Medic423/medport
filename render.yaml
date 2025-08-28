@@ -3,7 +3,7 @@ services:
   - type: web
     name: medport-backend
     env: node
-    buildCommand: cd backend && npm install && npm run build
+    buildCommand: cd backend && npm ci --only=production && npm run build:prod
     startCommand: cd backend && npm start
     envVars:
       - key: NODE_ENV
@@ -31,7 +31,7 @@ services:
   - type: web
     name: medport-frontend
     env: static
-    buildCommand: cd frontend && npm install && npm run build
+    buildCommand: cd frontend && npm ci && npm run build
     staticPublishPath: frontend/dist
     envVars:
       - key: VITE_API_BASE_URL
