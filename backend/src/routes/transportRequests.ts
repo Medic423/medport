@@ -13,7 +13,7 @@ router.use(authenticateToken);
  * POST /api/transport-requests
  * Create a new transport request
  */
-router.post('/', async (req: AuthRequest, res) => {
+router.post('/', async (req: AuthRequest, res: express.Response) => {
   try {
     const {
       patientId,
@@ -80,7 +80,7 @@ router.post('/', async (req: AuthRequest, res) => {
  * GET /api/transport-requests
  * Get transport requests with filtering and pagination
  */
-router.get('/', async (req, res) => {
+router.get('/', async (req: AuthRequest, res: express.Response) => {
   try {
     const {
       status,
@@ -135,7 +135,7 @@ router.get('/', async (req, res) => {
  * GET /api/transport-requests/:id
  * Get transport request by ID
  */
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req: AuthRequest, res: express.Response) => {
   try {
     const { id } = req.params;
     const transportRequest = await transportRequestService.getTransportRequestById(id);
@@ -163,7 +163,7 @@ router.get('/:id', async (req, res) => {
  * PUT /api/transport-requests/:id
  * Update transport request
  */
-router.put('/:id', async (req, res) => {
+router.put('/:id', async (req: AuthRequest, res: express.Response) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
@@ -211,7 +211,7 @@ router.put('/:id', async (req, res) => {
  * DELETE /api/transport-requests/:id
  * Cancel transport request
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req: AuthRequest, res: express.Response) => {
   try {
     const { id } = req.params;
     const { reason } = req.body;
@@ -235,7 +235,7 @@ router.delete('/:id', async (req, res) => {
  * POST /api/transport-requests/:id/duplicate
  * Duplicate transport request
  */
-router.post('/:id/duplicate', async (req, res) => {
+router.post('/:id/duplicate', async (req: AuthRequest, res: express.Response) => {
   try {
     const { id } = req.params;
     const modifications = req.body;
@@ -259,7 +259,7 @@ router.post('/:id/duplicate', async (req, res) => {
  * POST /api/transport-requests/bulk-update
  * Bulk update transport requests
  */
-router.post('/bulk-update', async (req, res) => {
+router.post('/bulk-update', async (req: AuthRequest, res: express.Response) => {
   try {
     const { ids, updates } = req.body;
 
@@ -294,7 +294,7 @@ router.post('/bulk-update', async (req, res) => {
  * GET /api/transport-requests/stats/overview
  * Get transport request statistics
  */
-router.get('/stats/overview', async (req, res) => {
+router.get('/stats/overview', async (req: AuthRequest, res: express.Response) => {
   try {
     const stats = await transportRequestService.getTransportRequestStats();
 
@@ -315,7 +315,7 @@ router.get('/stats/overview', async (req, res) => {
  * GET /api/transport-requests/facilities/search
  * Search facilities for transport request form
  */
-router.get('/facilities/search', async (req, res) => {
+router.get('/facilities/search', async (req: AuthRequest, res: express.Response) => {
   try {
     const {
       name,
@@ -355,7 +355,7 @@ router.get('/facilities/search', async (req, res) => {
  * GET /api/transport-requests/facilities/types
  * Get facility types for filtering
  */
-router.get('/facilities/types', async (req, res) => {
+router.get('/facilities/types', async (req: AuthRequest, res: express.Response) => {
   try {
     const types = await facilityService.getFacilityTypes();
 
@@ -376,7 +376,7 @@ router.get('/facilities/types', async (req, res) => {
  * GET /api/transport-requests/facilities/cities
  * Get cities with facilities
  */
-router.get('/facilities/cities', async (req, res) => {
+router.get('/facilities/cities', async (req: AuthRequest, res: express.Response) => {
   try {
     const cities = await facilityService.getCitiesWithFacilities();
 
@@ -397,7 +397,7 @@ router.get('/facilities/cities', async (req, res) => {
  * GET /api/transport-requests/facilities/states
  * Get states with facilities
  */
-router.get('/facilities/states', async (req, res) => {
+router.get('/facilities/states', async (req: AuthRequest, res: express.Response) => {
   try {
     const states = await facilityService.getStatesWithFacilities();
 
