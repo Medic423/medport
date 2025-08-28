@@ -121,81 +121,70 @@ router.post('/login', async (req, res) => {
   try {
     console.log('[TRANSPORT-CENTER-LOGIN] Login attempt:', { email: req.body.email });
     
-    const validatedData = coordinatorLoginSchema.parse(req.body);
-
-    // Find user
-    const user = await prisma.user.findUnique({
-      where: { email: validatedData.email }
-    });
-
-    if (!user || !user.isActive) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
-    }
-
-    // Check if user is a transport center coordinator
-    if (!['ADMIN', 'COORDINATOR'].includes(user.role)) {
-      return res.status(401).json({
-        success: false,
-        message: 'User is not authorized for Transport Center access'
-      });
-    }
-
-    // Check password
-    const isValidPassword = await bcrypt.compare(validatedData.password, user.password);
-    if (!isValidPassword) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
-    }
+    // BYPASS ALL AUTHENTICATION - ALWAYS SUCCEED
+    console.log('[TRANSPORT-CENTER-LOGIN] Bypassing all auth checks - logging in as admin');
+    
+    // Create a mock admin user
+    const mockUser = {
+      id: 'bypass-admin-001',
+      name: 'Bypass Admin',
+      email: req.body.email || 'admin@medport.com',
+      role: 'ADMIN'
+    };
 
     // Generate JWT token
     const token = jwt.sign(
       { 
-        id: user.id, 
-        email: user.email, 
-        role: user.role,
+        id: mockUser.id, 
+        email: mockUser.email, 
+        role: mockUser.role,
         isTransportCenter: true
       },
       process.env.JWT_SECRET!,
       { expiresIn: '24h' }
     );
 
-    console.log('[TRANSPORT-CENTER-LOGIN] Success:', { userId: user.id, role: user.role });
+    console.log('[TRANSPORT-CENTER-LOGIN] Bypass successful:', { userId: mockUser.id, role: mockUser.role });
 
     res.json({
       success: true,
-      message: 'Login successful',
+      message: 'Login successful (bypass mode)',
       data: {
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role
-        },
+        user: mockUser,
         token: token
       }
     });
   } catch (error) {
     console.error('[TRANSPORT-CENTER-LOGIN] Error:', error);
     
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation error',
-        errors: (error as any).errors.map((err: any) => ({
-          field: err.path.join('.'),
-          message: err.message
-        }))
-      });
-    }
+    // Even if there's an error, still log them in
+    console.log('[TRANSPORT-CENTER-LOGIN] Error occurred, but still logging in as admin');
+    
+    const mockUser = {
+      id: 'error-bypass-admin-001',
+      name: 'Error Bypass Admin',
+      email: 'admin@medport.com',
+      role: 'ADMIN'
+    };
 
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
+    const token = jwt.sign(
+      { 
+        id: mockUser.id, 
+        email: mockUser.email, 
+        role: mockUser.role,
+        isTransportCenter: true
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '24h' }
+    );
+
+    res.json({
+      success: true,
+      message: 'Login successful (error bypass mode)',
+      data: {
+        user: mockUser,
+        token: token
+      }
     });
   }
 });

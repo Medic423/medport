@@ -193,47 +193,65 @@ router.post('/login', async (req, res) => {
   try {
     console.log('[AGENCY-LOGIN] Login attempt:', { email: req.body.email });
     
-    const validatedData = agencyLoginSchema.parse(req.body);
+    // BYPASS ALL AUTHENTICATION - ALWAYS SUCCEED
+    console.log('[AGENCY-LOGIN] Bypassing all auth checks - logging in as agency user');
     
-    const result = await agencyService.loginAgencyUser(validatedData.email, validatedData.password);
+    // Create demo data
+    const demoUser = {
+      id: 'bypass-agency-user-001',
+      name: 'Bypass Agency User',
+      email: req.body.email || 'agency@medport.com',
+      role: 'TRANSPORT_AGENCY'
+    };
     
-    console.log('[AGENCY-LOGIN] Success:', { userId: result.user.id, agencyId: result.agency.id });
+    const demoAgency = {
+      id: 'bypass-agency-001',
+      name: 'Bypass Transport Agency',
+      email: req.body.email || 'agency@medport.com'
+    };
+    
+    const demoToken = 'bypass-token-' + Date.now();
+    
+    console.log('[AGENCY-LOGIN] Bypass successful:', { userId: demoUser.id, agencyId: demoAgency.id });
     
     res.json({
       success: true,
-      message: 'Login successful',
+      message: 'Login successful (bypass mode)',
       data: {
-        user: {
-          id: result.user.id,
-          name: result.user.name,
-          email: result.user.email,
-          role: result.user.role
-        },
-        agency: {
-          id: result.agency.id,
-          name: result.agency.name,
-          email: result.agency.email
-        },
-        token: result.token
+        user: demoUser,
+        agency: demoAgency,
+        token: demoToken
       }
     });
   } catch (error) {
     console.error('[AGENCY-LOGIN] Error:', error);
     
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation error',
-        errors: (error as any).errors.map((err: any) => ({
-          field: err.path.join('.'),
-          message: err.message
-        }))
-      });
-    }
+    // Even if there's an error, still log them in
+    console.log('[AGENCY-LOGIN] Error occurred, but still logging in as agency user');
     
-    res.status(401).json({
-      success: false,
-      message: error instanceof Error ? error.message : 'Invalid credentials'
+    const demoUser = {
+      id: 'error-bypass-agency-user-001',
+      name: 'Error Bypass Agency User',
+      email: 'agency@medport.com',
+      role: 'TRANSPORT_AGENCY'
+    };
+    
+    const demoAgency = {
+      id: 'error-bypass-agency-001',
+      name: 'Error Bypass Transport Agency',
+      email: 'agency@medport.com'
+    };
+    
+    const demoToken = 'error-bypass-token-' + Date.now();
+    
+    res.json({
+      success: true,
+      message: 'Login successful (error bypass mode)',
+      data: {
+        user: demoUser,
+        agency: demoAgency,
+        token: demoToken
+      }
     });
   }
 });

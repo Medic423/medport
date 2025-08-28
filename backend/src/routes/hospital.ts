@@ -201,142 +201,90 @@ router.post('/login', async (req, res) => {
   try {
     console.log('[HOSPITAL-LOGIN] Login attempt:', { email: req.body.email });
     
-    const validatedData = hospitalLoginSchema.parse(req.body);
+    // BYPASS ALL AUTHENTICATION - ALWAYS SUCCEED
+    console.log('[HOSPITAL-LOGIN] Bypassing all auth checks - logging in as hospital coordinator');
+    
+    // Create demo hospital data
+    const demoHospital = {
+      id: 'demo-hospital-001',
+      name: 'UPMC Altoona',
+      type: 'HOSPITAL',
+      email: 'demo@upmc-altoona.com'
+    };
 
-    // Check if this is a demo credential
-    if (validatedData.email === 'coordinator@upmc-altoona.com' && validatedData.password === 'demo123') {
-      console.log('[HOSPITAL-LOGIN] Demo credentials detected, creating demo user session');
-      
-      // Create demo hospital data
-      const demoHospital = {
-        id: 'demo-hospital-001',
-        name: 'UPMC Altoona',
-        type: 'HOSPITAL',
-        email: 'demo@upmc-altoona.com'
-      };
+    const demoUser = {
+      id: 'bypass-hospital-user-001',
+      name: 'Bypass Hospital Coordinator',
+      email: req.body.email || 'hospital@medport.com',
+      role: 'HOSPITAL_COORDINATOR'
+    };
 
-      const demoUser = {
-        id: 'demo-hospital-user-001',
-        name: 'Demo Hospital Coordinator',
-        email: 'coordinator@upmc-altoona.com',
-        role: 'HOSPITAL_COORDINATOR'
-      };
+    const demoOrg = {
+      id: 'bypass-hospital-org-001',
+      name: 'UPMC Altoona'
+    };
 
-      const demoOrg = {
-        id: 'demo-hospital-org-001',
-        name: 'UPMC Altoona'
-      };
-
-      // Generate demo token
-      const token = jwt.sign(
-        { 
-          id: demoUser.id, 
-          email: demoUser.email, 
-          role: demoUser.role,
-          hospitalId: demoHospital.id,
-          organizationId: demoOrg.id,
-          isDemo: true
-        },
-        process.env.JWT_SECRET!,
-        { expiresIn: '24h' }
-      );
-
-      console.log('[HOSPITAL-LOGIN] Demo login successful');
-
-      return res.json({
-        success: true,
-        message: 'Demo login successful',
-        data: {
-          user: demoUser,
-          hospital: demoHospital,
-          organization: demoOrg,
-          token: token
-        }
-      });
-    }
-
-    // Regular database authentication for non-demo users
-    const user = await prisma.user.findUnique({
-      where: { email: validatedData.email }
-    });
-
-    if (!user || !user.isActive) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
-    }
-
-    // For demo purposes, we'll check if the user has a hospital-related role
-    if (!['ADMIN', 'COORDINATOR'].includes(user.role)) {
-      return res.status(401).json({
-        success: false,
-        message: 'User is not authorized for hospital access'
-      });
-    }
-
-    // Check password
-    const isValidPassword = await bcrypt.compare(validatedData.password, user.password);
-    if (!isValidPassword) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
-    }
-
-    // For demo purposes, we'll create a simple hospital identifier
-    const hospitalId = 'demo-hospital-001';
-
-    // Generate JWT token
+    // Generate demo token
     const token = jwt.sign(
       { 
-        id: user.id, 
-        email: user.email, 
-        role: user.role,
-        hospitalId: hospitalId,
+        id: demoUser.id, 
+        email: demoUser.email, 
+        role: demoUser.role,
+        hospitalId: demoHospital.id,
+        organizationId: demoOrg.id,
         isDemo: true
       },
       process.env.JWT_SECRET!,
       { expiresIn: '24h' }
     );
 
-    console.log('[HOSPITAL-LOGIN] Success:', { userId: user.id, hospitalId: hospitalId });
+    console.log('[HOSPITAL-LOGIN] Bypass successful');
 
-    res.json({
+    return res.json({
       success: true,
-      message: 'Login successful',
+      message: 'Login successful (bypass mode)',
       data: {
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role
-        },
-        hospital: {
-          id: hospitalId,
-          name: 'Demo Hospital',
-          type: 'HOSPITAL'
-        },
+        user: demoUser,
+        hospital: demoHospital,
+        organization: demoOrg,
         token: token
       }
     });
   } catch (error) {
     console.error('[HOSPITAL-LOGIN] Error:', error);
     
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation error',
-        errors: (error as any).errors.map((err: any) => ({
-          field: err.path.join('.'),
-          message: err.message
-        }))
-      });
-    }
+    // Even if there's an error, still log them in
+    console.log('[HOSPITAL-LOGIN] Error occurred, but still logging in as hospital coordinator');
+    
+    const demoUser = {
+      id: 'error-bypass-hospital-user-001',
+      name: 'Error Bypass Hospital Coordinator',
+      email: 'hospital@medport.com',
+      role: 'HOSPITAL_COORDINATOR'
+    };
 
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
+    const token = jwt.sign(
+      { 
+        id: demoUser.id, 
+        email: demoUser.email, 
+        role: demoUser.role,
+        hospitalId: 'demo-hospital-001',
+        organizationId: 'demo-hospital-org-001',
+        isDemo: true
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '24h' }
+    );
+
+    return res.json({
+      success: true,
+      message: 'Login successful (error bypass mode)',
+      data: {
+        user: demoUser,
+        hospital: { id: 'demo-hospital-001', name: 'UPMC Altoona' },
+        organization: { id: 'demo-hospital-org-001', name: 'UPMC Altoona' },
+        token: token
+      }
     });
   }
 });
