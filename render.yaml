@@ -29,8 +29,9 @@ services:
     autoDeploy: true
 
   # Frontend Static Site
-  - type: static
+  - type: web
     name: medport-frontend
+    env: static
     plan: free
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: frontend/dist
