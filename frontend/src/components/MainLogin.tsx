@@ -34,42 +34,20 @@ const MainLogin: React.FC<MainLoginProps> = ({ onLoginSuccess }) => {
 
       console.log('[MAIN_LOGIN] Login attempt for:', email, 'on tab:', activeTab);
 
-      // Check if these are demo credentials and route accordingly
-      if (email === 'developer@medport-transport.com' && password === 'dev123') {
-        // Developer demo credentials - use auth demo endpoint
-        endpoint = '/api/auth/demo/login';
-        console.log('[MAIN_LOGIN] Using developer demo endpoint:', endpoint);
-      } else if (email === 'coordinator@medport-transport.com' && password === 'demo123') {
-        // Coordinator demo credentials - use auth demo endpoint
-        endpoint = '/api/auth/demo/login';
-        console.log('[MAIN_LOGIN] Using coordinator demo endpoint:', endpoint);
-      } else if (email === 'coordinator@upmc-altoona.com' && password === 'demo123') {
-        // Hospital demo credentials - use hospital login (already handles demo)
-        endpoint = '/api/hospital/login';
-        console.log('[MAIN_LOGIN] Using hospital demo endpoint:', endpoint);
-      } else if (email === 'demo@agency.com' && password === 'demo123') {
-        // Agency demo credentials - use agency demo endpoint
-        endpoint = '/api/agency/demo/login';
-        console.log('[MAIN_LOGIN] Using agency demo endpoint:', endpoint);
-      } else if (email === 'billing@medport.com' && password === 'demo123') {
-        // Billing demo credentials - use auth demo endpoint
-        endpoint = '/api/auth/demo/login';
-        console.log('[MAIN_LOGIN] Using billing demo endpoint:', endpoint);
-      } else {
-        // Regular credentials - use standard endpoints based on tab
-        switch (activeTab) {
-          case 'transport-center':
-            endpoint = '/api/transport-center/login';
-            break;
-          case 'hospital':
-            endpoint = '/api/hospital/login';
-            break;
-          case 'agency':
-            endpoint = '/api/agency/login';
-            break;
-        }
-        console.log('[MAIN_LOGIN] Using regular endpoint:', endpoint);
+      // Use standard endpoints based on tab selection
+      switch (activeTab) {
+        case 'transport-center':
+          endpoint = '/api/transport-center/login';
+          break;
+        case 'hospital':
+          endpoint = '/api/hospital/login';
+          break;
+        case 'agency':
+          endpoint = '/api/agency/login';
+          break;
       }
+      
+      console.log('[MAIN_LOGIN] Using endpoint:', endpoint);
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -88,7 +66,7 @@ const MainLogin: React.FC<MainLoginProps> = ({ onLoginSuccess }) => {
       
       if (userData.success) {
         // Store authentication data based on login type
-        if (activeTab === 'agency' || email === 'demo@agency.com') {
+        if (activeTab === 'agency') {
           // Agency-specific storage
           localStorage.setItem('agencyToken', userData.data.token);
           localStorage.setItem('agencyUser', JSON.stringify(userData.data.user));
@@ -104,7 +82,7 @@ const MainLogin: React.FC<MainLoginProps> = ({ onLoginSuccess }) => {
         
         // Determine landing page based on user role and login type
         let landingPage: string;
-        if (activeTab === 'agency' || email === 'demo@agency.com') {
+        if (activeTab === 'agency') {
           landingPage = 'agency-portal'; // Agency users go to agency portal
         } else {
           landingPage = await getLandingPage(userData.data.token);
