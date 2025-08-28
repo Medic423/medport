@@ -1,0 +1,55 @@
+services:
+  # Backend API Service
+  - type: web
+    name: medport-backend
+    env: node
+    plan: starter
+    buildCommand: cd backend && npm install && npm run build
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: medport-database
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 24h
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: CORS_ORIGIN
+        value: https://medport-frontend.onrender.com
+      - key: BCRYPT_ROUNDS
+        value: 12
+    healthCheckPath: /api/health
+    autoDeploy: true
+
+  # Frontend Web Service
+  - type: web
+    name: medport-frontend
+    env: static
+    plan: starter
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://medport-backend.onrender.com/api
+      - key: VITE_APP_NAME
+        value: MedPort
+      - key: VITE_APP_VERSION
+        value: 1.0.0
+      - key: VITE_DEBUG_MODE
+        value: false
+      - key: VITE_LOG_LEVEL
+        value: info
+    autoDeploy: true
+
+databases:
+  - name: medport-database
+    databaseName: medport_prod
+    user: medport_user
+    plan: starter
