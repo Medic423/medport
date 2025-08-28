@@ -32,16 +32,35 @@ const MainLogin: React.FC<MainLoginProps> = ({ onLoginSuccess }) => {
       let endpoint: string;
       let userData: any;
 
-      switch (activeTab) {
-        case 'transport-center':
-          endpoint = '/api/transport-center/login';
-          break;
-        case 'hospital':
-          endpoint = '/api/hospital/login';
-          break;
-        case 'agency':
-          endpoint = '/api/agency/login';
-          break;
+      // Check if these are demo credentials and route accordingly
+      if (email === 'developer@medport-transport.com' && password === 'dev123') {
+        // Developer demo credentials - use auth demo endpoint
+        endpoint = '/api/auth/demo/login';
+      } else if (email === 'coordinator@medport-transport.com' && password === 'demo123') {
+        // Coordinator demo credentials - use auth demo endpoint
+        endpoint = '/api/auth/demo/login';
+      } else if (email === 'coordinator@upmc-altoona.com' && password === 'demo123') {
+        // Hospital demo credentials - use hospital login (already handles demo)
+        endpoint = '/api/hospital/login';
+      } else if (email === 'demo@agency.com' && password === 'demo123') {
+        // Agency demo credentials - use agency demo endpoint
+        endpoint = '/api/agency/demo/login';
+      } else if (email === 'billing@medport.com' && password === 'demo123') {
+        // Billing demo credentials - use auth demo endpoint
+        endpoint = '/api/auth/demo/login';
+      } else {
+        // Regular credentials - use standard endpoints
+        switch (activeTab) {
+          case 'transport-center':
+            endpoint = '/api/transport-center/login';
+            break;
+          case 'hospital':
+            endpoint = '/api/hospital/login';
+            break;
+          case 'agency':
+            endpoint = '/api/agency/login';
+            break;
+        }
       }
 
       const response = await fetch(endpoint, {
@@ -61,7 +80,7 @@ const MainLogin: React.FC<MainLoginProps> = ({ onLoginSuccess }) => {
       
       if (userData.success) {
         // Store authentication data based on login type
-        if (activeTab === 'agency') {
+        if (activeTab === 'agency' || email === 'demo@agency.com') {
           // Agency-specific storage
           localStorage.setItem('agencyToken', userData.data.token);
           localStorage.setItem('agencyUser', JSON.stringify(userData.data.user));
@@ -77,7 +96,7 @@ const MainLogin: React.FC<MainLoginProps> = ({ onLoginSuccess }) => {
         
         // Determine landing page based on user role and login type
         let landingPage: string;
-        if (activeTab === 'agency') {
+        if (activeTab === 'agency' || email === 'demo@agency.com') {
           landingPage = 'agency-portal'; // Agency users go to agency portal
         } else {
           landingPage = await getLandingPage(userData.data.token);
