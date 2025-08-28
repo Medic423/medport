@@ -3,7 +3,7 @@ services:
   - type: web
     name: medport-backend
     env: node
-    buildCommand: cd backend && npm ci && npm run build:prod && npm prune --omit=dev
+    buildCommand: cd backend && npm ci --production=false && npm run build:prod && npm prune --omit=dev
     startCommand: cd backend && npm start
     preDeployCommand: cd backend && npx prisma migrate deploy
     envVars:
