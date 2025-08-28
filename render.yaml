@@ -3,7 +3,7 @@ services:
   - type: web
     name: medport-backend
     env: node
-    plan: starter
+    plan: pro
     buildCommand: cd backend && npm install && npm run build
     startCommand: cd backend && npm start
     envVars:
@@ -32,7 +32,7 @@ services:
   - type: web
     name: medport-frontend
     env: static
-    plan: starter
+    plan: pro
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: frontend/dist
     envVars:
@@ -52,4 +52,4 @@ databases:
   - name: medport-database
     databaseName: medport_prod
     user: medport_user
-    plan: free
+    plan: pro
