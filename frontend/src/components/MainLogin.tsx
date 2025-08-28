@@ -56,7 +56,7 @@ const MainLogin: React.FC<MainLoginProps> = ({ onLoginSuccess }) => {
         endpoint = '/api/auth/demo/login';
         console.log('[MAIN_LOGIN] Using billing demo endpoint:', endpoint);
       } else {
-        // Regular credentials - use standard endpoints
+        // Regular credentials - use standard endpoints based on tab
         switch (activeTab) {
           case 'transport-center':
             endpoint = '/api/transport-center/login';
@@ -88,7 +88,7 @@ const MainLogin: React.FC<MainLoginProps> = ({ onLoginSuccess }) => {
       
       if (userData.success) {
         // Store authentication data based on login type
-        if (activeTab === 'agency') {
+        if (activeTab === 'agency' || email === 'demo@agency.com') {
           // Agency-specific storage
           localStorage.setItem('agencyToken', userData.data.token);
           localStorage.setItem('agencyUser', JSON.stringify(userData.data.user));
@@ -104,7 +104,7 @@ const MainLogin: React.FC<MainLoginProps> = ({ onLoginSuccess }) => {
         
         // Determine landing page based on user role and login type
         let landingPage: string;
-        if (activeTab === 'agency') {
+        if (activeTab === 'agency' || email === 'demo@agency.com') {
           landingPage = 'agency-portal'; // Agency users go to agency portal
         } else {
           landingPage = await getLandingPage(userData.data.token);
