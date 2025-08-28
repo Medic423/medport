@@ -4814,11 +4814,630 @@ Let me create a different filename:
 
 ---
 
+<details><summary>Edit file: backend/env.production.template</summary>
+
+I'm creating a production environment template file for the backend
+
+**Chunk 1**
+Lines added: 29, lines removed: 1
+
+```diff
+@@ -1,1 +1,29 @@
+- 
++ # Production Environment Configuration
++ # Copy this to .env and fill in your actual values
++ 
++ # Database Configuration
++ DATABASE_URL="postgresql://username:password@host:port/database"
++ 
++ # JWT Configuration
++ JWT_SECRET="your-production-jwt-secret-here"
++ JWT_EXPIRES_IN="24h"
++ JWT_REFRESH_EXPIRES_IN="7d"
++ 
++ # Server Configuration
++ PORT=10000
++ NODE_ENV=production
++ 
++ # Google Maps API (for distance calculations)
++ GOOGLE_MAPS_API_KEY="your-google-maps-api-key"
++ 
++ # Twilio Configuration (for SMS/email notifications)
++ TWILIO_ACCOUNT_SID="your-twilio-account-sid"
++ TWILIO_AUTH_TOKEN="your-twilio-auth-token"
++ TWILIO_PHONE_NUMBER="your-twilio-phone-number"
++ 
++ # CORS Configuration (Update this with your frontend URL)
++ CORS_ORIGIN="https://medport-frontend.onrender.com"
++ 
++ # Security
++ BCRYPT_ROUNDS=12
++ 
+```
+
+</details>
+
+---
+
+Now let's create a production environment template for the frontend:
 
 
 ---
 
+<details><summary>Edit file: frontend/env.production.template</summary>
 
+I'm creating a production environment template file for the frontend
+
+**Chunk 1**
+Lines added: 20, lines removed: 1
+
+```diff
+@@ -1,1 +1,20 @@
+- 
++ # Production Environment Configuration
++ # Copy this to .env and fill in your actual values
++ 
++ # API Configuration
++ VITE_API_BASE_URL=https://medport-backend.onrender.com/api
++ VITE_APP_NAME=MedPort
++ VITE_APP_VERSION=1.0.0
++ 
++ # Google Maps API
++ VITE_GOOGLE_MAPS_API_KEY=your-google-maps-api-key
++ 
++ # Feature Flags
++ VITE_ENABLE_OFFLINE_MODE=false
++ VITE_ENABLE_PUSH_NOTIFICATIONS=true
++ VITE_ENABLE_REAL_TIME_UPDATES=true
++ 
++ # Production
++ VITE_DEBUG_MODE=false
++ VITE_LOG_LEVEL=info
++ 
+```
+
+</details>
+
+---
+
+Now let's create a comprehensive deployment guide:
+
+
+---
+
+<details><summary>Edit file: DEPLOYMENT_GUIDE.md</summary>
+
+I'm creating a comprehensive deployment guide for setting up MedPort on Render
+
+**Chunk 1**
+Lines added: 250, lines removed: 1
+
+```diff
+@@ -1,1 +1,250 @@
+- 
++ # 🚀 MedPort Deployment Guide - Render Production Setup
++ 
++ This guide will walk you through setting up MedPort on Render for production deployment.
++ 
++ ## 📋 **Prerequisites**
++ 
++ - ✅ GitHub account with MedPort repository
++ - ✅ Render account (linked to GitHub)
++ - ✅ PostgreSQL database (Render will provide this)
++ - ✅ Google Maps API key (optional, for distance calculations)
++ - ✅ Twilio account (optional, for notifications)
++ 
++ ---
++ 
++ ## 🎯 **Step 1: Prepare Your Repository**
++ 
++ ### **1.1 Commit All Changes**
++ ```bash
++ git add .
++ git commit -m "Prepare for production deployment on Render"
++ git push origin main
++ ```
++ 
++ ### **1.2 Verify Repository Structure**
++ Your repository should have:
++ ```
++ medport/
++ ├── backend/          # Node.js API server
++ ├── frontend/         # React frontend
++ ├── render.yaml       # Render configuration
++ ├── DEPLOYMENT_GUIDE.md
++ └── README.md
++ ```
++ 
++ ---
++ 
++ ## 🌐 **Step 2: Set Up Render Account**
++ 
++ ### **2.1 Access Render Dashboard**
++ 1. Go to [render.com](https://render.com)
++ 2. Sign in with GitHub (Medics423 account)
++ 3. You'll see your existing Chartcoach project
++ 
++ ### **2.2 Create New Web Service for Backend**
++ 1. Click **"New +"** → **"Web Service"**
++ 2. Connect your GitHub repository
++ 3. Select the `medport` repository
++ 4. Configure the service:
++ 
++ **Basic Settings:**
++ - **Name**: `medport-backend`
++ - **Environment**: `Node`
++ - **Region**: Choose closest to your users
++ - **Branch**: `main`
++ 
++ **Build & Deploy:**
++ - **Build Command**: `cd backend && npm install && npm run build`
++ - **Start Command**: `cd backend && npm start`
++ - **Plan**: `Starter` (free tier)
++ 
++ ### **2.3 Create PostgreSQL Database**
++ 1. Click **"New +"** → **"PostgreSQL"**
++ 2. Configure:
++    - **Name**: `medport-database`
++    - **Database**: `medport_prod`
++    - **User**: `medport_user`
++    - **Plan**: `Starter` (free tier)
++    - **Region**: Same as backend service
++ 
++ ### **2.4 Create Static Site for Frontend**
++ 1. Click **"New +"** → **"Static Site"**
++ 2. Configure:
++    - **Name**: `medport-frontend`
++    - **Build Command**: `cd frontend && npm install && npm run build`
++    - **Publish Directory**: `frontend/dist`
++    - **Plan**: `Starter` (free tier)
++ 
++ ---
++ 
++ ## ⚙️ **Step 3: Configure Environment Variables**
++ 
++ ### **3.1 Backend Environment Variables**
++ In your `medport-backend` service, add these environment variables:
++ 
++ **Required:**
++ ```
++ NODE_ENV=production
++ PORT=10000
++ DATABASE_URL=<from PostgreSQL service>
++ JWT_SECRET=<generate a secure random string>
++ JWT_EXPIRES_IN=24h
++ JWT_REFRESH_EXPIRES_IN=7d
++ CORS_ORIGIN=https://medport-frontend.onrender.com
++ BCRYPT_ROUNDS=12
++ ```
++ 
++ **Optional:**
++ ```
++ GOOGLE_MAPS_API_KEY=<your-google-maps-api-key>
++ TWILIO_ACCOUNT_SID=<your-twilio-account-sid>
++ TWILIO_AUTH_TOKEN=<your-twilio-auth-token>
++ TWILIO_PHONE_NUMBER=<your-twilio-phone-number>
++ ```
++ 
++ ### **3.2 Frontend Environment Variables**
++ In your `medport-frontend` service, add:
++ 
++ ```
++ VITE_API_BASE_URL=https://medport-backend.onrender.com/api
++ VITE_APP_NAME=MedPort
++ VITE_APP_VERSION=1.0.0
++ VITE_DEBUG_MODE=false
++ VITE_LOG_LEVEL=info
++ ```
++ 
++ ---
++ 
++ ## 🔧 **Step 4: Database Setup**
++ 
++ ### **4.1 Run Database Migrations**
++ 1. In your backend service, go to **"Shell"** tab
++ 2. Run these commands:
++ ```bash
++ cd backend
++ npx prisma migrate deploy
++ npx prisma generate
++ npx prisma db seed
++ ```
++ 
++ ### **4.2 Verify Database Connection**
++ Check the logs to ensure the database connection is successful.
++ 
++ ---
++ 
++ ## 🚀 **Step 5: Deploy and Test**
++ 
++ ### **5.1 Deploy Backend**
++ 1. Click **"Manual Deploy"** → **"Deploy latest commit"**
++ 2. Monitor the build logs for any errors
++ 3. Wait for deployment to complete
++ 
++ ### **5.2 Deploy Frontend**
++ 1. Go to your frontend service
++ 2. Click **"Manual Deploy"** → **"Deploy latest commit"**
++ 3. Monitor the build process
++ 
++ ### **5.3 Test Your Application**
++ 1. **Backend Health Check**: Visit `https://medport-backend.onrender.com/health`
++ 2. **Frontend**: Visit `https://medport-frontend.onrender.com`
++ 3. **Test Login**: Use demo credentials to verify functionality
++ 
++ ---
++ 
++ ## 🔍 **Step 6: Troubleshooting Common Issues**
++ 
++ ### **6.1 Build Failures**
++ - Check Node.js version compatibility
++ - Verify all dependencies are in package.json
++ - Check build logs for specific error messages
++ 
++ ### **6.2 Database Connection Issues**
++ - Verify DATABASE_URL is correct
++ - Check if database service is running
++ - Ensure database migrations have run
++ 
++ ### **6.3 CORS Issues**
++ - Verify CORS_ORIGIN matches your frontend URL exactly
++ - Check browser console for CORS errors
++ 
++ ### **6.4 Environment Variable Issues**
++ - Verify all required variables are set
++ - Check variable names match exactly (case-sensitive)
++ - Restart service after adding new variables
++ 
++ ---
++ 
++ ## 📊 **Step 7: Monitor and Maintain**
++ 
++ ### **7.1 Set Up Monitoring**
++ - Enable **"Auto-Deploy"** for automatic updates
++ - Monitor service logs regularly
++ - Set up alerts for service failures
++ 
++ ### **7.2 Performance Optimization**
++ - Monitor response times
++ - Check database query performance
++ - Optimize build times if needed
++ 
++ ---
++ 
++ ## 🌟 **Production URLs**
++ 
++ After successful deployment, your services will be available at:
++ 
++ - **Frontend**: `https://medport-frontend.onrender.com`
++ - **Backend API**: `https://medport-backend.onrender.com`
++ - **Health Check**: `https://medport-backend.onrender.com/health`
++ 
++ ---
++ 
++ ## 🔐 **Security Considerations**
++ 
++ ### **Production Security:**
++ - ✅ JWT_SECRET is auto-generated and secure
++ - ✅ CORS is properly configured
++ - ✅ Environment variables are encrypted
++ - ✅ Database connection uses SSL
++ - ✅ Helmet.js security headers enabled
++ 
++ ### **API Keys:**
++ - Store sensitive keys as environment variables
++ - Never commit API keys to repository
++ - Rotate keys regularly for production use
++ 
++ ---
++ 
++ ## 📞 **Support and Maintenance**
++ 
++ ### **Render Support:**
++ - Render provides excellent documentation
++ - Community forums available
++ - Email support for paid plans
++ 
++ ### **MedPort Specific:**
++ - Check service logs for application errors
++ - Monitor database performance
++ - Regular security updates
++ 
++ ---
++ 
++ ## 🎉 **Congratulations!**
++ 
++ You now have a fully functional, production-ready MedPort system running on Render!
++ 
++ **Next Steps:**
++ 1. Test all functionality thoroughly
++ 2. Set up monitoring and alerts
++ 3. Configure custom domain (optional)
++ 4. Set up CI/CD for automatic deployments
++ 
++ ---
++ 
++ **Need Help?**
++ - Check Render documentation: [docs.render.com](https://docs.render.com)
++ - Review service logs for specific errors
++ - Verify environment variable configuration
++ - Test database connectivity
++ 
++ **Happy Deploying! 🚀**
++ 
+```
+
+</details>
+
+---
+
+Now let's commit all these deployment preparation files:
+
+
+---
+
+```bash
+git add .
+```
+
+```
+scooper@MacBook-Pro-5 medport % git add .
+scooper@MacBook-Pro-5 medport %
+```
+
+---
+
+```bash
+git commit -m 'Prepare for production deployment on Render - Add render.yaml configuration - Create production environment templates - Add comprehensive deployment guide'
+```
+
+```
+
+husky - DEPRECATED
+
+Please remove the following two lines from .husky/pre-commit:
+
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+They WILL FAIL in v10.0.0
+
+→ No staged files match any configured task.
+[feature/trip-acceptance-restoration feef1ec] Prepare for production deployment on Render - Add render.yaml
+configuration - Create production environment templates - Add comprehensive deployment guide
+
+ 5 files changed, 1189 insertions(+)
+ create mode 100644 DEPLOYMENT_GUIDE.md
+ create mode 100644 backend/env.production.template
+ create mode 100644 frontend/env.production.template
+ create mode 100644 render.yaml
+```
+
+---
+
+Perfect! Now let me give you a quick summary of what we've prepared and walk you through the next steps:
+
+## 🚀 **MedPort Production Deployment on Render - Ready to Go!**
+
+### **✅ What We've Prepared:**
+
+1. **`render.yaml`** - Complete Render configuration for both services
+2. **Production Environment Templates** - For backend and frontend
+3. **Comprehensive Deployment Guide** - Step-by-step instructions
+4. **All Files Committed** - Ready for deployment
+
+---
+
+## �� **Next Steps - Let's Deploy to Render!**
+
+### **Step 1: Push to Main Branch (if needed)**
+Since you're currently on a feature branch, you might want to merge to main first:
+```bash
+git checkout main
+git merge feature/trip-acceptance-restoration
+git push origin main
+```
+
+### **Step 2: Access Render Dashboard**
+1. Go to [render.com](https://render.com)
+2. Sign in with your GitHub account (Medics423)
+3. You'll see your existing Chartcoach project
+
+### **Step 3: Create MedPort Services**
+The `render.yaml` file will make this much easier, but you can also create them manually:
+
+#### **Backend Service:**
+- **Type**: Web Service
+- **Name**: `medport-backend`
+- **Build Command**: `cd backend && npm install && npm run build`
+- **Start Command**: `cd backend && npm start`
+
+#### **Frontend Service:**
+- **Type**: Static Site
+- **Name**: `medport-frontend`
+- **Build Command**: `cd frontend && npm install && npm run build`
+- **Publish Directory**: `frontend/dist`
+
+#### **Database:**
+- **Type**: PostgreSQL
+- **Name**: `medport-database`
+
+---
+
+## 🔑 **Key Environment Variables to Set:**
+
+### **Backend (Required):**
+```
+NODE_ENV=production
+PORT=10000
+DATABASE_URL=<from PostgreSQL service>
+JWT_SECRET=<generate secure random string>
+CORS_ORIGIN=https://medport-frontend.onrender.com
+```
+
+### **Frontend (Required):**
+```
+VITE_API_BASE_URL=https://medport-backend.onrender.com/api
+```
+
+---
+
+## 🎯 **Quick Start Option:**
+
+If you want to use the `render.yaml` file for automatic setup:
+
+1. **Create New Blueprint Instance** in Render
+2. **Connect your GitHub repository**
+3. **Render will automatically create all services** based on the configuration
+4. **Set environment variables** as needed
+5. **Deploy!**
+
+---
+
+## 🚨 **Important Notes:**
+
+- **Free Tier Limits**: Render's free tier has some limitations but is perfect for testing
+- **Auto-Deploy**: Enable this for automatic updates when you push to GitHub
+- **Database**: PostgreSQL will be automatically created and connected
+- **Health Checks**: Backend includes `/health` endpoint for monitoring
+
+---
+
+## 🎉 **What You'll Get:**
+
+After successful deployment:
+- **Live MedPort Application**: Accessible from anywhere
+- **Production Database**: PostgreSQL with your data
+- **Automatic Deployments**: Updates when you push to GitHub
+- **Professional URLs**: `https://medport-frontend.onrender.com`
+
+---
+
+**Would you like me to walk you through any specific part of the deployment process, or are you ready to start setting up the services on Render?** 
+
+The deployment guide (`DEPLOYMENT_GUIDE.md`) contains all the detailed steps, and the `render.yaml` file will make the setup much easier than manual configuration! 🚀
+
+---
+
+_**User**_
+
+Move DEPLOYMENT_GUIDE.MD to /docs/reference
+
+---
+
+_**Assistant**_
+
+I'll move the `DEPLOYMENT_GUIDE.md` file to the `/docs/reference` directory for better organization.
+
+
+---
+
+```bash
+mv DEPLOYMENT_GUIDE.md docs/reference/
+```
+
+```
+scooper@MacBook-Pro-5 medport % mv DEPLOYMENT_GUIDE.md docs/reference/
+scooper@MacBook-Pro-5 medport %
+```
+
+---
+
+Perfect! Now let's verify the file has been moved and commit this change:
+
+
+---
+
+<details>
+            <summary>Listed directory docs/reference • **5** results</summary>
+        
+| Name |
+|-------|
+| 📄 `DEPLOYMENT_GUIDE.md` |
+| 📄 `google_maps_setup.md` |
+| 📄 `TWILIO_SETUP.md` |
+| 📄 `initial_prompt.md` |
+| 📄 `create_project.md` |
+
+</details>
+
+---
+
+Excellent! The `DEPLOYMENT_GUIDE.md` is now properly organized in the `/docs/reference` directory alongside other important reference documents. Let's commit this change:
+
+
+---
+
+```bash
+git add docs/reference/DEPLOYMENT_GUIDE.md
+```
+
+```
+scooper@MacBook-Pro-5 medport % git add docs/reference/DEPLOYMENT_GUIDE.md
+scooper@MacBook-Pro-5 medport %
+```
+
+---
+
+```bash
+git rm DEPLOYMENT_GUIDE.md
+```
+
+```
+scooper@MacBook-Pro-5 medport % git rm DEPLOYMENT_GUIDE.md
+rm 'DEPLOYMENT_GUIDE.md'
+scooper@MacBook-Pro-5 medport %
+```
+
+---
+
+```bash
+git commit -m 'Move DEPLOYMENT_GUIDE.md to docs/reference for better organization'
+```
+
+```
+
+husky - DEPRECATED
+
+Please remove the following two lines from .husky/pre-commit:
+
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+They WILL FAIL in v10.0.0
+
+→ No staged files match any configured task.
+[feature/trip-acceptance-restoration e3056e3] Move DEPLOYMENT_GUIDE.md to docs/reference for better organiza
+tion
+
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ rename DEPLOYMENT_GUIDE.md => docs/reference/DEPLOYMENT_GUIDE.md (100%)
+```
+
+---
+
+Perfect! ✅ The `DEPLOYMENT_GUIDE.md` has been successfully moved to `/docs/reference/` and the change has been committed.
+
+## 📁 **File Organization Updated**
+
+The deployment guide is now properly organized in the reference documentation alongside:
+- `google_maps_setup.md` - Google Maps API setup
+- `TWILIO_SETUP.md` - Twilio notification setup  
+- `initial_prompt.md` - Original project requirements
+- `create_project.md` - Project creation guide
+- `DEPLOYMENT_GUIDE.md` - **Production deployment on Render** ✨
+
+## �� **Ready for Render Deployment**
+
+Now you have everything organized and ready to go! The deployment guide is easily accessible at `docs/reference/DEPLOYMENT_GUIDE.md` and contains all the step-by-step instructions for setting up MedPort on Render.
+
+**Next steps:**
+1. **Push to main branch** (if you want to deploy from main)
+2. **Go to [render.com](https://render.com)** and sign in with your Medics423 account
+3. **Follow the deployment guide** to create your production services
+4. **Enjoy your live MedPort application!** ��
+
+Would you like me to help you with any specific part of the deployment process, or are you ready to start setting up the services on Render?
 
 ---
 
