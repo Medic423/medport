@@ -24,7 +24,7 @@ services:
         value: https://medport-frontend.onrender.com
       - key: BCRYPT_ROUNDS
         value: 12
-    healthCheckPath: /api/health
+    healthCheckPath: /health
     autoDeploy: true
 
   # Frontend Static Site
