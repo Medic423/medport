@@ -3,7 +3,7 @@ services:
   - type: web
     name: medport-backend
     env: node
-    buildCommand: cd backend && npm ci --only=production && npm run build:prod
+    buildCommand: cd backend && npm ci --only=production && npm run build && cp -r prisma dist/ && npx prisma generate
     startCommand: cd backend && npm start
     envVars:
       - key: NODE_ENV
