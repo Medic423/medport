@@ -120,32 +120,36 @@
 - **Result**: No more TypeScript compilation errors or port conflicts
 - **Remaining Issue**: Landing page still not loading despite correct backend responses
 
-#### **1.5 Current Setback: Landing Page Not Loading - August 29, 2025**
-**Issue**: Despite fixing all backend issues, the frontend still doesn't load the landing page after successful login
+#### **1.5 Landing Page Issue RESOLVED - August 29, 2025**
+**Issue**: Frontend wasn't loading landing page content despite correct backend responses
 
-**What We've Accomplished:**
-- ✅ **CORS Issues**: Resolved by forcing local development API URL in vite config
-- ✅ **JWT Token Structure**: Fixed to include proper `userType` field
-- ✅ **Backend Compilation**: All TypeScript errors resolved
-- ✅ **Navigation API**: Working correctly, returns proper user type and menu
-- ✅ **Menu Display**: Navigation menu shows correctly with all 6 items for center users
+**Root Cause Identified**: Path format mismatch between backend and frontend
+- **Backend was returning**: `/overview` (with leading slash)
+- **Frontend was expecting**: `overview` (without leading slash)
+- **Result**: `{currentPage === 'overview' && <StatusBoard />}` never matched
 
-**Current Problem:**
-- ❌ **Landing Page**: After login, user sees navigation menu but no content loads
-- ❌ **Routing**: Frontend doesn't navigate to `/overview` despite backend returning correct path
-- ❌ **User Experience**: Users can see they're logged in but can't access any functionality
+**What We Fixed:**
+- ✅ **Path Format Alignment**: Updated backend to return paths without leading slashes
+  - `getLandingPageForUserType()` now returns `'overview'` instead of `'/overview'`
+  - All navigation menu paths now use `'dashboard'`, `'trips/available'`, etc.
+- ✅ **API Base URL Fix**: Resolved network errors by using Vite proxy instead of cross-origin requests
+  - Changed `VITE_API_BASE_URL` from `http://localhost:5001/api` to `/api`
+  - Frontend now makes requests through proxy to avoid CORS issues
 
-**Technical Status:**
+**Technical Status After Fix:**
 - **Backend**: ✅ Fully functional, all endpoints working
 - **Frontend**: ✅ Starts correctly, navigation menu displays
 - **Authentication**: ✅ JWT tokens working, user type correctly identified
-- **Routing**: ❌ Landing page routing not working
+- **Routing**: ✅ Landing page routing now working correctly
+- **Landing Page**: ✅ StatusBoard component renders and displays content
 
-**Next Steps Required:**
-- Investigate frontend routing logic in `App.tsx` and `useSimpleNavigation` hook
-- Check if landing page component (`/overview` route) exists and is properly configured
-- Verify that the frontend is actually calling the landing page API endpoint
-- Debug why the routing isn't working despite correct backend responses
+**Result**: Transport Center users can now see both navigation menu AND landing page content after login
+
+**✅ Phase 1.5 COMPLETED - August 29, 2025**
+- **Root Cause**: Path format mismatch between backend (`/overview`) and frontend (`overview`)
+- **Solution**: Aligned backend path format and fixed API base URL configuration
+- **Result**: Landing page now loads completely after successful login
+- **Status**: Phase 1 (Simplify Login & User Type System) is now fully functional
 
 #### **1.3 Remove Complex Features**
 - [ ] Remove role permission matrices from database
