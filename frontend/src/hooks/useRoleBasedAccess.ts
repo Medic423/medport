@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { apiRequest } from '../utils/api';
 
 export interface NavigationItem {
   id: string;
@@ -39,10 +40,9 @@ export const useRoleBasedAccess = () => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/role-based-access/navigation', {
+      const response = await apiRequest('/role-based-access/navigation', {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${token}`
         }
       });
 
@@ -82,10 +82,9 @@ export const useRoleBasedAccess = () => {
   // Get user's accessible modules
   const fetchModules = useCallback(async (token: string) => {
     try {
-      const response = await fetch('/api/role-based-access/modules', {
+      const response = await apiRequest('/role-based-access/modules', {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${token}`
         }
       });
 
@@ -93,40 +92,24 @@ export const useRoleBasedAccess = () => {
         throw new Error(`Failed to fetch modules: ${response.statusText}`);
       }
 
-      // Check if response has content
-      const responseText = await response.text();
-      if (!responseText || responseText.trim() === '') {
-        console.error('[ROLE_BASED_ACCESS] Empty response received from modules endpoint');
-        return; // Don't throw error for modules as it's not critical
-      }
-
-      // Try to parse the response
-      let result;
-      try {
-        result = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error('[ROLE_BASED_ACCESS] JSON parse error for modules:', parseError, 'Response text:', responseText);
-        return; // Don't throw error for modules as it's not critical
-      }
-      
+      const result = await response.json();
       if (result.success) {
         setModules(result.data.modules);
       } else {
-        console.warn('[ROLE_BASED_ACCESS] Modules fetch returned error:', result.message);
+        throw new Error(result.message || 'Failed to fetch modules');
       }
     } catch (err) {
       console.error('[ROLE_BASED_ACCESS] Modules fetch error:', err);
-      // Don't set error for modules fetch as it's not critical
+      setError(err instanceof Error ? err.message : 'Unknown error');
     }
   }, []);
 
-  // Check if user has access to a specific feature
-  const hasFeatureAccess = useCallback(async (token: string, feature: string): Promise<boolean> => {
+  // Check if user can access a specific feature
+  const hasFeatureAccess = async (token: string, feature: string): Promise<boolean> => {
     try {
-      const response = await fetch(`/api/role-based-access/access/${feature}`, {
+      const response = await apiRequest(`/role-based-access/access/${feature}`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${token}`
         }
       });
 
@@ -140,7 +123,7 @@ export const useRoleBasedAccess = () => {
       console.error('[ROLE_BASED_ACCESS] Feature access check error:', err);
       return false;
     }
-  }, []);
+  };
 
   // Demo mode navigation fetch
   const fetchDemoNavigation = useCallback(async () => {
@@ -148,12 +131,9 @@ export const useRoleBasedAccess = () => {
       setLoading(true);
       setError(null);
 
-      // Note: demo mode should only be set when explicitly requested, not automatically
-
-      const response = await fetch('/api/role-based-access/demo/navigation', {
+      const response = await apiRequest('/role-based-access/demo/navigation', {
         headers: {
-          'Authorization': 'Bearer demo-token',
-          'Content-Type': 'application/json'
+          'Authorization': 'Bearer demo-token'
         }
       });
 
@@ -168,10 +148,9 @@ export const useRoleBasedAccess = () => {
         setNavigation(result.data);
         
         // Also fetch modules for demo mode
-        const modulesResponse = await fetch('/api/role-based-access/demo/modules', {
+        const modulesResponse = await apiRequest('/role-based-access/demo/modules', {
           headers: {
-            'Authorization': 'Bearer demo-token',
-            'Content-Type': 'application/json'
+            'Authorization': 'Bearer demo-token'
           }
         });
 
@@ -267,12 +246,11 @@ export const useRoleBasedAccess = () => {
   }, [navigation]);
 
   // Get user's landing page based on role and permissions
-  const getLandingPage = useCallback(async (token: string): Promise<string> => {
+  const fetchLandingPage = useCallback(async (token: string) => {
     try {
-      const response = await fetch('/api/role-based-access/landing-page', {
+      const response = await apiRequest('/role-based-access/landing-page', {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${token}`
         }
       });
 
@@ -281,28 +259,23 @@ export const useRoleBasedAccess = () => {
       }
 
       const result = await response.json();
-      
       if (result.success) {
-        console.log('[ROLE_BASED_ACCESS] Landing page data:', result.data);
         return result.data.landingPage;
       } else {
         throw new Error(result.message || 'Failed to fetch landing page');
       }
     } catch (err) {
       console.error('[ROLE_BASED_ACCESS] Landing page fetch error:', err);
-      return 'status-board'; // Fallback to status-board instead of help
+      throw err;
     }
   }, []);
 
   // Demo mode landing page fetch
-  const getDemoLandingPage = useCallback(async (): Promise<string> => {
+  const fetchDemoLandingPage = useCallback(async () => {
     try {
-      // Note: demo mode should only be set when explicitly requested, not automatically
-
-      const response = await fetch('/api/role-based-access/demo/landing-page', {
+      const response = await apiRequest('/role-based-access/demo/landing-page', {
         headers: {
-          'Authorization': 'Bearer demo-token',
-          'Content-Type': 'application/json'
+          'Authorization': 'Bearer demo-token'
         }
       });
 
@@ -311,16 +284,14 @@ export const useRoleBasedAccess = () => {
       }
 
       const result = await response.json();
-      
       if (result.success) {
-        console.log('[ROLE_BASED_ACCESS] Demo landing page data:', result.data);
         return result.data.landingPage;
       } else {
         throw new Error(result.message || 'Failed to fetch demo landing page');
       }
     } catch (err) {
       console.error('[ROLE_BASED_ACCESS] Demo landing page fetch error:', err);
-      return 'status-board'; // Fallback to status-board instead of help
+      throw err;
     }
   }, []);
 
@@ -335,8 +306,8 @@ export const useRoleBasedAccess = () => {
     getAvailableCategories,
     fetchNavigation,
     fetchDemoNavigation,
-    getLandingPage,
-    getDemoLandingPage,
+    getLandingPage: fetchLandingPage,
+    getDemoLandingPage: fetchDemoLandingPage,
     refreshNavigation: () => {
       const token = localStorage.getItem('token');
       const demoMode = localStorage.getItem('demoMode');

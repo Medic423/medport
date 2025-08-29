@@ -2,7 +2,18 @@
  * API utility functions for making HTTP requests
  */
 
-const API_BASE = '/api';
+// Get API base URL from environment variables
+const getApiBase = () => {
+  const envBase = import.meta.env.VITE_API_BASE_URL;
+  const fallback = '/api';
+  
+  console.log('[API] Environment API base:', envBase);
+  console.log('[API] Using API base:', envBase || fallback);
+  
+  return envBase || fallback;
+};
+
+const API_BASE = getApiBase();
 
 /**
  * Make an authenticated API request

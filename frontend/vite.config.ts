@@ -14,5 +14,9 @@ export default defineConfig({
         secure: false
       }
     }
+  },
+  define: {
+    // Ensure environment variables are available at build time
+    'process.env': process.env
   }
 })
