@@ -46,7 +46,25 @@ function App() {
     const userRole = localStorage.getItem('userRole');
     const landingPage = localStorage.getItem('landingPage');
     
+    // Check if we should force logout (for debugging)
+    const urlParams = new URLSearchParams(window.location.search);
+    const forceLogout = urlParams.get('forceLogout');
+    
+    if (forceLogout === 'true') {
+      console.log('[App] Force logout requested via URL parameter');
+      localStorage.clear();
+      setIsAuthenticated(false);
+      setUserData(null);
+      setCurrentPage('login');
+      // Remove the parameter from URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return;
+    }
+    
+    console.log('[App] Authentication check:', { token: !!token, userRole, landingPage });
+    
     if (token && userRole) {
+      console.log('[App] User is authenticated, setting up session');
       setIsAuthenticated(true);
       setUserData({
         role: userRole,
@@ -63,6 +81,7 @@ function App() {
         setCurrentPage('status-board');
       }
     } else {
+      console.log('[App] User is not authenticated, showing login screen');
       // Clear any stale data
       localStorage.removeItem('landingPage');
       setCurrentPage('login');
