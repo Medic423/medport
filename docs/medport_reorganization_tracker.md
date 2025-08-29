@@ -151,6 +151,44 @@
 - **Result**: Landing page now loads completely after successful login
 - **Status**: Phase 1 (Simplify Login & User Type System) is now fully functional
 
+#### **1.6 Siloed Login System Implementation - August 29, 2025**
+**Goal**: Implement completely isolated login systems for each user type to enable independent debugging
+
+- [x] **Create Siloed Authentication Routes**: Implement separate backend endpoints for each user type
+  - `/api/siloed-auth/center-login` - Maps to `COORDINATOR` role
+  - `/api/siloed-auth/hospital-login` - Maps to `ADMIN` role  
+  - `/api/siloed-auth/agency-login` - Maps to `TRANSPORT_AGENCY` role
+- [x] **Implement Frontend Login Components**: Create dedicated login components for each user type
+  - `CenterLogin.tsx` - Transport Center login interface
+  - `HospitalLogin.tsx` - Hospital login interface
+  - `AgencyLogin.tsx` - EMS Agency login interface
+- [x] **Create Login Selector**: Implement `LoginSelector.tsx` to present login options
+  - Three distinct login buttons with different styling
+  - Independent routing to each login component
+  - Back navigation between login types
+- [x] **Fix Authentication Middleware**: Resolve userType vs role field priority issue
+  - Update `simpleAuth.ts` to prioritize `decoded.userType` over `decoded.role`
+  - Maintain backward compatibility with legacy role system
+  - Ensure consistent user type determination throughout authentication flow
+- [x] **Add Test Users**: Create database users for each login type
+  - Transport Center: `center@medport.com` / `password123` (Role: `COORDINATOR`)
+  - Hospital: `hospital@medport.com` / `password123` (Role: `ADMIN`)
+  - EMS Agency: `agency@medport.com` / `password123` (Role: `TRANSPORT_AGENCY`)
+- [x] **Update Documentation**: Document new siloed system and test credentials
+  - Update `demo_credentials.md` with siloed system information
+  - Add quick reference table for all test credentials
+  - Document benefits and usage of siloed architecture
+- [x] **Add Debugging Tools**: Implement force logout functionality
+  - URL parameter `?forceLogout=true` to clear authentication state
+  - Console logging for authentication flow debugging
+  - Easy way to test login screen without clearing browser data
+
+**✅ Phase 1.6 COMPLETED - August 29, 2025**
+- **Result**: Complete siloed login system with independent authentication flows
+- **Status**: Center login working perfectly, hospital and agency logins ready for next session debugging
+- **Architecture**: Each login type completely isolated, protecting working systems during development
+- **Next Session**: Troubleshoot hospital and agency login blank screen issues
+
 #### **1.3 Remove Complex Features**
 - [ ] Remove role permission matrices from database
 - [ ] Remove dynamic module visibility controls
