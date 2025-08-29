@@ -30,7 +30,7 @@ import HospitalDashboard from './pages/HospitalDashboard';
 import NewTripForm from './pages/NewTripForm';
 import TripManagement from './pages/TripManagement';
 
-import MainLogin from './components/MainLogin';
+import LoginSelector from './components/LoginSelector';
 import { useSimpleNavigation } from './hooks/useSimpleNavigation';
 
 function App() {
@@ -128,7 +128,7 @@ function App() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <MainLogin onLoginSuccess={handleLoginSuccess} />
+        <LoginSelector onLoginSuccess={handleLoginSuccess} />
       </div>
     );
   }

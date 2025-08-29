@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import authRoutes from './routes/auth';
+import siloedAuthRoutes from './routes/siloedAuth';
 import protectedRoutes from './routes/protected';
 import transportRequestRoutes from './routes/transportRequests';
 import distanceRoutes from './routes/distance';
@@ -45,6 +46,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/siloed-auth', siloedAuthRoutes);
 app.use('/api/protected', protectedRoutes);
 app.use('/api/transport-requests', transportRequestRoutes);
 app.use('/api/distance', distanceRoutes);

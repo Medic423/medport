@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 
-interface AgencyLoginProps {
+interface CenterLoginProps {
   onLoginSuccess: (userData: any) => void;
 }
 
-const AgencyLogin: React.FC<AgencyLoginProps> = ({ onLoginSuccess }) => {
+const CenterLogin: React.FC<CenterLoginProps> = ({ onLoginSuccess }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,7 +16,7 @@ const AgencyLogin: React.FC<AgencyLoginProps> = ({ onLoginSuccess }) => {
     setError(null);
 
     try {
-      const response = await fetch('/api/siloed-auth/agency-login', {
+      const response = await fetch('/api/siloed-auth/center-login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -29,22 +29,22 @@ const AgencyLogin: React.FC<AgencyLoginProps> = ({ onLoginSuccess }) => {
       if (response.ok && data.success) {
         // Store authentication data
         localStorage.setItem('token', data.token);
-        localStorage.setItem('userRole', 'ems');
+        localStorage.setItem('userRole', 'center');
         localStorage.setItem('userEmail', email);
-        localStorage.setItem('userType', 'ems');
+        localStorage.setItem('userType', 'center');
         
         // Call success handler
         onLoginSuccess({
           id: data.user.id,
           email: data.user.email,
-          userType: 'ems',
-          role: 'ems'
+          userType: 'center',
+          role: 'center'
         });
       } else {
         setError(data.message || 'Login failed');
       }
     } catch (err) {
-      console.error('Agency login error:', err);
+      console.error('Center login error:', err);
       setError('Network error. Please try again.');
     } finally {
       setLoading(false);
@@ -56,10 +56,10 @@ const AgencyLogin: React.FC<AgencyLoginProps> = ({ onLoginSuccess }) => {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            EMS Agency Login
+            Transport Center Login
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Access transport assignments and route optimization
+            Access system-wide operations and management
           </p>
         </div>
         
@@ -75,7 +75,7 @@ const AgencyLogin: React.FC<AgencyLoginProps> = ({ onLoginSuccess }) => {
                 type="email"
                 autoComplete="email"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-orange-500 focus:border-orange-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                 placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -91,7 +91,7 @@ const AgencyLogin: React.FC<AgencyLoginProps> = ({ onLoginSuccess }) => {
                 type="password"
                 autoComplete="current-password"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-orange-500 focus:border-orange-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -109,9 +109,9 @@ const AgencyLogin: React.FC<AgencyLoginProps> = ({ onLoginSuccess }) => {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
-              {loading ? 'Signing in...' : 'Sign in to Agency Portal'}
+              {loading ? 'Signing in...' : 'Sign in to Transport Center'}
             </button>
           </div>
         </form>
@@ -120,4 +120,4 @@ const AgencyLogin: React.FC<AgencyLoginProps> = ({ onLoginSuccess }) => {
   );
 };
 
-export default AgencyLogin;
+export default CenterLogin;
