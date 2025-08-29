@@ -52,8 +52,12 @@ export const simpleAuthenticateToken = (req: SimpleAuthRequest, res: Response, n
     
     // Map old role system to new user type system for backward compatibility
     let userType: 'hospital' | 'ems' | 'center';
-    if (decoded.role) {
-      // Legacy role mapping
+    
+    // First, try to use the new userType field if available
+    if (decoded.userType) {
+      userType = decoded.userType;
+    } else if (decoded.role) {
+      // Legacy role mapping for backward compatibility
       if (decoded.role === 'ADMIN' || decoded.role === 'MANAGER' || decoded.role === 'COORDINATOR') {
         userType = 'center';
       } else if (decoded.role === 'HOSPITAL_STAFF' || decoded.role === 'NURSE' || decoded.role === 'HOSPITAL_COORDINATOR') {
@@ -64,7 +68,7 @@ export const simpleAuthenticateToken = (req: SimpleAuthRequest, res: Response, n
         userType = 'hospital'; // Default fallback
       }
     } else {
-      userType = decoded.userType || 'hospital'; // Use new userType field if available
+      userType = 'hospital'; // Default fallback
     }
     
     req.user = {
