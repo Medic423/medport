@@ -2,7 +2,8 @@
 export enum TransportLevel {
   BLS = 'BLS',
   ALS = 'ALS',
-  CCT = 'CCT'
+  CCT = 'CCT',
+  OTHER = 'Other'
 }
 
 // Priority Enum

@@ -5,7 +5,7 @@ interface Trip {
   id: string;
   origin: string;
   destination: string;
-  transportLevel: 'ALS' | 'BLS' | 'CCT';
+  transportLevel: 'ALS' | 'BLS' | 'CCT' | 'Other';
   status: 'pending' | 'accepted' | 'in-progress' | 'completed' | 'cancelled';
   requestTime: string;
   acceptedTime?: string;
@@ -39,6 +39,14 @@ const HospitalDashboard: React.FC = () => {
         transportLevel: 'BLS',
         status: 'pending',
         requestTime: '2025-08-29T14:00:00Z'
+      },
+      {
+        id: '3',
+        origin: 'City General Hospital',
+        destination: 'Outpatient Surgery Center',
+        transportLevel: 'Other',
+        status: 'pending',
+        requestTime: '2025-08-29T16:00:00Z'
       }
     ];
     

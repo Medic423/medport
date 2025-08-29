@@ -5,7 +5,7 @@ interface Trip {
   id: string;
   origin: string;
   destination: string;
-  transportLevel: 'ALS' | 'BLS' | 'CCT';
+  transportLevel: 'ALS' | 'BLS' | 'CCT' | 'Other';
   status: 'pending' | 'accepted' | 'in-progress' | 'completed' | 'cancelled';
   requestTime: string;
   acceptedTime?: string;
@@ -108,6 +108,28 @@ const TripManagement: React.FC = () => {
         },
         urgency: 'urgent',
         notes: 'Patient on mechanical ventilation, requires continuous monitoring'
+      },
+      {
+        id: '4',
+        origin: 'City General Hospital',
+        destination: 'Outpatient Surgery Center',
+        transportLevel: 'Other',
+        status: 'pending',
+        requestTime: '2025-08-29T16:00:00Z',
+        patientInfo: {
+          name: 'Lisa Davis',
+          age: '28 years',
+          weight: '120 lbs',
+          specialNeeds: 'Wheelchair van required'
+        },
+        clinicalDetails: {
+          diagnosis: 'Elective outpatient procedure',
+          mobility: 'wheelchair',
+          oxygenRequired: false,
+          monitoringRequired: false
+        },
+        urgency: 'routine',
+        notes: 'Patient needs wheelchair van transport for outpatient surgery'
       }
     ];
     

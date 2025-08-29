@@ -434,7 +434,8 @@ export class ResourceManagementService {
         byTransportLevel: {
           [TransportLevel.BLS]: 25,
           [TransportLevel.ALS]: 15,
-          [TransportLevel.CCT]: 7
+          [TransportLevel.CCT]: 7,
+          [TransportLevel.OTHER]: 5
         },
         byFacility: {
           'UPMC Altoona': 18,

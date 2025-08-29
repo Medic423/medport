@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 interface TripFormData {
   origin: string;
   destination: string;
-  transportLevel: 'ALS' | 'BLS' | 'CCT';
+  transportLevel: 'ALS' | 'BLS' | 'CCT' | 'Other';
   patientInfo: {
     name: string;
     age: string;
@@ -171,6 +171,7 @@ const NewTripForm: React.FC = () => {
                 <option value="BLS">BLS - Basic Life Support</option>
                 <option value="ALS">ALS - Advanced Life Support</option>
                 <option value="CCT">CCT - Critical Care Transport</option>
+                <option value="Other">Other - Wheelchair Van, Car Service, etc.</option>
               </select>
             </div>
 
