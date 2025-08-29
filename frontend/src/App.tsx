@@ -25,6 +25,11 @@ import AgencyAnalytics from './components/AgencyAnalytics';
 import QRCodeSystem from './pages/QRCodeSystem';
 import OfflineCapabilities from './pages/OfflineCapabilities';
 
+// New simplified components
+import HospitalDashboard from './pages/HospitalDashboard';
+import NewTripForm from './pages/NewTripForm';
+import TripManagement from './pages/TripManagement';
+
 import MainLogin from './components/MainLogin';
 import { useSimpleNavigation } from './hooks/useSimpleNavigation';
 
@@ -195,15 +200,15 @@ function App() {
       
       <main className="pt-16">
         {/* Simplified routing based on user type */}
-        {currentPage === 'dashboard' && <StatusBoard />}
-        {currentPage === 'trips/new' && <TransportRequests />}
-        {currentPage === 'trips' && <TransportRequests />}
+        {currentPage === 'dashboard' && <HospitalDashboard />}
+        {currentPage === 'trips/new' && <NewTripForm />}
+        {currentPage === 'trips' && <TripManagement />}
         {currentPage === 'trips/available' && <TransportRequests />}
-        {currentPage === 'trips/assigned' && <TransportRequests />}
+        {currentPage === 'trips/assigned' && <TripManagement />}
         {currentPage === 'optimization' && <RouteOptimization />}
         {currentPage === 'agency' && <AgencyDashboard onNavigate={handleNavigation} />}
         {currentPage === 'overview' && <StatusBoard />}
-        {currentPage === 'trips/all' && <TransportRequests />}
+        {currentPage === 'trips/all' && <TripManagement />}
         {currentPage === 'hospitals' && <StatusBoard />}
         {currentPage === 'ems-agencies' && <AgencyDashboard onNavigate={handleNavigation} />}
         {currentPage === 'settings' && <Settings />}
