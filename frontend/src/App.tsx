@@ -26,14 +26,14 @@ import QRCodeSystem from './pages/QRCodeSystem';
 import OfflineCapabilities from './pages/OfflineCapabilities';
 
 import MainLogin from './components/MainLogin';
-import { useRoleBasedAccess } from './hooks/useRoleBasedAccess';
+import { useSimpleNavigation } from './hooks/useSimpleNavigation';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<string>('login');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userData, setUserData] = useState<any>(null);
   
-  const { navigation, loading, error, fetchNavigation } = useRoleBasedAccess();
+  const { navigation, userType, loading, error, fetchNavigation, fetchLandingPage } = useSimpleNavigation();
 
   useEffect(() => {
     // Check if user is already authenticated
@@ -65,23 +65,38 @@ function App() {
     }
   }, [fetchNavigation]);
 
-  const handleLoginSuccess = (userData: any) => {
+  const handleLoginSuccess = async (userData: any) => {
     setIsAuthenticated(true);
     setUserData(userData);
     
     // Fetch navigation data for the newly logged in user
     const token = localStorage.getItem('token');
     if (token) {
-      fetchNavigation(token);
-    }
-    
-    // Get the landing page from localStorage (set by MainLogin)
-    const landingPage = localStorage.getItem('landingPage');
-    if (landingPage) {
-      setCurrentPage(landingPage);
-    } else {
-      // Fallback to status-board if no landing page is set
-      setCurrentPage('status-board');
+      await fetchNavigation(token);
+      
+      // Get the landing page from the simplified navigation system
+      try {
+        const landingPage = await fetchLandingPage(token);
+        if (landingPage) {
+          setCurrentPage(landingPage);
+          localStorage.setItem('landingPage', landingPage);
+        } else {
+          // Fallback based on user type
+          if (userData.userType === 'hospital') {
+            setCurrentPage('dashboard');
+          } else if (userData.userType === 'ems') {
+            setCurrentPage('trips/available');
+          } else if (userData.userType === 'center') {
+            setCurrentPage('overview');
+          } else {
+            setCurrentPage('status-board');
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch landing page:', error);
+        // Fallback to status-board
+        setCurrentPage('status-board');
+      }
     }
   };
 
@@ -111,15 +126,20 @@ function App() {
     );
   }
 
-  // Render the main application with dynamic navigation
+  // Render the main application with simplified navigation
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Dynamic navigation header based on role-based access */}
+      {/* Simplified navigation header based on user type */}
       <nav className="bg-blue-600 text-white shadow-lg fixed top-0 left-0 right-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
               <h1 className="text-xl font-bold">MedPort</h1>
+              {userType && (
+                <span className="ml-4 px-2 py-1 bg-blue-500 rounded text-sm">
+                  {userType.charAt(0).toUpperCase() + userType.slice(1)}
+                </span>
+              )}
             </div>
             <div className="flex items-center space-x-4">
               {loading ? (
@@ -127,28 +147,16 @@ function App() {
               ) : error ? (
                 <div className="text-red-200">Navigation error</div>
               ) : navigation ? (
-                // Render navigation items from role-based access
+                // Render simplified navigation items
                 <>
-                  {navigation.navigation.map((category) => (
-                    <div key={category.id} className="relative group">
-                      <button className="px-3 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-500 hover:text-white">
-                        {category.name}
-                      </button>
-                      {/* Dropdown menu for category children */}
-                      <div className="absolute left-0 mt-2 w-64 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                        <div className="py-1">
-                          {category.children?.map((item) => (
-                            <button
-                              key={item.id}
-                              onClick={() => handleNavigation(item.id)}
-                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            >
-                              {item.name}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
+                  {navigation.navigation.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => handleNavigation(item.path)}
+                      className="px-3 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-500 hover:text-white"
+                    >
+                      {item.name}
+                    </button>
                   ))}
                   <button
                     onClick={handleLogout}
@@ -158,7 +166,7 @@ function App() {
                   </button>
                 </>
               ) : (
-                // Fallback to basic navigation if role-based data isn't available
+                // Fallback to basic navigation if simplified data isn't available
                 <>
                   <button
                     onClick={() => handleNavigation('status-board')}
@@ -186,6 +194,23 @@ function App() {
       </nav>
       
       <main className="pt-16">
+        {/* Simplified routing based on user type */}
+        {currentPage === 'dashboard' && <StatusBoard />}
+        {currentPage === 'trips/new' && <TransportRequests />}
+        {currentPage === 'trips' && <TransportRequests />}
+        {currentPage === 'trips/available' && <TransportRequests />}
+        {currentPage === 'trips/assigned' && <TransportRequests />}
+        {currentPage === 'optimization' && <RouteOptimization />}
+        {currentPage === 'agency' && <AgencyDashboard onNavigate={handleNavigation} />}
+        {currentPage === 'overview' && <StatusBoard />}
+        {currentPage === 'trips/all' && <TransportRequests />}
+        {currentPage === 'hospitals' && <StatusBoard />}
+        {currentPage === 'ems-agencies' && <AgencyDashboard onNavigate={handleNavigation} />}
+        {currentPage === 'settings' && <Settings />}
+        {currentPage === 'features' && <StatusBoard />}
+        {currentPage === 'notifications' && <NotificationDashboard />}
+        
+        {/* Legacy page support for backward compatibility */}
         {currentPage === 'transport-requests' && <TransportRequests />}
         {currentPage === 'status-board' && <StatusBoard />}
         {currentPage === 'distance-matrix' && <DistanceMatrix />}
@@ -198,8 +223,6 @@ function App() {
         {currentPage === 'agency-dashboard' && <AgencyDashboard onNavigate={handleNavigation} />}
         {currentPage === 'route-optimization' && <RouteOptimization />}
         {currentPage === 'unit-assignment' && <UnitAssignment />}
-        {currentPage === 'notifications' && <NotificationDashboard />}
-        {currentPage === 'settings' && <Settings />}
         {currentPage === 'analytics' && <Analytics />}
         {currentPage === 'agency-portal' && <AgencyPortal onNavigate={handleNavigation} />}
         {currentPage === 'unit-management' && <UnitManagement />}
@@ -211,7 +234,6 @@ function App() {
         {currentPage === 'agency-analytics' && <AgencyAnalytics />}
         {currentPage === 'qr-code-system' && <QRCodeSystem />}
         {currentPage === 'offline-capabilities' && <OfflineCapabilities />}
-
       </main>
     </div>
   );

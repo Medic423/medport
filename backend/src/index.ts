@@ -24,6 +24,7 @@ import qrCodeRoutes from './routes/qrCode';
 import realTimeTrackingRoutes from './routes/realTimeTracking';
 import analyticsRoutes from './routes/analytics';
 import roleBasedAccessRoutes from './routes/roleBasedAccess';
+import simpleNavigationRoutes from './routes/simpleNavigation';
 import WebSocketService from './services/webSocketService';
 
 dotenv.config();
@@ -64,6 +65,7 @@ app.use('/api/qr', qrCodeRoutes);
 app.use('/api/real-time-tracking', realTimeTrackingRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/role-based-access', roleBasedAccessRoutes);
+app.use('/api/simple-navigation', simpleNavigationRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'MedPort Backend API is running!' });
