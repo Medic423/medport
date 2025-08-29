@@ -54,7 +54,7 @@ export const simpleAuthenticateToken = (req: SimpleAuthRequest, res: Response, n
     let userType: 'hospital' | 'ems' | 'center';
     if (decoded.role) {
       // Legacy role mapping
-      if (decoded.role === 'ADMIN' || decoded.role === 'MANAGER') {
+      if (decoded.role === 'ADMIN' || decoded.role === 'MANAGER' || decoded.role === 'COORDINATOR') {
         userType = 'center';
       } else if (decoded.role === 'HOSPITAL_STAFF' || decoded.role === 'NURSE' || decoded.role === 'HOSPITAL_COORDINATOR') {
         userType = 'hospital';
