@@ -56,9 +56,9 @@ export const simpleAuthenticateToken = (req: SimpleAuthRequest, res: Response, n
       // Legacy role mapping
       if (decoded.role === 'ADMIN' || decoded.role === 'MANAGER') {
         userType = 'center';
-      } else if (decoded.role === 'HOSPITAL_STAFF' || decoded.role === 'NURSE') {
+      } else if (decoded.role === 'HOSPITAL_STAFF' || decoded.role === 'NURSE' || decoded.role === 'HOSPITAL_COORDINATOR') {
         userType = 'hospital';
-      } else if (decoded.role === 'EMS_PROVIDER' || decoded.role === 'DRIVER') {
+      } else if (decoded.role === 'EMS_PROVIDER' || decoded.role === 'DRIVER' || decoded.role === 'TRANSPORT_AGENCY') {
         userType = 'ems';
       } else {
         userType = 'hospital'; // Default fallback
