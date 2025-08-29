@@ -7,10 +7,6 @@ const getApiBase = () => {
   const envBase = import.meta.env.VITE_API_BASE_URL;
   const fallback = '/api';
   
-  console.log('[API] Environment variables:', import.meta.env);
-  console.log('[API] VITE_API_BASE_URL:', envBase);
-  console.log('[API] Using API base:', envBase || fallback);
-  
   return envBase || fallback;
 };
 

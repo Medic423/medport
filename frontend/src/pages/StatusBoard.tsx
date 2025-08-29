@@ -120,7 +120,6 @@ const StatusBoard: React.FC = () => {
         )
       );
 
-      console.log(`[MedPort:StatusBoard] Status updated for request ${requestId} to ${newStatus}`);
     } catch (err) {
       console.error('[MedPort:StatusBoard] Error updating request status:', err);
       setError('Failed to update request status. Please try again.');
@@ -132,7 +131,7 @@ const StatusBoard: React.FC = () => {
     loadTransportRequests();
   };
 
-  // Initial load
+  // Load data on component mount
   useEffect(() => {
     loadTransportRequests();
     

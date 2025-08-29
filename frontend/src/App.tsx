@@ -76,12 +76,14 @@ function App() {
     
     // Fetch navigation data for the newly logged in user
     const token = localStorage.getItem('token');
+    
     if (token) {
       await fetchNavigation(token);
       
       // Get the landing page from the simplified navigation system
       try {
         const landingPage = await fetchLandingPage(token);
+        
         if (landingPage) {
           setCurrentPage(landingPage);
           localStorage.setItem('landingPage', landingPage);
@@ -98,7 +100,7 @@ function App() {
           }
         }
       } catch (error) {
-        console.error('Failed to fetch landing page:', error);
+        console.error('[App] Failed to fetch landing page:', error);
         // Fallback to status-board
         setCurrentPage('status-board');
       }

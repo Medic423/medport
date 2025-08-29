@@ -26,8 +26,6 @@ export const useSimpleNavigation = () => {
       setLoading(true);
       setError(null);
 
-      console.log('[SIMPLE_NAVIGATION] Fetching navigation from simplified endpoint');
-      
       const response = await apiRequest('/simple-navigation/navigation', {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -55,8 +53,6 @@ export const useSimpleNavigation = () => {
       }
       
       if (result.success) {
-        console.log('[SIMPLE_NAVIGATION] Navigation fetched successfully:', result.data);
-        // Set navigation to the navigation array, not the entire data object
         setNavigation({
           userType: result.data.userType,
           navigation: result.data.navigation
@@ -87,6 +83,7 @@ export const useSimpleNavigation = () => {
       }
 
       const result = await response.json();
+      
       if (result.success) {
         return result.data.landingPage;
       } else {

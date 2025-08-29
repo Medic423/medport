@@ -23,28 +23,28 @@ export class SimpleNavigationService {
             {
               id: 'dashboard',
               name: 'Trip Dashboard',
-              path: '/dashboard',
+              path: 'dashboard',
               icon: 'dashboard',
               category: 'Main'
             },
             {
               id: 'new-trip',
               name: 'New Trip Request',
-              path: '/trips/new',
+              path: 'trips/new',
               icon: 'add',
               category: 'Main'
             },
             {
               id: 'my-trips',
               name: 'My Trips',
-              path: '/trips',
+              path: 'trips',
               icon: 'list',
               category: 'Main'
             },
             {
               id: 'notifications',
               name: 'Notifications',
-              path: '/notifications',
+              path: 'notifications',
               icon: 'notifications',
               category: 'Main'
             }
@@ -58,28 +58,28 @@ export class SimpleNavigationService {
             {
               id: 'available-trips',
               name: 'Available Trips',
-              path: '/trips/available',
+              path: 'trips/available',
               icon: 'list',
               category: 'Main'
             },
             {
               id: 'my-assignments',
               name: 'My Assignments',
-              path: '/trips/assigned',
+              path: 'trips/assigned',
               icon: 'assignment',
               category: 'Main'
             },
             {
               id: 'route-optimization',
               name: 'Route Optimization',
-              path: '/optimization',
+              path: 'optimization',
               icon: 'route',
               category: 'Main'
             },
             {
               id: 'agency-tools',
               name: 'Agency Tools',
-              path: '/agency',
+              path: 'agency',
               icon: 'business',
               category: 'Main'
             }
@@ -93,42 +93,42 @@ export class SimpleNavigationService {
             {
               id: 'overview',
               name: 'System Overview',
-              path: '/overview',
+              path: 'overview',
               icon: 'dashboard',
               category: 'Main'
             },
             {
               id: 'all-trips',
               name: 'All Trips',
-              path: '/trips/all',
+              path: 'trips/all',
               icon: 'list',
               category: 'Main'
             },
             {
               id: 'hospitals',
               name: 'Hospitals',
-              path: '/hospitals',
+              path: 'hospitals',
               icon: 'local_hospital',
               category: 'Management'
             },
             {
               id: 'ems-agencies',
               name: 'EMS Agencies',
-              path: '/ems-agencies',
+              path: 'ems-agencies',
               icon: 'local_shipping',
               category: 'Management'
             },
             {
               id: 'system-settings',
               name: 'System Settings',
-              path: '/settings',
+              path: 'settings',
               icon: 'settings',
               category: 'Admin'
             },
             {
               id: 'feature-toggles',
               name: 'Feature Toggles',
-              path: '/features',
+              path: 'features',
               icon: 'toggle_on',
               category: 'Admin'
             }
@@ -146,13 +146,13 @@ export class SimpleNavigationService {
   static getLandingPageForUserType(userType: 'hospital' | 'ems' | 'center'): string {
     switch (userType) {
       case 'hospital':
-        return '/dashboard';
+        return 'dashboard';
       case 'ems':
-        return '/trips/available';
+        return 'trips/available';
       case 'center':
-        return '/overview';
+        return 'overview';
       default:
-        return '/dashboard';
+        return 'dashboard';
     }
   }
 }

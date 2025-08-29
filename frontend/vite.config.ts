@@ -23,8 +23,8 @@ export default defineConfig(({ mode }) => {
     define: {
       // Make all environment variables available to the client
       __APP_ENV__: JSON.stringify(env.APP_ENV || mode),
-      // Force local development API URL
-      'import.meta.env.VITE_API_BASE_URL': JSON.stringify('http://localhost:5001/api'),
+      // Use proxy for API calls to avoid CORS issues
+      'import.meta.env.VITE_API_BASE_URL': JSON.stringify('/api'),
     }
   }
 })
