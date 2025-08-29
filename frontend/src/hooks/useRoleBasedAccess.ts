@@ -50,7 +50,21 @@ export const useRoleBasedAccess = () => {
         throw new Error(`Failed to fetch navigation: ${response.statusText}`);
       }
 
-      const result = await response.json();
+      // Check if response has content
+      const responseText = await response.text();
+      if (!responseText || responseText.trim() === '') {
+        console.error('[ROLE_BASED_ACCESS] Empty response received from navigation endpoint');
+        throw new Error('Empty response from server - please check server logs');
+      }
+
+      // Try to parse the response
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('[ROLE_BASED_ACCESS] JSON parse error:', parseError, 'Response text:', responseText);
+        throw new Error('Invalid response format from server');
+      }
       
       if (result.success) {
         setNavigation(result.data);
@@ -79,12 +93,26 @@ export const useRoleBasedAccess = () => {
         throw new Error(`Failed to fetch modules: ${response.statusText}`);
       }
 
-      const result = await response.json();
+      // Check if response has content
+      const responseText = await response.text();
+      if (!responseText || responseText.trim() === '') {
+        console.error('[ROLE_BASED_ACCESS] Empty response received from modules endpoint');
+        return; // Don't throw error for modules as it's not critical
+      }
+
+      // Try to parse the response
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('[ROLE_BASED_ACCESS] JSON parse error for modules:', parseError, 'Response text:', responseText);
+        return; // Don't throw error for modules as it's not critical
+      }
       
       if (result.success) {
         setModules(result.data.modules);
       } else {
-        throw new Error(result.message || 'Failed to fetch modules');
+        console.warn('[ROLE_BASED_ACCESS] Modules fetch returned error:', result.message);
       }
     } catch (err) {
       console.error('[ROLE_BASED_ACCESS] Modules fetch error:', err);

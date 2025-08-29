@@ -34,26 +34,52 @@ router.get('/navigation', authenticateToken, async (req: any, res: Response) => 
 // Get user's accessible modules
 router.get('/modules', authenticateToken, async (req: any, res: Response) => {
   try {
+    // Validate user object exists
+    if (!req.user || !req.user.role) {
+      console.error('[ROLE_BASED_ACCESS] Missing user or user role for modules:', req.user);
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid user session'
+      });
+    }
+
     const userRole = req.user.role;
+    console.log('[ROLE_BASED_ACCESS] Fetching modules for role:', userRole);
+    
     const userPermissions = SessionService.getUserPermissions(userRole);
+    console.log('[ROLE_BASED_ACCESS] User permissions for modules:', userPermissions);
+    
+    if (!userPermissions || userPermissions.length === 0) {
+      console.error('[ROLE_BASED_ACCESS] No permissions found for role:', userRole);
+      return res.status(403).json({
+        success: false,
+        message: 'No permissions found for user role'
+      });
+    }
     
     const modules = RoleBasedAccessService.getUserAccessibleModules(userRole, userPermissions);
+    console.log('[ROLE_BASED_ACCESS] Generated modules:', modules);
     
-    res.json({
+    // Ensure we always return valid JSON structure
+    const response = {
       success: true,
       data: {
         role: userRole,
         permissions: userPermissions,
-        modules: modules
+        modules: modules || []
       }
-    });
-  } catch (error) {
-    console.error('[ROLE_BASED_ACCESS] Modules error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get module data'
-    });
-  }
+    };
+    
+    console.log('[ROLE_BASED_ACCESS] Sending modules response:', response);
+    res.json(response);
+      } catch (error) {
+      console.error('[ROLE_BASED_ACCESS] Modules error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get module data',
+        error: process.env.NODE_ENV === 'development' ? (error as Error).message : 'Internal server error'
+      });
+    }
 });
 
 // Get user's landing page based on role and permissions
