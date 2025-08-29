@@ -132,12 +132,13 @@ router.post('/login', async (req, res) => {
       role: 'ADMIN'
     };
 
-    // Generate JWT token
+    // Generate JWT token with both role and userType for compatibility
     const token = jwt.sign(
       { 
         id: mockUser.id, 
         email: mockUser.email, 
         role: mockUser.role,
+        userType: 'center', // Add userType for simplified system
         isTransportCenter: true
       },
       process.env.JWT_SECRET!,
@@ -172,6 +173,7 @@ router.post('/login', async (req, res) => {
         id: mockUser.id, 
         email: mockUser.email, 
         role: mockUser.role,
+        userType: 'center', // Add userType for simplified system
         isTransportCenter: true
       },
       process.env.JWT_SECRET!,
@@ -202,12 +204,13 @@ router.post('/demo/login', async (req, res) => {
       role: 'COORDINATOR'
     };
 
-    // Generate demo token
+    // Generate demo token with both role and userType for compatibility
     const token = jwt.sign(
       { 
         id: demoCoordinator.id, 
         email: demoCoordinator.email, 
         role: demoCoordinator.role,
+        userType: 'center', // Add userType for simplified system
         isTransportCenter: true,
         isDemo: true
       },

@@ -224,12 +224,13 @@ router.post('/login', async (req, res) => {
       name: 'UPMC Altoona'
     };
 
-    // Generate demo token
+    // Generate demo token with both role and userType for compatibility
     const token = jwt.sign(
       { 
         id: demoUser.id, 
         email: demoUser.email, 
         role: demoUser.role,
+        userType: 'hospital', // Add userType for simplified system
         hospitalId: demoHospital.id,
         organizationId: demoOrg.id,
         isDemo: true
@@ -268,6 +269,7 @@ router.post('/login', async (req, res) => {
         id: demoUser.id, 
         email: demoUser.email, 
         role: demoUser.role,
+        userType: 'hospital', // Add userType for simplified system
         hospitalId: 'demo-hospital-001',
         organizationId: 'demo-hospital-org-001',
         isDemo: true

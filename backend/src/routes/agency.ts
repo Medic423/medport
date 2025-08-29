@@ -1,6 +1,7 @@
 import express from 'express';
 import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
+import jwt from 'jsonwebtoken';
 import agencyService from '../services/agencyService';
 import transportBiddingService from '../services/transportBiddingService';
 import { authenticateToken } from '../middleware/auth';
@@ -210,7 +211,19 @@ router.post('/login', async (req, res) => {
       email: req.body.email || 'agency@medport.com'
     };
     
-    const demoToken = 'bypass-token-' + Date.now();
+    // Generate JWT token with both role and userType for compatibility
+    const demoToken = jwt.sign(
+      { 
+        id: demoUser.id, 
+        email: demoUser.email, 
+        role: demoUser.role,
+        userType: 'ems', // Add userType for simplified system
+        agencyId: demoAgency.id,
+        isDemo: true
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '24h' }
+    );
     
     console.log('[AGENCY-LOGIN] Bypass successful:', { userId: demoUser.id, agencyId: demoAgency.id });
     
@@ -242,7 +255,19 @@ router.post('/login', async (req, res) => {
       email: 'agency@medport.com'
     };
     
-    const demoToken = 'error-bypass-token-' + Date.now();
+    // Generate JWT token with both role and userType for compatibility
+    const demoToken = jwt.sign(
+      { 
+        id: demoUser.id, 
+        email: demoUser.email, 
+        role: demoUser.role,
+        userType: 'ems', // Add userType for simplified system
+        agencyId: demoAgency.id,
+        isDemo: true
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '24h' }
+    );
     
     res.json({
       success: true,
@@ -275,7 +300,19 @@ router.post('/demo/login', async (req, res) => {
       email: 'demo@agency.com'
     };
     
-    const demoToken = 'demo-token-' + Date.now();
+    // Generate JWT token with both role and userType for compatibility
+    const demoToken = jwt.sign(
+      { 
+        id: demoUser.id, 
+        email: demoUser.email, 
+        role: demoUser.role,
+        userType: 'ems', // Add userType for simplified system
+        agencyId: demoAgency.id,
+        isDemo: true
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '24h' }
+    );
     
     console.log('[AGENCY-DEMO-LOGIN] Success:', { userId: demoUser.id, agencyId: demoAgency.id });
     
