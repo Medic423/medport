@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Response } from 'express';
 import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
@@ -25,7 +25,7 @@ const coordinatorLoginSchema = z.object({
 });
 
 // Transport Center Coordinator Registration (Protected - only admins can create coordinators)
-router.post('/register', authenticateToken, async (req: any, res) => {
+router.post('/register', authenticateToken, async (req: any, res: Response) => {
   try {
     // Check if user has permission to create coordinators
     if (!['ADMIN'].includes(req.user.role)) {
@@ -235,7 +235,7 @@ router.post('/demo/login', async (req, res) => {
 });
 
 // Get Transport Center dashboard data (Protected)
-router.get('/dashboard', authenticateToken, async (req: any, res) => {
+router.get('/dashboard', authenticateToken, async (req: any, res: Response) => {
   try {
     // Check if user is a transport center coordinator
     if (!['ADMIN', 'COORDINATOR'].includes(req.user.role)) {
@@ -315,7 +315,7 @@ router.get('/dashboard', authenticateToken, async (req: any, res) => {
 });
 
 // Get Transport Center profile (Protected)
-router.get('/profile', authenticateToken, async (req: any, res) => {
+router.get('/profile', authenticateToken, async (req: any, res: Response) => {
   try {
     const userId = req.user.id;
     

@@ -1548,6 +1548,771 @@ Lines added: 1, lines removed: 1
 
 ---
 
+<details><summary>Edit file: backend/src/routes/unitAssignment.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -154,5 +154,5 @@
+   * Detect assignment conflicts for a unit
+   */
+- router.post('/conflicts/detect', async (req: AuthRequest, res) => {
++ router.post('/conflicts/detect', async (req: AuthRequest, res: Response) => {
+    try {
+      console.log('[MedPort:UnitAssignment] POST /conflicts/detect - Request received:', req.body);
+```
+
+</details>
+
+---
+
+<details><summary>Edit file: backend/src/routes/unitAssignment.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -198,5 +198,5 @@
+   * Get unit availability matrix for dashboard
+   */
+- router.get('/availability-matrix', async (req: AuthRequest, res) => {
++ router.get('/availability-matrix', async (req: AuthRequest, res: Response) => {
+    try {
+      console.log('[MedPort:UnitAssignment] GET /availability-matrix');
+```
+
+</details>
+
+---
+
+<details><summary>Edit file: backend/src/routes/unitAssignment.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -222,5 +222,5 @@
+   * Debug endpoint to check data
+   */
+- router.get('/debug', async (req: AuthRequest, res) => {
++ router.get('/debug', async (req: AuthRequest, res: Response) => {
+    try {
+      console.log('[MedPort:UnitAssignment] GET /debug - Debug request received');
+```
+
+</details>
+
+---
+
+<details><summary>Edit file: backend/src/routes/unitAssignment.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -259,5 +259,5 @@
+   * Optimize unit assignments for maximum revenue
+   */
+- router.post('/optimize', async (req: AuthRequest, res) => {
++ router.post('/optimize', async (req: AuthRequest, res: Response) => {
+    try {
+      console.log('[MedPort:UnitAssignment] POST /optimize - Request received:', req.body);
+```
+
+</details>
+
+---
+
+<details><summary>Edit file: backend/src/routes/unitAssignment.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -294,5 +294,5 @@
+   * Get all units with availability status
+   */
+- router.get('/units', async (req: AuthRequest, res) => {
++ router.get('/units', async (req: AuthRequest, res: Response) => {
+    try {
+      console.log('[MedPort:UnitAssignment] GET /units - Query params:', req.query);
+```
+
+</details>
+
+---
+
+<details><summary>Edit file: backend/src/routes/unitAssignment.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -334,5 +334,5 @@
+   * Get units for a specific agency with availability status
+   */
+- router.get('/units/:agencyId', async (req: AuthRequest, res) => {
++ router.get('/units/:agencyId', async (req: AuthRequest, res: Response) => {
+    try {
+      console.log('[MedPort:UnitAssignment] GET /units/:agencyId - Agency ID:', req.params.agencyId);
+```
+
+</details>
+
+---
+
+<details><summary>Edit file: backend/src/routes/unitAssignment.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -384,5 +384,5 @@
+   * Get unit assignments with filtering and pagination
+   */
+- router.get('/assignments', async (req: AuthRequest, res) => {
++ router.get('/assignments', async (req: AuthRequest, res: Response) => {
+    try {
+      console.log('[MedPort:UnitAssignment] GET /assignments - Query params:', req.query);
+```
+
+</details>
+
+---
+
+<details><summary>Edit file: backend/src/routes/unitAssignment.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -447,5 +447,5 @@
+   * Update unit assignment status
+   */
+- router.put('/assignments/:assignmentId', async (req: AuthRequest, res) => {
++ router.put('/assignments/:assignmentId', async (req: AuthRequest, res: Response) => {
+    try {
+      console.log('[MedPort:UnitAssignment] PUT /assignments/:assignmentId - Assignment ID:', req.params.assignmentId);
+```
+
+</details>
+
+---
+
+<details><summary>Edit file: backend/src/routes/unitAssignment.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -485,5 +485,5 @@
+   * Cancel unit assignment
+   */
+- router.delete('/assignments/:assignmentId', async (req: AuthRequest, res) => {
++ router.delete('/assignments/:assignmentId', async (req: AuthRequest, res: Response) => {
+    try {
+      console.log('[MedPort:UnitAssignment] DELETE /assignments/:assignmentId - Assignment ID:', req.params.assignmentId);
+```
+
+</details>
+
+---
+
+<details><summary>Edit file: backend/src/routes/unitAssignment.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -511,5 +511,5 @@
+   * Get revenue metrics for unit or agency
+   */
+- router.get('/revenue/:entityId', async (req: AuthRequest, res) => {
++ router.get('/revenue/:entityId', async (req: AuthRequest, res: Response) => {
+    try {
+      console.log('[MedPort:UnitAssignment] GET /revenue/:entityId - Entity ID:', req.params.entityId);
+```
+
+</details>
+
+---
+
+<details><summary>Edit file: backend/src/routes/unitAssignment.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -553,5 +553,5 @@
+   * Get revenue optimization analysis
+   */
+- router.get('/revenue/analysis/:entityId', async (req: AuthRequest, res) => {
++ router.get('/revenue/analysis/:entityId', async (req: AuthRequest, res: Response) => {
+    try {
+      console.log('[MedPort:UnitAssignment] GET /revenue/analysis/:entityId - Entity ID:', req.params.entityId);
+```
+
+</details>
+
+---
+
+<details><summary>Edit file: backend/src/routes/unitAssignment.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -597,5 +597,5 @@
+   * Get revenue trends over time
+   */
+- router.get('/revenue/trends/:entityId', async (req: AuthRequest, res) => {
++ router.get('/revenue/trends/:entityId', async (req: AuthRequest, res: Response) => {
+    try {
+      console.log('[MedPort:UnitAssignment] GET /revenue/trends/:entityId - Entity ID:', req.params.entityId);
+```
+
+</details>
+
+---
+
+<details><summary>Edit file: backend/src/routes/unitAssignment.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -640,5 +640,5 @@
+   * Get revenue summary for all agencies
+   */
+- router.get('/revenue/agencies/summary', async (req: AuthRequest, res) => {
++ router.get('/revenue/agencies/summary', async (req: AuthRequest, res: Response) => {
+    try {
+      console.log('[MedPort:UnitAssignment] GET /revenue/agencies/summary');
+```
+
+</details>
+
+---
+
+<details><summary>Edit file: backend/src/routes/unitAssignment.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -677,5 +677,5 @@
+   * Get unit revenue performance for an agency
+   */
+- router.get('/revenue/units/performance/:agencyId', async (req: AuthRequest, res) => {
++ router.get('/revenue/units/performance/:agencyId', async (req: AuthRequest, res: Response) => {
+    try {
+      console.log('[MedPort:UnitAssignment] GET /revenue/units/performance/:agencyId - Agency ID:', req.params.agencyId);
+```
+
+</details>
+
+---
+
+Now let me check if there are any other TypeScript issues by trying to build the project:
+
+
+---
+
+```bash
+cd backend && npm run build
+```
+
+```
+
+
+> backend@1.0.0 build
+> tsc
+
+src/middleware/auth.ts:4:18 - error TS2430: Interface 'AuthRequest' incorrectly extends interface 'Request<P
+aramsDictionary, any, any, ParsedQs, Record<string, any>>'.
+
+  Property 'body' is optional in type 'AuthRequest' but required in type 'Request<ParamsDictionary, any, any
+, ParsedQs, Record<string, any>>'.
+
+
+4 export interface AuthRequest extends Request {
+                   ~~~~~~~~~~~
+
+
+Found 1 error in src/middleware/auth.ts:4
+
+```
+
+---
+
+I need to fix the AuthRequest interface. The issue is that I'm making required properties optional. Let me fix this:
+
+
+---
+
+<details><summary>Edit file: backend/src/middleware/auth.ts</summary>
+
+I will fix the AuthRequest interface to properly extend Express Request without making required properties optional
+
+**Chunk 1**
+Lines added: undefined, lines removed: 3
+
+```diff
+@@ -8,7 +8,4 @@
+      role: string;
+    };
+-   body?: any;
+-   query?: any;
+-   params?: any;
+  }
+  
+```
+
+</details>
+
+---
+
+Now let me try building again:
+
+
+---
+
+```bash
+npm run build
+```
+
+```
+scooper@MacBook-Pro-5 backend % npm run build
+
+> backend@1.0.0 build
+> tsc
+
+
+> backend@1.0.0 postbuild
+> cp -r prisma dist/ && npx prisma generate
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+
+✔ Generated Prisma Client (v6.14.0) to ./node_modules/@prisma/client in 150ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip
+-2-accelerate
+
+scooper@MacBook-Pro-5 backend %
+```
+
+---
+
+Great! The build is now successful. Let me go back to the root directory and commit these fixes:
+
+
+---
+
+```bash
+cd ..
+```
+
+```
+scooper@MacBook-Pro-5 backend % cd ..
+scooper@MacBook-Pro-5 medport %
+```
+
+---
+
+```bash
+git add .
+```
+
+```
+scooper@MacBook-Pro-5 medport % git add .
+scooper@MacBook-Pro-5 medport %
+```
+
+---
+
+```bash
+git commit -m "Fix TypeScript build errors: add Response types and fix AuthRequest interface"
+```
+
+```
+scooper@MacBook-Pro-5 medport % git commit -m "Fix TypeScript build errors: add Response types and fix AuthR
+equest interface"
+husky - DEPRECATED
+
+Please remove the following two lines from .husky/pre-commit:
+
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+They WILL FAIL in v10.0.0
+
+✔ Backed up original state in git stash (a76f90e)
+✔ Running tasks for staged files...
+✔ Applying modifications from tasks...
+✔ Cleaning up temporary files...
+[main 4f16ffa] Fix TypeScript build errors: add Response types and fix AuthRequest interface
+ 2 files changed, 387 insertions(+), 17 deletions(-)
+scooper@MacBook-Pro-5 medport %
+```
+
+---
+
+```bash
+git push origin main
+```
+
+```
+scooper@MacBook-Pro-5 medport % git push origin main
+Enumerating objects: 17, done.
+Counting objects: 100% (17/17), done.
+Delta compression using up to 14 threads
+Compressing objects: 100% (9/9), done.
+Writing objects: 100% (9/9), 5.00 KiB | 5.00 MiB/s, done.
+Total 9 (delta 7), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (7/7), completed with 7 local objects.
+To https://github.com/Medic423/medport.git
+   3c18f58..4f16ffa  main -> main
+scooper@MacBook-Pro-5 medport %
+```
+
+---
+
+Perfect! ✅ **Build errors fixed and changes committed successfully.**
+
+## **New Git Commit ID: `4f16ffa`**
+
+## **Issues Fixed**
+
+1. **TypeScript Build Errors**: All the missing `Response` types in `unitAssignment.ts` have been added
+2. **AuthRequest Interface**: Fixed the interface to properly extend Express Request without making required properties optional
+3. **Type Safety**: The backend now builds successfully with proper TypeScript types
+
+## **What Was Fixed**
+
+- **Added `Response` import** to `unitAssignment.ts`
+- **Added `Response` type** to all route handler parameters
+- **Fixed `AuthRequest` interface** to properly extend Express Request
+- **Maintained type safety** while ensuring compatibility
+
+## **Next Steps**
+
+1. **Deploy Backend**: Use the new commit ID `4f16ffa` to deploy the backend to Render.com
+2. **Add Environment Variable**: Don't forget to add `NODE_ENV=production` to your backend environment variables
+3. **Test**: The enhanced error handling and logging should now work properly in production
+
+The build should now succeed on Render.com, and you'll have the improved error handling that will prevent the JSON.parse errors you were experiencing. The enhanced logging will also help identify any remaining issues in production.
+
+---
+
+_**User**_
+
+Build still fails and I did add NODE_ENV=production to the backend environment variables.
+
+2025-08-29T14:37:39.373254184Z src/routes/routeCardGeneration.ts(329,56): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:37:39.373256595Z src/routes/routeCardGeneration.ts(331,74): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373261715Z src/routes/routeCardGeneration.ts(367,30): error TS7006: Parameter 'req' implicitly has an 'any' type.
+2025-08-29T14:37:39.373264265Z src/routes/routeCardGeneration.ts(367,35): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:37:39.373301776Z src/routes/routeOptimization.ts(1,21): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/backend/node_modules/express/index.js' implicitly has an 'any' type.
+2025-08-29T14:37:39.373307396Z   Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+2025-08-29T14:37:39.373309986Z src/routes/routeOptimization.ts(58,51): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:37:39.373312196Z src/routes/routeOptimization.ts(60,87): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373318226Z src/routes/routeOptimization.ts(63,75): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373321987Z src/routes/routeOptimization.ts(98,55): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:37:39.373333267Z src/routes/routeOptimization.ts(100,87): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373343117Z src/routes/routeOptimization.ts(103,69): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373349218Z src/routes/routeOptimization.ts(112,31): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373386699Z src/routes/routeOptimization.ts(113,41): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373391419Z src/routes/routeOptimization.ts(183,59): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:37:39.37341568Z src/routes/routeOptimization.ts(185,24): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.3734198Z src/routes/routeOptimization.ts(222,67): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:37:39.373451731Z src/routes/routeOptimization.ts(224,24): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373470341Z src/routes/routeOptimization.ts(225,45): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373473261Z src/routes/routeOptimization.ts(227,102): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373481051Z src/routes/routeOptimization.ts(308,67): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:37:39.373484062Z src/routes/routeOptimization.ts(310,24): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373521213Z src/routes/routeOptimization.ts(311,38): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373524353Z src/routes/routeOptimization.ts(313,102): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373542373Z src/routes/routeOptimization.ts(345,47): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:37:39.373545504Z src/routes/routeOptimization.ts(369,57): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:37:39.373571114Z src/routes/routeOptimization.ts(407,57): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:37:39.373574825Z src/routes/routeOptimization.ts(409,93): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373580255Z src/routes/routeOptimization.ts(411,56): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373607166Z src/routes/routeOptimization.ts(470,48): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:37:39.373610736Z src/routes/transportCenter.ts(1,21): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/backend/node_modules/express/index.js' implicitly has an 'any' type.
+2025-08-29T14:37:39.373613156Z   Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+2025-08-29T14:37:39.373618686Z src/routes/transportCenter.ts(5,17): error TS7016: Could not find a declaration file for module 'jsonwebtoken'. '/opt/render/project/src/backend/node_modules/jsonwebtoken/index.js' implicitly has an 'any' type.
+2025-08-29T14:37:39.373621076Z   Try `npm i --save-dev @types/jsonwebtoken` if it exists or add a new declaration (.d.ts) file containing `declare module 'jsonwebtoken';`
+2025-08-29T14:37:39.373623336Z src/routes/transportCenter.ts(28,62): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:37:39.373644317Z src/routes/transportCenter.ts(120,30): error TS7006: Parameter 'req' implicitly has an 'any' type.
+2025-08-29T14:37:39.373647177Z src/routes/transportCenter.ts(120,35): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:37:39.373649317Z src/routes/transportCenter.ts(193,35): error TS7006: Parameter 'req' implicitly has an 'any' type.
+2025-08-29T14:37:39.373674517Z src/routes/transportCenter.ts(193,40): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:37:39.373677368Z src/routes/transportCenter.ts(238,62): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:37:39.373715479Z src/routes/transportCenter.ts(318,60): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:37:39.373718889Z src/routes/transportRequests.ts(1,21): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/backend/node_modules/express/index.js' implicitly has an 'any' type.
+2025-08-29T14:37:39.373721179Z   Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+2025-08-29T14:37:39.373723369Z src/routes/transportRequests.ts(25,13): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373728509Z src/routes/transportRequests.ts(94,13): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373733179Z src/routes/transportRequests.ts(140,24): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.37376694Z src/routes/transportRequests.ts(168,24): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.3737701Z src/routes/transportRequests.ts(169,28): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373782521Z src/routes/transportRequests.ts(216,24): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373785121Z src/routes/transportRequests.ts(217,28): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373791191Z src/routes/transportRequests.ts(240,24): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373794111Z src/routes/transportRequests.ts(241,31): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373796651Z src/routes/transportRequests.ts(264,34): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373810762Z src/routes/transportRequests.ts(327,13): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373836583Z src/routes/unitAssignment.ts(1,35): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/backend/node_modules/express/index.js' implicitly has an 'any' type.
+2025-08-29T14:37:39.373839783Z   Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+2025-08-29T14:37:39.373842093Z src/routes/unitAssignment.ts(81,82): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373862473Z src/routes/unitAssignment.ts(84,72): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373865134Z src/routes/unitAssignment.ts(120,85): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373867303Z src/routes/unitAssignment.ts(122,28): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373878964Z src/routes/unitAssignment.ts(123,32): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373885274Z src/routes/unitAssignment.ts(158,92): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373892124Z src/routes/unitAssignment.ts(161,75): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373949746Z src/routes/unitAssignment.ts(263,84): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373955096Z src/routes/unitAssignment.ts(266,70): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373958476Z src/routes/unitAssignment.ts(298,76): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373961557Z src/routes/unitAssignment.ts(300,44): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373964686Z src/routes/unitAssignment.ts(338,83): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373976777Z src/routes/unitAssignment.ts(340,30): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373983607Z src/routes/unitAssignment.ts(341,44): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.373987917Z src/routes/unitAssignment.ts(388,82): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.374013298Z src/routes/unitAssignment.ts(398,13): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.374015468Z src/routes/unitAssignment.ts(451,97): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.374042399Z src/routes/unitAssignment.ts(453,34): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.374045339Z src/routes/unitAssignment.ts(454,44): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.374055599Z src/routes/unitAssignment.ts(489,100): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.3740638Z src/routes/unitAssignment.ts(491,34): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.37406939Z src/routes/unitAssignment.ts(515,85): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.374104601Z src/routes/unitAssignment.ts(517,30): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.374108641Z src/routes/unitAssignment.ts(518,44): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.374111071Z src/routes/unitAssignment.ts(557,94): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.374141522Z src/routes/unitAssignment.ts(559,30): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.374149582Z src/routes/unitAssignment.ts(560,32): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.374160143Z src/routes/unitAssignment.ts(601,92): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.374164473Z src/routes/unitAssignment.ts(603,30): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.374170433Z src/routes/unitAssignment.ts(604,52): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.374182293Z src/routes/unitAssignment.ts(646,32): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.374206374Z src/routes/unitAssignment.ts(681,103): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.374208934Z src/routes/unitAssignment.ts(683,30): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.374211224Z src/routes/unitAssignment.ts(684,32): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+2025-08-29T14:37:39.374245315Z src/services/agencyService.ts(3,17): error TS7016: Could not find a declaration file for module 'jsonwebtoken'. '/opt/render/project/src/backend/node_modules/jsonwebtoken/index.js' implicitly has an 'any' type.
+2025-08-29T14:37:39.374249155Z   Try `npm i --save-dev @types/jsonwebtoken` if it exists or add a new declaration (.d.ts) file containing `declare module 'jsonwebtoken';`
+2025-08-29T14:37:39.374305177Z src/services/authService.ts(2,17): error TS7016: Could not find a declaration file for module 'jsonwebtoken'. '/opt/render/project/src/backend/node_modules/jsonwebtoken/index.js' implicitly has an 'any' type.
+2025-08-29T14:37:39.374310827Z   Try `npm i --save-dev @types/jsonwebtoken` if it exists or add a new declaration (.d.ts) file containing `declare module 'jsonwebtoken';`
+2025-08-29T14:37:39.374322868Z src/services/sessionService.ts(1,17): error TS7016: Could not find a declaration file for module 'jsonwebtoken'. '/opt/render/project/src/backend/node_modules/jsonwebtoken/index.js' implicitly has an 'any' type.
+2025-08-29T14:37:39.374325988Z   Try `npm i --save-dev @types/jsonwebtoken` if it exists or add a new declaration (.d.ts) file containing `declare module 'jsonwebtoken';`
+2025-08-29T14:37:39.374339238Z src/services/webSocketService.ts(3,17): error TS7016: Could not find a declaration file for module 'jsonwebtoken'. '/opt/render/project/src/backend/node_modules/jsonwebtoken/index.js' implicitly has an 'any' type.
+2025-08-29T14:37:39.374344888Z   Try `npm i --save-dev @types/jsonwebtoken` if it exists or add a new declaration (.d.ts) file containing `declare module 'jsonwebtoken';`
+2025-08-29T14:37:39.460854248Z ==> Build failed 😞
+2025-08-29T14:37:39.460879929Z ==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
+
+
+
+---
+
+_**Assistant**_
+
+I see the issue! The problem is that in production, the `@types/*` packages (which are devDependencies) are not being installed, so TypeScript can't find the type definitions. This is a common issue with production deployments.
+
+The solution is to move the essential type packages to `dependencies` instead of `devDependencies`, or we need to ensure the build process installs all dependencies including dev ones.
+
+Let me fix this by updating the package.json to move the essential types to dependencies:
+
+
+---
+
+Read file: backend/package.json
+
+---
+
+I need to move the essential type packages to dependencies so they're available in production. Let me update the package.json:
+
+
+---
+
+<details><summary>Edit file: backend/package.json</summary>
+
+I will move the essential type packages from devDependencies to dependencies so they're available in production builds
+
+**Chunk 1**
+Lines added: 3, lines removed: undefined
+
+```diff
+@@ -23,4 +23,7 @@
+      "@prisma/client": "^6.14.0",
+      "@types/bcrypt": "^6.0.0",
++     "@types/express": "^5.0.3",
++     "@types/jsonwebtoken": "^9.0.10",
++     "@types/node": "^24.3.0",
+      "@types/qrcode": "^1.5.5",
+      "@types/socket.io": "^3.0.1",
+```
+
+**Chunk 2**
+Lines added: undefined, lines removed: 3
+
+```diff
+@@ -43,7 +46,4 @@
+      "@types/bcryptjs": "^2.4.6",
+      "@types/cors": "^2.8.19",
+-     "@types/express": "^5.0.3",
+-     "@types/jsonwebtoken": "^9.0.10",
+-     "@types/node": "^24.3.0",
+      "@typescript-eslint/eslint-plugin": "^8.40.0",
+      "@typescript-eslint/parser": "^8.40.0",
+```
+
+</details>
+
+---
+
+Now let me also fix the remaining TypeScript errors in the other route files. Let me start with `routeCardGeneration.ts`:
+
+
+---
+
+Read file: backend/src/routes/routeCardGeneration.ts
+
+---
+
+I need to add the Response import and fix the type issues. Let me fix this file:
+
+
+---
+
+<details><summary>Edit file: backend/src/routes/routeCardGeneration.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -1,3 +1,3 @@
+- import express from 'express';
++ import express, { Response } from 'express';
+  import { authenticateToken, AuthRequest } from '../middleware/auth';
+  import routeCardGenerationService from '../services/routeCardGenerationService';
+```
+
+</details>
+
+---
+
+Now let me fix the route handler that's missing the Response type:
+
+
+---
+
+<details><summary>Edit file: backend/src/routes/routeCardGeneration.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -55,5 +55,5 @@
+   * @access Private
+   */
+- router.post('/generate', async (req: AuthRequest, res) => {
++ router.post('/generate', async (req: AuthRequest, res: Response) => {
+    try {
+      const validationResult = GenerateRouteCardsSchema.safeParse(req.body);
+```
+
+</details>
+
+---
+
+Now let me fix the other route handler that has type issues:
+
+
+---
+
+<details>
+            <summary>Grep search for "async \(req: any, res: any" • **0** files</summary>
+        
+No results found
+</details>
+
+---
+
+Let me search for the specific line mentioned in the error:
+
+
+---
+
+Read file: backend/src/routes/routeCardGeneration.ts
+
+---
+
+I found the issue! There's a route handler without proper types. Let me fix it:
+
+
+---
+
+<details><summary>Edit file: backend/src/routes/routeCardGeneration.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -365,5 +365,5 @@
+   * @access Public (with demo token)
+   */
+- router.get('/health', async (req, res) => {
++ router.get('/health', async (req: any, res: Response) => {
+    res.status(200).json({
+      message: 'Route card generation service is healthy',
+```
+
+</details>
+
+---
+
+Now let me fix the notifications route handler:
+
+
+---
+
 
 
 ---

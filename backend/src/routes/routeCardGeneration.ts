@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Response } from 'express';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import routeCardGenerationService from '../services/routeCardGenerationService';
 import { z } from 'zod';
@@ -54,7 +54,7 @@ const ExportRouteCardsSchema = z.object({
  * @desc Generate enhanced route cards for specified opportunities
  * @access Private
  */
-router.post('/generate', async (req: AuthRequest, res) => {
+router.post('/generate', async (req: AuthRequest, res: Response) => {
   try {
     const validationResult = GenerateRouteCardsSchema.safeParse(req.body);
     if (!validationResult.success) {
@@ -326,7 +326,7 @@ router.get('/analytics', async (req: AuthRequest, res) => {
  * @desc Send route card notifications
  * @access Private
  */
-router.post('/notifications', async (req: AuthRequest, res) => {
+router.post('/notifications', async (req: AuthRequest, res: Response) => {
   try {
     const { routeCardIds, recipients, notificationType = 'EMAIL' } = req.body;
 
@@ -364,7 +364,7 @@ router.post('/notifications', async (req: AuthRequest, res) => {
  * @desc Health check for route card generation service
  * @access Public (with demo token)
  */
-router.get('/health', async (req, res) => {
+router.get('/health', async (req: any, res: Response) => {
   res.status(200).json({
     message: 'Route card generation service is healthy',
     status: 'OK',

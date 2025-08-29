@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Response } from 'express';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import routeOptimizationService from '../services/routeOptimizationService';
 import { RouteOptimizationType, TransportLevel, Priority } from '@prisma/client';
@@ -55,7 +55,7 @@ const OptimizationFilterSchema = z.object({
  * POST /api/route-optimization/optimize
  * Main route optimization endpoint - analyzes transport requests and generates chaining opportunities
  */
-router.post('/optimize', async (req: AuthRequest, res) => {
+router.post('/optimize', async (req: AuthRequest, res: Response) => {
   try {
     console.log('[MedPort:RouteOptimization] POST /optimize - Request received:', req.body);
 
@@ -95,7 +95,7 @@ router.post('/optimize', async (req: AuthRequest, res) => {
  * GET /api/route-optimization/opportunities
  * Get chaining opportunities with filtering and pagination
  */
-router.get('/opportunities', async (req: AuthRequest, res) => {
+router.get('/opportunities', async (req: AuthRequest, res: Response) => {
   try {
     console.log('[MedPort:RouteOptimization] GET /opportunities - Query params:', req.query);
 
@@ -180,7 +180,7 @@ router.get('/opportunities', async (req: AuthRequest, res) => {
  * GET /api/route-optimization/opportunities/:id
  * Get specific chaining opportunity by ID
  */
-router.get('/opportunities/:id', async (req: AuthRequest, res) => {
+router.get('/opportunities/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     console.log('[MedPort:RouteOptimization] GET /opportunities/:id - ID:', id);
@@ -219,7 +219,7 @@ router.get('/opportunities/:id', async (req: AuthRequest, res) => {
  * POST /api/route-optimization/opportunities/:id/accept
  * Accept a chaining opportunity and create optimized route
  */
-router.post('/opportunities/:id/accept', async (req: AuthRequest, res) => {
+router.post('/opportunities/:id/accept', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { agencyId, unitId, notes } = req.body;
@@ -305,7 +305,7 @@ router.post('/opportunities/:id/accept', async (req: AuthRequest, res) => {
  * POST /api/route-optimization/opportunities/:id/reject
  * Reject a chaining opportunity
  */
-router.post('/opportunities/:id/reject', async (req: AuthRequest, res) => {
+router.post('/opportunities/:id/reject', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { reason, feedback } = req.body;
@@ -342,7 +342,7 @@ router.post('/opportunities/:id/reject', async (req: AuthRequest, res) => {
  * GET /api/route-optimization/stats
  * Get route optimization statistics and performance metrics
  */
-router.get('/stats', async (req: AuthRequest, res) => {
+router.get('/stats', async (req: AuthRequest, res: Response) => {
   try {
     console.log('[MedPort:RouteOptimization] GET /stats');
 
@@ -366,7 +366,7 @@ router.get('/stats', async (req: AuthRequest, res) => {
  * GET /api/route-optimization/recommendations
  * Get optimization recommendations based on current transport requests
  */
-router.get('/recommendations', async (req: AuthRequest, res) => {
+router.get('/recommendations', async (req: AuthRequest, res: Response) => {
   try {
     console.log('[MedPort:RouteOptimization] GET /recommendations');
 
@@ -404,7 +404,7 @@ router.get('/recommendations', async (req: AuthRequest, res) => {
  * POST /api/route-optimization/quick-optimize
  * Quick optimization for immediate transport requests
  */
-router.post('/quick-optimize', async (req: AuthRequest, res) => {
+router.post('/quick-optimize', async (req: AuthRequest, res: Response) => {
   try {
     console.log('[MedPort:RouteOptimization] POST /quick-optimize - Request received:', req.body);
 
@@ -467,7 +467,7 @@ router.post('/quick-optimize', async (req: AuthRequest, res) => {
  * GET /api/route-optimization/health
  * Health check endpoint for route optimization service
  */
-router.get('/health', async (req: AuthRequest, res) => {
+router.get('/health', async (req: AuthRequest, res: Response) => {
   try {
     res.json({
       message: 'Route optimization service is healthy',
