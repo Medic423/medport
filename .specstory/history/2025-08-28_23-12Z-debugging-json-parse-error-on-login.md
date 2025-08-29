@@ -1186,3 +1186,373 @@ The fixes address the core issue of empty responses while maintaining the existi
 
 ---
 
+_**User**_
+
+Did you commit these changes so I have a git ID to use to manually deploy the new scripts?   The image has by current back end environment settings. Looks like I need to add NODE_ENV=production, yes?
+
+---
+
+_**Assistant**_
+
+You're absolutely right! I haven't committed these changes yet, and yes, you should add `NODE_ENV=production` to your environment variables. Let me commit the changes first and then we can deploy them.
+
+
+---
+
+```bash
+git add .
+```
+
+```
+scooper@MacBook-Pro-5 medport % git add .
+scooper@MacBook-Pro-5 medport %
+```
+
+---
+
+```bash
+git status
+```
+
+```
+scooper@MacBook-Pro-5 medport % git status
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes to be committed:
+  (use "git restore --staged <file>..." to unstage)
+        new file:   .specstory/history/2025-08-28_15-25Z-troubleshooting-login-issues-on-medport.md
+        new file:   .specstory/history/2025-08-28_23-12Z-debugging-json-parse-error-on-login.md
+        modified:   backend/scripts/create-production-developer.js
+        modified:   backend/src/middleware/auth.ts
+        modified:   backend/src/routes/roleBasedAccess.ts
+        modified:   frontend/src/hooks/useRoleBasedAccess.ts
+        new file:   scripts/test-role-based-access.js
+
+scooper@MacBook-Pro-5 medport %
+```
+
+---
+
+```bash
+git commit -m "Fix JSON.parse error on login: enhance error handling and prevent empty responses from role-based access endpoints"
+```
+
+```
+
+husky - DEPRECATED
+
+Please remove the following two lines from .husky/pre-commit:
+
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+They WILL FAIL in v10.0.0
+
+✔ Backed up original state in git stash (39076c6)
+✔ Running tasks for staged files...
+✔ Applying modifications from tasks...
+✔ Cleaning up temporary files...
+[main 3c18f58] Fix JSON.parse error on login: enhance error handling and prevent empty responses from role-b
+ased access endpoints
+
+ 7 files changed, 9539 insertions(+), 15 deletions(-)
+ create mode 100644 .specstory/history/2025-08-28_15-25Z-troubleshooting-login-issues-on-medport.md
+ create mode 100644 .specstory/history/2025-08-28_23-12Z-debugging-json-parse-error-on-login.md
+ create mode 100644 scripts/test-role-based-access.js
+```
+
+---
+
+```bash
+git push origin main
+```
+
+```
+scooper@MacBook-Pro-5 medport % git push origin main
+Enumerating objects: 35, done.
+Counting objects: 100% (35/35), done.
+Delta compression using up to 14 threads
+Compressing objects: 100% (19/19), done.
+Writing objects: 100% (20/20), 86.99 KiB | 14.50 MiB/s, done.
+Total 20 (delta 12), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (12/12), completed with 12 local objects.
+To https://github.com/Medic423/medport.git
+   a3f955f..3c18f58  main -> main
+scooper@MacBook-Pro-5 medport %
+```
+
+---
+
+Perfect! ✅ **Changes committed and pushed successfully.**
+
+## **Git Commit ID: `3c18f58`**
+
+You can now use this commit ID to deploy the backend changes to Render.com.
+
+## **Environment Variables Update**
+
+Yes, you should definitely add `NODE_ENV=production` to your backend environment variables. Looking at your current setup, you have:
+
+✅ **Current Environment Variables:**
+- `CORS_ORIGIN` = `https://medport-frontend.onrender.com`
+- `DATABASE_URL` = `postgresql://...`
+- `JWT_SECRET` = `b840326c92fcc66223e6e9ce166aa94a`
+- `PORT` = `10000`
+
+❌ **Missing (Recommended):**
+- `NODE_ENV` = `production`
+
+## **Why NODE_ENV=production is Important**
+
+1. **Error Handling**: The enhanced error handling I added will show more detailed errors in development but sanitized errors in production
+2. **Security**: Prevents sensitive error details from being exposed to users
+3. **Performance**: Enables production optimizations
+4. **Logging**: Adjusts log levels appropriately
+
+## **Next Steps**
+
+1. **Add Environment Variable**: In your Render.com backend dashboard, add:
+   - **KEY**: `NODE_ENV`
+   - **VALUE**: `production`
+
+2. **Deploy Backend**: Use commit ID `3c18f58` to deploy the backend changes
+
+3. **Test**: The enhanced logging should now show exactly what's happening with the role-based access endpoints
+
+The fixes I implemented will prevent the empty responses that were causing the JSON.parse errors, and the enhanced logging will help identify any remaining issues in production.
+
+---
+
+_**User**_
+
+The build fails. Do you need to see console or network logs?
+
+2025-08-29T14:32:20.141917841Z src/routes/unitAssignment.ts(200,61): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:32:20.141923212Z src/routes/unitAssignment.ts(224,47): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:32:20.141927052Z src/routes/unitAssignment.ts(261,51): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:32:20.141956522Z src/routes/unitAssignment.ts(263,84): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+2025-08-29T14:32:20.141960563Z src/routes/unitAssignment.ts(266,70): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+2025-08-29T14:32:20.141967093Z src/routes/unitAssignment.ts(296,47): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:32:20.141970243Z src/routes/unitAssignment.ts(298,76): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+2025-08-29T14:32:20.142004714Z src/routes/unitAssignment.ts(300,44): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+2025-08-29T14:32:20.142008584Z src/routes/unitAssignment.ts(336,57): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:32:20.142021135Z src/routes/unitAssignment.ts(338,83): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:32:20.142024155Z src/routes/unitAssignment.ts(340,30): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:32:20.142030015Z src/routes/unitAssignment.ts(341,44): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+2025-08-29T14:32:20.142033035Z src/routes/unitAssignment.ts(386,53): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:32:20.142051096Z src/routes/unitAssignment.ts(388,82): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+2025-08-29T14:32:20.142054016Z src/routes/unitAssignment.ts(398,13): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+2025-08-29T14:32:20.142075896Z src/routes/unitAssignment.ts(449,67): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:32:20.142079526Z src/routes/unitAssignment.ts(451,97): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:32:20.142085297Z src/routes/unitAssignment.ts(453,34): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:32:20.142090807Z src/routes/unitAssignment.ts(454,44): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+2025-08-29T14:32:20.142149248Z src/routes/unitAssignment.ts(487,70): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:32:20.142158069Z src/routes/unitAssignment.ts(489,100): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:32:20.142168329Z src/routes/unitAssignment.ts(491,34): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:32:20.14219637Z src/routes/unitAssignment.ts(513,59): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:32:20.14220098Z src/routes/unitAssignment.ts(515,85): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:32:20.14220731Z src/routes/unitAssignment.ts(517,30): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:32:20.14221009Z src/routes/unitAssignment.ts(518,44): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+2025-08-29T14:32:20.142238351Z src/routes/unitAssignment.ts(555,68): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:32:20.142240501Z src/routes/unitAssignment.ts(557,94): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:32:20.142242241Z src/routes/unitAssignment.ts(559,30): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:32:20.142267362Z src/routes/unitAssignment.ts(560,32): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+2025-08-29T14:32:20.142269792Z src/routes/unitAssignment.ts(599,66): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:32:20.142271582Z src/routes/unitAssignment.ts(601,92): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:32:20.142304453Z src/routes/unitAssignment.ts(603,30): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:32:20.142308253Z src/routes/unitAssignment.ts(604,52): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+2025-08-29T14:32:20.142311393Z src/routes/unitAssignment.ts(642,66): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:32:20.142319494Z src/routes/unitAssignment.ts(646,32): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+2025-08-29T14:32:20.142322794Z src/routes/unitAssignment.ts(679,77): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2025-08-29T14:32:20.142337084Z src/routes/unitAssignment.ts(681,103): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:32:20.142342134Z src/routes/unitAssignment.ts(683,30): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+2025-08-29T14:32:20.142350445Z src/routes/unitAssignment.ts(684,32): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+2025-08-29T14:32:20.142380966Z src/services/agencyService.ts(3,17): error TS7016: Could not find a declaration file for module 'jsonwebtoken'. '/opt/render/project/src/backend/node_modules/jsonwebtoken/index.js' implicitly has an 'any' type.
+2025-08-29T14:32:20.142385456Z   Try `npm i --save-dev @types/jsonwebtoken` if it exists or add a new declaration (.d.ts) file containing `declare module 'jsonwebtoken';`
+2025-08-29T14:32:20.142424507Z src/services/authService.ts(2,17): error TS7016: Could not find a declaration file for module 'jsonwebtoken'. '/opt/render/project/src/backend/node_modules/jsonwebtoken/index.js' implicitly has an 'any' type.
+2025-08-29T14:32:20.142428467Z   Try `npm i --save-dev @types/jsonwebtoken` if it exists or add a new declaration (.d.ts) file containing `declare module 'jsonwebtoken';`
+2025-08-29T14:32:20.142478369Z src/services/sessionService.ts(1,17): error TS7016: Could not find a declaration file for module 'jsonwebtoken'. '/opt/render/project/src/backend/node_modules/jsonwebtoken/index.js' implicitly has an 'any' type.
+2025-08-29T14:32:20.142483319Z   Try `npm i --save-dev @types/jsonwebtoken` if it exists or add a new declaration (.d.ts) file containing `declare module 'jsonwebtoken';`
+2025-08-29T14:32:20.142486319Z src/services/webSocketService.ts(3,17): error TS7016: Could not find a declaration file for module 'jsonwebtoken'. '/opt/render/project/src/backend/node_modules/jsonwebtoken/index.js' implicitly has an 'any' type.
+2025-08-29T14:32:20.142489109Z   Try `npm i --save-dev @types/jsonwebtoken` if it exists or add a new declaration (.d.ts) file containing `declare module 'jsonwebtoken';`
+2025-08-29T14:32:20.239715982Z ==> Build failed 😞
+2025-08-29T14:32:20.24128517Z ==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
+
+---
+
+_**Assistant**_
+
+I can see the build is failing due to TypeScript errors. The main issues are:
+
+1. **TypeScript type errors** in `unitAssignment.ts` - the `AuthRequest` interface is missing properties
+2. **Missing type declarations** for `jsonwebtoken` module
+
+Let me fix these issues:
+
+
+---
+
+Read file: backend/src/middleware/auth.ts
+
+---
+
+I need to fix the `AuthRequest` interface to properly extend the Express Request type with all its properties:
+
+
+---
+
+<details><summary>Edit file: backend/src/middleware/auth.ts</summary>
+
+I will fix the AuthRequest interface to properly extend Express Request and include all necessary properties
+
+**Chunk 1**
+Lines added: 3, lines removed: undefined
+
+```diff
+@@ -8,4 +8,7 @@
+      role: string;
+    };
++   body?: any;
++   query?: any;
++   params?: any;
+  }
+  
+```
+
+</details>
+
+---
+
+Now let me check if the `@types/jsonwebtoken` package is already in the package.json:
+
+
+---
+
+Read file: backend/package.json
+
+---
+
+Good! The `@types/jsonwebtoken` is already in the devDependencies. The issue might be that it's not being installed in production. Let me check if there are any other TypeScript issues by looking at the unitAssignment.ts file:
+
+
+---
+
+Read file: backend/src/routes/unitAssignment.ts
+
+---
+
+I can see the issue. The `res` parameter is missing the `Response` type. Let me fix this and other similar issues in the file:
+
+
+---
+
+<details><summary>Edit file: backend/src/routes/unitAssignment.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -77,5 +77,5 @@
+   * Assign transport request to optimal unit
+   */
+- router.post('/assign', async (req: AuthRequest, res) => {
++ router.post('/assign', async (req: AuthRequest, res: Response) => {
+    try {
+      console.log('[MedPort:UnitAssignment] POST /assign - Request received:', req.body);
+```
+
+</details>
+
+---
+
+Now let me fix the other similar issues. Let me search for all the missing Response types:
+
+
+---
+
+<details>
+            <summary>Grep search for "async \(req: AuthRequest, res\)" • **1** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///Users/scooper/Code/medport/backend/src/routes/unitAssignment.ts` | L118 | `router.get('/performance/:unitId', async (req: AuthRequest, res) => {` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/unitAssignment.ts` | L156 | `router.post('/conflicts/detect', async (req: AuthRequest, res) => {` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/unitAssignment.ts` | L200 | `router.get('/availability-matrix', async (req: AuthRequest, res) => {` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/unitAssignment.ts` | L224 | `router.get('/debug', async (req: AuthRequest, res) => {` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/unitAssignment.ts` | L261 | `router.post('/optimize', async (req: AuthRequest, res) => {` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/unitAssignment.ts` | L296 | `router.get('/units', async (req: AuthRequest, res) => {` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/unitAssignment.ts` | L336 | `router.get('/units/:agencyId', async (req: AuthRequest, res) => {` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/unitAssignment.ts` | L386 | `router.get('/assignments', async (req: AuthRequest, res) => {` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/unitAssignment.ts` | L449 | `router.put('/assignments/:assignmentId', async (req: AuthRequest, res) => {` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/unitAssignment.ts` | L487 | `router.delete('/assignments/:assignmentId', async (req: AuthRequest, res) => {` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/unitAssignment.ts` | L513 | `router.get('/revenue/:entityId', async (req: AuthRequest, res) => {` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/unitAssignment.ts` | L555 | `router.get('/revenue/analysis/:entityId', async (req: AuthRequest, res) => {` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/unitAssignment.ts` | L599 | `router.get('/revenue/trends/:entityId', async (req: AuthRequest, res) => {` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/unitAssignment.ts` | L642 | `router.get('/revenue/agencies/summary', async (req: AuthRequest, res) => {` |
+| `file:///Users/scooper/Code/medport/backend/src/routes/unitAssignment.ts` | L679 | `router.get('/revenue/units/performance/:agencyId', async (req: AuthRequest, res) => {` |
+
+</details>
+
+---
+
+I need to add the Response import and fix all these. Let me first add the Response import:
+
+
+---
+
+<details><summary>Edit file: backend/src/routes/unitAssignment.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -1,3 +1,3 @@
+- import express from 'express';
++ import express, { Response } from 'express';
+  import { authenticateToken, AuthRequest } from '../middleware/auth';
+  import unitAssignmentService from '../services/unitAssignmentService';
+```
+
+</details>
+
+---
+
+Now let me fix all the missing Response types in one go:
+
+
+---
+
+<details><summary>Edit file: backend/src/routes/unitAssignment.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -116,5 +116,5 @@
+   * Get unit performance metrics
+   */
+- router.get('/performance/:unitId', async (req: AuthRequest, res) => {
++ router.get('/performance/:unitId', async (req: AuthRequest, res: Response) => {
+    try {
+      console.log('[MedPort:UnitAssignment] GET /performance/:unitId - Unit ID:', req.params.unitId);
+```
+
+</details>
+
+---
+
+
+
+---
+
+
+
+---
+

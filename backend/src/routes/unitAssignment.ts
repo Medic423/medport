@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Response } from 'express';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import unitAssignmentService from '../services/unitAssignmentService';
 import revenueTrackingService from '../services/revenueTrackingService';
@@ -76,7 +76,7 @@ const OptimizationRequestSchema = z.object({
  * POST /api/unit-assignment/assign
  * Assign transport request to optimal unit
  */
-router.post('/assign', async (req: AuthRequest, res) => {
+router.post('/assign', async (req: AuthRequest, res: Response) => {
   try {
     console.log('[MedPort:UnitAssignment] POST /assign - Request received:', req.body);
 
@@ -115,7 +115,7 @@ router.post('/assign', async (req: AuthRequest, res) => {
  * GET /api/unit-assignment/performance/:unitId
  * Get unit performance metrics
  */
-router.get('/performance/:unitId', async (req: AuthRequest, res) => {
+router.get('/performance/:unitId', async (req: AuthRequest, res: Response) => {
   try {
     console.log('[MedPort:UnitAssignment] GET /performance/:unitId - Unit ID:', req.params.unitId);
 
@@ -153,7 +153,7 @@ router.get('/performance/:unitId', async (req: AuthRequest, res) => {
  * POST /api/unit-assignment/conflicts/detect
  * Detect assignment conflicts for a unit
  */
-router.post('/conflicts/detect', async (req: AuthRequest, res) => {
+router.post('/conflicts/detect', async (req: AuthRequest, res: Response) => {
   try {
     console.log('[MedPort:UnitAssignment] POST /conflicts/detect - Request received:', req.body);
 
@@ -197,7 +197,7 @@ router.post('/conflicts/detect', async (req: AuthRequest, res) => {
  * GET /api/unit-assignment/availability-matrix
  * Get unit availability matrix for dashboard
  */
-router.get('/availability-matrix', async (req: AuthRequest, res) => {
+router.get('/availability-matrix', async (req: AuthRequest, res: Response) => {
   try {
     console.log('[MedPort:UnitAssignment] GET /availability-matrix');
 
@@ -221,7 +221,7 @@ router.get('/availability-matrix', async (req: AuthRequest, res) => {
  * GET /api/unit-assignment/debug
  * Debug endpoint to check data
  */
-router.get('/debug', async (req: AuthRequest, res) => {
+router.get('/debug', async (req: AuthRequest, res: Response) => {
   try {
     console.log('[MedPort:UnitAssignment] GET /debug - Debug request received');
 
@@ -258,7 +258,7 @@ router.get('/debug', async (req: AuthRequest, res) => {
  * POST /api/unit-assignment/optimize
  * Optimize unit assignments for maximum revenue
  */
-router.post('/optimize', async (req: AuthRequest, res) => {
+router.post('/optimize', async (req: AuthRequest, res: Response) => {
   try {
     console.log('[MedPort:UnitAssignment] POST /optimize - Request received:', req.body);
 
@@ -293,7 +293,7 @@ router.post('/optimize', async (req: AuthRequest, res) => {
  * GET /api/unit-assignment/units
  * Get all units with availability status
  */
-router.get('/units', async (req: AuthRequest, res) => {
+router.get('/units', async (req: AuthRequest, res: Response) => {
   try {
     console.log('[MedPort:UnitAssignment] GET /units - Query params:', req.query);
 
@@ -333,7 +333,7 @@ router.get('/units', async (req: AuthRequest, res) => {
  * GET /api/unit-assignment/units/:agencyId
  * Get units for a specific agency with availability status
  */
-router.get('/units/:agencyId', async (req: AuthRequest, res) => {
+router.get('/units/:agencyId', async (req: AuthRequest, res: Response) => {
   try {
     console.log('[MedPort:UnitAssignment] GET /units/:agencyId - Agency ID:', req.params.agencyId);
 
@@ -383,7 +383,7 @@ router.get('/units/:agencyId', async (req: AuthRequest, res) => {
  * GET /api/unit-assignment/assignments
  * Get unit assignments with filtering and pagination
  */
-router.get('/assignments', async (req: AuthRequest, res) => {
+router.get('/assignments', async (req: AuthRequest, res: Response) => {
   try {
     console.log('[MedPort:UnitAssignment] GET /assignments - Query params:', req.query);
 
@@ -446,7 +446,7 @@ router.get('/assignments', async (req: AuthRequest, res) => {
  * PUT /api/unit-assignment/assignments/:assignmentId
  * Update unit assignment status
  */
-router.put('/assignments/:assignmentId', async (req: AuthRequest, res) => {
+router.put('/assignments/:assignmentId', async (req: AuthRequest, res: Response) => {
   try {
     console.log('[MedPort:UnitAssignment] PUT /assignments/:assignmentId - Assignment ID:', req.params.assignmentId);
 
@@ -484,7 +484,7 @@ router.put('/assignments/:assignmentId', async (req: AuthRequest, res) => {
  * DELETE /api/unit-assignment/assignments/:assignmentId
  * Cancel unit assignment
  */
-router.delete('/assignments/:assignmentId', async (req: AuthRequest, res) => {
+router.delete('/assignments/:assignmentId', async (req: AuthRequest, res: Response) => {
   try {
     console.log('[MedPort:UnitAssignment] DELETE /assignments/:assignmentId - Assignment ID:', req.params.assignmentId);
 
@@ -510,7 +510,7 @@ router.delete('/assignments/:assignmentId', async (req: AuthRequest, res) => {
  * GET /api/unit-assignment/revenue/:entityId
  * Get revenue metrics for unit or agency
  */
-router.get('/revenue/:entityId', async (req: AuthRequest, res) => {
+router.get('/revenue/:entityId', async (req: AuthRequest, res: Response) => {
   try {
     console.log('[MedPort:UnitAssignment] GET /revenue/:entityId - Entity ID:', req.params.entityId);
 
@@ -552,7 +552,7 @@ router.get('/revenue/:entityId', async (req: AuthRequest, res) => {
  * GET /api/unit-assignment/revenue/analysis/:entityId
  * Get revenue optimization analysis
  */
-router.get('/revenue/analysis/:entityId', async (req: AuthRequest, res) => {
+router.get('/revenue/analysis/:entityId', async (req: AuthRequest, res: Response) => {
   try {
     console.log('[MedPort:UnitAssignment] GET /revenue/analysis/:entityId - Entity ID:', req.params.entityId);
 
@@ -596,7 +596,7 @@ router.get('/revenue/analysis/:entityId', async (req: AuthRequest, res) => {
  * GET /api/unit-assignment/revenue/trends/:entityId
  * Get revenue trends over time
  */
-router.get('/revenue/trends/:entityId', async (req: AuthRequest, res) => {
+router.get('/revenue/trends/:entityId', async (req: AuthRequest, res: Response) => {
   try {
     console.log('[MedPort:UnitAssignment] GET /revenue/trends/:entityId - Entity ID:', req.params.entityId);
 
@@ -639,7 +639,7 @@ router.get('/revenue/trends/:entityId', async (req: AuthRequest, res) => {
  * GET /api/unit-assignment/revenue/agencies/summary
  * Get revenue summary for all agencies
  */
-router.get('/revenue/agencies/summary', async (req: AuthRequest, res) => {
+router.get('/revenue/agencies/summary', async (req: AuthRequest, res: Response) => {
   try {
     console.log('[MedPort:UnitAssignment] GET /revenue/agencies/summary');
 
@@ -676,7 +676,7 @@ router.get('/revenue/agencies/summary', async (req: AuthRequest, res) => {
  * GET /api/unit-assignment/revenue/units/performance/:agencyId
  * Get unit revenue performance for an agency
  */
-router.get('/revenue/units/performance/:agencyId', async (req: AuthRequest, res) => {
+router.get('/revenue/units/performance/:agencyId', async (req: AuthRequest, res: Response) => {
   try {
     console.log('[MedPort:UnitAssignment] GET /revenue/units/performance/:agencyId - Agency ID:', req.params.agencyId);
 
