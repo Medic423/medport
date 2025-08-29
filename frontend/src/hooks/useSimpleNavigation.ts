@@ -56,7 +56,11 @@ export const useSimpleNavigation = () => {
       
       if (result.success) {
         console.log('[SIMPLE_NAVIGATION] Navigation fetched successfully:', result.data);
-        setNavigation(result.data);
+        // Set navigation to the navigation array, not the entire data object
+        setNavigation({
+          userType: result.data.userType,
+          navigation: result.data.navigation
+        });
         setUserType(result.data.userType);
       } else {
         throw new Error(result.message || 'Failed to fetch navigation');

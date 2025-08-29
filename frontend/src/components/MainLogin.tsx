@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useRoleBasedAccess } from '../hooks/useRoleBasedAccess';
+import { useSimpleNavigation } from '../hooks/useSimpleNavigation';
 import { 
   CogIcon, 
   BuildingOfficeIcon, 
@@ -21,7 +21,7 @@ const MainLogin: React.FC<MainLoginProps> = ({ onLoginSuccess }) => {
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   
-  const { getLandingPage, getDemoLandingPage } = useRoleBasedAccess();
+  const { fetchLandingPage } = useSimpleNavigation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,12 +80,21 @@ const MainLogin: React.FC<MainLoginProps> = ({ onLoginSuccess }) => {
           localStorage.setItem('userEmail', userData.data.user.email);
         }
         
-        // Determine landing page based on user role and login type
+        // Determine landing page using the simplified navigation system
         let landingPage: string;
-        if (activeTab === 'agency') {
-          landingPage = 'agency-portal'; // Agency users go to agency portal
-        } else {
-          landingPage = await getLandingPage(userData.data.token);
+        try {
+          landingPage = await fetchLandingPage(userData.data.token);
+          console.log('[MAIN_LOGIN] Simplified navigation determined landing page:', landingPage);
+        } catch (error) {
+          console.error('[MAIN_LOGIN] Failed to get landing page from simplified navigation:', error);
+          // Fallback based on tab selection
+          if (activeTab === 'agency') {
+            landingPage = '/trips/available'; // Agency users go to available trips
+          } else if (activeTab === 'hospital') {
+            landingPage = '/dashboard'; // Hospital users go to dashboard
+          } else {
+            landingPage = '/overview'; // Transport center users go to overview
+          }
         }
         
         console.log('[MAIN_LOGIN] User will land on:', landingPage);

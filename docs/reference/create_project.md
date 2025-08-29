@@ -1,7 +1,7 @@
 # Creating a New Project from Scratch In Cursor 
 
 This guide walks you through the process of starting a new project from scratch, following the established patterns used in the ChartCoach project.
-
+lots
 ## Prerequisites
 
 - Node.js and npm installed
