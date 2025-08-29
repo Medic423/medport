@@ -6,7 +6,94 @@ This document provides demo credentials for testing the MedPort Transport Center
 
 **⚠️ IMPORTANT**: Demo credentials are now integrated into the regular Sign In form. There is no separate "Demo Login" button.
 
-## Demo User Types
+## 🆕 **NEW: Siloed Login System Credentials**
+
+The system now features a **siloed login system** where each user type has dedicated login components and endpoints. This provides better isolation and easier debugging of login issues.
+
+### **Siloed Login System Overview**
+- **Transport Center Login**: Dedicated component for center users
+- **Hospital Login**: Dedicated component for hospital users  
+- **EMS Agency Login**: Dedicated component for agency users
+- **Each system is completely isolated** - issues in one won't affect others
+
+### **Siloed System Test Credentials**
+
+#### **🚀 Transport Center Login**
+**Role**: System coordinator with full system access
+**Access**: Complete system overview and management
+
+**Credentials:**
+- **Email**: `center@medport.com`
+- **Password**: `password123`
+- **Database Role**: `COORDINATOR`
+- **User Type**: `center`
+- **Landing Page**: `/overview` (StatusBoard)
+
+**What You Can Test:**
+- System overview dashboard
+- All trips management
+- Hospital and EMS agency oversight
+- System settings and feature toggles
+- Complete transport coordination
+
+#### **🏥 Hospital Login**
+**Role**: Hospital staff managing transport requests
+**Access**: Hospital-specific transport operations
+
+**Credentials:**
+- **Email**: `hospital@medport.com`
+- **Password**: `password123`
+- **Database Role**: `ADMIN`
+- **User Type**: `hospital`
+- **Landing Page**: `/dashboard` (HospitalDashboard)
+
+**What You Can Test:**
+- Trip dashboard and management
+- New trip request creation
+- Trip status monitoring
+- Hospital-specific analytics
+
+#### **🚑 EMS Agency Login**
+**Role**: Transport agency staff managing assignments
+**Access**: Agency-specific transport operations
+
+**Credentials:**
+- **Email**: `agency@medport.com`
+- **Password**: `password123`
+- **Database Role**: `TRANSPORT_AGENCY`
+- **User Type**: `ems`
+- **Landing Page**: `/trips/available` (TransportRequests)
+
+**What You Can Test:**
+- Available trips viewing
+- Trip acceptance and management
+- Route optimization tools
+- Agency performance tracking
+
+### **Siloed System Benefits**
+- **🔒 Complete Isolation**: Each login system is independent
+- **🐛 Easier Debugging**: Issues in one system don't affect others
+- **🧪 Independent Testing**: Test each user type separately
+- **🛡️ Protected Systems**: Working logins remain untouched during debugging
+- **📈 Scalable Architecture**: Easy to add new user types
+
+### **Siloed System Quick Reference Table**
+| Login Type | Email | Password | Database Role | User Type | Landing Page | Purpose |
+|------------|-------|----------|---------------|-----------|--------------|---------|
+| **Transport Center** | `center@medport.com` | `password123` | `COORDINATOR` | `center` | `/overview` | System management |
+| **Hospital** | `hospital@medport.com` | `password123` | `ADMIN` | `hospital` | `/dashboard` | Trip management |
+| **EMS Agency** | `agency@medport.com` | `password123` | `TRANSPORT_AGENCY` | `ems` | `/trips/available` | Trip acceptance |
+
+### **How to Use Siloed Login System**
+1. **Visit Login Page**: Navigate to http://localhost:3002
+2. **See Login Selector**: Choose from 3 login options
+3. **Select Login Type**: Click on your desired user type
+4. **Enter Credentials**: Use the corresponding test credentials above
+5. **Access System**: Each login routes to appropriate landing page
+
+---
+
+## Legacy Demo User Types
 
 ### 🚀 **Developer Account (Full Access)**
 **Role**: System developer with complete access to all functions
@@ -288,3 +375,19 @@ The demo credentials provide a comprehensive testing environment for the MedPort
 Use these credentials to explore all features, test different user roles, and validate the system's functionality before production deployment.
 
 For questions or support, contact the development team or refer to the main documentation.
+
+### **Siloed System Benefits**
+- **🔒 Complete Isolation**: Each login system is independent
+- **🐛 Easier Debugging**: Issues in one system don't affect others
+- **🧪 Independent Testing**: Test each user type separately
+- **🛡️ Protected Systems**: Working logins remain untouched during debugging
+- **📈 Scalable Architecture**: Easy to add new user types
+
+### **Siloed System Quick Reference Table**
+| Login Type | Email | Password | Database Role | User Type | Landing Page | Purpose |
+|------------|-------|----------|---------------|-----------|--------------|---------|
+| **Transport Center** | `center@medport.com` | `password123` | `COORDINATOR` | `center` | `/overview` | System management |
+| **Hospital** | `hospital@medport.com` | `password123` | `ADMIN` | `hospital` | `/dashboard` | Trip management |
+| **EMS Agency** | `agency@medport.com` | `password123` | `TRANSPORT_AGENCY` | `ems` | `/trips/available` | Trip acceptance |
+
+### **How to Use Siloed Login System**
