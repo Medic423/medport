@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TransportLevel, Priority } from '../types/transport';
+import { TransportLevel } from '../types/transport';
 
 interface Facility {
   id: string;
@@ -18,11 +18,9 @@ interface TransportRequestFormProps {
 }
 
 export interface TransportRequestFormData {
-  patientId: string;
   originFacilityId: string;
   destinationFacilityId: string;
   transportLevel: TransportLevel;
-  priority: Priority;
   specialRequirements: string;
 }
 
@@ -33,11 +31,9 @@ const TransportRequestForm: React.FC<TransportRequestFormProps> = ({
   isEditing = false
 }) => {
   const [formData, setFormData] = useState<TransportRequestFormData>({
-    patientId: '',
     originFacilityId: '',
     destinationFacilityId: '',
     transportLevel: TransportLevel.BLS,
-    priority: Priority.MEDIUM,
     specialRequirements: ''
   });
 
@@ -190,10 +186,6 @@ const TransportRequestForm: React.FC<TransportRequestFormProps> = ({
       newErrors.destinationFacilityId = 'Origin and destination facilities must be different';
     }
 
-    if (!formData.patientId.trim()) {
-      newErrors.patientId = 'Patient ID is required';
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -223,58 +215,27 @@ const TransportRequestForm: React.FC<TransportRequestFormProps> = ({
     onSubmit(submitData);
   };
 
-  const generatePatientId = () => {
-    const timestamp = Date.now().toString();
-    const random = Math.random().toString(36).substring(2);
-    const patientId = `P${timestamp.substring(timestamp.length - 6)}${random.substring(0, 2).toUpperCase()}`;
-    setFormData(prev => ({ ...prev, patientId }));
-  };
+
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900">
-          {isEditing ? 'Edit Transport Request' : 'Create New Transport Request'}
+          {isEditing ? 'Edit Transport Request' : 'New Trip Request'}
         </h2>
         <p className="text-gray-600 mt-2">
-          Fill out the form below to create a new medical transport request
+          Create a new inter-facility transport request with essential information only
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Patient Information */}
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Patient Information</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="patientId" className="block text-sm font-medium text-gray-700 mb-2">
-                Patient ID *
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  id="patientId"
-                  value={formData.patientId}
-                  onChange={(e) => handleInputChange('patientId', e.target.value)}
-                  className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.patientId ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="Enter patient ID or generate one"
-                />
-                <button
-                  type="button"
-                  onClick={generatePatientId}
-                  className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                >
-                  Generate
-                </button>
-              </div>
-              {errors.patientId && (
-                <p className="text-red-500 text-sm mt-1">{errors.patientId}</p>
-              )}
-            </div>
-          </div>
+        {/* HIPAA Compliance Notice */}
+        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+          <h3 className="text-lg font-semibold text-blue-900 mb-2">🔒 HIPAA Compliant</h3>
+          <p className="text-blue-800 text-sm">
+            Patient information is handled securely with auto-generated, non-identifiable patient IDs. 
+            No personal health information is stored in this system.
+          </p>
         </div>
 
         {/* Facility Selection */}
@@ -392,23 +353,7 @@ const TransportRequestForm: React.FC<TransportRequestFormProps> = ({
               </select>
             </div>
 
-            {/* Priority Level */}
-            <div>
-              <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-2">
-                Priority Level *
-              </label>
-              <select
-                id="priority"
-                value={formData.priority}
-                onChange={(e) => handleInputChange('priority', e.target.value as Priority)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value={Priority.LOW}>Low</option>
-                <option value={Priority.MEDIUM}>Medium</option>
-                <option value={Priority.HIGH}>High</option>
-                <option value={Priority.URGENT}>Urgent</option>
-              </select>
-            </div>
+
           </div>
         </div>
 

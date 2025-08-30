@@ -62,6 +62,7 @@ model TransportRequest {
   status                 RequestStatus    @default(PENDING)
   specialRequirements    String?
   requestTimestamp       DateTime         @default(now())
+  acceptedTimestamp      DateTime?
   pickupTimestamp        DateTime?
   completionTimestamp    DateTime?
   assignedAgencyId       String?

@@ -28,7 +28,7 @@ import OfflineCapabilities from './pages/OfflineCapabilities';
 
 // New simplified components
 import HospitalDashboard from './pages/HospitalDashboard';
-import NewTripForm from './pages/NewTripForm';
+import TransportRequestForm from './components/TransportRequestForm';
 import TripManagement from './pages/TripManagement';
 
 import LoginSelector from './components/LoginSelector';
@@ -145,6 +145,19 @@ function App() {
     setCurrentPage(page);
   };
 
+  const handleTripSubmit = async (formData: any) => {
+    try {
+      console.log('[App] Trip form submitted:', formData);
+      // TODO: Implement trip submission to backend
+      // For now, just show success message and navigate back to dashboard
+      alert('Trip request submitted successfully! (Demo mode - not saved to backend)');
+      setCurrentPage('dashboard');
+    } catch (error) {
+      console.error('[App] Error submitting trip:', error);
+      alert('Error submitting trip request. Please try again.');
+    }
+  };
+
   // If not authenticated, show login page
   if (!isAuthenticated) {
     return (
@@ -224,7 +237,7 @@ function App() {
       <main className="pt-16">
         {/* Simplified routing based on user type */}
         {currentPage === 'dashboard' && <HospitalDashboard onNavigate={handleNavigation} />}
-        {currentPage === 'trips/new' && <NewTripForm />}
+        {currentPage === 'trips/new' && <TransportRequestForm onSubmit={handleTripSubmit} onCancel={() => setCurrentPage('dashboard')} />}
         {currentPage === 'trips' && <TripManagement />}
         {currentPage === 'trips/available' && <TransportRequests />}
         {currentPage === 'trips/assigned' && <TripManagement />}

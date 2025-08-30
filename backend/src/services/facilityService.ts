@@ -195,6 +195,55 @@ export class FacilityService {
       inactive
     };
   }
+
+  /**
+   * Update a facility
+   */
+  async updateFacility(id: string, data: {
+    name?: string;
+    type?: FacilityType;
+    address?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    phone?: string;
+    email?: string;
+    operatingHours?: any;
+    capabilities?: any;
+    isActive?: boolean;
+  }): Promise<Facility | null> {
+    try {
+      return await prisma.facility.update({
+        where: { id },
+        data: {
+          ...data,
+          updatedAt: new Date()
+        }
+      });
+    } catch (error) {
+      console.error('Error updating facility:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Delete a facility (soft delete by setting isActive to false)
+   */
+  async deleteFacility(id: string): Promise<boolean> {
+    try {
+      await prisma.facility.update({
+        where: { id },
+        data: {
+          isActive: false,
+          updatedAt: new Date()
+        }
+      });
+      return true;
+    } catch (error) {
+      console.error('Error deleting facility:', error);
+      return false;
+    }
+  }
 }
 
 export default new FacilityService();

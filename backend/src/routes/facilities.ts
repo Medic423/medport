@@ -78,19 +78,21 @@ router.get('/:id', async (req, res) => {
 
 /**
  * @route POST /api/facilities
- * @desc Create a new facility (demo mode only)
- * @access Demo mode only
+ * @desc Create a new facility
+ * @access Authenticated users
  */
 router.post('/', async (req, res) => {
   try {
-    // Only allow in demo mode
-    if (!req.headers.authorization || !req.headers.authorization.includes('demo-token')) {
-      return res.status(403).json({
-        message: 'Facility creation only available in demo mode'
+    const facilityData = req.body;
+    
+    // Basic validation
+    if (!facilityData.name || !facilityData.address || !facilityData.city || !facilityData.state || !facilityData.zipCode) {
+      return res.status(400).json({
+        message: 'Missing required fields',
+        error: 'Name, address, city, state, and ZIP code are required'
       });
     }
 
-    const facilityData = req.body;
     const facility = await facilityService.createFacility(facilityData);
 
     res.status(201).json({
@@ -106,6 +108,73 @@ router.post('/', async (req, res) => {
   }
 });
 
+/**
+ * @route PUT /api/facilities/:id
+ * @desc Update a facility
+ * @access Authenticated users
+ */
+router.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const facilityData = req.body;
+    
+    // Basic validation
+    if (!facilityData.name || !facilityData.address || !facilityData.city || !facilityData.state || !facilityData.zipCode) {
+      return res.status(400).json({
+        message: 'Missing required fields',
+        error: 'Name, address, city, state, and ZIP code are required'
+      });
+    }
 
+    const facility = await facilityService.updateFacility(id, facilityData);
+
+    if (!facility) {
+      return res.status(404).json({
+        message: 'Facility not found',
+        error: 'Facility with specified ID does not exist'
+      });
+    }
+
+    res.status(200).json({
+      message: 'Facility updated successfully',
+      data: facility
+    });
+  } catch (error: any) {
+    console.error('[MedPort:Facilities] Error updating facility:', error);
+    res.status(500).json({
+      message: 'Failed to update facility',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @route DELETE /api/facilities/:id
+ * @desc Delete a facility
+ * @access Authenticated users
+ */
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const success = await facilityService.deleteFacility(id);
+
+    if (!success) {
+      return res.status(404).json({
+        message: 'Facility not found',
+        error: 'Facility with specified ID does not exist'
+      });
+    }
+
+    res.status(200).json({
+      message: 'Facility deleted successfully'
+    });
+  } catch (error: any) {
+    console.error('[MedPort:Facilities] Error deleting facility:', error);
+    res.status(500).json({
+      message: 'Failed to delete facility',
+      error: error.message
+    });
+  }
+});
 
 export default router;

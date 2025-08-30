@@ -22,6 +22,7 @@ export interface UpdateTransportRequestData {
   priority?: Priority;
   status?: RequestStatus;
   specialRequirements?: string;
+  acceptedTimestamp?: Date;
   pickupTimestamp?: Date;
   completionTimestamp?: Date;
   assignedAgencyId?: string;
@@ -211,6 +212,30 @@ export class TransportRequestService {
     return this.updateTransportRequest(id, {
       status: RequestStatus.CANCELLED,
       specialRequirements: reason ? `${request.specialRequirements || ''}\n[CANCELLED: ${reason}]` : (request.specialRequirements || undefined)
+    });
+  }
+
+  /**
+   * Accept transport request (set accepted timestamp and status)
+   */
+  async acceptTransportRequest(id: string, agencyId: string, unitId?: string): Promise<TransportRequest> {
+    const request = await prisma.transportRequest.findUnique({
+      where: { id }
+    });
+
+    if (!request) {
+      throw new Error('Transport request not found');
+    }
+
+    if (request.status !== RequestStatus.PENDING) {
+      throw new Error('Only pending transport requests can be accepted');
+    }
+
+    return this.updateTransportRequest(id, {
+      status: RequestStatus.SCHEDULED,
+      acceptedTimestamp: new Date(),
+      assignedAgencyId: agencyId,
+      assignedUnitId: unitId
     });
   }
 
