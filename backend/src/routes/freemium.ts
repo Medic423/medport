@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { authenticateToken } from '../middleware/auth';
-import { FreemiumService } from '../services/freemiumService';
+import { FreemiumService, FreemiumSettings } from '../services/freemiumService';
 
 const router = Router();
 
@@ -34,7 +34,7 @@ router.get('/settings', authenticateToken, async (req: any, res: Response) => {
 router.get('/feature/:featureName', authenticateToken, async (req: any, res: Response) => {
   try {
     const userId = req.user.id;
-    const featureName = req.params.featureName as keyof FreemiumService['features'];
+    const featureName = req.params.featureName as 'revenueOptimization' | 'advancedAnalytics' | 'customReporting' | 'prioritySupport' | 'apiAccess' | 'multiAgencyCoordination';
     
     const hasAccess = await FreemiumService.hasFeatureAccess(userId, featureName);
     

@@ -68,34 +68,7 @@ const SimpleSettings: React.FC<SettingsProps> = ({ onNavigate }) => {
     }
   };
 
-  const updateSettings = async (newSettings: Partial<FreemiumSettings>) => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) return;
-
-      const response = await fetch('/api/settings', {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(newSettings)
-      });
-      
-      if (response.ok) {
-        setSettings(prev => ({ ...prev, ...newSettings }));
-        setUpdateMessage({ type: 'success', message: 'Settings updated successfully!' });
-        setTimeout(() => setUpdateMessage(null), 3000);
-      } else {
-        setUpdateMessage({ type: 'error', message: 'Failed to update settings' });
-        setTimeout(() => setUpdateMessage(null), 3000);
-      }
-    } catch (error) {
-      console.error('Failed to update settings:', error);
-      setUpdateMessage({ type: 'error', message: 'Failed to update settings' });
-      setTimeout(() => setUpdateMessage(null), 3000);
-    }
-  };
+  // updateSettings function removed - using the one from useFreemium hook
 
   const handleInputChange = (section: keyof FreemiumSettings, field: string, value: any) => {
     const newSettings = {
