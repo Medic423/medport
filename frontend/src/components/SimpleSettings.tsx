@@ -324,6 +324,21 @@ const SimpleSettings: React.FC<SettingsProps> = ({ onNavigate }) => {
                   </div>
                 )}
 
+                {isCenterUser && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 className="font-medium text-blue-900 mb-2">Manage Features</h4>
+                    <p className="text-blue-700 text-sm mb-3">
+                      As a center user, you can manage freemium features for all users from the EMS module.
+                    </p>
+                    <button 
+                      onClick={() => onNavigate?.('features')}
+                      className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      Go to Feature Management
+                    </button>
+                  </div>
+                )}
+
                 {!isCenterUser && (
                   <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                     <h4 className="font-medium text-orange-900 mb-2">Upgrade Available</h4>

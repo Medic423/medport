@@ -13,6 +13,7 @@ import RouteOptimization from './pages/RouteOptimization';
 import UnitAssignment from './pages/UnitAssignment';
 import NotificationDashboard from './components/NotificationDashboard';
 import SimpleSettings from './components/SimpleSettings';
+import FreemiumManagement from './components/FreemiumManagement';
 import Analytics from './pages/Analytics';
 import AgencyPortal from './pages/AgencyPortal';
 import UnitManagement from './components/UnitManagement';
@@ -234,7 +235,7 @@ function App() {
         {currentPage === 'hospitals' && <StatusBoard />}
         {currentPage === 'ems-agencies' && <AgencyDashboard onNavigate={handleNavigation} />}
         {currentPage === 'settings' && <SimpleSettings onNavigate={handleNavigation} />}
-        {currentPage === 'features' && <StatusBoard />}
+        {currentPage === 'features' && <FreemiumManagement onNavigate={handleNavigation} />}
         {currentPage === 'notifications' && <NotificationDashboard />}
         
         {/* Legacy page support for backward compatibility */}
