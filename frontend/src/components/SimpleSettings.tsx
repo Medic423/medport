@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useFreemium } from '../hooks/useFreemium';
 
 interface FreemiumSettings {
   systemName: string;
@@ -20,6 +21,7 @@ interface SettingsProps {
 }
 
 const SimpleSettings: React.FC<SettingsProps> = ({ onNavigate }) => {
+  const { settings: freemiumSettings, hasFeatureAccess, updateSettings } = useFreemium();
   const [settings, setSettings] = useState<FreemiumSettings>({
     systemName: 'MedPort',
     theme: 'light',
@@ -34,7 +36,7 @@ const SimpleSettings: React.FC<SettingsProps> = ({ onNavigate }) => {
       revenueOptimization: false
     }
   });
-  const [selectedTab, setSelectedTab] = useState<'general' | 'notifications' | 'transport'>('general');
+  const [selectedTab, setSelectedTab] = useState<'general' | 'notifications' | 'transport' | 'freemium'>('general');
   const [updateMessage, setUpdateMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Get user type from localStorage
@@ -144,7 +146,8 @@ const SimpleSettings: React.FC<SettingsProps> = ({ onNavigate }) => {
               {[
                 { id: 'general', name: 'General', icon: '⚙️' },
                 { id: 'notifications', name: 'Notifications', icon: '🔔' },
-                { id: 'transport', name: 'Transport', icon: '🚑' }
+                { id: 'transport', name: 'Transport', icon: '🚑' },
+                { id: 'freemium', name: 'Features', icon: '⭐' }
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -299,6 +302,66 @@ const SimpleSettings: React.FC<SettingsProps> = ({ onNavigate }) => {
                     <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 ${!isCenterUser ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
                   </label>
                 </div>
+              </div>
+            )}
+
+            {selectedTab === 'freemium' && (
+              <div className="space-y-6">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h3 className="text-lg font-medium text-blue-900 mb-2">Feature Access</h3>
+                  <p className="text-blue-700 text-sm">
+                    {freemiumSettings ? (
+                      <>You are currently on the <strong>{freemiumSettings.planType}</strong> plan.</>
+                    ) : (
+                      'Loading your plan information...'
+                    )}
+                  </p>
+                </div>
+
+                {freemiumSettings && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {Object.entries(freemiumSettings.features).map(([feature, enabled]) => (
+                      <div key={feature} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                        <div>
+                          <h4 className="font-medium text-gray-900 capitalize">
+                            {feature.replace(/([A-Z])/g, ' $1').trim()}
+                          </h4>
+                          <p className="text-sm text-gray-500">
+                            {feature === 'revenueOptimization' && 'Advanced algorithms to maximize revenue'}
+                            {feature === 'advancedAnalytics' && 'Detailed performance metrics and trends'}
+                            {feature === 'customReporting' && 'Create custom reports and exports'}
+                            {feature === 'prioritySupport' && '24/7 priority customer support'}
+                            {feature === 'apiAccess' && 'Full API access for integrations'}
+                            {feature === 'multiAgencyCoordination' && 'Coordinate across multiple agencies'}
+                          </p>
+                        </div>
+                        <div className="flex items-center">
+                          {enabled ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              ✓ Enabled
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                              ✗ Disabled
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {!isCenterUser && (
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                    <h4 className="font-medium text-orange-900 mb-2">Upgrade Available</h4>
+                    <p className="text-orange-700 text-sm mb-3">
+                      Contact your system administrator to enable premium features for your organization.
+                    </p>
+                    <button className="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-md hover:bg-orange-700 transition-colors">
+                      Contact Admin
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

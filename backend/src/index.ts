@@ -26,6 +26,7 @@ import realTimeTrackingRoutes from './routes/realTimeTracking';
 import analyticsRoutes from './routes/analytics';
 // roleBasedAccessRoutes removed - using simple navigation system
 import simpleNavigationRoutes from './routes/simpleNavigation';
+import freemiumRoutes from './routes/freemium';
 import WebSocketService from './services/webSocketService';
 
 dotenv.config();
@@ -68,6 +69,7 @@ app.use('/api/real-time-tracking', realTimeTrackingRoutes);
 app.use('/api/analytics', analyticsRoutes);
 // role-based-access routes removed - using simple navigation system
 app.use('/api/simple-navigation', simpleNavigationRoutes);
+app.use('/api/freemium', freemiumRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'MedPort Backend API is running!' });
