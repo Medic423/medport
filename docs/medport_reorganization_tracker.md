@@ -285,9 +285,14 @@
 **Goal**: Implement focused, mission-critical features for each user type
 
 #### **2.1 Hospital Trip Management**
+- [x] **Transport Level Selection**: Added "Other" option for wheelchair vans and medical taxis
+  - [x] Updated database schema with OTHER transport level
+  - [x] Updated all frontend forms to include "Other" option
+  - [x] Updated backend revenue tracking for "Other" transport level
+  - [x] Applied database migration successfully
 - [ ] **Trip Entry Form**: Essential fields only, clean interface
   - [ ] Origin and destination fields
-  - [ ] Transport level selection (ALS/BLS/CCT)
+  - [x] Transport level selection (ALS/BLS/CCT/Other) ✅ COMPLETED
   - [ ] Basic patient information
   - [ ] Submit and validation
 - [ ] **Status Dashboard**: Real-time trip monitoring with key data points
