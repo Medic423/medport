@@ -47,6 +47,13 @@ export class SimpleNavigationService {
               path: 'notifications',
               icon: 'notifications',
               category: 'Main'
+            },
+            {
+              id: 'settings',
+              name: 'Settings',
+              path: 'settings',
+              icon: 'settings',
+              category: 'Main'
             }
           ]
         };
@@ -81,6 +88,13 @@ export class SimpleNavigationService {
               name: 'EMS Tools',
               path: 'ems',
               icon: 'business',
+              category: 'Main'
+            },
+            {
+              id: 'settings',
+              name: 'Settings',
+              path: 'settings',
+              icon: 'settings',
               category: 'Main'
             }
           ]
