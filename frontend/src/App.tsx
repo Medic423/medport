@@ -12,7 +12,7 @@ import AgencyDashboard from './pages/AgencyDashboard';
 import RouteOptimization from './pages/RouteOptimization';
 import UnitAssignment from './pages/UnitAssignment';
 import NotificationDashboard from './components/NotificationDashboard';
-import Settings from './components/Settings';
+import SimpleSettings from './components/SimpleSettings';
 import Analytics from './pages/Analytics';
 import AgencyPortal from './pages/AgencyPortal';
 import UnitManagement from './components/UnitManagement';
@@ -233,7 +233,7 @@ function App() {
         {currentPage === 'trips/all' && <TripManagement />}
         {currentPage === 'hospitals' && <StatusBoard />}
         {currentPage === 'ems-agencies' && <AgencyDashboard onNavigate={handleNavigation} />}
-        {currentPage === 'settings' && <Settings />}
+        {currentPage === 'settings' && <SimpleSettings onNavigate={handleNavigation} />}
         {currentPage === 'features' && <StatusBoard />}
         {currentPage === 'notifications' && <NotificationDashboard />}
         
