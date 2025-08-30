@@ -24,7 +24,7 @@ import notificationRoutes from './routes/notifications';
 import qrCodeRoutes from './routes/qrCode';
 import realTimeTrackingRoutes from './routes/realTimeTracking';
 import analyticsRoutes from './routes/analytics';
-import roleBasedAccessRoutes from './routes/roleBasedAccess';
+// roleBasedAccessRoutes removed - using simple navigation system
 import simpleNavigationRoutes from './routes/simpleNavigation';
 import WebSocketService from './services/webSocketService';
 
@@ -66,7 +66,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/qr', qrCodeRoutes);
 app.use('/api/real-time-tracking', realTimeTrackingRoutes);
 app.use('/api/analytics', analyticsRoutes);
-app.use('/api/role-based-access', roleBasedAccessRoutes);
+// role-based-access routes removed - using simple navigation system
 app.use('/api/simple-navigation', simpleNavigationRoutes);
 
 app.get('/', (req, res) => {
