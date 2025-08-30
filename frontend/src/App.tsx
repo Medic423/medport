@@ -228,7 +228,7 @@ function App() {
         {currentPage === 'trips/available' && <TransportRequests />}
         {currentPage === 'trips/assigned' && <TripManagement />}
         {currentPage === 'optimization' && <RouteOptimization />}
-        {currentPage === 'agency' && <AgencyDashboard onNavigate={handleNavigation} />}
+        {currentPage === 'ems' && <AgencyDashboard onNavigate={handleNavigation} />}
         {currentPage === 'overview' && <StatusBoard />}
         {currentPage === 'trips/all' && <TripManagement />}
         {currentPage === 'hospitals' && <StatusBoard />}

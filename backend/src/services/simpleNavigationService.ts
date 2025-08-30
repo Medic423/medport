@@ -77,9 +77,9 @@ export class SimpleNavigationService {
               category: 'Main'
             },
             {
-              id: 'agency-tools',
-              name: 'Agency Tools',
-              path: 'agency',
+              id: 'ems-tools',
+              name: 'EMS Tools',
+              path: 'ems',
               icon: 'business',
               category: 'Main'
             }

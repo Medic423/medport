@@ -136,8 +136,8 @@ router.post('/hospital-login', async (req: Request, res: Response) => {
   }
 });
 
-// Agency Login - maps to TRANSPORT_AGENCY role
-router.post('/agency-login', async (req: Request, res: Response) => {
+// EMS Login - maps to TRANSPORT_AGENCY role
+router.post('/ems-login', async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
@@ -186,7 +186,7 @@ router.post('/agency-login', async (req: Request, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('Agency login error:', error);
+    console.error('EMS login error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'

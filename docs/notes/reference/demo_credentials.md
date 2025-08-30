@@ -13,7 +13,7 @@ The system now features a **siloed login system** where each user type has dedic
 ### **Siloed Login System Overview**
 - **Transport Center Login**: Dedicated component for center users
 - **Hospital Login**: Dedicated component for hospital users  
-- **EMS Agency Login**: Dedicated component for agency users
+- **EMS Login**: Dedicated component for agency users
 - **Each system is completely isolated** - issues in one won't affect others
 
 ### **Siloed System Test Credentials**
@@ -53,9 +53,9 @@ The system now features a **siloed login system** where each user type has dedic
 - Trip status monitoring
 - Hospital-specific analytics
 
-#### **🚑 EMS Agency Login**
-**Role**: Transport agency staff managing assignments
-**Access**: Agency-specific transport operations
+#### **🚑 EMS Login**
+**Role**: EMS staff managing transport assignments
+**Access**: EMS-specific transport operations
 
 **Credentials:**
 - **Email**: `agency@medport.com`
@@ -68,7 +68,7 @@ The system now features a **siloed login system** where each user type has dedic
 - Available trips viewing
 - Trip acceptance and management
 - Route optimization tools
-- Agency performance tracking
+- EMS performance tracking
 
 ### **Siloed System Benefits**
 - **🔒 Complete Isolation**: Each login system is independent
@@ -82,7 +82,7 @@ The system now features a **siloed login system** where each user type has dedic
 |------------|-------|----------|---------------|-----------|--------------|---------|
 | **Transport Center** | `center@medport.com` | `password123` | `COORDINATOR` | `center` | `/overview` | System management |
 | **Hospital** | `hospital@medport.com` | `password123` | `ADMIN` | `hospital` | `/dashboard` | Trip management |
-| **EMS Agency** | `agency@medport.com` | `password123` | `TRANSPORT_AGENCY` | `ems` | `/trips/available` | Trip acceptance |
+| **EMS** | `agency@medport.com` | `password123` | `TRANSPORT_AGENCY` | `ems` | `/trips/available` | Trip acceptance |
 
 ### **How to Use Siloed Login System**
 1. **Visit Login Page**: Navigate to http://localhost:3002
@@ -388,6 +388,6 @@ For questions or support, contact the development team or refer to the main docu
 |------------|-------|----------|---------------|-----------|--------------|---------|
 | **Transport Center** | `center@medport.com` | `password123` | `COORDINATOR` | `center` | `/overview` | System management |
 | **Hospital** | `hospital@medport.com` | `password123` | `ADMIN` | `hospital` | `/dashboard` | Trip management |
-| **EMS Agency** | `agency@medport.com` | `password123` | `TRANSPORT_AGENCY` | `ems` | `/trips/available` | Trip acceptance |
+| **EMS** | `agency@medport.com` | `password123` | `TRANSPORT_AGENCY` | `ems` | `/trips/available` | Trip acceptance |
 
 ### **How to Use Siloed Login System**

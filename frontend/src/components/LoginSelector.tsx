@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import CenterLogin from './CenterLogin';
 import HospitalLogin from './HospitalLogin';
-import AgencyLogin from './AgencyLogin';
+import EMSLogin from './EMSLogin';
 
 interface LoginSelectorProps {
   onLoginSuccess: (userData: any) => void;
 }
 
-type LoginType = 'selector' | 'center' | 'hospital' | 'agency';
+type LoginType = 'selector' | 'center' | 'hospital' | 'ems';
 
 const LoginSelector: React.FC<LoginSelectorProps> = ({ onLoginSuccess }) => {
   const [selectedLogin, setSelectedLogin] = useState<LoginType>('selector');
@@ -18,8 +18,8 @@ const LoginSelector: React.FC<LoginSelectorProps> = ({ onLoginSuccess }) => {
         return <CenterLogin onLoginSuccess={onLoginSuccess} />;
       case 'hospital':
         return <HospitalLogin onLoginSuccess={onLoginSuccess} />;
-      case 'agency':
-        return <AgencyLogin onLoginSuccess={onLoginSuccess} />;
+      case 'ems':
+        return <EMSLogin onLoginSuccess={onLoginSuccess} />;
       default:
         return (
           <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -49,10 +49,10 @@ const LoginSelector: React.FC<LoginSelectorProps> = ({ onLoginSuccess }) => {
                 </button>
                 
                 <button
-                  onClick={() => setSelectedLogin('agency')}
+                  onClick={() => setSelectedLogin('ems')}
                   className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
                 >
-                  EMS Agency Login
+                  EMS Login
                 </button>
               </div>
               
