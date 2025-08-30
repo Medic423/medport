@@ -93,6 +93,7 @@ function App() {
     setIsAuthenticated(true);
     setUserData(userData);
     
+
     // Fetch navigation data for the newly logged in user
     const token = localStorage.getItem('token');
     
@@ -221,7 +222,7 @@ function App() {
       
       <main className="pt-16">
         {/* Simplified routing based on user type */}
-        {currentPage === 'dashboard' && <HospitalDashboard />}
+        {currentPage === 'dashboard' && <HospitalDashboard onNavigate={handleNavigation} />}
         {currentPage === 'trips/new' && <NewTripForm />}
         {currentPage === 'trips' && <TripManagement />}
         {currentPage === 'trips/available' && <TransportRequests />}

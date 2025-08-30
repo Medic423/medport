@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 interface Trip {
   id: string;
@@ -13,8 +12,11 @@ interface Trip {
   emsAgency?: string;
 }
 
-const HospitalDashboard: React.FC = () => {
-  const navigate = useNavigate();
+interface HospitalDashboardProps {
+  onNavigate?: (page: string) => void;
+}
+
+const HospitalDashboard: React.FC<HospitalDashboardProps> = ({ onNavigate }) => {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -88,19 +90,19 @@ const HospitalDashboard: React.FC = () => {
       {/* Quick Actions */}
       <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
         <button
-          onClick={() => navigate('/trips/new')}
+          onClick={() => onNavigate?.('trips/new')}
           className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg shadow-sm transition-colors"
         >
           + New Trip Request
         </button>
         <button
-          onClick={() => navigate('/trips')}
+          onClick={() => onNavigate?.('trips')}
           className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-6 rounded-lg shadow-sm transition-colors"
         >
           View All Trips
         </button>
         <button
-          onClick={() => navigate('/notifications')}
+          onClick={() => onNavigate?.('notifications')}
           className="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg shadow-sm transition-colors"
         >
           Notifications
