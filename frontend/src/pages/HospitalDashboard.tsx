@@ -8,8 +8,16 @@ interface Trip {
   status: 'pending' | 'accepted' | 'in-progress' | 'completed' | 'cancelled';
   requestTime: string;
   acceptedTime?: string;
+  arrivalTime?: string;
   eta?: string;
   emsAgency?: string;
+  unitNumber?: string;
+  specialRequirements?: string;
+  patientName?: string;
+  patientAge?: number;
+  patientCondition?: string;
+  contactPhone?: string;
+  notes?: string;
 }
 
 interface HospitalDashboardProps {
@@ -19,6 +27,11 @@ interface HospitalDashboardProps {
 const HospitalDashboard: React.FC<HospitalDashboardProps> = ({ onNavigate }) => {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
+  const [showTripDetails, setShowTripDetails] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedTrip, setEditedTrip] = useState<Trip | null>(null);
+  const [showAllTrips, setShowAllTrips] = useState(false);
 
   // Mock data for demonstration - replace with actual API calls
   useEffect(() => {
@@ -31,8 +44,16 @@ const HospitalDashboard: React.FC<HospitalDashboardProps> = ({ onNavigate }) => 
         status: 'accepted',
         requestTime: '2025-08-29T10:00:00Z',
         acceptedTime: '2025-08-29T10:15:00Z',
+        arrivalTime: '2025-08-29T10:45:00Z',
         eta: '2025-08-29T11:30:00Z',
-        emsAgency: 'Metro EMS'
+        emsAgency: 'Metro EMS',
+        unitNumber: 'ALS-12',
+        specialRequirements: 'Cardiac monitoring required',
+        patientName: 'John Smith',
+        patientAge: 65,
+        patientCondition: 'Post-surgical recovery',
+        contactPhone: '(555) 123-4567',
+        notes: 'Patient stable, ready for transport'
       },
       {
         id: '2',
@@ -49,6 +70,25 @@ const HospitalDashboard: React.FC<HospitalDashboardProps> = ({ onNavigate }) => 
         transportLevel: 'Other',
         status: 'pending',
         requestTime: '2025-08-29T16:00:00Z'
+      },
+      {
+        id: '4',
+        origin: 'City General Hospital',
+        destination: 'Specialty Clinic',
+        transportLevel: 'CCT',
+        status: 'in-progress',
+        requestTime: '2025-08-29T08:30:00Z',
+        acceptedTime: '2025-08-29T08:45:00Z',
+        arrivalTime: '2025-08-29T09:00:00Z',
+        eta: '2025-08-29T09:15:00Z',
+        emsAgency: 'Advanced Care EMS',
+        unitNumber: 'CCT-05',
+        specialRequirements: 'Ventilator support, ICU nurse required',
+        patientName: 'Maria Garcia',
+        patientAge: 42,
+        patientCondition: 'Critical care transfer',
+        contactPhone: '(555) 987-6543',
+        notes: 'Patient on ventilator, family notified'
       }
     ];
     
@@ -71,6 +111,92 @@ const HospitalDashboard: React.FC<HospitalDashboardProps> = ({ onNavigate }) => 
     return status.charAt(0).toUpperCase() + status.slice(1).replace('-', ' ');
   };
 
+  // Helper function to format timestamps
+  const formatTime = (timestamp: string) => {
+    return new Date(timestamp).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Helper function to calculate time lapse
+  const calculateTimeLapse = (startTime: string, endTime: string) => {
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    const diffMs = end.getTime() - start.getTime();
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMinutes / 60);
+    const remainingMinutes = diffMinutes % 60;
+    
+    if (diffHours > 0) {
+      return `${diffHours}h ${remainingMinutes}m`;
+    }
+    return `${diffMinutes}m`;
+  };
+
+  // Helper function to get time until ETA
+  const getTimeUntilEta = (etaTimestamp: string) => {
+    const now = new Date();
+    const etaTime = new Date(etaTimestamp);
+    const diffMs = etaTime.getTime() - now.getTime();
+    
+    if (diffMs < 0) {
+      return 'Overdue';
+    }
+    
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMinutes / 60);
+    const remainingMinutes = diffMinutes % 60;
+    
+    if (diffHours > 0) {
+      return `in ${diffHours}h ${remainingMinutes}m`;
+    }
+    return `in ${diffMinutes}m`;
+  };
+
+  // Handle trip details view
+  const handleViewDetails = (trip: Trip) => {
+    setSelectedTrip(trip);
+    setEditedTrip({ ...trip });
+    setIsEditing(false);
+    setShowTripDetails(true);
+  };
+
+  // Handle edit mode toggle
+  const handleEditToggle = () => {
+    setIsEditing(!isEditing);
+  };
+
+  // Handle field updates
+  const handleFieldUpdate = (field: keyof Trip, value: string | number) => {
+    if (editedTrip) {
+      setEditedTrip({ ...editedTrip, [field]: value });
+    }
+  };
+
+  // Handle save changes
+  const handleSaveChanges = () => {
+    if (editedTrip) {
+      setTrips(prev => prev.map(trip => 
+        trip.id === editedTrip.id ? editedTrip : trip
+      ));
+      setSelectedTrip(editedTrip);
+      setIsEditing(false);
+      // TODO: Send API request to update trip
+      console.log('Saving trip changes:', editedTrip);
+    }
+  };
+
+  // Handle cancel edit
+  const handleCancelEdit = () => {
+    if (selectedTrip) {
+      setEditedTrip({ ...selectedTrip });
+      setIsEditing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -88,7 +214,7 @@ const HospitalDashboard: React.FC<HospitalDashboardProps> = ({ onNavigate }) => 
       </div>
 
       {/* Quick Actions */}
-      <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
         <button
           onClick={() => onNavigate?.('trips/new')}
           className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg shadow-sm transition-colors"
@@ -96,23 +222,19 @@ const HospitalDashboard: React.FC<HospitalDashboardProps> = ({ onNavigate }) => 
           + New Trip Request
         </button>
         <button
-          onClick={() => onNavigate?.('trips')}
+          onClick={() => setShowAllTrips(!showAllTrips)}
           className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-6 rounded-lg shadow-sm transition-colors"
         >
-          View All Trips
-        </button>
-        <button
-          onClick={() => onNavigate?.('notifications')}
-          className="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg shadow-sm transition-colors"
-        >
-          Notifications
+          {showAllTrips ? 'Hide All Trips' : 'View All Trips'}
         </button>
       </div>
 
       {/* Recent Trips */}
       <div className="bg-white shadow rounded-lg">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-medium text-gray-900">Recent Transfer Requests</h2>
+          <h2 className="text-lg font-medium text-gray-900">
+            {showAllTrips ? 'All Transfer Requests' : 'Recent Transfer Requests'}
+          </h2>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -136,7 +258,7 @@ const HospitalDashboard: React.FC<HospitalDashboardProps> = ({ onNavigate }) => 
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {trips.map((trip) => (
+              {(showAllTrips ? trips : trips.slice(0, 5)).map((trip) => (
                 <tr key={trip.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <div>
@@ -169,28 +291,25 @@ const HospitalDashboard: React.FC<HospitalDashboardProps> = ({ onNavigate }) => 
                     )}
                   </td>
                   <td className="px-6 py-4 text-sm font-medium">
-                    {trip.status === 'pending' && (
+                    <div className="flex items-center space-x-3">
+                      {trip.status === 'pending' && (
+                        <button
+                          onClick={() => {
+                            // TODO: Implement trip cancellation
+                            console.log('Cancel trip:', trip.id);
+                          }}
+                          className="text-red-600 hover:text-red-900 font-medium"
+                        >
+                          Cancel
+                        </button>
+                      )}
                       <button
-                        onClick={() => {
-                          // TODO: Implement trip cancellation
-                          console.log('Cancel trip:', trip.id);
-                        }}
-                        className="text-red-600 hover:text-red-900"
+                        onClick={() => handleViewDetails(trip)}
+                        className="text-blue-600 hover:text-blue-900 font-medium"
                       >
-                        Cancel
+                        Edit/View Details
                       </button>
-                    )}
-                    {trip.status === 'accepted' && (
-                      <button
-                        onClick={() => {
-                          // TODO: Implement trip details view
-                          console.log('View trip details:', trip.id);
-                        }}
-                        className="text-blue-600 hover:text-blue-900"
-                      >
-                        View Details
-                      </button>
-                    )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -200,7 +319,7 @@ const HospitalDashboard: React.FC<HospitalDashboardProps> = ({ onNavigate }) => 
       </div>
 
       {/* Stats Summary */}
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="mt-8 grid grid-cols-1 md:grid-cols-5 gap-4">
         <div className="bg-white p-6 rounded-lg shadow">
           <div className="text-2xl font-bold text-blue-600">{trips.length}</div>
           <div className="text-sm text-gray-600">Total Trips</div>
@@ -218,10 +337,375 @@ const HospitalDashboard: React.FC<HospitalDashboardProps> = ({ onNavigate }) => 
           <div className="text-sm text-gray-600">Accepted</div>
         </div>
         <div className="bg-white p-6 rounded-lg shadow">
+          <div className="text-2xl font-bold text-purple-600">
+            {trips.filter(t => t.status === 'in-progress').length}
+          </div>
+          <div className="text-sm text-gray-600">In Progress</div>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow">
           <div className="text-2xl font-bold text-green-600">
             {trips.filter(t => t.status === 'completed').length}
           </div>
           <div className="text-sm text-gray-600">Completed</div>
+        </div>
+      </div>
+
+      {/* Trip Details Modal */}
+      {showTripDetails && selectedTrip && editedTrip && (
+        <TripDetailsModal
+          trip={selectedTrip}
+          editedTrip={editedTrip}
+          isEditing={isEditing}
+          onClose={() => {
+            setShowTripDetails(false);
+            setSelectedTrip(null);
+            setEditedTrip(null);
+            setIsEditing(false);
+          }}
+          onEditToggle={handleEditToggle}
+          onFieldUpdate={handleFieldUpdate}
+          onSaveChanges={handleSaveChanges}
+          onCancelEdit={handleCancelEdit}
+          formatTime={formatTime}
+          calculateTimeLapse={calculateTimeLapse}
+          getTimeUntilEta={getTimeUntilEta}
+        />
+      )}
+    </div>
+  );
+};
+
+// Trip Details Modal Component
+const TripDetailsModal: React.FC<{
+  trip: Trip;
+  editedTrip: Trip;
+  isEditing: boolean;
+  onClose: () => void;
+  onEditToggle: () => void;
+  onFieldUpdate: (field: keyof Trip, value: string | number) => void;
+  onSaveChanges: () => void;
+  onCancelEdit: () => void;
+  formatTime: (timestamp: string) => string;
+  calculateTimeLapse: (startTime: string, endTime: string) => string;
+  getTimeUntilEta: (etaTimestamp: string) => string;
+}> = ({ 
+  trip, 
+  editedTrip, 
+  isEditing, 
+  onClose, 
+  onEditToggle, 
+  onFieldUpdate, 
+  onSaveChanges, 
+  onCancelEdit,
+  formatTime, 
+  calculateTimeLapse, 
+  getTimeUntilEta 
+}) => {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-semibold text-gray-900">
+            {isEditing ? 'Edit Trip Details' : 'Trip Details'}
+          </h3>
+          <div className="flex items-center space-x-2">
+            {!isEditing ? (
+              <button
+                onClick={onEditToggle}
+                className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Edit
+              </button>
+            ) : (
+              <div className="flex space-x-2">
+                <button
+                  onClick={onSaveChanges}
+                  className="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={onCancelEdit}
+                  className="px-3 py-1 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          {/* Patient Information */}
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h4 className="font-medium text-blue-900 mb-3">Patient Information</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Patient Name</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editedTrip.patientName || ''}
+                    onChange={(e) => onFieldUpdate('patientName', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                ) : (
+                  <p className="text-sm text-gray-900">{trip.patientName || 'Not specified'}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Age</label>
+                {isEditing ? (
+                  <input
+                    type="number"
+                    value={editedTrip.patientAge || ''}
+                    onChange={(e) => onFieldUpdate('patientAge', parseInt(e.target.value) || 0)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                ) : (
+                  <p className="text-sm text-gray-900">{trip.patientAge || 'Not specified'}</p>
+                )}
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Condition</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editedTrip.patientCondition || ''}
+                    onChange={(e) => onFieldUpdate('patientCondition', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                ) : (
+                  <p className="text-sm text-gray-900">{trip.patientCondition || 'Not specified'}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Trip Overview */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h4 className="font-medium text-gray-900 mb-3">Transport Details</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Route</label>
+                <p className="text-sm text-gray-900">{trip.origin}</p>
+                <p className="text-sm text-gray-900">↓</p>
+                <p className="text-sm text-gray-900">{trip.destination}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Transport Level</label>
+                {isEditing ? (
+                  <select
+                    value={editedTrip.transportLevel}
+                    onChange={(e) => onFieldUpdate('transportLevel', e.target.value as 'ALS' | 'BLS' | 'CCT' | 'Other')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="BLS">BLS</option>
+                    <option value="ALS">ALS</option>
+                    <option value="CCT">CCT</option>
+                    <option value="Other">Other</option>
+                  </select>
+                ) : (
+                  <p className="text-sm text-gray-900">{trip.transportLevel}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">EMS Agency</label>
+                <p className="text-sm text-gray-900">{trip.emsAgency || 'Not assigned'}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Unit Number</label>
+                <p className="text-sm text-gray-900">{trip.unitNumber || 'Not assigned'}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Timing Information */}
+          <div>
+            <h4 className="font-medium text-gray-900 mb-2">Timing Information</h4>
+            <p className="text-xs text-gray-500 mb-4">
+              Request time is auto-set when trip is created. Acceptance and arrival times are set manually by hospital staff.
+            </p>
+            <div className="space-y-3">
+              {/* Request Time */}
+              <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium text-gray-600">Transfer Request Time</span>
+                  <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">Auto-set</span>
+                </div>
+                <span className="text-sm text-gray-900">{formatTime(trip.requestTime)}</span>
+              </div>
+
+              {/* Acceptance Time */}
+              <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium text-gray-600">Transfer Accepted Time</span>
+                  <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">Editable</span>
+                </div>
+                <div className="text-right">
+                  {isEditing ? (
+                    <input
+                      type="datetime-local"
+                      value={editedTrip.acceptedTime ? new Date(editedTrip.acceptedTime).toISOString().slice(0, 16) : ''}
+                      onChange={(e) => onFieldUpdate('acceptedTime', e.target.value ? new Date(e.target.value).toISOString() : '')}
+                      className="px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  ) : trip.acceptedTime ? (
+                    <>
+                      <span className="text-sm text-gray-900">{formatTime(trip.acceptedTime)}</span>
+                      <p className="text-xs text-gray-500">
+                        ({calculateTimeLapse(trip.requestTime, trip.acceptedTime)} after request)
+                      </p>
+                    </>
+                  ) : (
+                    <span className="text-sm text-gray-500">Not set</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Arrival Time */}
+              <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium text-gray-600">EMS Arrival Time</span>
+                  <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">Editable</span>
+                </div>
+                <div className="text-right">
+                  {isEditing ? (
+                    <input
+                      type="datetime-local"
+                      value={editedTrip.arrivalTime ? new Date(editedTrip.arrivalTime).toISOString().slice(0, 16) : ''}
+                      onChange={(e) => onFieldUpdate('arrivalTime', e.target.value ? new Date(e.target.value).toISOString() : '')}
+                      className="px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  ) : trip.arrivalTime ? (
+                    <>
+                      <span className="text-sm text-gray-900">{formatTime(trip.arrivalTime)}</span>
+                      {trip.acceptedTime && (
+                        <p className="text-xs text-gray-500">
+                          ({calculateTimeLapse(trip.acceptedTime, trip.arrivalTime)} after acceptance)
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-sm text-gray-500">Not set</span>
+                  )}
+                </div>
+              </div>
+
+              {/* ETA */}
+              <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium text-gray-600">Estimated Arrival</span>
+                  <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">Editable</span>
+                </div>
+                <div className="text-right">
+                  {isEditing ? (
+                    <input
+                      type="datetime-local"
+                      value={editedTrip.eta ? new Date(editedTrip.eta).toISOString().slice(0, 16) : ''}
+                      onChange={(e) => onFieldUpdate('eta', e.target.value ? new Date(e.target.value).toISOString() : '')}
+                      className="px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  ) : trip.eta ? (
+                    <>
+                      <span className="text-sm text-gray-900">{formatTime(trip.eta)}</span>
+                      <p className="text-xs text-gray-500">{getTimeUntilEta(trip.eta)}</p>
+                    </>
+                  ) : (
+                    <span className="text-sm text-gray-500">Not set</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Special Requirements */}
+          <div>
+            <h4 className="font-medium text-gray-900 mb-2">Special Requirements</h4>
+            {isEditing ? (
+              <textarea
+                value={editedTrip.specialRequirements || ''}
+                onChange={(e) => onFieldUpdate('specialRequirements', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={3}
+                placeholder="Enter special medical requirements..."
+              />
+            ) : (
+              <p className="text-sm text-gray-900 bg-yellow-50 p-3 rounded-lg">
+                {trip.specialRequirements || 'No special requirements specified'}
+              </p>
+            )}
+          </div>
+
+          {/* Contact Information */}
+          <div className="bg-green-50 p-4 rounded-lg">
+            <h4 className="font-medium text-green-900 mb-3">Contact Information</h4>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Contact Phone</label>
+              {isEditing ? (
+                <input
+                  type="tel"
+                  value={editedTrip.contactPhone || ''}
+                  onChange={(e) => onFieldUpdate('contactPhone', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="(555) 123-4567"
+                />
+              ) : (
+                <p className="text-sm text-gray-900">{trip.contactPhone || 'Not provided'}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <h4 className="font-medium text-gray-900 mb-2">Notes</h4>
+            {isEditing ? (
+              <textarea
+                value={editedTrip.notes || ''}
+                onChange={(e) => onFieldUpdate('notes', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={4}
+                placeholder="Add any additional notes or updates..."
+              />
+            ) : (
+              <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg">
+                {trip.notes || 'No notes available'}
+              </p>
+            )}
+          </div>
+
+          {/* Status Summary */}
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h4 className="font-medium text-blue-900 mb-2">Current Status</h4>
+            <div className="flex items-center space-x-2">
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                trip.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                trip.status === 'accepted' ? 'bg-blue-100 text-blue-800' :
+                trip.status === 'in-progress' ? 'bg-purple-100 text-purple-800' :
+                trip.status === 'completed' ? 'bg-green-100 text-green-800' :
+                'bg-red-100 text-red-800'
+              }`}>
+                {trip.status.charAt(0).toUpperCase() + trip.status.slice(1).replace('-', ' ')}
+              </span>
+              {trip.status === 'pending' && (
+                <span className="text-xs text-gray-500">Awaiting EMS acceptance</span>
+              )}
+              {trip.status === 'accepted' && (
+                <span className="text-xs text-gray-500">EMS en route</span>
+              )}
+              {trip.status === 'in-progress' && (
+                <span className="text-xs text-gray-500">Transport in progress</span>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

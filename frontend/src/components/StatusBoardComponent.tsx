@@ -1,20 +1,28 @@
 import React, { useState } from 'react';
-import { TransportRequestWithDetails, RequestStatus, Priority, TransportLevel } from '../types/transport';
+import { TransportRequestWithDetails, RequestStatus, Priority, TransportLevel, EtaUpdate } from '../types/transport';
 
 interface StatusBoardComponentProps {
   transportRequests: TransportRequestWithDetails[];
   onStatusUpdate: (requestId: string, newStatus: RequestStatus) => void;
+  onEtaUpdate?: (requestId: string, etaData: { estimatedArrivalTime?: string; estimatedPickupTime?: string; reason?: string }) => void;
+  onCancelTrip?: (requestId: string, reason: string) => void;
   loading: boolean;
+  userRole?: string;
 }
 
 const StatusBoardComponent: React.FC<StatusBoardComponentProps> = ({
   transportRequests,
   onStatusUpdate,
-  loading
+  onEtaUpdate,
+  onCancelTrip,
+  loading,
+  userRole
 }) => {
   const [expandedRequest, setExpandedRequest] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'timestamp' | 'priority' | 'status'>('timestamp');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [showEtaModal, setShowEtaModal] = useState<string | null>(null);
+  const [showCancelModal, setShowCancelModal] = useState<string | null>(null);
 
   // Sort requests
   const sortedRequests = [...transportRequests].sort((a, b) => {
@@ -110,6 +118,43 @@ const StatusBoardComponent: React.FC<StatusBoardComponentProps> = ({
       return `${diffHours}h ${diffMinutes}m ago`;
     }
     return `${diffMinutes}m ago`;
+  };
+
+  // Calculate time until ETA
+  const getTimeUntilEta = (etaTimestamp: string) => {
+    const now = new Date();
+    const etaTime = new Date(etaTimestamp);
+    const diffMs = etaTime.getTime() - now.getTime();
+    
+    if (diffMs < 0) {
+      return 'Overdue';
+    }
+    
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (diffHours > 0) {
+      return `in ${diffHours}h ${diffMinutes}m`;
+    }
+    return `in ${diffMinutes}m`;
+  };
+
+  // Get latest ETA update
+  const getLatestEtaUpdate = (request: TransportRequestWithDetails): EtaUpdate | null => {
+    if (!request.etaUpdates || request.etaUpdates.length === 0) {
+      return null;
+    }
+    return request.etaUpdates[request.etaUpdates.length - 1];
+  };
+
+  // Format ETA timestamp
+  const formatEtaTime = (timestamp: string) => {
+    return new Date(timestamp).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   if (loading) {
@@ -224,6 +269,54 @@ const StatusBoardComponent: React.FC<StatusBoardComponentProps> = ({
             {expandedRequest === request.id && (
               <div className="px-4 pb-4 border-t border-gray-100">
                 <div className="pt-4 space-y-4">
+                  {/* ETA Information */}
+                  {(request.estimatedArrivalTime || request.estimatedPickupTime) && (
+                    <div className="bg-blue-50 p-3 rounded-lg">
+                      <p className="text-xs font-medium text-blue-700 uppercase tracking-wide mb-2">Current ETA</p>
+                      <div className="space-y-2">
+                        {request.estimatedArrivalTime && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-blue-900">Arrival:</span>
+                            <div className="text-right">
+                              <p className="text-sm font-medium text-blue-900">{formatEtaTime(request.estimatedArrivalTime)}</p>
+                              <p className="text-xs text-blue-600">{getTimeUntilEta(request.estimatedArrivalTime)}</p>
+                            </div>
+                          </div>
+                        )}
+                        {request.estimatedPickupTime && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-blue-900">Pickup:</span>
+                            <div className="text-right">
+                              <p className="text-sm font-medium text-blue-900">{formatEtaTime(request.estimatedPickupTime)}</p>
+                              <p className="text-xs text-blue-600">{getTimeUntilEta(request.estimatedPickupTime)}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* EMS Acceptance Info */}
+                  {request.assignedAgency && (
+                    <div className="bg-green-50 p-3 rounded-lg">
+                      <p className="text-xs font-medium text-green-700 uppercase tracking-wide mb-2">EMS Assignment</p>
+                      <div className="space-y-2">
+                        <div>
+                          <p className="text-sm font-medium text-green-900">{request.assignedAgency.name}</p>
+                          {request.assignedUnit && (
+                            <p className="text-xs text-green-700">Unit: {request.assignedUnit.unitNumber} ({request.assignedUnit.type})</p>
+                          )}
+                        </div>
+                        {request.acceptedTimestamp && (
+                          <div>
+                            <p className="text-xs text-green-600">Accepted: {formatTimestamp(request.acceptedTimestamp)}</p>
+                            <p className="text-xs text-green-600">({getTimeSinceRequest(request.acceptedTimestamp)})</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Status Update */}
                   <div>
                     <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Update Status</p>
@@ -243,31 +336,46 @@ const StatusBoardComponent: React.FC<StatusBoardComponentProps> = ({
                     </div>
                   </div>
 
-                  {/* Assignment Info */}
-                  {request.assignedAgency && (
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Assigned Agency</p>
-                      <p className="text-sm text-gray-900">{request.assignedAgency.name}</p>
-                    </div>
-                  )}
-
-                  {request.assignedUnit && (
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Assigned Unit</p>
-                      <p className="text-sm text-gray-900">{request.assignedUnit.unitNumber} ({request.assignedUnit.type})</p>
-                    </div>
-                  )}
+                  {/* Action Buttons */}
+                  <div className="flex flex-wrap gap-2">
+                    {/* ETA Update Button */}
+                    {onEtaUpdate && (userRole === 'ems' || userRole === 'center') && (
+                      <button
+                        onClick={() => setShowEtaModal(request.id)}
+                        className="px-3 py-1 text-xs font-medium rounded-md bg-purple-100 text-purple-800 hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      >
+                        Update ETA
+                      </button>
+                    )}
+                    
+                    {/* Cancel Trip Button */}
+                    {onCancelTrip && (userRole === 'hospital' || userRole === 'center') && request.status === 'PENDING' && (
+                      <button
+                        onClick={() => setShowCancelModal(request.id)}
+                        className="px-3 py-1 text-xs font-medium rounded-md bg-red-100 text-red-800 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+                      >
+                        Cancel Trip
+                      </button>
+                    )}
+                  </div>
 
                   {/* Timestamps */}
                   <div className="grid grid-cols-2 gap-4 text-xs">
                     <div>
-                      <p className="font-medium text-gray-500">Created</p>
-                      <p className="text-gray-900">{formatTimestamp(request.createdAt)}</p>
+                      <p className="font-medium text-gray-500">Requested</p>
+                      <p className="text-gray-900">{formatTimestamp(request.requestTimestamp)}</p>
+                      <p className="text-gray-500">({getTimeSinceRequest(request.requestTimestamp)})</p>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-500">Updated</p>
+                      <p className="font-medium text-gray-500">Last Updated</p>
                       <p className="text-gray-900">{formatTimestamp(request.updatedAt)}</p>
                     </div>
+                    {request.acceptedTimestamp && (
+                      <div>
+                        <p className="font-medium text-gray-500">Accepted</p>
+                        <p className="text-gray-900">{formatTimestamp(request.acceptedTimestamp)}</p>
+                      </div>
+                    )}
                     {request.pickupTimestamp && (
                       <div>
                         <p className="font-medium text-gray-500">Pickup</p>
@@ -281,6 +389,29 @@ const StatusBoardComponent: React.FC<StatusBoardComponentProps> = ({
                       </div>
                     )}
                   </div>
+
+                  {/* ETA History */}
+                  {request.etaUpdates && request.etaUpdates.length > 0 && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">ETA History</p>
+                      <div className="space-y-2 max-h-32 overflow-y-auto">
+                        {request.etaUpdates.slice(-3).map((etaUpdate, index) => (
+                          <div key={etaUpdate.id} className="text-xs bg-gray-50 p-2 rounded">
+                            <p className="font-medium text-gray-700">{formatTimestamp(etaUpdate.timestamp)}</p>
+                            {etaUpdate.estimatedArrivalTime && (
+                              <p className="text-gray-600">Arrival: {formatEtaTime(etaUpdate.estimatedArrivalTime)}</p>
+                            )}
+                            {etaUpdate.estimatedPickupTime && (
+                              <p className="text-gray-600">Pickup: {formatEtaTime(etaUpdate.estimatedPickupTime)}</p>
+                            )}
+                            {etaUpdate.reason && (
+                              <p className="text-gray-500 italic">{etaUpdate.reason}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -294,6 +425,170 @@ const StatusBoardComponent: React.FC<StatusBoardComponentProps> = ({
             </div>
           </div>
         ))}
+      </div>
+
+      {/* ETA Update Modal */}
+      {showEtaModal && (
+        <EtaUpdateModal
+          requestId={showEtaModal}
+          onClose={() => setShowEtaModal(null)}
+          onUpdate={(etaData) => {
+            if (onEtaUpdate) {
+              onEtaUpdate(showEtaModal, etaData);
+            }
+            setShowEtaModal(null);
+          }}
+        />
+      )}
+
+      {/* Cancel Trip Modal */}
+      {showCancelModal && (
+        <CancelTripModal
+          requestId={showCancelModal}
+          onClose={() => setShowCancelModal(null)}
+          onCancel={(reason) => {
+            if (onCancelTrip) {
+              onCancelTrip(showCancelModal, reason);
+            }
+            setShowCancelModal(null);
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+// ETA Update Modal Component
+const EtaUpdateModal: React.FC<{
+  requestId: string;
+  onClose: () => void;
+  onUpdate: (etaData: { estimatedArrivalTime?: string; estimatedPickupTime?: string; reason?: string }) => void;
+}> = ({ requestId, onClose, onUpdate }) => {
+  const [estimatedArrivalTime, setEstimatedArrivalTime] = useState('');
+  const [estimatedPickupTime, setEstimatedPickupTime] = useState('');
+  const [reason, setReason] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onUpdate({
+      estimatedArrivalTime: estimatedArrivalTime || undefined,
+      estimatedPickupTime: estimatedPickupTime || undefined,
+      reason: reason || undefined
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Update ETA</h3>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Estimated Arrival Time
+            </label>
+            <input
+              type="datetime-local"
+              value={estimatedArrivalTime}
+              onChange={(e) => setEstimatedArrivalTime(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Estimated Pickup Time
+            </label>
+            <input
+              type="datetime-local"
+              value={estimatedPickupTime}
+              onChange={(e) => setEstimatedPickupTime(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Reason for Update (Optional)
+            </label>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g., Traffic delay, equipment issue..."
+            />
+          </div>
+          <div className="flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+            >
+              Update ETA
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Cancel Trip Modal Component
+const CancelTripModal: React.FC<{
+  requestId: string;
+  onClose: () => void;
+  onCancel: (reason: string) => void;
+}> = ({ requestId, onClose, onCancel }) => {
+  const [reason, setReason] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (reason.trim()) {
+      onCancel(reason);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Cancel Trip Request</h3>
+        <p className="text-sm text-gray-600 mb-4">
+          Are you sure you want to cancel this trip request? This action cannot be undone.
+        </p>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Reason for Cancellation *
+            </label>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+              placeholder="Please provide a reason for cancelling this trip..."
+              required
+            />
+          </div>
+          <div className="flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+            >
+              Keep Trip
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
+            >
+              Cancel Trip
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

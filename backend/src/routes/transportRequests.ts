@@ -232,6 +232,72 @@ router.delete('/:id', async (req: SimpleAuthRequest, res: Response) => {
 });
 
 /**
+ * POST /api/transport-requests/:id/eta-update
+ * Update ETA for a transport request
+ */
+router.post('/:id/eta-update', async (req: SimpleAuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { estimatedArrivalTime, estimatedPickupTime, reason } = req.body;
+
+    if (!req.user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const updatedRequest = await transportRequestService.updateEta(id, {
+      estimatedArrivalTime,
+      estimatedPickupTime,
+      reason,
+      updatedBy: req.user.id
+    });
+
+    res.json({
+      message: 'ETA updated successfully',
+      transportRequest: updatedRequest
+    });
+  } catch (error) {
+    console.error('[MedPort:TransportRequest] Error updating ETA:', error);
+    res.status(500).json({
+      error: 'Failed to update ETA',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * POST /api/transport-requests/:id/accept
+ * Accept a transport request (for EMS agencies)
+ */
+router.post('/:id/accept', async (req: SimpleAuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { assignedAgencyId, assignedUnitId, estimatedArrivalTime } = req.body;
+
+    if (!req.user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const acceptedRequest = await transportRequestService.acceptTransportRequest(id, {
+      assignedAgencyId,
+      assignedUnitId,
+      estimatedArrivalTime,
+      acceptedBy: req.user.id
+    });
+
+    res.json({
+      message: 'Transport request accepted successfully',
+      transportRequest: acceptedRequest
+    });
+  } catch (error) {
+    console.error('[MedPort:TransportRequest] Error accepting transport request:', error);
+    res.status(500).json({
+      error: 'Failed to accept transport request',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
  * POST /api/transport-requests/:id/duplicate
  * Duplicate transport request
  */

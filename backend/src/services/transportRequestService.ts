@@ -189,55 +189,7 @@ export class TransportRequestService {
     return updatedRequest;
   }
 
-  /**
-   * Cancel transport request
-   */
-  async cancelTransportRequest(id: string, reason?: string): Promise<TransportRequest> {
-    const request = await prisma.transportRequest.findUnique({
-      where: { id }
-    });
 
-    if (!request) {
-      throw new Error('Transport request not found');
-    }
-
-    if (request.status === RequestStatus.COMPLETED) {
-      throw new Error('Cannot cancel completed transport request');
-    }
-
-    if (request.status === RequestStatus.CANCELLED) {
-      throw new Error('Transport request is already cancelled');
-    }
-
-    return this.updateTransportRequest(id, {
-      status: RequestStatus.CANCELLED,
-      specialRequirements: reason ? `${request.specialRequirements || ''}\n[CANCELLED: ${reason}]` : (request.specialRequirements || undefined)
-    });
-  }
-
-  /**
-   * Accept transport request (set accepted timestamp and status)
-   */
-  async acceptTransportRequest(id: string, agencyId: string, unitId?: string): Promise<TransportRequest> {
-    const request = await prisma.transportRequest.findUnique({
-      where: { id }
-    });
-
-    if (!request) {
-      throw new Error('Transport request not found');
-    }
-
-    if (request.status !== RequestStatus.PENDING) {
-      throw new Error('Only pending transport requests can be accepted');
-    }
-
-    return this.updateTransportRequest(id, {
-      status: RequestStatus.SCHEDULED,
-      acceptedTimestamp: new Date(),
-      assignedAgencyId: agencyId,
-      assignedUnitId: unitId
-    });
-  }
 
   /**
    * Duplicate transport request for similar transports
@@ -424,6 +376,158 @@ export class TransportRequestService {
       return requestsWithDistance;
     } catch (error) {
       console.error('[MedPort:TransportRequest] Error getting transport requests with distance:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update ETA for a transport request
+   */
+  async updateEta(requestId: string, etaData: {
+    estimatedArrivalTime?: string;
+    estimatedPickupTime?: string;
+    reason?: string;
+    updatedBy: string;
+  }): Promise<TransportRequestWithDetails> {
+    try {
+      const existingRequest = await this.getTransportRequestById(requestId);
+      if (!existingRequest) {
+        throw new Error('Transport request not found');
+      }
+
+      // Create new ETA update entry
+      const etaUpdate = {
+        id: `eta_${Date.now()}_${Math.random().toString(36).substring(2)}`,
+        timestamp: new Date().toISOString(),
+        estimatedArrivalTime: etaData.estimatedArrivalTime,
+        estimatedPickupTime: etaData.estimatedPickupTime,
+        updatedBy: etaData.updatedBy,
+        reason: etaData.reason
+      };
+
+      // Get existing ETA updates
+      const existingEtaUpdates = (existingRequest.etaUpdates as any[]) || [];
+      const updatedEtaUpdates = [...existingEtaUpdates, etaUpdate];
+
+      // Update the transport request
+      const updatedRequest = await prisma.transportRequest.update({
+        where: { id: requestId },
+        data: {
+          estimatedArrivalTime: etaData.estimatedArrivalTime ? new Date(etaData.estimatedArrivalTime) : undefined,
+          estimatedPickupTime: etaData.estimatedPickupTime ? new Date(etaData.estimatedPickupTime) : undefined,
+          etaUpdates: updatedEtaUpdates,
+          updatedAt: new Date()
+        },
+        include: {
+          originFacility: true,
+          destinationFacility: true,
+          createdBy: true,
+          assignedAgency: true,
+          assignedUnit: true
+        }
+      });
+
+      return updatedRequest as TransportRequestWithDetails;
+    } catch (error) {
+      console.error('[MedPort:TransportRequest] Error updating ETA:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Accept a transport request (for EMS agencies)
+   */
+  async acceptTransportRequest(requestId: string, acceptanceData: {
+    assignedAgencyId: string;
+    assignedUnitId?: string;
+    estimatedArrivalTime?: string;
+    acceptedBy: string;
+  }): Promise<TransportRequestWithDetails> {
+    try {
+      const existingRequest = await this.getTransportRequestById(requestId);
+      if (!existingRequest) {
+        throw new Error('Transport request not found');
+      }
+
+      if (existingRequest.status !== 'PENDING') {
+        throw new Error('Transport request is not in pending status');
+      }
+
+      // Create ETA update entry for acceptance
+      const etaUpdate = {
+        id: `eta_${Date.now()}_${Math.random().toString(36).substring(2)}`,
+        timestamp: new Date().toISOString(),
+        estimatedArrivalTime: acceptanceData.estimatedArrivalTime,
+        updatedBy: acceptanceData.acceptedBy,
+        reason: 'Request accepted by EMS agency'
+      };
+
+      // Get existing ETA updates
+      const existingEtaUpdates = (existingRequest.etaUpdates as any[]) || [];
+      const updatedEtaUpdates = [...existingEtaUpdates, etaUpdate];
+
+      // Update the transport request
+      const updatedRequest = await prisma.transportRequest.update({
+        where: { id: requestId },
+        data: {
+          status: 'SCHEDULED',
+          acceptedTimestamp: new Date(),
+          assignedAgencyId: acceptanceData.assignedAgencyId,
+          assignedUnitId: acceptanceData.assignedUnitId,
+          estimatedArrivalTime: acceptanceData.estimatedArrivalTime ? new Date(acceptanceData.estimatedArrivalTime) : undefined,
+          etaUpdates: updatedEtaUpdates,
+          updatedAt: new Date()
+        },
+        include: {
+          originFacility: true,
+          destinationFacility: true,
+          createdBy: true,
+          assignedAgency: true,
+          assignedUnit: true
+        }
+      });
+
+      return updatedRequest as TransportRequestWithDetails;
+    } catch (error) {
+      console.error('[MedPort:TransportRequest] Error accepting transport request:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Cancel a transport request with reason
+   */
+  async cancelTransportRequest(requestId: string, reason?: string): Promise<TransportRequestWithDetails> {
+    try {
+      const existingRequest = await this.getTransportRequestById(requestId);
+      if (!existingRequest) {
+        throw new Error('Transport request not found');
+      }
+
+      if (existingRequest.status === 'COMPLETED') {
+        throw new Error('Cannot cancel a completed transport request');
+      }
+
+      // Update the transport request
+      const updatedRequest = await prisma.transportRequest.update({
+        where: { id: requestId },
+        data: {
+          status: 'CANCELLED',
+          cancellationReason: reason,
+          updatedAt: new Date()
+        },
+        include: {
+          originFacility: true,
+          destinationFacility: true,
+          createdBy: true,
+          assignedAgency: true,
+          assignedUnit: true
+        }
+      });
+
+      return updatedRequest as TransportRequestWithDetails;
+    } catch (error) {
+      console.error('[MedPort:TransportRequest] Error cancelling transport request:', error);
       throw error;
     }
   }

@@ -80,6 +80,16 @@ export enum StopType {
   TRANSFER = 'TRANSFER'
 }
 
+// ETA Update Interface
+export interface EtaUpdate {
+  id: string;
+  timestamp: string;
+  estimatedArrivalTime?: string;
+  estimatedPickupTime?: string;
+  updatedBy: string;
+  reason?: string;
+}
+
 // User Role Enum
 export enum UserRole {
   ADMIN = 'ADMIN',
@@ -118,6 +128,7 @@ export interface TransportRequest {
   status: RequestStatus;
   specialRequirements?: string;
   requestTimestamp: string;
+  acceptedTimestamp?: string;
   pickupTimestamp?: string;
   completionTimestamp?: string;
   assignedAgencyId?: string;
@@ -129,6 +140,11 @@ export interface TransportRequest {
   chainingOpportunities?: any;
   timeFlexibility?: number;
   revenuePotential?: number;
+  // ETA tracking fields
+  estimatedArrivalTime?: string;
+  estimatedPickupTime?: string;
+  etaUpdates?: EtaUpdate[];
+  cancellationReason?: string;
 }
 
 // Transport Request with Details Interface

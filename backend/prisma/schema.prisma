@@ -74,6 +74,11 @@ model TransportRequest {
   chainingOpportunities  Json?
   timeFlexibility        Int?
   revenuePotential       Float?
+  // ETA tracking fields
+  estimatedArrivalTime   DateTime?
+  estimatedPickupTime    DateTime?
+  etaUpdates            Json?            // Array of ETA updates with timestamps
+  cancellationReason    String?          // Reason for cancellation
   routeStops             RouteStop[]
   assignedAgency         TransportAgency? @relation(fields: [assignedAgencyId], references: [id])
   assignedUnit           Unit?            @relation(fields: [assignedUnitId], references: [id])

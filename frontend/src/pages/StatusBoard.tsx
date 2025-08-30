@@ -126,6 +126,88 @@ const StatusBoard: React.FC = () => {
     }
   };
 
+  // Update ETA
+  const handleEtaUpdate = async (requestId: string, etaData: { estimatedArrivalTime?: string; estimatedPickupTime?: string; reason?: string }) => {
+    try {
+      // Check for demo mode and get appropriate token
+      const isDemoMode = localStorage.getItem('demoMode') === 'true';
+      const token = isDemoMode ? 'demo-token' : localStorage.getItem('token');
+
+      const response = await fetch(`/api/transport-requests/${requestId}/eta-update`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(etaData)
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          setError('Authentication required to update ETA. This is a demo version.');
+          return;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      // Update local state with the updated request
+      setTransportRequests(prev => 
+        prev.map(req => 
+          req.id === requestId 
+            ? result.transportRequest
+            : req
+        )
+      );
+
+    } catch (err) {
+      console.error('[MedPort:StatusBoard] Error updating ETA:', err);
+      setError('Failed to update ETA. Please try again.');
+    }
+  };
+
+  // Cancel trip
+  const handleCancelTrip = async (requestId: string, reason: string) => {
+    try {
+      // Check for demo mode and get appropriate token
+      const isDemoMode = localStorage.getItem('demoMode') === 'true';
+      const token = isDemoMode ? 'demo-token' : localStorage.getItem('token');
+
+      const response = await fetch(`/api/transport-requests/${requestId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ reason })
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          setError('Authentication required to cancel trip. This is a demo version.');
+          return;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      // Update local state with the cancelled request
+      setTransportRequests(prev => 
+        prev.map(req => 
+          req.id === requestId 
+            ? result.transportRequest
+            : req
+        )
+      );
+
+    } catch (err) {
+      console.error('[MedPort:StatusBoard] Error cancelling trip:', err);
+      setError('Failed to cancel trip. Please try again.');
+    }
+  };
+
   // Refresh data
   const handleRefresh = () => {
     loadTransportRequests();
@@ -221,7 +303,10 @@ const StatusBoard: React.FC = () => {
         <StatusBoardComponent
           transportRequests={filteredRequests}
           onStatusUpdate={handleStatusChange}
+          onEtaUpdate={handleEtaUpdate}
+          onCancelTrip={handleCancelTrip}
           loading={loading}
+          userRole={localStorage.getItem('userRole') || undefined}
         />
       </div>
 

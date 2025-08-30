@@ -35,13 +35,6 @@ export class SimpleNavigationService {
               category: 'Main'
             },
             {
-              id: 'my-trips',
-              name: 'My Trips',
-              path: 'trips',
-              icon: 'list',
-              category: 'Main'
-            },
-            {
               id: 'notifications',
               name: 'Notifications',
               path: 'notifications',
@@ -106,7 +99,7 @@ export class SimpleNavigationService {
           menu: [
             {
               id: 'overview',
-              name: 'System Overview',
+              name: 'Status Dashboard',
               path: 'overview',
               icon: 'dashboard',
               category: 'Main'
