@@ -388,6 +388,7 @@ const TransportRequestForm: React.FC<TransportRequestFormProps> = ({
                 <option value={TransportLevel.BLS}>BLS - Basic Life Support</option>
                 <option value={TransportLevel.ALS}>ALS - Advanced Life Support</option>
                 <option value={TransportLevel.CCT}>CCT - Critical Care Transport</option>
+                <option value={TransportLevel.OTHER}>Other - Wheelchair Van, Medical Taxi, etc.</option>
               </select>
             </div>
 

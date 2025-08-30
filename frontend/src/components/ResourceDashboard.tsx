@@ -123,7 +123,8 @@ const ResourceDashboard: React.FC<ResourceDashboardProps> = ({ isDemoMode = fals
             byTransportLevel: {
               [TransportLevel.BLS]: 25,
               [TransportLevel.ALS]: 15,
-              [TransportLevel.CCT]: 7
+              [TransportLevel.CCT]: 7,
+              [TransportLevel.OTHER]: 3
             },
             byFacility: {
               'UPMC Altoona': 18,

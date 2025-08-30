@@ -805,6 +805,7 @@ enum TransportLevel {
   BLS
   ALS
   CCT
+  OTHER
 }
 
 enum Priority {

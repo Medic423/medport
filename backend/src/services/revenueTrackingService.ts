@@ -156,6 +156,10 @@ export class RevenueTrackingService {
         baseRate = 200; // Base fee for CCT
         mileageRate = 5.00; // Per mile rate
         break;
+      case TransportLevel.OTHER:
+        baseRate = 50; // Base fee for Other (wheelchair van, medical taxi)
+        mileageRate = 2.00; // Per mile rate
+        break;
     }
     
     // Add priority multiplier
