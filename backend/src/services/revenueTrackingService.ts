@@ -9,7 +9,8 @@ import {
   AgencyRevenueSummary,
   UnitRevenuePerformance
 } from '../types/revenueTracking';
-import { TransportLevel, UnitStatus, RequestStatus } from '@prisma/client';
+import { UnitStatus, RequestStatus } from '@prisma/client';
+import { TransportLevel } from '../types/transport';
 
 const prisma = new PrismaClient();
 
