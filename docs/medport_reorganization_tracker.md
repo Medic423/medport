@@ -310,6 +310,53 @@
 
 **Status**: ✅ COMPLETED AND MERGED TO MAIN - Ready for production use
 
+#### **2.1.4 Trip Cancellation Implementation - August 31, 2025**
+**Goal**: Enable hospitals to cancel transport requests with proper reason tracking and visual feedback
+
+**What Was Accomplished:**
+- ✅ **TripCancellationDialog Component**: Professional confirmation dialog with reason selection
+  - Three predefined reasons: "No EMS Availability", "Patient Not Stable for Transport", "Other"
+  - Custom reason input for "Other" selection
+  - Loading states and proper error handling
+  - Clean, accessible UI with proper validation
+- ✅ **Backend API Integration**: Connected to existing `DELETE /api/transport-requests/:id` endpoint
+  - Proper authentication headers and error handling
+  - Real-time state updates after successful cancellation
+  - Consistent with existing API patterns
+- ✅ **Dual Cancel Access**: Cancel functionality available in both locations
+  - Cancel button in trip list (for pending trips only)
+  - "Cancel Trip" button in Edit/View Details modal header
+  - Consistent user experience across both interfaces
+- ✅ **Visual Feedback System**: Clear indication of cancelled trips
+  - Red background styling for cancelled trip rows
+  - Red status badges with "Cancelled" label
+  - Cancellation reason display in trip details modal
+  - Red-themed status summary section for cancelled trips
+- ✅ **Summary Card Updates**: Added cancelled trip count to dashboard statistics
+  - New "Cancelled" card with red styling
+  - Updated grid layout from 5 to 6 columns
+  - Real-time count updates when trips are cancelled
+- ✅ **Enhanced Trip Interface**: Added `cancellationReason` field to Trip type
+  - Proper TypeScript typing for cancellation data
+  - Mock data includes cancelled trip example for testing
+  - Backward compatibility maintained
+
+**Technical Implementation:**
+- **Frontend**: `TripCancellationDialog.tsx` component with comprehensive validation
+- **Integration**: Seamless connection to existing `HospitalDashboard.tsx` architecture
+- **API**: Leveraged existing backend cancellation endpoint with reason parameter
+- **Database**: Utilized existing `cancellationReason` field in `TransportRequest` model
+- **UX**: Consistent styling and behavior patterns throughout the application
+
+**User Impact:**
+- Hospitals can now cancel trips with proper reason tracking
+- Clear visual feedback prevents confusion about trip status
+- Professional confirmation dialog prevents accidental cancellations
+- Dashboard statistics provide complete trip lifecycle visibility
+- Consistent experience whether cancelling from list or modal
+
+**Status**: ✅ COMPLETED AND MERGED TO MAIN - Ready for production use
+
 ### **Phase 2: Core Functionality Implementation**
 **Goal**: Implement focused, mission-critical features for each user type
 
@@ -348,13 +395,13 @@
   - [x] Consistent Edit/View Details button formatting
   - [x] Removed redundant "My Trips" menu option
   - [x] Fixed navigation syntax error causing menu to disappear
-- [ ] **Trip Cancellation**: Allow hospitals to cancel trips (IN PROGRESS)
-  - [ ] Enhance existing Cancel button in trip list with confirmation dialog
-  - [ ] Add Cancel option to Edit/View Details modal
-  - [ ] Implement cancellation reason selection (optional)
-  - [ ] Backend API integration for status updates
-  - [ ] Visual feedback for cancelled trips
-  - [ ] Update summary cards to include cancelled trip counts
+- [x] **Trip Cancellation**: Allow hospitals to cancel trips ✅ COMPLETED
+  - [x] Enhance existing Cancel button in trip list with confirmation dialog
+  - [x] Add Cancel option to Edit/View Details modal
+  - [x] Implement cancellation reason selection (No EMS Availability, Patient Not Stable, Other)
+  - [x] Backend API integration for status updates
+  - [x] Visual feedback for cancelled trips (styling, status badges)
+  - [x] Update summary cards to include cancelled trip counts
 - [ ] **EMS Agency Selection & Notification System**: Complete trip workflow (PENDING)
   - [ ] **EMS Agency Selection Interface**: Allow hospitals to select EMS agencies for trip notifications
     - [ ] Create EMS Agency Management interface in Settings
