@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import TripCancellationDialog from '../components/TripCancellationDialog';
 
 interface Trip {
   id: string;
@@ -18,6 +19,7 @@ interface Trip {
   patientCondition?: string;
   contactPhone?: string;
   notes?: string;
+  cancellationReason?: string;
 }
 
 interface HospitalDashboardProps {
@@ -32,6 +34,9 @@ const HospitalDashboard: React.FC<HospitalDashboardProps> = ({ onNavigate }) => 
   const [isEditing, setIsEditing] = useState(false);
   const [editedTrip, setEditedTrip] = useState<Trip | null>(null);
   const [showAllTrips, setShowAllTrips] = useState(false);
+  const [showCancellationDialog, setShowCancellationDialog] = useState(false);
+  const [tripToCancel, setTripToCancel] = useState<Trip | null>(null);
+  const [cancelling, setCancelling] = useState(false);
 
   // Mock data for demonstration - replace with actual API calls
   useEffect(() => {
@@ -89,6 +94,15 @@ const HospitalDashboard: React.FC<HospitalDashboardProps> = ({ onNavigate }) => 
         patientCondition: 'Critical care transfer',
         contactPhone: '(555) 987-6543',
         notes: 'Patient on ventilator, family notified'
+      },
+      {
+        id: '5',
+        origin: 'City General Hospital',
+        destination: 'Rehabilitation Center',
+        transportLevel: 'BLS',
+        status: 'cancelled',
+        requestTime: '2025-08-29T12:00:00Z',
+        cancellationReason: 'No EMS Availability'
       }
     ];
     
@@ -197,6 +211,63 @@ const HospitalDashboard: React.FC<HospitalDashboardProps> = ({ onNavigate }) => 
     }
   };
 
+  // Handle trip cancellation
+  const handleCancelTrip = (trip: Trip) => {
+    setTripToCancel(trip);
+    setShowCancellationDialog(true);
+  };
+
+  const handleConfirmCancellation = async (reason: string) => {
+    if (!tripToCancel) return;
+
+    setCancelling(true);
+    try {
+      // Call backend API to cancel the trip
+      const response = await fetch(`/api/transport-requests/${tripToCancel.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ reason })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to cancel trip');
+      }
+
+      const result = await response.json();
+      
+      // Update the trip in the local state
+      setTrips(prevTrips => 
+        prevTrips.map(trip => 
+          trip.id === tripToCancel.id 
+            ? { ...trip, status: 'cancelled' as const, cancellationReason: reason }
+            : trip
+        )
+      );
+
+      // Close dialog and reset state
+      setShowCancellationDialog(false);
+      setTripToCancel(null);
+      
+      // Show success message (you could add a toast notification here)
+      console.log('Trip cancelled successfully:', result);
+      
+    } catch (error) {
+      console.error('Error cancelling trip:', error);
+      // Show error message (you could add a toast notification here)
+      alert('Failed to cancel trip. Please try again.');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const handleCloseCancellationDialog = () => {
+    setShowCancellationDialog(false);
+    setTripToCancel(null);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -259,7 +330,9 @@ const HospitalDashboard: React.FC<HospitalDashboardProps> = ({ onNavigate }) => 
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {(showAllTrips ? trips : trips.slice(0, 5)).map((trip) => (
-                <tr key={trip.id} className="hover:bg-gray-50">
+                <tr key={trip.id} className={`hover:bg-gray-50 ${
+                  trip.status === 'cancelled' ? 'bg-red-50 opacity-75' : ''
+                }`}>
                   <td className="px-6 py-4">
                     <div>
                       <div className="text-sm font-medium text-gray-900">
@@ -294,10 +367,7 @@ const HospitalDashboard: React.FC<HospitalDashboardProps> = ({ onNavigate }) => 
                     <div className="flex items-center space-x-3">
                       {trip.status === 'pending' && (
                         <button
-                          onClick={() => {
-                            // TODO: Implement trip cancellation
-                            console.log('Cancel trip:', trip.id);
-                          }}
+                          onClick={() => handleCancelTrip(trip)}
                           className="text-red-600 hover:text-red-900 font-medium"
                         >
                           Cancel
@@ -319,7 +389,7 @@ const HospitalDashboard: React.FC<HospitalDashboardProps> = ({ onNavigate }) => 
       </div>
 
       {/* Stats Summary */}
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="mt-8 grid grid-cols-1 md:grid-cols-6 gap-4">
         <div className="bg-white p-6 rounded-lg shadow">
           <div className="text-2xl font-bold text-blue-600">{trips.length}</div>
           <div className="text-sm text-gray-600">Total Trips</div>
@@ -348,6 +418,12 @@ const HospitalDashboard: React.FC<HospitalDashboardProps> = ({ onNavigate }) => 
           </div>
           <div className="text-sm text-gray-600">Completed</div>
         </div>
+        <div className="bg-white p-6 rounded-lg shadow">
+          <div className="text-2xl font-bold text-red-600">
+            {trips.filter(t => t.status === 'cancelled').length}
+          </div>
+          <div className="text-sm text-gray-600">Cancelled</div>
+        </div>
       </div>
 
       {/* Trip Details Modal */}
@@ -366,6 +442,7 @@ const HospitalDashboard: React.FC<HospitalDashboardProps> = ({ onNavigate }) => 
           onFieldUpdate={handleFieldUpdate}
           onSaveChanges={handleSaveChanges}
           onCancelEdit={handleCancelEdit}
+          onCancelTrip={handleCancelTrip}
           formatTime={formatTime}
           calculateTimeLapse={calculateTimeLapse}
           getTimeUntilEta={getTimeUntilEta}
@@ -385,6 +462,7 @@ const TripDetailsModal: React.FC<{
   onFieldUpdate: (field: keyof Trip, value: string | number) => void;
   onSaveChanges: () => void;
   onCancelEdit: () => void;
+  onCancelTrip: (trip: Trip) => void;
   formatTime: (timestamp: string) => string;
   calculateTimeLapse: (startTime: string, endTime: string) => string;
   getTimeUntilEta: (etaTimestamp: string) => string;
@@ -397,6 +475,7 @@ const TripDetailsModal: React.FC<{
   onFieldUpdate, 
   onSaveChanges, 
   onCancelEdit,
+  onCancelTrip,
   formatTime, 
   calculateTimeLapse, 
   getTimeUntilEta 
@@ -410,12 +489,22 @@ const TripDetailsModal: React.FC<{
           </h3>
           <div className="flex items-center space-x-2">
             {!isEditing ? (
-              <button
-                onClick={onEditToggle}
-                className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                Edit
-              </button>
+              <div className="flex space-x-2">
+                {trip.status === 'pending' && (
+                  <button
+                    onClick={() => onCancelTrip(trip)}
+                    className="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700"
+                  >
+                    Cancel Trip
+                  </button>
+                )}
+                <button
+                  onClick={onEditToggle}
+                  className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Edit
+                </button>
+              </div>
             ) : (
               <div className="flex space-x-2">
                 <button
@@ -683,8 +772,12 @@ const TripDetailsModal: React.FC<{
           </div>
 
           {/* Status Summary */}
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <h4 className="font-medium text-blue-900 mb-2">Current Status</h4>
+          <div className={`p-4 rounded-lg ${
+            trip.status === 'cancelled' ? 'bg-red-50' : 'bg-blue-50'
+          }`}>
+            <h4 className={`font-medium mb-2 ${
+              trip.status === 'cancelled' ? 'text-red-900' : 'text-blue-900'
+            }`}>Current Status</h4>
             <div className="flex items-center space-x-2">
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                 trip.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
@@ -704,10 +797,31 @@ const TripDetailsModal: React.FC<{
               {trip.status === 'in-progress' && (
                 <span className="text-xs text-gray-500">Transport in progress</span>
               )}
+              {trip.status === 'cancelled' && (
+                <span className="text-xs text-red-600">
+                  {trip.cancellationReason ? `Reason: ${trip.cancellationReason}` : 'Trip cancelled'}
+                </span>
+              )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Trip Cancellation Dialog */}
+      {tripToCancel && (
+        <TripCancellationDialog
+          isOpen={showCancellationDialog}
+          onClose={handleCloseCancellationDialog}
+          onConfirm={handleConfirmCancellation}
+          tripId={tripToCancel.id}
+          tripDetails={{
+            origin: tripToCancel.origin,
+            destination: tripToCancel.destination,
+            transportLevel: tripToCancel.transportLevel
+          }}
+          loading={cancelling}
+        />
+      )}
     </div>
   );
 };

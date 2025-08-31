@@ -348,16 +348,110 @@
   - [x] Consistent Edit/View Details button formatting
   - [x] Removed redundant "My Trips" menu option
   - [x] Fixed navigation syntax error causing menu to disappear
-- [ ] **Trip Cancellation**: Allow hospitals to cancel trips
-  - [ ] Cancel button for pending trips
-  - [ ] Confirmation dialog
-  - [ ] Status update to cancelled
-- [ ] **Notification System**: Basic email/text for trip updates
-  - [ ] Trip accepted notifications
-  - [ ] ETA updates
-  - [ ] Trip completion notifications
+- [ ] **Trip Cancellation**: Allow hospitals to cancel trips (IN PROGRESS)
+  - [ ] Enhance existing Cancel button in trip list with confirmation dialog
+  - [ ] Add Cancel option to Edit/View Details modal
+  - [ ] Implement cancellation reason selection (optional)
+  - [ ] Backend API integration for status updates
+  - [ ] Visual feedback for cancelled trips
+  - [ ] Update summary cards to include cancelled trip counts
+- [ ] **EMS Agency Selection & Notification System**: Complete trip workflow (PENDING)
+  - [ ] **EMS Agency Selection Interface**: Allow hospitals to select EMS agencies for trip notifications
+    - [ ] Create EMS Agency Management interface in Settings
+    - [ ] Allow hospitals to add/edit/remove preferred EMS agencies
+    - [ ] Implement agency selection in trip creation form
+    - [ ] Store hospital-EMS agency relationships in database
+  - [ ] **Basic Notification System**: Simple email notifications (no Twilio)
+    - [ ] Trip request notifications to selected EMS agencies
+    - [ ] Trip accepted notifications to hospitals
+    - [ ] ETA update notifications
+    - [ ] Trip completion notifications
+    - [ ] Use existing TransportAgency email addresses for notifications
 
-#### **2.2 EMS Trip Operations**
+### **📋 Detailed Implementation Plan for Phase 2.1 Completion**
+
+#### **2.1.4 Trip Cancellation Implementation**
+**Current State**: Cancel button exists in trip list but not connected; no cancel option in Edit/View Details modal
+
+**Implementation Steps**:
+1. **Enhance Trip List Cancel Button**
+   - Add confirmation dialog with cancellation reason dropdown
+   - Reason options: "No EMS Availability", "Patient Not Stable for Transport", "Other"
+   - Connect to existing backend cancellation API
+   - Update trip status to "CANCELLED" with reason
+
+2. **Add Cancel to Edit/View Details Modal**
+   - Add "Cancel Trip" button in modal header (when trip is pending)
+   - Same confirmation dialog and backend integration
+   - Consistent user experience across both locations
+
+3. **Backend Integration**
+   - Enhance existing `cancelTransportRequest` endpoint
+   - Add cancellation reason field to database
+   - Ensure proper permissions (only hospitals can cancel their own trips)
+
+4. **UI/UX Enhancements**
+   - Visual styling for cancelled trips (grayed out, different status badge)
+   - Update summary cards to include cancelled trip counts
+   - Remove cancelled trips from active trip lists
+
+#### **2.1.5 EMS Agency Selection & Notification System**
+**Current State**: No way for hospitals to select EMS agencies; no notification system
+
+**Database Analysis**:
+- ✅ `TransportAgency` model exists with email, phone, contact info
+- ✅ `AgencyService` exists for agency management
+- ❌ No hospital-EMS agency relationship model
+- ❌ No notification system implementation
+
+**Implementation Steps**:
+
+1. **Database Schema Enhancement**
+   - Create `HospitalAgencyPreference` model to link hospitals with preferred EMS agencies
+   - Add fields: `hospitalId`, `agencyId`, `isActive`, `preferenceOrder`, `createdAt`
+   - Add migration for new relationship table
+
+2. **EMS Agency Management Interface**
+   - Add "EMS Agencies" tab to Settings component
+   - Create `EMSAgencyManagement.tsx` component
+   - Allow hospitals to browse available EMS agencies
+   - Enable adding/removing preferred agencies
+   - Show agency details (name, contact, service area, capabilities)
+
+3. **Trip Creation Enhancement**
+   - Add EMS agency selection to `NewTripForm.tsx`
+   - Multi-select dropdown of preferred EMS agencies
+   - Default to all preferred agencies if none selected
+   - Store selected agencies in trip request
+
+4. **Basic Notification System**
+   - Create `NotificationService.ts` for email notifications
+   - Use Node.js `nodemailer` for simple email sending
+   - Create notification templates for different events
+   - Send notifications to selected EMS agency email addresses
+
+5. **Notification Events**
+   - **Trip Request**: Notify selected EMS agencies of new trip
+   - **Trip Accepted**: Notify hospital when EMS accepts trip
+   - **ETA Update**: Notify hospital of ETA changes
+   - **Trip Completion**: Notify hospital when trip is completed
+
+**Technical Architecture**:
+```
+Hospital Dashboard → Trip Creation → EMS Agency Selection → Notification Service → Email to Agencies
+                                                                    ↓
+Hospital Dashboard ← Trip Status Updates ← EMS Agency Response ← Email Notifications
+```
+
+**Files to Create/Modify**:
+- `backend/prisma/migrations/add_hospital_agency_preferences.sql`
+- `backend/src/services/notificationService.ts`
+- `frontend/src/components/EMSAgencyManagement.tsx`
+- `frontend/src/pages/NewTripForm.tsx` (enhance)
+- `frontend/src/pages/HospitalDashboard.tsx` (enhance)
+- `backend/src/routes/transportRequests.ts` (enhance)
+
+#### **2.2 EMS Trip Operations** (NEXT PHASE)
 - [ ] **Trip Browser**: View all trips with filtering
   - [ ] Distance-based filtering
   - [ ] Care level filtering (ALS/BLS/CCT)
