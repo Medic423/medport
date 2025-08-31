@@ -357,6 +357,30 @@
 
 **Status**: ✅ COMPLETED AND MERGED TO MAIN - Ready for production use
 
+#### **2.1.5 Critical Bug Fixes - August 31, 2025**
+**Issue**: React Router useNavigate error causing blank screen and non-functional cancel button
+
+**Root Cause Identified**:
+- `TripManagement.tsx` and `NewTripForm.tsx` were using React Router's `useNavigate` hook
+- App.tsx uses custom routing system without React Router context
+- Error: `useNavigate() may be used only in the context of a <Router> component`
+
+**Fixes Applied**:
+- ✅ **Removed React Router Dependencies**: Eliminated `useNavigate` imports from affected components
+- ✅ **Custom Navigation Integration**: Replaced React Router navigation with custom `onNavigate` props
+- ✅ **Component Interface Updates**: Added proper TypeScript interfaces for navigation props
+- ✅ **App.tsx Integration**: Updated all component instances to pass navigation handlers
+- ✅ **JSX Structure Fixes**: Corrected missing closing tags and component structure
+- ✅ **Linting Resolution**: Fixed all TypeScript and JSX errors
+
+**Result**: 
+- ✅ Edit/View Details modal now opens correctly (no more blank screen)
+- ✅ Cancel button functionality fully operational
+- ✅ Trip cancellation dialog works with reason selection
+- ✅ All navigation throughout the app functions properly
+
+**Status**: ✅ COMPLETED AND MERGED TO MAIN - All critical issues resolved
+
 ### **Phase 2: Core Functionality Implementation**
 **Goal**: Implement focused, mission-critical features for each user type
 
@@ -402,18 +426,49 @@
   - [x] Backend API integration for status updates
   - [x] Visual feedback for cancelled trips (styling, status badges)
   - [x] Update summary cards to include cancelled trip counts
-- [ ] **EMS Agency Selection & Notification System**: Complete trip workflow (PENDING)
-  - [ ] **EMS Agency Selection Interface**: Allow hospitals to select EMS agencies for trip notifications
-    - [ ] Create EMS Agency Management interface in Settings
-    - [ ] Allow hospitals to add/edit/remove preferred EMS agencies
-    - [ ] Implement agency selection in trip creation form
-    - [ ] Store hospital-EMS agency relationships in database
-  - [ ] **Basic Notification System**: Simple email notifications (no Twilio)
-    - [ ] Trip request notifications to selected EMS agencies
-    - [ ] Trip accepted notifications to hospitals
-    - [ ] ETA update notifications
-    - [ ] Trip completion notifications
-    - [ ] Use existing TransportAgency email addresses for notifications
+#### **2.2 EMS Agency Selection & Self-Service Registration** (NEXT PHASE)
+**Goal**: Enable hospitals to select EMS agencies and implement self-service account creation
+
+**2.2.1 Self-Service Registration System** (PENDING)
+- [ ] **Account Creation Interface**: Simple registration form with user type selection
+  - [ ] Hospital registration with basic info and facility management
+  - [ ] EMS agency registration with service areas and capabilities
+  - [ ] Profile management for each user type
+  - [ ] Email verification and account activation
+- [ ] **Database Schema Updates**: Extended user profiles and relationships
+  - [ ] User profile tables beyond basic authentication
+  - [ ] Service area models for geographic coverage
+  - [ ] Hospital-EMS agency preferences (many-to-many)
+  - [ ] Notification tracking and audit trails
+
+**2.2.2 EMS Agency Discovery & Selection** (PRIORITY 1 - NEXT SESSION)
+- [ ] **EMS Agency Browser**: Hospitals can search/browse available EMS agencies
+  - [ ] Agency listing with filtering by service area, capabilities, ratings
+  - [ ] Detailed agency profiles with contact info and service areas
+  - [ ] Geographic proximity sorting and distance calculations
+  - [ ] Agency availability and response time indicators
+- [ ] **Preferred Agency Management**: Hospital-EMS agency relationship system
+  - [ ] Add/remove preferred EMS agencies from hospital settings
+  - [ ] Custom agency lists with notes and preferences
+  - [ ] Agency performance tracking and ratings
+  - [ ] Bulk agency management and import/export
+- [ ] **Trip Creation Enhancement**: Agency selection in trip workflow
+  - [ ] Multi-select dropdown of preferred EMS agencies
+  - [ ] Default agency selection based on trip location/type
+  - [ ] Agency capability matching (ALS/BLS/CCT requirements)
+  - [ ] Real-time agency availability checking
+
+**2.2.3 Notification System** (PENDING)
+- [ ] **Basic Email Notifications**: Simple notification system (no Twilio)
+  - [ ] Trip request notifications to selected EMS agencies
+  - [ ] Trip accepted/declined notifications to hospitals
+  - [ ] ETA update notifications and status changes
+  - [ ] Trip completion notifications and feedback requests
+- [ ] **Notification Management**: User control and preferences
+  - [ ] Email notification preferences per user type
+  - [ ] Notification history and delivery tracking
+  - [ ] Template management for different notification types
+  - [ ] Integration with existing TransportAgency email addresses
 
 ### **📋 Detailed Implementation Plan for Phase 2.1 Completion**
 
