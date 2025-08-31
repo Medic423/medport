@@ -238,13 +238,13 @@ function App() {
         {/* Simplified routing based on user type */}
         {currentPage === 'dashboard' && <HospitalDashboard onNavigate={handleNavigation} />}
         {currentPage === 'trips/new' && <TransportRequestForm onSubmit={handleTripSubmit} onCancel={() => setCurrentPage('dashboard')} />}
-        {currentPage === 'trips' && <TripManagement />}
+        {currentPage === 'trips' && <TripManagement onNavigate={handleNavigation} />}
         {currentPage === 'trips/available' && <TransportRequests />}
-        {currentPage === 'trips/assigned' && <TripManagement />}
+        {currentPage === 'trips/assigned' && <TripManagement onNavigate={handleNavigation} />}
         {currentPage === 'optimization' && <RouteOptimization />}
         {currentPage === 'ems' && <AgencyDashboard onNavigate={handleNavigation} />}
         {currentPage === 'overview' && <StatusBoard />}
-        {currentPage === 'trips/all' && <TripManagement />}
+        {currentPage === 'trips/all' && <TripManagement onNavigate={handleNavigation} />}
         {currentPage === 'hospitals' && <StatusBoard />}
         {currentPage === 'ems-agencies' && <AgencyDashboard onNavigate={handleNavigation} />}
         {currentPage === 'settings' && <SimpleSettings onNavigate={handleNavigation} />}

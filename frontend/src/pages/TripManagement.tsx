@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 interface Trip {
   id: string;
@@ -27,8 +26,11 @@ interface Trip {
   notes: string;
 }
 
-const TripManagement: React.FC = () => {
-  const navigate = useNavigate();
+interface TripManagementProps {
+  onNavigate?: (page: string) => void;
+}
+
+const TripManagement: React.FC<TripManagementProps> = ({ onNavigate }) => {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'accepted' | 'in-progress' | 'completed' | 'cancelled'>('all');
@@ -204,7 +206,7 @@ const TripManagement: React.FC = () => {
       {/* Quick Actions */}
       <div className="mb-6">
         <button
-          onClick={() => navigate('/trips/new')}
+          onClick={() => onNavigate?.('trips/new')}
           className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors"
         >
           + New Trip Request
@@ -351,7 +353,7 @@ const TripManagement: React.FC = () => {
           <div className="text-center py-12">
             <div className="text-gray-500 text-lg">No trips found matching your criteria</div>
             <button
-              onClick={() => navigate('/trips/new')}
+              onClick={() => onNavigate?.('trips/new')}
               className="mt-4 text-blue-600 hover:text-blue-800 font-medium"
             >
               Create your first trip request

@@ -448,6 +448,22 @@ const HospitalDashboard: React.FC<HospitalDashboardProps> = ({ onNavigate }) => 
           getTimeUntilEta={getTimeUntilEta}
         />
       )}
+
+      {/* Trip Cancellation Dialog */}
+      {tripToCancel && (
+        <TripCancellationDialog
+          isOpen={showCancellationDialog}
+          onClose={handleCloseCancellationDialog}
+          onConfirm={handleConfirmCancellation}
+          tripId={tripToCancel.id}
+          tripDetails={{
+            origin: tripToCancel.origin,
+            destination: tripToCancel.destination,
+            transportLevel: tripToCancel.transportLevel
+          }}
+          loading={cancelling}
+        />
+      )}
     </div>
   );
 };
@@ -806,22 +822,6 @@ const TripDetailsModal: React.FC<{
           </div>
         </div>
       </div>
-
-      {/* Trip Cancellation Dialog */}
-      {tripToCancel && (
-        <TripCancellationDialog
-          isOpen={showCancellationDialog}
-          onClose={handleCloseCancellationDialog}
-          onConfirm={handleConfirmCancellation}
-          tripId={tripToCancel.id}
-          tripDetails={{
-            origin: tripToCancel.origin,
-            destination: tripToCancel.destination,
-            transportLevel: tripToCancel.transportLevel
-          }}
-          loading={cancelling}
-        />
-      )}
     </div>
   );
 };

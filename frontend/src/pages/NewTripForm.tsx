@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 interface TripFormData {
   origin: string;
@@ -21,8 +20,11 @@ interface TripFormData {
   notes: string;
 }
 
-const NewTripForm: React.FC = () => {
-  const navigate = useNavigate();
+interface NewTripFormProps {
+  onNavigate?: (page: string) => void;
+}
+
+const NewTripForm: React.FC<NewTripFormProps> = ({ onNavigate }) => {
   const [formData, setFormData] = useState<TripFormData>({
     origin: '',
     destination: '',
@@ -101,7 +103,7 @@ const NewTripForm: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Success - redirect to dashboard
-      navigate('/dashboard');
+      onNavigate?.('dashboard');
     } catch (error) {
       console.error('Failed to submit trip request:', error);
       // TODO: Show error message to user
@@ -111,7 +113,7 @@ const NewTripForm: React.FC = () => {
   };
 
   const handleCancel = () => {
-    navigate('/dashboard');
+    onNavigate?.('dashboard');
   };
 
   return (
