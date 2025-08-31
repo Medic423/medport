@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Phone, Email, Star, Add, Check, Clock, LocalShipping } from '@mui/icons-material';
+import { Search, LocationOn, Phone, Email, Star, Add, Check, AccessTime, LocalShipping } from '@mui/icons-material';
 
 interface Agency {
   id: string;
@@ -276,7 +276,7 @@ const EMSAgencyBrowser: React.FC<EMSAgencyBrowserProps> = ({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                       <div className="space-y-2">
                         <div className="flex items-center text-sm text-gray-600">
-                          <MapPin className="h-4 w-4 mr-2 text-gray-400" />
+                          <LocationOn className="h-4 w-4 mr-2 text-gray-400" />
                           {agency.address}, {agency.city}, {agency.state} {agency.zipCode}
                         </div>
                         <div className="flex items-center text-sm text-gray-600">
@@ -292,7 +292,7 @@ const EMSAgencyBrowser: React.FC<EMSAgencyBrowserProps> = ({
                       {/* Availability Status */}
                       <div className="space-y-2">
                         <div className="flex items-center text-sm">
-                          <Clock className="h-4 w-4 mr-2 text-gray-400" />
+                          <AccessTime className="h-4 w-4 mr-2 text-gray-400" />
                           <span className={`font-medium ${getAvailabilityColor(agency.availability.availabilityPercentage)}`}>
                             {agency.availability.availableUnits}/{agency.availability.totalUnits} units available
                           </span>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Delete, Edit, ArrowUpward, ArrowDownward, Add, Search } from '@mui/icons-material';
+import { Star, Delete, Edit, KeyboardArrowUp, KeyboardArrowDown, Add, Search } from '@mui/icons-material';
 import EMSAgencyBrowser from './EMSAgencyBrowser';
 
 interface PreferredAgency {
@@ -424,7 +424,7 @@ const PreferredAgencyManagement: React.FC<PreferredAgencyManagementProps> = ({ o
                         className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Move up"
                       >
-                        <ArrowUpward className="h-4 w-4" />
+                        <KeyboardArrowUp className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleMoveDown(index)}
@@ -432,7 +432,7 @@ const PreferredAgencyManagement: React.FC<PreferredAgencyManagementProps> = ({ o
                         className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Move down"
                       >
-                        <ArrowDownward className="h-4 w-4" />
+                        <KeyboardArrowDown className="h-4 w-4" />
                       </button>
                     </div>
                     <button
