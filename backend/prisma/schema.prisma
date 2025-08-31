@@ -20,6 +20,7 @@ model User {
   transportRequests TransportRequest[]
   multiPatientTransports MultiPatientTransport[]
   longDistanceTransports LongDistanceTransport[]
+  agencyPreferences HospitalAgencyPreference[]
 }
 
 model Facility {
@@ -122,6 +123,7 @@ model TransportAgency {
   serviceAreas      ServiceArea[]
   agencyPerformance AgencyPerformance[]
   transportBids     TransportBid[]
+  hospitalPreferences HospitalAgencyPreference[]
 }
 
 model Unit {
@@ -789,6 +791,24 @@ model WeatherImpact {
 
   @@index([location, startTime])
   @@index([isActive])
+}
+
+// Hospital-Agency Relationship Models
+model HospitalAgencyPreference {
+  id                String             @id @default(cuid())
+  hospitalId        String
+  agencyId          String
+  isActive          Boolean            @default(true)
+  preferenceOrder   Int                @default(0)
+  notes             String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  hospital          User               @relation(fields: [hospitalId], references: [id])
+  agency            TransportAgency    @relation(fields: [agencyId], references: [id])
+
+  @@unique([hospitalId, agencyId])
+  @@index([hospitalId])
+  @@index([agencyId])
 }
 
 enum UserRole {
