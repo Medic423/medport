@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useFreemium } from '../hooks/useFreemium';
 import FacilityManagement from './FacilityManagement';
+import PreferredAgencyManagement from './PreferredAgencyManagement';
 
 interface FreemiumSettings {
   systemName: string;
@@ -37,7 +38,7 @@ const SimpleSettings: React.FC<SettingsProps> = ({ onNavigate }) => {
       revenueOptimization: false
     }
   });
-  const [selectedTab, setSelectedTab] = useState<'general' | 'notifications' | 'transport' | 'freemium' | 'facilities'>('general');
+  const [selectedTab, setSelectedTab] = useState<'general' | 'notifications' | 'transport' | 'freemium' | 'facilities' | 'ems-agencies'>('general');
   const [updateMessage, setUpdateMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Get user type from localStorage
@@ -122,6 +123,7 @@ const SimpleSettings: React.FC<SettingsProps> = ({ onNavigate }) => {
                 { id: 'notifications', name: 'Notifications', icon: '🔔' },
                 { id: 'transport', name: 'Transport', icon: '🚑' },
                 { id: 'facilities', name: 'Facilities', icon: '🏥' },
+                { id: 'ems-agencies', name: 'EMS Agencies', icon: '🚑' },
                 { id: 'freemium', name: 'Features', icon: '⭐' }
               ].map((tab) => (
                 <button
@@ -357,6 +359,10 @@ const SimpleSettings: React.FC<SettingsProps> = ({ onNavigate }) => {
 
             {selectedTab === 'facilities' && (
               <FacilityManagement onNavigate={onNavigate} />
+            )}
+
+            {selectedTab === 'ems-agencies' && (
+              <PreferredAgencyManagement onClose={() => onNavigate?.('overview')} />
             )}
           </div>
         </div>
