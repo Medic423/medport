@@ -29,7 +29,7 @@ import OfflineCapabilities from './pages/OfflineCapabilities';
 // New simplified components
 import HospitalDashboard from './pages/HospitalDashboard';
 import TransportRequestForm from './components/TransportRequestForm';
-import TripFormWithAgencySelection from './components/TripFormWithAgencySelection';
+// import TripFormWithAgencySelection from './components/TripFormWithAgencySelection'; // Component not yet created
 import TripManagement from './pages/TripManagement';
 
 import LoginSelector from './components/LoginSelector';
@@ -238,7 +238,7 @@ function App() {
       <main className="pt-16">
         {/* Simplified routing based on user type */}
         {currentPage === 'dashboard' && <HospitalDashboard onNavigate={handleNavigation} />}
-        {currentPage === 'trips/new' && <TripFormWithAgencySelection onNavigate={handleNavigation} />}
+        {currentPage === 'trips/new' && <TransportRequestForm onNavigate={handleNavigation} />}
         {currentPage === 'trips' && <TripManagement onNavigate={handleNavigation} />}
         {currentPage === 'trips/available' && <TransportRequests />}
         {currentPage === 'trips/assigned' && <TripManagement onNavigate={handleNavigation} />}

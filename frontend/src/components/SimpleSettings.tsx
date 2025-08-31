@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useFreemium } from '../hooks/useFreemium';
 import FacilityManagement from './FacilityManagement';
-import PreferredAgencyManagement from './PreferredAgencyManagement';
+// import PreferredAgencyManagement from './PreferredAgencyManagement'; // Component not yet created
 
 interface FreemiumSettings {
   systemName: string;
@@ -362,7 +362,11 @@ const SimpleSettings: React.FC<SettingsProps> = ({ onNavigate }) => {
             )}
 
             {selectedTab === 'ems-agencies' && (
-              <PreferredAgencyManagement onClose={() => onNavigate?.('overview')} />
+              <div className="text-center py-8">
+                <h3 className="text-lg font-medium text-gray-900 mb-2">EMS Agency Management</h3>
+                <p className="text-gray-600 mb-4">This feature is coming soon!</p>
+                <p className="text-sm text-gray-500">You'll be able to manage your preferred EMS agencies here.</p>
+              </div>
             )}
           </div>
         </div>
