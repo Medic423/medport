@@ -44,7 +44,7 @@ router.get('/available', authenticateToken, async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Validation error',
-        errors: error.errors.map(err => ({
+        errors: (error as any).errors.map((err: any) => ({
           field: err.path.join('.'),
           message: err.message
         }))
@@ -105,7 +105,7 @@ router.post('/preferred', authenticateToken, async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Validation error',
-        errors: error.errors.map(err => ({
+        errors: (error as any).errors.map((err: any) => ({
           field: err.path.join('.'),
           message: err.message
         }))
@@ -169,7 +169,7 @@ router.put('/preferred/:agencyId/order', authenticateToken, async (req, res) => 
       return res.status(400).json({
         success: false,
         message: 'Validation error',
-        errors: error.errors.map(err => ({
+        errors: (error as any).errors.map((err: any) => ({
           field: err.path.join('.'),
           message: err.message
         }))

@@ -308,11 +308,11 @@ export class HospitalAgencyService {
       const agencies = await this.getAvailableAgencies(filters);
       
       return agencies.map(agency => {
-        const availableUnits = agency.units.filter(unit => 
-          unit.unitAvailability.some(availability => availability.status === 'AVAILABLE')
-        );
+        const availableUnits = (agency as any).units?.filter((unit: any) => 
+          unit.unitAvailability?.some((availability: any) => availability.status === 'AVAILABLE')
+        ) || [];
         
-        const totalUnits = agency.units.length;
+        const totalUnits = (agency as any).units?.length || 0;
         const availableCount = availableUnits.length;
         const availabilityPercentage = totalUnits > 0 ? (availableCount / totalUnits) * 100 : 0;
 
