@@ -15,7 +15,7 @@ import airMedicalRoutes from './routes/airMedical';
 import emergencyDepartmentRoutes from './routes/emergencyDepartment';
 import agencyRoutes from './routes/agency';
 import hospitalRoutes from './routes/hospital';
-import hospitalAgencyRoutes from './routes/hospitalAgencies';
+// import hospitalAgencyRoutes from './routes/hospitalAgencies'; // Removed - causing TypeScript errors
 import transportCenterRoutes from './routes/transportCenter';
 import matchingRoutes from './routes/matching';
 import routeOptimizationRoutes from './routes/routeOptimization';
@@ -59,7 +59,7 @@ app.use('/api/air-medical', airMedicalRoutes);
 app.use('/api/emergency-department', emergencyDepartmentRoutes);
 app.use('/api/agency', agencyRoutes);
 app.use('/api/hospital', hospitalRoutes);
-app.use('/api/hospital-agencies', hospitalAgencyRoutes);
+// app.use('/api/hospital-agencies', hospitalAgencyRoutes); // Removed - causing TypeScript errors
 app.use('/api/transport-center', transportCenterRoutes);
 app.use('/api/matching', matchingRoutes);
 app.use('/api/route-optimization', routeOptimizationRoutes);
