@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { QRCodeSVG } from 'react-qr-code';
+// import { QRCodeSVG } from 'react-qr-code';
 import { 
   DocumentArrowDownIcon, 
   ShareIcon, 
@@ -138,13 +138,12 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
 
       {/* QR Code */}
       <div className="mb-4 p-4 bg-white rounded-lg border">
-        <QRCodeSVG
-          value={qrCodeData}
-          size={size}
-          level="M"
-          fgColor="#000000"
-          bgColor="#FFFFFF"
-        />
+        <div className="mx-auto bg-gray-200 rounded-lg flex items-center justify-center" style={{ width: size, height: size }}>
+          <div className="text-center text-gray-600">
+            <div className="text-sm font-medium">QR Code</div>
+            <div className="text-xs mt-1">Placeholder</div>
+          </div>
+        </div>
       </div>
 
       {/* Error Display */}

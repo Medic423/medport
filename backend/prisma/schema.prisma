@@ -21,6 +21,7 @@ model User {
   multiPatientTransports MultiPatientTransport[]
   longDistanceTransports LongDistanceTransport[]
   agencyPreferences HospitalAgencyPreference[]
+  addedServices     TransportAgency[]  @relation("TransportCenterAddedServices")
 }
 
 model Facility {
@@ -109,6 +110,10 @@ model TransportAgency {
   capabilities      Json?
   pricingStructure  Json?
   isActive          Boolean            @default(true)
+  // Transport Center service management fields
+  addedBy           String?            // User ID who added this service
+  status            ServiceStatus      @default(ACTIVE) // ACTIVE, INACTIVE, PENDING
+  addedAt           DateTime?          // When service was added by Transport Center
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   routes            Route[]
@@ -124,6 +129,7 @@ model TransportAgency {
   agencyPerformance AgencyPerformance[]
   transportBids     TransportBid[]
   hospitalPreferences HospitalAgencyPreference[]
+  addedByUser       User?              @relation("TransportCenterAddedServices", fields: [addedBy], references: [id])
 }
 
 model Unit {
@@ -816,6 +822,12 @@ enum UserRole {
   COORDINATOR
   BILLING_STAFF
   TRANSPORT_AGENCY
+}
+
+enum ServiceStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
 }
 
 enum FacilityType {

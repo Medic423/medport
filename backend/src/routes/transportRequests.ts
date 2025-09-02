@@ -21,7 +21,9 @@ router.post('/', async (req: SimpleAuthRequest, res: Response) => {
       destinationFacilityId,
       transportLevel,
       priority,
-      specialRequirements
+      specialRequirements,
+      selectedAgencies,
+      sendNotifications = false
     } = req.body;
 
     // Validate required fields
@@ -53,19 +55,32 @@ router.post('/', async (req: SimpleAuthRequest, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    const transportRequest = await transportRequestService.createTransportRequest({
+    const requestData = {
       patientId,
       originFacilityId,
       destinationFacilityId,
       transportLevel,
       priority,
       specialRequirements,
-      createdById: req.user.id
-    });
+      createdById: req.user.id,
+      selectedAgencies: selectedAgencies || []
+    };
+
+    let result;
+    if (sendNotifications && selectedAgencies && selectedAgencies.length > 0) {
+      // Create with notifications
+      result = await transportRequestService.createTransportRequestWithNotifications(requestData);
+    } else {
+      // Create without notifications
+      const transportRequest = await transportRequestService.createTransportRequest(requestData);
+      result = { transportRequest, notifications: [] };
+    }
 
     res.status(201).json({
       message: 'Transport request created successfully',
-      transportRequest
+      transportRequest: result.transportRequest,
+      notifications: result.notifications,
+      notificationsSent: result.notifications.length
     });
   } catch (error) {
     console.error('[MedPort:TransportRequest] Error creating transport request:', error);
