@@ -1,0 +1,166 @@
+// EMS Database Schema (Port 5433)
+// Contains EMS agencies, units, bids, routes
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../dist/prisma/ems"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("EMS_DATABASE_URL")
+}
+
+// EMS-specific data
+model EMSAgency {
+  id                String   @id @default(cuid())
+  name              String
+  contactName       String
+  phone             String
+  email             String
+  address           String
+  city              String
+  state             String
+  zipCode           String
+  serviceArea       String[]
+  operatingHours    String
+  capabilities      String[]
+  pricingStructure  Json?    // Pricing configuration
+  isActive          Boolean  @default(true)
+  status            ServiceStatus @default(ACTIVE)
+  addedBy           String?  // Reference to Center DB user
+  addedAt           DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  units             Unit[]
+  transportBids     TransportBid[]
+  routes            EMSRoute[]
+
+  @@map("ems_agencies")
+}
+
+model Unit {
+  id              String   @id @default(cuid())
+  agencyId        String
+  unitNumber      String
+  type            UnitType
+  capabilities    String[]
+  currentStatus   UnitStatus @default(AVAILABLE)
+  currentLocation Json?    // { lat: number, lng: number, address: string }
+  shiftStart      DateTime?
+  shiftEnd        DateTime?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  agency EMSAgency @relation(fields: [agencyId], references: [id])
+  availability UnitAvailability[]
+
+  @@map("units")
+}
+
+model UnitAvailability {
+  id        String   @id @default(cuid())
+  unitId    String
+  status    AvailabilityStatus @default(AVAILABLE)
+  startTime DateTime
+  endTime   DateTime?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  unit Unit @relation(fields: [unitId], references: [id])
+
+  @@map("unit_availability")
+}
+
+model TransportBid {
+  id                String   @id @default(cuid())
+  agencyId          String
+  transportRequestId String   // Reference to Hospital DB transport request
+  bidAmount         Decimal?
+  estimatedArrival  DateTime?
+  estimatedPickup   DateTime?
+  specialNotes      String?
+  status            BidStatus @default(PENDING)
+  submittedAt       DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  agency EMSAgency @relation(fields: [agencyId], references: [id])
+
+  @@map("transport_bids")
+}
+
+model EMSRoute {
+  id            String   @id @default(cuid())
+  agencyId      String
+  routeName     String
+  routeType     RouteType
+  waypoints     Json     // Array of coordinates
+  distance      Decimal?
+  estimatedTime Int?     // Minutes
+  status        RouteStatus @default(ACTIVE)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  agency EMSAgency @relation(fields: [agencyId], references: [id])
+
+  @@map("ems_routes")
+}
+
+// Enums
+enum ServiceStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+}
+
+enum UnitType {
+  BLS
+  ALS
+  CCT
+  WHEELCHAIR
+  MEDICAL_TAXI
+}
+
+enum UnitStatus {
+  AVAILABLE
+  IN_USE
+  OUT_OF_SERVICE
+  MAINTENANCE
+}
+
+enum AvailabilityStatus {
+  AVAILABLE
+  ASSIGNED
+  ON_BREAK
+  OFF_DUTY
+}
+
+enum BidStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  WITHDRAWN
+}
+
+enum RouteType {
+  OPTIMIZED
+  STANDARD
+  EMERGENCY
+  CUSTOM
+}
+
+enum RouteStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+

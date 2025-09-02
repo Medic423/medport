@@ -1,0 +1,184 @@
+// Transport Center Database Schema (Port 5434)
+// Contains ALL user accounts, system config, analytics
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../dist/prisma/center"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("CENTER_DATABASE_URL")
+}
+
+// User account management (ALL user types)
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  userType  UserType // 'hospital', 'ems', 'center'
+  hospitalId String? // Foreign key reference to Hospital DB
+  agencyId  String?  // Foreign key reference to EMS DB
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  hospital Hospital? @relation(fields: [hospitalId], references: [id])
+  agency   Agency? @relation(fields: [agencyId], references: [id])
+  auditLogs AuditLog[]
+
+  @@map("users")
+}
+
+// Hospital reference (links to Hospital DB)
+model Hospital {
+  id          String   @id @default(cuid())
+  name        String
+  address     String
+  city        String
+  state       String
+  zipCode     String
+  phone       String?
+  email       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  users User[]
+
+  @@map("hospitals")
+}
+
+// Agency reference (links to EMS DB)
+model Agency {
+  id          String   @id @default(cuid())
+  name        String
+  contactName String
+  phone       String
+  email       String
+  address     String
+  city        String
+  state       String
+  zipCode     String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  users User[]
+
+  @@map("agencies")
+}
+
+// System configuration and service registry
+model SystemConfiguration {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  category    String
+  isActive    Boolean  @default(true)
+  updatedBy   String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("system_configurations")
+}
+
+model ServiceRegistry {
+  id            String   @id @default(cuid())
+  serviceName   String   @unique
+  serviceType   String
+  status        ServiceStatus @default(ACTIVE)
+  addedBy       String?
+  addedAt       DateTime @default(now())
+  configuration Json?
+  metadata      Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("service_registry")
+}
+
+// Cross-database reference tracking
+model DatabaseReferences {
+  id             String   @id @default(cuid())
+  entityType     String   // 'transport_request', 'ems_agency', etc.
+  entityId       String   // ID in source database
+  sourceDatabase String   // 'hospital', 'ems', 'center'
+  targetDatabase String   // 'hospital', 'ems', 'center'
+  referenceId    String   // ID in target database
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("database_references")
+}
+
+// System analytics and monitoring
+model SystemAnalytics {
+  id          String   @id @default(cuid())
+  metricName  String
+  metricValue Decimal
+  timestamp   DateTime @default(now())
+  category    String
+  metadata    Json?
+
+  @@map("system_analytics")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  action     String
+  entityType String
+  entityId   String?
+  changes    Json?
+  timestamp  DateTime @default(now())
+  ipAddress  String?
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+// EMS Agency management (for cross-database access)
+model EMSAgency {
+  id                String   @id @default(cuid())
+  name              String
+  contactName       String
+  phone             String
+  email             String
+  address           String
+  city              String
+  state             String
+  zipCode           String
+  serviceArea       String[]
+  operatingHours    String
+  capabilities      String[]
+  pricingStructure  Json?
+  isActive          Boolean  @default(true)
+  status            ServiceStatus @default(ACTIVE)
+  addedBy           String?
+  addedAt           DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("ems_agencies")
+}
+
+// Enums
+enum UserType {
+  HOSPITAL
+  EMS
+  CENTER
+}
+
+enum ServiceStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+}
+

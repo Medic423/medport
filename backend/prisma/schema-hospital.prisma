@@ -1,0 +1,130 @@
+// Hospital Database Schema (Port 5432)
+// Contains all trips, hospital users, facilities
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../dist/prisma/hospital"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("HOSPITAL_DATABASE_URL")
+}
+
+// Hospital-specific data
+model HospitalUser {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  password    String
+  name        String
+  hospitalName String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  transportRequests TransportRequest[] @relation("HospitalRequests")
+  createdRequests TransportRequest[] @relation("CreatedRequests")
+  hospitalFacilities HospitalFacility[]
+  agencyPreferences HospitalAgencyPreference[]
+
+  @@map("hospital_users")
+}
+
+model HospitalFacility {
+  id            String   @id @default(cuid())
+  hospitalId    String
+  name          String
+  type          String
+  address       String
+  city          String
+  state         String
+  zipCode       String
+  coordinates   Json?    // { lat: number, lng: number }
+  phone         String?
+  email         String?
+  operatingHours String?
+  capabilities  String[]
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  hospitalUser HospitalUser @relation(fields: [hospitalId], references: [id])
+  originRequests TransportRequest[] @relation("OriginFacility")
+  destinationRequests TransportRequest[] @relation("DestinationFacility")
+
+  @@map("hospital_facilities")
+}
+
+model TransportRequest {
+  id                    String   @id @default(cuid())
+  hospitalId            String
+  patientId             String   // Auto-generated non-identifiable ID
+  originFacilityId      String
+  destinationFacilityId String
+  transportLevel        TransportLevel
+  priority              Priority
+  status                TransportStatus @default(PENDING)
+  specialRequirements   String?
+  requestTimestamp      DateTime @default(now())
+  acceptedTimestamp     DateTime?
+  pickupTimestamp       DateTime?
+  completionTimestamp   DateTime?
+  assignedAgencyId      String?
+  assignedUnitId        String?
+  createdById           String
+  cancellationReason    String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  hospitalUser HospitalUser @relation("HospitalRequests", fields: [hospitalId], references: [id])
+  originFacility HospitalFacility @relation("OriginFacility", fields: [originFacilityId], references: [id])
+  destinationFacility HospitalFacility @relation("DestinationFacility", fields: [destinationFacilityId], references: [id])
+  createdBy HospitalUser @relation("CreatedRequests", fields: [createdById], references: [id])
+  agencyPreferences HospitalAgencyPreference[]
+
+  @@map("transport_requests")
+}
+
+model HospitalAgencyPreference {
+  id              String   @id @default(cuid())
+  hospitalId      String
+  agencyId        String   // Reference to EMS agency in Center DB
+  isActive        Boolean  @default(true)
+  preferenceOrder Int      @default(0)
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  hospitalUser HospitalUser @relation(fields: [hospitalId], references: [id])
+  transportRequests TransportRequest[]
+
+  @@map("hospital_agency_preferences")
+}
+
+// Enums
+enum TransportLevel {
+  BLS
+  ALS
+  CCT
+  OTHER
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TransportStatus {
+  PENDING
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
