@@ -336,8 +336,8 @@ const TripFormWithAgencySelection: React.FC<TripFormWithAgencySelectionProps> = 
         patientId: formData.patientId, // Use the patient ID generated in the form
         // Using real facility IDs from the database
         // In a production system, you'd have facility selection dropdowns
-        originFacilityId: 'cmeyf7nhv00008or3116ziedn', // UPMC Altoona
-        destinationFacilityId: 'cmeyig8x300008ov9rqxax4mz', // Conemaugh Nason
+        originFacilityId: 'cmf2mdtdz0003ccy46gfr4zv0', // Einstein Medical Center
+        destinationFacilityId: 'cmf2mdtdx0001ccy44vgm2ved', // Jefferson University Hospital
         transportLevel: formData.transportLevel,
         priority: formData.urgency === 'routine' ? 'LOW' : 
                   formData.urgency === 'urgent' ? 'MEDIUM' : 
