@@ -832,10 +832,14 @@ const TripFormWithAgencySelection: React.FC<TripFormWithAgencySelectionProps> = 
               {/* Modal Actions */}
               <div className="flex justify-end space-x-3">
                 <button
-                  onClick={() => setShowSuccessModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  onClick={() => {
+                    setShowSuccessModal(false);
+                    // Navigate to Trip Dashboard
+                    onNavigate?.('dashboard');
+                  }}
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                 >
-                  Close
+                  Save
                 </button>
                 <button
                   onClick={() => {
@@ -858,10 +862,12 @@ const TripFormWithAgencySelection: React.FC<TripFormWithAgencySelectionProps> = 
                       generateQRCode: false
                     });
                     setErrors({});
+                    // Navigate to New Trip Request screen
+                    onNavigate?.('trips/new');
                   }}
                   className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                  Submit Another Trip Request
+                  Create Another Trip
                 </button>
               </div>
             </div>
