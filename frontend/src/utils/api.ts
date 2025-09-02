@@ -5,7 +5,7 @@
 // Get API base URL from environment variables
 const getApiBase = () => {
   const envBase = import.meta.env.VITE_API_BASE_URL;
-  const fallback = '/api';
+  const fallback = 'http://localhost:5001/api';
   
   return envBase || fallback;
 };

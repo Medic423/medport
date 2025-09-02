@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import TripCancellationDialog from '../components/TripCancellationDialog';
+import { apiRequest } from '../utils/api';
 
 // Trip Details Modal Component
 const TripDetailsModal: React.FC<{
@@ -406,76 +407,68 @@ const HospitalDashboard: React.FC<HospitalDashboardProps> = ({ onNavigate }) => 
   const [tripToCancel, setTripToCancel] = useState<Trip | null>(null);
   const [cancelling, setCancelling] = useState(false);
 
-  // Mock data for demonstration - replace with actual API calls
-  useEffect(() => {
-    const mockTrips: Trip[] = [
-      {
-        id: '1',
-        origin: 'City General Hospital',
-        destination: 'Regional Medical Center',
-        transportLevel: 'ALS',
-        status: 'accepted',
-        requestTime: '2025-08-29T10:00:00Z',
-        acceptedTime: '2025-08-29T10:15:00Z',
-        arrivalTime: '2025-08-29T10:45:00Z',
-        eta: '2025-08-29T11:30:00Z',
-        emsAgency: 'Metro EMS',
-        unitNumber: 'ALS-12',
-        specialRequirements: 'Cardiac monitoring required',
-        patientName: 'John Smith',
-        patientAge: 65,
-        patientCondition: 'Post-surgical recovery',
-        contactPhone: '(555) 123-4567',
-        notes: 'Patient stable, ready for transport'
-      },
-      {
-        id: '2',
-        origin: 'City General Hospital',
-        destination: 'Rehabilitation Center',
-        transportLevel: 'BLS',
-        status: 'pending',
-        requestTime: '2025-08-29T14:00:00Z'
-      },
-      {
-        id: '3',
-        origin: 'City General Hospital',
-        destination: 'Outpatient Surgery Center',
-        transportLevel: 'Other',
-        status: 'pending',
-        requestTime: '2025-08-29T16:00:00Z'
-      },
-      {
-        id: '4',
-        origin: 'City General Hospital',
-        destination: 'Specialty Clinic',
-        transportLevel: 'CCT',
-        status: 'in-progress',
-        requestTime: '2025-08-29T08:30:00Z',
-        acceptedTime: '2025-08-29T08:45:00Z',
-        arrivalTime: '2025-08-29T09:00:00Z',
-        eta: '2025-08-29T09:15:00Z',
-        emsAgency: 'Advanced Care EMS',
-        unitNumber: 'CCT-05',
-        specialRequirements: 'Ventilator support, ICU nurse required',
-        patientName: 'Maria Garcia',
-        patientAge: 42,
-        patientCondition: 'Critical care transfer',
-        contactPhone: '(555) 987-6543',
-        notes: 'Patient on ventilator, family notified'
-      },
-      {
-        id: '5',
-        origin: 'City General Hospital',
-        destination: 'Rehabilitation Center',
-        transportLevel: 'BLS',
-        status: 'cancelled',
-        requestTime: '2025-08-29T12:00:00Z',
-        cancellationReason: 'No EMS Availability'
+  // Load real transport requests from API
+  const loadTransportRequests = async () => {
+    try {
+      setLoading(true);
+      const response = await apiRequest('/transport-requests?limit=20');
+      
+      if (response.ok) {
+        const data = await response.json();
+        // Transform API data to match Trip interface
+        const apiTrips: Trip[] = (data.requests || []).map((req: any) => ({
+          id: req.id,
+          origin: req.originFacility?.name || 'Unknown Origin',
+          destination: req.destinationFacility?.name || 'Unknown Destination',
+          transportLevel: req.transportLevel,
+          status: req.status?.toLowerCase() || 'pending',
+          requestTime: req.requestTimestamp || req.createdAt,
+          acceptedTime: req.acceptedTimestamp,
+          arrivalTime: req.pickupTimestamp,
+          eta: req.estimatedArrivalTime,
+          emsAgency: req.assignedAgency?.name || 'Not Assigned',
+          unitNumber: req.assignedUnit?.unitNumber || 'Not Assigned',
+          specialRequirements: req.specialRequirements || '',
+          patientName: `Patient ${req.patientId}`,
+          patientAge: 0, // Not available in API
+          patientCondition: req.specialRequirements || '',
+          contactPhone: '', // Not available in API
+          notes: req.specialRequirements || '',
+          cancellationReason: req.cancellationReason
+        }));
+        
+        setTrips(apiTrips);
+      } else {
+        console.error('Failed to load transport requests:', response.status);
+        // Fallback to empty array if API fails
+        setTrips([]);
       }
-    ];
-    
-    setTrips(mockTrips);
-    setLoading(false);
+    } catch (error) {
+      console.error('Error loading transport requests:', error);
+      // Fallback to empty array if API fails
+      setTrips([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadTransportRequests();
+  }, []);
+
+  // Add refresh function that can be called externally
+  const refreshTrips = () => {
+    loadTransportRequests();
+  };
+
+  // Listen for focus events to refresh data when returning to dashboard
+  useEffect(() => {
+    const handleFocus = () => {
+      refreshTrips();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, []);
 
   const getStatusColor = (status: string) => {
