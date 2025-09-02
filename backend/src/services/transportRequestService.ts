@@ -1,6 +1,7 @@
 import { PrismaClient, TransportRequest, TransportLevel, Priority, RequestStatus, Facility, User } from '@prisma/client';
 import { createHash } from 'crypto';
 import distanceService from './distanceService';
+import { notificationService } from './notificationService';
 
 const prisma = new PrismaClient();
 
@@ -12,6 +13,7 @@ export interface CreateTransportRequestData {
   priority: Priority;
   specialRequirements?: string;
   createdById: string;
+  selectedAgencies?: string[]; // Array of agency IDs to notify
 }
 
 export interface UpdateTransportRequestData {
@@ -86,6 +88,93 @@ export class TransportRequestService {
 
     console.log(`[MedPort:TransportRequest] Created transport request ${transportRequest.id} for patient ${patientId}`);
     return transportRequest;
+  }
+
+  /**
+   * Create a new transport request with notifications to selected agencies
+   */
+  async createTransportRequestWithNotifications(data: CreateTransportRequestData): Promise<{
+    transportRequest: TransportRequest;
+    notifications: any[];
+  }> {
+    // Create the transport request first
+    const transportRequest = await this.createTransportRequest(data);
+
+    const notifications = [];
+
+    // Send notifications to selected agencies if any
+    if (data.selectedAgencies && data.selectedAgencies.length > 0) {
+      try {
+        // Get agency details for notifications
+        const agencies = await prisma.transportAgency.findMany({
+          where: { id: { in: data.selectedAgencies } },
+          select: { id: true, name: true, phone: true, email: true }
+        });
+
+        // Get facility details for notification content
+        const [originFacility, destinationFacility] = await Promise.all([
+          prisma.facility.findUnique({ where: { id: data.originFacilityId } }),
+          prisma.facility.findUnique({ where: { id: data.destinationFacilityId } })
+        ]);
+
+        // Send notifications to each agency
+        for (const agency of agencies) {
+          try {
+            // Send SMS notification if phone number is available
+            if (agency.phone) {
+              const smsResult = await notificationService.sendAgencyAssignmentNotification(
+                agency.phone,
+                transportRequest.id,
+                originFacility?.name || 'Unknown Facility',
+                data.transportLevel
+              );
+              notifications.push({
+                agencyId: agency.id,
+                agencyName: agency.name,
+                type: 'sms',
+                result: smsResult
+              });
+            }
+
+            // Send email notification if email is available
+            if (agency.email) {
+              const emailResult = await notificationService.sendEmail({
+                to: agency.email,
+                subject: `New Transport Request - ${transportRequest.id}`,
+                body: `New transport request available:\n\nRequest ID: ${transportRequest.id}\nOrigin: ${originFacility?.name || 'Unknown'}\nDestination: ${destinationFacility?.name || 'Unknown'}\nTransport Level: ${data.transportLevel}\nPriority: ${data.priority}\n\nPlease log in to view details and respond.`,
+                template: 'transport_request',
+                metadata: {
+                  requestId: transportRequest.id,
+                  agencyId: agency.id,
+                  type: 'transport_request'
+                }
+              });
+              notifications.push({
+                agencyId: agency.id,
+                agencyName: agency.name,
+                type: 'email',
+                result: emailResult
+              });
+            }
+          } catch (error) {
+            console.error(`[MedPort:TransportRequest] Failed to send notification to agency ${agency.id}:`, error);
+            notifications.push({
+              agencyId: agency.id,
+              agencyName: agency.name,
+              type: 'error',
+              result: { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+            });
+          }
+        }
+
+        console.log(`[MedPort:TransportRequest] Sent ${notifications.length} notifications for transport request ${transportRequest.id}`);
+      } catch (error) {
+        console.error(`[MedPort:TransportRequest] Error sending notifications for transport request ${transportRequest.id}:`, error);
+        // Don't fail the entire request if notifications fail
+      }
+    }
+
+    return { transportRequest, notifications };
   }
 
   /**

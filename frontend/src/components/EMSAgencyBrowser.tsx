@@ -58,6 +58,7 @@ const EMSAgencyBrowser: React.FC<EMSAgencyBrowserProps> = ({
   const [cityFilter, setCityFilter] = useState('');
   const [stateFilter, setStateFilter] = useState('');
   const [availabilityFilter, setAvailabilityFilter] = useState<boolean | null>(null);
+  const [showRegistrationModal, setShowRegistrationModal] = useState(false);
 
   useEffect(() => {
     loadAgencies();
@@ -169,6 +170,16 @@ const EMSAgencyBrowser: React.FC<EMSAgencyBrowserProps> = ({
     <div className="space-y-6">
       {/* Search and Filters */}
       <div className="bg-white rounded-lg shadow-sm border p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Available EMS Agencies</h2>
+          <button
+            onClick={() => setShowRegistrationModal(true)}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+          >
+            <Add className="h-4 w-4 mr-2" />
+            Register New Agency
+          </button>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* Search */}
           <div className="lg:col-span-2">
@@ -367,6 +378,86 @@ const EMSAgencyBrowser: React.FC<EMSAgencyBrowserProps> = ({
           ))
         )}
       </div>
+
+      {/* Agency Registration Modal */}
+      {showRegistrationModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Register New EMS Agency
+                </h3>
+                <button
+                  onClick={() => setShowRegistrationModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <span className="sr-only">Close</span>
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="mb-6">
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-blue-800">
+                        Agency Registration
+                      </h3>
+                      <div className="mt-2 text-sm text-blue-700">
+                        <p>
+                          To register a new EMS agency, they need to complete the self-registration process. 
+                          This ensures they have proper credentials and can manage their own account.
+                        </p>
+                        <p className="mt-2">
+                          <strong>Next Steps:</strong>
+                        </p>
+                        <ul className="mt-1 list-disc list-inside">
+                          <li>Share the agency registration link with the EMS provider</li>
+                          <li>They will complete their registration and create an account</li>
+                          <li>Once registered, they will appear in the available agencies list</li>
+                          <li>You can then add them to your preferred agencies</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Actions */}
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowRegistrationModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    // Copy registration link to clipboard
+                    const registrationUrl = `${window.location.origin}/agency-registration`;
+                    navigator.clipboard.writeText(registrationUrl);
+                    alert('Registration link copied to clipboard!');
+                    setShowRegistrationModal(false);
+                  }}
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Copy Registration Link
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

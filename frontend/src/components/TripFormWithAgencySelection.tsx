@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Star, Add, Check, LocalShipping } from '@mui/icons-material';
+import TransportRequestQRIntegration from './TransportRequestQRIntegration';
 
 interface TripFormData {
+  patientId: string;
   origin: string;
   destination: string;
   transportLevel: 'ALS' | 'BLS' | 'CCT' | 'Other';
-  patientInfo: {
-    name: string;
-    age: string;
-    weight: string;
-    specialNeeds: string;
-  };
   clinicalDetails: {
     diagnosis: string;
     mobility: 'ambulatory' | 'wheelchair' | 'stretcher' | 'bed';
@@ -20,6 +16,7 @@ interface TripFormData {
   urgency: 'routine' | 'urgent' | 'emergent';
   notes: string;
   selectedAgencies: string[];
+  generateQRCode: boolean;
 }
 
 interface Agency {
@@ -40,21 +37,25 @@ interface Agency {
   };
 }
 
+interface Facility {
+  id: string;
+  name: string;
+  type: string;
+  city: string;
+  state: string;
+  address: string;
+}
+
 interface TripFormWithAgencySelectionProps {
   onNavigate?: (page: string) => void;
 }
 
 const TripFormWithAgencySelection: React.FC<TripFormWithAgencySelectionProps> = ({ onNavigate }) => {
   const [formData, setFormData] = useState<TripFormData>({
+    patientId: '',
     origin: '',
     destination: '',
     transportLevel: 'BLS',
-    patientInfo: {
-      name: '',
-      age: '',
-      weight: '',
-      specialNeeds: ''
-    },
     clinicalDetails: {
       diagnosis: '',
       mobility: 'ambulatory',
@@ -63,7 +64,8 @@ const TripFormWithAgencySelection: React.FC<TripFormWithAgencySelectionProps> = 
     },
     urgency: 'routine',
     notes: '',
-    selectedAgencies: []
+    selectedAgencies: [],
+    generateQRCode: false
   });
 
   const [preferredAgencies, setPreferredAgencies] = useState<Agency[]>([]);
@@ -72,10 +74,100 @@ const TripFormWithAgencySelection: React.FC<TripFormWithAgencySelectionProps> = 
   const [agenciesLoading, setAgenciesLoading] = useState(true);
   const [errors, setErrors] = useState<Partial<TripFormData>>({});
   const [showAllAgencies, setShowAllAgencies] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [createdTransportRequestId, setCreatedTransportRequestId] = useState<string>('');
+  const [facilities, setFacilities] = useState<Facility[]>([]);
+  const [filteredOriginFacilities, setFilteredOriginFacilities] = useState<Facility[]>([]);
+  const [filteredDestinationFacilities, setFilteredDestinationFacilities] = useState<Facility[]>([]);
 
   useEffect(() => {
     loadPreferredAgencies();
+    loadFacilities();
   }, []);
+
+  const loadFacilities = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.warn('No authentication token found for facility loading');
+        return;
+      }
+
+      const response = await fetch('/api/transport-requests/facilities/search?limit=100', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setFacilities(data.facilities || []);
+      } else {
+        console.error('Facility loading failed:', response.status);
+      }
+    } catch (error) {
+      console.error('Error loading facilities:', error);
+    }
+  };
+
+  const searchFacilities = async (query: string, type: 'origin' | 'destination') => {
+    if (!query.trim()) {
+      if (type === 'origin') {
+        setFilteredOriginFacilities([]);
+      } else {
+        setFilteredDestinationFacilities([]);
+      }
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.warn('No authentication token found for facility search');
+        return;
+      }
+
+      const response = await fetch(`/api/transport-requests/facilities/search?q=${encodeURIComponent(query)}&limit=10`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (type === 'origin') {
+          setFilteredOriginFacilities(data.facilities || []);
+        } else {
+          setFilteredDestinationFacilities(data.facilities || []);
+        }
+      }
+    } catch (error) {
+      console.error('Error searching facilities:', error);
+    }
+  };
+
+  const selectFacility = (facility: Facility, type: 'origin' | 'destination') => {
+    if (type === 'origin') {
+      setFormData(prev => ({ ...prev, origin: facility.name }));
+      setFilteredOriginFacilities([]);
+    } else {
+      setFormData(prev => ({ ...prev, destination: facility.name }));
+      setFilteredDestinationFacilities([]);
+    }
+  };
+
+  // Generate HIPAA-compliant patient ID
+  const generatePatientId = (): string => {
+    const timestamp = Date.now().toString();
+    const random = Math.random().toString(36).substring(2);
+    const hash = btoa(timestamp + random).substring(0, 8).toUpperCase();
+    return `P${hash}`;
+  };
+
+  const handleGeneratePatientId = () => {
+    const newPatientId = generatePatientId();
+    setFormData(prev => ({ ...prev, patientId: newPatientId }));
+  };
 
   useEffect(() => {
     if (formData.transportLevel) {
@@ -167,6 +259,13 @@ const TripFormWithAgencySelection: React.FC<TripFormWithAgencySelectionProps> = 
         [field]: value
       }));
     }
+
+    // Search facilities for origin/destination
+    if (field === 'origin') {
+      searchFacilities(value, 'origin');
+    } else if (field === 'destination') {
+      searchFacilities(value, 'destination');
+    }
   };
 
   const handleAgencyToggle = (agencyId: string) => {
@@ -198,8 +297,8 @@ const TripFormWithAgencySelection: React.FC<TripFormWithAgencySelectionProps> = 
     if (!formData.destination.trim()) {
       newErrors.destination = 'Destination is required';
     }
-    if (!formData.patientInfo.name.trim()) {
-      newErrors.patientInfo = { ...newErrors.patientInfo, name: 'Patient name is required' };
+    if (!formData.patientId.trim()) {
+      newErrors.patientId = 'Patient ID is required';
     }
     if (!formData.clinicalDetails.diagnosis.trim()) {
       newErrors.clinicalDetails = { ...newErrors.clinicalDetails, diagnosis: 'Diagnosis is required' };
@@ -222,17 +321,58 @@ const TripFormWithAgencySelection: React.FC<TripFormWithAgencySelectionProps> = 
     setLoading(true);
     
     try {
-      // TODO: Replace with actual API call
-      console.log('Submitting trip request:', formData);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      // Map form data to API format
+      const apiData = {
+        patientId: formData.patientId, // Use the patient ID generated in the form
+        // Using real facility IDs from the database
+        // In a production system, you'd have facility selection dropdowns
+        originFacilityId: 'cmeyf7nhv00008or3116ziedn', // UPMC Altoona
+        destinationFacilityId: 'cmeyig8x300008ov9rqxax4mz', // Conemaugh Nason
+        transportLevel: formData.transportLevel,
+        priority: formData.urgency === 'routine' ? 'LOW' : 
+                  formData.urgency === 'urgent' ? 'MEDIUM' : 
+                  formData.urgency === 'emergent' ? 'URGENT' : 'LOW',
+        specialRequirements: [
+          formData.clinicalDetails.mobility,
+          formData.clinicalDetails.oxygenRequired ? 'Oxygen Required' : null,
+          formData.clinicalDetails.monitoringRequired ? 'Continuous Monitoring Required' : null,
+          formData.notes
+        ].filter(Boolean).join('; '),
+        selectedAgencies: formData.selectedAgencies,
+        sendNotifications: true
+      };
+
+      console.log('Submitting trip request:', apiData);
+
+      const response = await fetch('/api/transport-requests', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(apiData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create transport request');
+      }
+
+      const result = await response.json();
+      console.log('Trip request created successfully:', result);
+
+      // Store the created transport request ID and show success modal (with QR code if requested)
+      setCreatedTransportRequestId(result.transportRequest.id);
+      setShowSuccessModal(true);
       
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Success - redirect to dashboard
-      onNavigate?.('dashboard');
     } catch (error) {
       console.error('Failed to submit trip request:', error);
-      // TODO: Show error message to user
+      alert(`Failed to create trip request: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -269,11 +409,63 @@ const TripFormWithAgencySelection: React.FC<TripFormWithAgencySelectionProps> = 
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Patient Information */}
+        <div className="bg-white shadow rounded-lg p-6">
+          <h2 className="text-lg font-medium text-gray-900 mb-4">Patient Information</h2>
+          <div className="grid grid-cols-1 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Patient ID *
+              </label>
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={formData.patientId}
+                  onChange={(e) => handleInputChange('patientId', e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter patient ID or generate one"
+                />
+                <button
+                  type="button"
+                  onClick={handleGeneratePatientId}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                >
+                  Generate
+                </button>
+              </div>
+              {!formData.patientId && (
+                <p className="mt-1 text-sm text-gray-500">
+                  Click "Generate" to create a HIPAA-compliant, non-identifiable patient ID
+                </p>
+              )}
+            </div>
+
+            <div className="mt-4">
+              <label className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  checked={formData.generateQRCode}
+                  onChange={(e) => handleInputChange('generateQRCode', e.target.checked)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <div>
+                  <span className="text-sm font-medium text-gray-700">
+                    Generate QR Code for Patient Tracking
+                  </span>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Create a QR code that can be scanned to access patient transport information
+                  </p>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
         {/* Basic Trip Information */}
         <div className="bg-white shadow rounded-lg p-6">
           <h2 className="text-lg font-medium text-gray-900 mb-4">Trip Details</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
+            <div className="relative">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Origin Facility *
               </label>
@@ -285,11 +477,26 @@ const TripFormWithAgencySelection: React.FC<TripFormWithAgencySelectionProps> = 
                   errors.origin ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="e.g., City General Hospital"
+                autoComplete="off"
               />
+              {filteredOriginFacilities.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                  {filteredOriginFacilities.map((facility) => (
+                    <div
+                      key={facility.id}
+                      onClick={() => selectFacility(facility, 'origin')}
+                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-200 last:border-b-0"
+                    >
+                      <div className="font-medium text-gray-900">{facility.name}</div>
+                      <div className="text-sm text-gray-600">{facility.address}, {facility.city}, {facility.state}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
               {errors.origin && <p className="mt-1 text-sm text-red-600">{errors.origin}</p>}
             </div>
 
-            <div>
+            <div className="relative">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Destination Facility *
               </label>
@@ -301,7 +508,22 @@ const TripFormWithAgencySelection: React.FC<TripFormWithAgencySelectionProps> = 
                   errors.destination ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="e.g., Regional Medical Center"
+                autoComplete="off"
               />
+              {filteredDestinationFacilities.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                  {filteredDestinationFacilities.map((facility) => (
+                    <div
+                      key={facility.id}
+                      onClick={() => selectFacility(facility, 'destination')}
+                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-200 last:border-b-0"
+                    >
+                      <div className="font-medium text-gray-900">{facility.name}</div>
+                      <div className="text-sm text-gray-600">{facility.address}, {facility.city}, {facility.state}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
               {errors.destination && <p className="mt-1 text-sm text-red-600">{errors.destination}</p>}
             </div>
 
@@ -338,66 +560,7 @@ const TripFormWithAgencySelection: React.FC<TripFormWithAgencySelectionProps> = 
           </div>
         </div>
 
-        {/* Patient Information */}
-        <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Patient Information</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Patient Name *
-              </label>
-              <input
-                type="text"
-                value={formData.patientInfo.name}
-                onChange={(e) => handleInputChange('patientInfo.name', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                  errors.patientInfo?.name ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Patient's full name"
-              />
-              {errors.patientInfo?.name && <p className="mt-1 text-sm text-red-600">{errors.patientInfo.name}</p>}
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Age
-              </label>
-              <input
-                type="text"
-                value={formData.patientInfo.age}
-                onChange={(e) => handleInputChange('patientInfo.age', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="e.g., 45 years"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Weight
-              </label>
-              <input
-                type="text"
-                value={formData.patientInfo.weight}
-                onChange={(e) => handleInputChange('patientInfo.weight', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="e.g., 180 lbs"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Special Needs
-              </label>
-              <input
-                type="text"
-                value={formData.patientInfo.specialNeeds}
-                onChange={(e) => handleInputChange('patientInfo.specialNeeds', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="e.g., Wheelchair accessible, Bariatric"
-              />
-            </div>
-          </div>
-        </div>
 
         {/* Clinical Details */}
         <div className="bg-white shadow rounded-lg p-6">
@@ -520,12 +683,11 @@ const TripFormWithAgencySelection: React.FC<TripFormWithAgencySelectionProps> = 
                     .map((agency) => (
                     <div
                       key={agency.id}
-                      className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                      className={`border rounded-lg p-4 transition-colors ${
                         formData.selectedAgencies.includes(agency.id)
                           ? 'border-blue-500 bg-blue-50'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
-                      onClick={() => handleAgencyToggle(agency.id)}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
@@ -533,7 +695,7 @@ const TripFormWithAgencySelection: React.FC<TripFormWithAgencySelectionProps> = 
                             type="checkbox"
                             checked={formData.selectedAgencies.includes(agency.id)}
                             onChange={() => handleAgencyToggle(agency.id)}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
                           />
                           <div>
                             <h3 className="font-medium text-gray-900">{agency.name}</h3>
@@ -604,6 +766,104 @@ const TripFormWithAgencySelection: React.FC<TripFormWithAgencySelectionProps> = 
           </button>
         </div>
       </form>
+
+      {/* Success Modal with QR Code */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  ✅ Trip Request Created Successfully!
+                </h3>
+                <button
+                  onClick={() => setShowSuccessModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <span className="sr-only">Close</span>
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Success Message */}
+              <div className="mb-6">
+                <div className="bg-green-50 border border-green-200 rounded-md p-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-green-800">
+                        Transport Request Created
+                      </h3>
+                      <div className="mt-2 text-sm text-green-700">
+                        <p>Request ID: <strong>{createdTransportRequestId}</strong></p>
+                        <p>Patient ID: <strong>{formData.patientId}</strong></p>
+                        <p>Notifications sent to {formData.selectedAgencies.length} EMS agencies.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* QR Code Integration - Only show if user requested it */}
+              {createdTransportRequestId && formData.generateQRCode && (
+                <div className="mb-6">
+                  <h4 className="text-md font-medium text-gray-900 mb-3">
+                    📱 QR Code for Patient Tracking
+                  </h4>
+                  <TransportRequestQRIntegration
+                    transportRequestId={createdTransportRequestId}
+                    patientId={formData.patientId}
+                    className="border rounded-lg"
+                  />
+                </div>
+              )}
+
+              {/* Modal Actions */}
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowSuccessModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    setShowSuccessModal(false);
+                    // Reset form for new trip request
+                    setFormData({
+                      patientId: '',
+                      origin: '',
+                      destination: '',
+                      transportLevel: 'BLS',
+                      clinicalDetails: {
+                        diagnosis: '',
+                        mobility: 'ambulatory',
+                        oxygenRequired: false,
+                        monitoringRequired: false
+                      },
+                      urgency: 'routine',
+                      notes: '',
+                      selectedAgencies: [],
+                      generateQRCode: false
+                    });
+                    setErrors({});
+                  }}
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Submit Another Trip Request
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
