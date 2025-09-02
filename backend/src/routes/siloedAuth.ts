@@ -12,7 +12,7 @@ const generateToken = (user: any, userType: string) => {
       id: user.id,
       email: user.email,
       userType: userType,
-      role: userType // Maintain backward compatibility
+      role: user.role // Use the actual role from the database
     },
     process.env.JWT_SECRET || 'fallback-secret',
     { expiresIn: '24h' }

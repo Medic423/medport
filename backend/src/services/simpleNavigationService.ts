@@ -10,7 +10,7 @@ export interface SimpleNavigationItem {
 
 export interface SimpleNavigation {
   userType: 'hospital' | 'ems' | 'center';
-  menu: SimpleNavigationItem[];
+  navigation: SimpleNavigationItem[];
 }
 
 export class SimpleNavigationService {
@@ -19,7 +19,7 @@ export class SimpleNavigationService {
       case 'hospital':
         return {
           userType: 'hospital',
-          menu: [
+          navigation: [
             {
               id: 'dashboard',
               name: 'Trip Dashboard',
@@ -54,7 +54,7 @@ export class SimpleNavigationService {
       case 'ems':
         return {
           userType: 'ems',
-          menu: [
+          navigation: [
             {
               id: 'available-trips',
               name: 'Available Trips',
@@ -96,7 +96,7 @@ export class SimpleNavigationService {
       case 'center':
         return {
           userType: 'center',
-          menu: [
+          navigation: [
             {
               id: 'overview',
               name: 'Status Dashboard',
@@ -152,7 +152,7 @@ export class SimpleNavigationService {
       default:
         return {
           userType: 'hospital',
-          menu: []
+          navigation: []
         };
     }
   }

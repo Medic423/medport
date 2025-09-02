@@ -6,6 +6,7 @@ export interface AuthRequest extends Request {
     id: string;
     email: string;
     role: string;
+    userType?: string;
   };
 }
 
@@ -47,13 +48,15 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
     console.log('[AUTH] Token decoded successfully:', { 
       userId: decoded.id, 
       userEmail: decoded.email, 
-      userRole: decoded.role 
+      userRole: decoded.role,
+      userType: decoded.userType
     });
     
     req.user = {
       id: decoded.id,
       email: decoded.email,
-      role: decoded.role
+      role: decoded.role,
+      userType: decoded.userType
     };
     
     // Validate user object was set

@@ -26,6 +26,7 @@ import AgencyAnalytics from './components/AgencyAnalytics';
 import QRCodeSystem from './pages/QRCodeSystem';
 import OfflineCapabilities from './pages/OfflineCapabilities';
 import TransportCenterServiceManagement from './components/TransportCenterServiceManagement';
+import CenterEmsAgencyManagement from './components/CenterEmsAgencyManagement';
 
 // New simplified components
 import HospitalDashboard from './pages/HospitalDashboard';
@@ -248,7 +249,7 @@ function App() {
         {currentPage === 'overview' && <StatusBoard />}
         {currentPage === 'trips/all' && <TripManagement onNavigate={handleNavigation} />}
         {currentPage === 'hospitals' && <StatusBoard />}
-        {currentPage === 'ems-agencies' && <AgencyDashboard onNavigate={handleNavigation} />}
+        {currentPage === 'ems-agencies' && <CenterEmsAgencyManagement onNavigate={handleNavigation} />}
         {currentPage === 'settings' && <SimpleSettings onNavigate={handleNavigation} />}
         {currentPage === 'features' && <FreemiumManagement onNavigate={handleNavigation} />}
         {currentPage === 'notifications' && <NotificationDashboard />}

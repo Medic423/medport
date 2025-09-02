@@ -26,7 +26,7 @@ router.get('/navigation', simpleAuthenticateToken, async (req: SimpleAuthRequest
       success: true,
       data: {
         userType: userType,
-        navigation: navigation.menu
+        navigation: navigation.navigation
       }
     });
   } catch (error) {

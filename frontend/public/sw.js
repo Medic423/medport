@@ -1,7 +1,7 @@
 // MedPort Enhanced Service Worker - Phase 6.3 Offline Capabilities
-const CACHE_NAME = 'medport-v2';
-const DATA_CACHE_NAME = 'medport-data-v2';
-const STATIC_CACHE_NAME = 'medport-static-v2';
+const CACHE_NAME = 'medport-v3';
+const DATA_CACHE_NAME = 'medport-data-v3';
+const STATIC_CACHE_NAME = 'medport-static-v3';
 
 // Core app files to cache
 const STATIC_URLS_TO_CACHE = [

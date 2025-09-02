@@ -1,6 +1,6 @@
-import { PrismaClient, HospitalAgencyPreference, TransportAgency } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { HospitalAgencyPreference } from '../../dist/prisma/hospital';
+import { EMSAgency } from '../../dist/prisma/center';
+import { databaseManager } from './databaseManager';
 
 export interface HospitalAgencyPreferenceData {
   hospitalId: string;
@@ -20,7 +20,7 @@ export interface AgencySearchFilters {
 
 export class HospitalAgencyService {
   // Get all available agencies with optional filtering
-  async getAvailableAgencies(filters: AgencySearchFilters = {}): Promise<TransportAgency[]> {
+  async getAvailableAgencies(filters: AgencySearchFilters = {}): Promise<EMSAgency[]> {
     try {
       const whereClause: any = {
         isActive: true
@@ -57,33 +57,18 @@ export class HospitalAgencyService {
         ];
       }
 
-      const agencies = await prisma.transportAgency.findMany({
+      // Get agencies from Center DB (EMSAgency table)
+      const centerDB = databaseManager.getCenterDB();
+      const agencies = await centerDB.eMSAgency.findMany({
         where: whereClause,
-        include: {
-          units: {
-            where: { isActive: true },
-            include: {
-              unitAvailability: true
-            }
-          },
-          serviceAreas: {
-            where: { isActive: true }
-          },
-          agencyProfiles: true
-        },
         orderBy: [
           { name: 'asc' }
         ]
       });
 
-      // Filter by available units if requested
-      if (filters.hasAvailableUnits) {
-        return agencies.filter(agency => 
-          agency.units.some(unit => 
-            unit.unitAvailability.some(availability => availability.status === 'AVAILABLE')
-          )
-        );
-      }
+      // Note: Unit availability filtering would require cross-database query
+      // For now, return all active agencies
+      // TODO: Implement cross-database unit availability check if needed
 
       return agencies;
     } catch (error) {
@@ -95,26 +80,12 @@ export class HospitalAgencyService {
   // Get hospital's preferred agencies
   async getHospitalPreferredAgencies(hospitalId: string): Promise<HospitalAgencyPreference[]> {
     try {
-      return await prisma.hospitalAgencyPreference.findMany({
+      // Get preferences from Hospital DB
+      const hospitalDB = databaseManager.getHospitalDB();
+      return await hospitalDB.hospitalAgencyPreference.findMany({
         where: {
           hospitalId,
           isActive: true
-        },
-        include: {
-          agency: {
-            include: {
-              units: {
-                where: { isActive: true },
-                include: {
-                  unitAvailability: true
-                }
-              },
-              serviceAreas: {
-                where: { isActive: true }
-              },
-              agencyProfiles: true
-            }
-          }
         },
         orderBy: [
           { preferenceOrder: 'asc' },
@@ -130,73 +101,38 @@ export class HospitalAgencyService {
   // Add agency to hospital's preferred list
   async addPreferredAgency(data: HospitalAgencyPreferenceData): Promise<HospitalAgencyPreference> {
     try {
+      const hospitalDB = databaseManager.getHospitalDB();
+      
       // Check if preference already exists
-      const existing = await prisma.hospitalAgencyPreference.findUnique({
+      const existing = await hospitalDB.hospitalAgencyPreference.findFirst({
         where: {
-          hospitalId_agencyId: {
-            hospitalId: data.hospitalId,
-            agencyId: data.agencyId
-          }
+          hospitalId: data.hospitalId,
+          agencyId: data.agencyId
         }
       });
 
       if (existing) {
         // Update existing preference
-        return await prisma.hospitalAgencyPreference.update({
+        return await hospitalDB.hospitalAgencyPreference.update({
           where: {
-            hospitalId_agencyId: {
-              hospitalId: data.hospitalId,
-              agencyId: data.agencyId
-            }
+            id: existing.id
           },
           data: {
             isActive: data.isActive ?? true,
             preferenceOrder: data.preferenceOrder ?? 0,
             notes: data.notes
-          },
-          include: {
-            agency: {
-              include: {
-                units: {
-                  where: { isActive: true },
-                  include: {
-                    unitAvailability: true
-                  }
-                },
-                serviceAreas: {
-                  where: { isActive: true }
-                },
-                agencyProfiles: true
-              }
-            }
           }
         });
       }
 
       // Create new preference
-      return await prisma.hospitalAgencyPreference.create({
+      return await hospitalDB.hospitalAgencyPreference.create({
         data: {
           hospitalId: data.hospitalId,
           agencyId: data.agencyId,
           isActive: data.isActive ?? true,
           preferenceOrder: data.preferenceOrder ?? 0,
           notes: data.notes
-        },
-        include: {
-          agency: {
-            include: {
-              units: {
-                where: { isActive: true },
-                include: {
-                  unitAvailability: true
-                }
-              },
-              serviceAreas: {
-                where: { isActive: true }
-              },
-              agencyProfiles: true
-            }
-          }
         }
       });
     } catch (error) {
@@ -208,7 +144,8 @@ export class HospitalAgencyService {
   // Remove agency from hospital's preferred list
   async removePreferredAgency(hospitalId: string, agencyId: string): Promise<void> {
     try {
-      await prisma.hospitalAgencyPreference.deleteMany({
+      const hospitalDB = databaseManager.getHospitalDB();
+      await hospitalDB.hospitalAgencyPreference.deleteMany({
         where: {
           hospitalId,
           agencyId
@@ -223,31 +160,24 @@ export class HospitalAgencyService {
   // Update preference order
   async updatePreferenceOrder(hospitalId: string, agencyId: string, preferenceOrder: number): Promise<HospitalAgencyPreference> {
     try {
-      return await prisma.hospitalAgencyPreference.update({
+      const hospitalDB = databaseManager.getHospitalDB();
+      const existing = await hospitalDB.hospitalAgencyPreference.findFirst({
         where: {
-          hospitalId_agencyId: {
-            hospitalId,
-            agencyId
-          }
+          hospitalId,
+          agencyId
+        }
+      });
+
+      if (!existing) {
+        throw new Error('Preference not found');
+      }
+
+      return await hospitalDB.hospitalAgencyPreference.update({
+        where: {
+          id: existing.id
         },
         data: {
           preferenceOrder
-        },
-        include: {
-          agency: {
-            include: {
-              units: {
-                where: { isActive: true },
-                include: {
-                  unitAvailability: true
-                }
-              },
-              serviceAreas: {
-                where: { isActive: true }
-              },
-              agencyProfiles: true
-            }
-          }
         }
       });
     } catch (error) {
@@ -257,26 +187,11 @@ export class HospitalAgencyService {
   }
 
   // Get agency details by ID
-  async getAgencyById(agencyId: string): Promise<TransportAgency | null> {
+  async getAgencyById(agencyId: string): Promise<EMSAgency | null> {
     try {
-      return await prisma.transportAgency.findUnique({
-        where: { id: agencyId },
-        include: {
-          units: {
-            where: { isActive: true },
-            include: {
-              unitAvailability: true
-            }
-          },
-          serviceAreas: {
-            where: { isActive: true }
-          },
-          agencyProfiles: true,
-          agencyPerformance: {
-            orderBy: { periodEnd: 'desc' },
-            take: 1
-          }
-        }
+      const centerDB = databaseManager.getCenterDB();
+      return await centerDB.eMSAgency.findUnique({
+        where: { id: agencyId }
       });
     } catch (error) {
       console.error('Error getting agency by ID:', error);
@@ -287,12 +202,11 @@ export class HospitalAgencyService {
   // Check if agency is preferred by hospital
   async isAgencyPreferred(hospitalId: string, agencyId: string): Promise<boolean> {
     try {
-      const preference = await prisma.hospitalAgencyPreference.findUnique({
+      const hospitalDB = databaseManager.getHospitalDB();
+      const preference = await hospitalDB.hospitalAgencyPreference.findFirst({
         where: {
-          hospitalId_agencyId: {
-            hospitalId,
-            agencyId
-          }
+          hospitalId,
+          agencyId
         }
       });
       return !!preference && preference.isActive;
