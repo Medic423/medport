@@ -14,8 +14,11 @@ interface Facility {
 }
 
 interface TripFormData {
+  patientId: string;
   origin: string;
   destination: string;
+  originFacilityId?: string;
+  destinationFacilityId?: string;
   transportLevel: 'ALS' | 'BLS' | 'CCT' | 'Other';
   patientInfo: {
     name: string;
@@ -39,6 +42,7 @@ interface NewTripFormProps {
 
 const NewTripForm: React.FC<NewTripFormProps> = ({ onNavigate }) => {
   const [formData, setFormData] = useState<TripFormData>({
+    patientId: '',
     origin: '',
     destination: '',
     transportLevel: 'BLS',
@@ -114,10 +118,18 @@ const NewTripForm: React.FC<NewTripFormProps> = ({ onNavigate }) => {
   // Select a facility from autocomplete
   const selectFacility = (facility: Facility, type: 'origin' | 'destination') => {
     if (type === 'origin') {
-      setFormData(prev => ({ ...prev, origin: facility.name }));
+      setFormData(prev => ({ 
+        ...prev, 
+        origin: facility.name,
+        originFacilityId: facility.id 
+      }));
       setShowOriginSuggestions(false);
     } else {
-      setFormData(prev => ({ ...prev, destination: facility.name }));
+      setFormData(prev => ({ 
+        ...prev, 
+        destination: facility.name,
+        destinationFacilityId: facility.id 
+      }));
       setShowDestinationSuggestions(false);
     }
   };
@@ -147,6 +159,13 @@ const NewTripForm: React.FC<NewTripFormProps> = ({ onNavigate }) => {
     }
   };
 
+  // Generate patient ID
+  const generatePatientId = () => {
+    const timestamp = Date.now().toString(36);
+    const random = Math.random().toString(36).substr(2, 5);
+    return `PT-${timestamp}-${random}`.toUpperCase();
+  };
+
   const validateForm = (): boolean => {
     const newErrors: Partial<TripFormData> = {};
 
@@ -156,8 +175,14 @@ const NewTripForm: React.FC<NewTripFormProps> = ({ onNavigate }) => {
     if (!formData.destination.trim()) {
       newErrors.destination = 'Destination is required';
     }
-    if (!formData.patientInfo.name.trim()) {
-      newErrors.patientInfo = { ...newErrors.patientInfo, name: 'Patient name is required' };
+    if (!formData.originFacilityId) {
+      newErrors.origin = 'Please select a valid origin facility from the dropdown';
+    }
+    if (!formData.destinationFacilityId) {
+      newErrors.destination = 'Please select a valid destination facility from the dropdown';
+    }
+    if (!formData.patientId.trim()) {
+      newErrors.patientId = 'Patient ID is required';
     }
     if (!formData.clinicalDetails.diagnosis.trim()) {
       newErrors.clinicalDetails = { ...newErrors.clinicalDetails, diagnosis: 'Diagnosis is required' };
@@ -177,17 +202,55 @@ const NewTripForm: React.FC<NewTripFormProps> = ({ onNavigate }) => {
     setLoading(true);
     
     try {
-      // TODO: Replace with actual API call
-      console.log('Submitting trip request:', formData);
-      
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      // Map form data to API format
+      const apiData = {
+        patientId: formData.patientId,
+        originFacilityId: formData.originFacilityId,
+        destinationFacilityId: formData.destinationFacilityId,
+        transportLevel: formData.transportLevel,
+        priority: formData.urgency === 'routine' ? 'LOW' : 
+                  formData.urgency === 'urgent' ? 'MEDIUM' : 
+                  formData.urgency === 'emergent' ? 'URGENT' : 'LOW',
+        specialRequirements: [
+          formData.clinicalDetails.mobility,
+          formData.clinicalDetails.oxygenRequired ? 'Oxygen Required' : null,
+          formData.clinicalDetails.monitoringRequired ? 'Continuous Monitoring Required' : null,
+          formData.patientInfo.specialNeeds,
+          formData.notes
+        ].filter(Boolean).join('; '),
+        selectedAgencies: [], // No agency selection in this simplified form
+        sendNotifications: false // No notifications in this simplified form
+      };
+
+      console.log('Submitting trip request:', apiData);
+
+      const response = await fetch('/api/transport-requests', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(apiData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create transport request');
+      }
+
+      const result = await response.json();
+      console.log('Trip request created successfully:', result);
       
       // Success - redirect to dashboard
       onNavigate?.('dashboard');
     } catch (error) {
       console.error('Failed to submit trip request:', error);
-      // TODO: Show error message to user
+      alert(`Failed to create trip request: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -321,7 +384,32 @@ const NewTripForm: React.FC<NewTripFormProps> = ({ onNavigate }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Patient Name *
+                Patient ID *
+              </label>
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={formData.patientId}
+                  onChange={(e) => handleInputChange('patientId', e.target.value)}
+                  className={`flex-1 px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                    errors.patientId ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Auto-generated patient ID"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleInputChange('patientId', generatePatientId())}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  Generate
+                </button>
+              </div>
+              {errors.patientId && <p className="mt-1 text-sm text-red-600">{errors.patientId}</p>}
+            </div>
+          </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Patient Name
               </label>
               <input
                 type="text"
