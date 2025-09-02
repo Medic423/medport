@@ -6,74 +6,105 @@ async function addTestTransportRequests() {
   try {
     console.log('Adding test transport requests...');
 
-    // First, let's check if we have any facilities
-    const facilities = await prisma.facility.findMany();
-    if (facilities.length === 0) {
-      console.log('No facilities found. Please run add-test-facility.js first.');
+    // First, let's check if we have any users
+    const users = await prisma.user.findMany();
+    console.log('Found users:', users.length);
+
+    if (users.length === 0) {
+      console.log('No users found. Please create users first.');
       return;
     }
 
-    // Create test transport requests with different time windows and locations
+    // Find a hospital user
+    const hospitalUser = users.find(user => user.userType === 'hospital' || user.role === 'ADMIN');
+    if (!hospitalUser) {
+      console.log('No hospital user found. Please create a hospital user first.');
+      return;
+    }
+
+    console.log('Using hospital user:', hospitalUser.email);
+
+    // Create test transport requests
     const testRequests = [
       {
-        patientId: 'demo-patient-1',
-        originFacilityId: facilities[0].id,
-        destinationFacilityId: facilities[1]?.id || facilities[0].id,
+        id: '1',
+        origin: 'City General Hospital',
+        destination: 'Regional Medical Center',
         transportLevel: 'BLS',
-        priority: 'MEDIUM',
-        status: 'PENDING',
-        specialRequirements: 'Test request for route optimization',
-        pickupTimestamp: new Date('2025-01-23T10:00:00Z'),
-        completionTimestamp: new Date('2025-01-23T11:00:00Z'),
-        routeOptimizationScore: 75,
-        chainingOpportunities: ['TEMPORAL', 'SPATIAL'],
-        timeFlexibility: 30,
-        revenuePotential: 150.00
+        status: 'pending',
+        requestTime: new Date('2025-08-29T14:00:00Z'),
+        patientName: 'John Doe',
+        patientAge: 45,
+        patientCondition: 'Stable for transport',
+        contactPhone: '(555) 123-4567',
+        specialRequirements: 'Wheelchair accessible',
+        notes: 'Patient prefers morning transport'
       },
       {
-        patientId: 'demo-patient-2',
-        originFacilityId: facilities[1]?.id || facilities[0].id,
-        destinationFacilityId: facilities[0].id,
+        id: '2',
+        origin: 'City General Hospital',
+        destination: 'Rehabilitation Center',
         transportLevel: 'BLS',
-        priority: 'MEDIUM',
-        status: 'PENDING',
-        specialRequirements: 'Test request for route optimization - return trip',
-        pickupTimestamp: new Date('2025-01-23T11:30:00Z'),
-        completionTimestamp: new Date('2025-01-23T12:30:00Z'),
-        routeOptimizationScore: 80,
-        chainingOpportunities: ['RETURN_TRIP', 'TEMPORAL'],
-        timeFlexibility: 45,
-        revenuePotential: 160.00
+        status: 'pending',
+        requestTime: new Date('2025-08-29T14:00:00Z'),
+        patientName: 'Jane Smith',
+        patientAge: 67,
+        patientCondition: 'Post-surgical recovery',
+        contactPhone: '(555) 987-6543',
+        specialRequirements: 'Stretcher required',
+        notes: 'Patient has mobility restrictions'
       },
       {
-        patientId: 'demo-patient-3',
-        originFacilityId: facilities[0].id,
-        destinationFacilityId: facilities[2]?.id || facilities[1]?.id || facilities[0].id,
-        transportLevel: 'BLS',
-        priority: 'MEDIUM',
-        status: 'PENDING',
-        specialRequirements: 'Test request for route optimization - multi-stop',
-        pickupTimestamp: new Date('2025-01-23T14:00:00Z'),
-        completionTimestamp: new Date('2025-01-23T15:00:00Z'),
-        routeOptimizationScore: 70,
-        chainingOpportunities: ['MULTI_STOP', 'SPATIAL'],
-        timeFlexibility: 60,
-        revenuePotential: 180.00
+        id: '3',
+        origin: 'Regional Medical Center',
+        destination: 'City General Hospital',
+        transportLevel: 'ALS',
+        status: 'pending',
+        requestTime: new Date('2025-08-29T15:30:00Z'),
+        patientName: 'Bob Johnson',
+        patientAge: 52,
+        patientCondition: 'Cardiac monitoring required',
+        contactPhone: '(555) 456-7890',
+        specialRequirements: 'Cardiac monitor, oxygen',
+        notes: 'High priority transport'
       }
     ];
 
-    for (const requestData of testRequests) {
-      const request = await prisma.transportRequest.create({
-        data: requestData
+    // Delete existing test requests first
+    await prisma.transportRequest.deleteMany({
+      where: {
+        id: {
+          in: testRequests.map(req => req.id)
+        }
+      }
+    });
+
+    // Create new test requests
+    for (const request of testRequests) {
+      const createdRequest = await prisma.transportRequest.create({
+        data: {
+          id: request.id,
+          origin: request.origin,
+          destination: request.destination,
+          transportLevel: request.transportLevel,
+          status: request.status,
+          requestTime: request.requestTime,
+          patientName: request.patientName,
+          patientAge: request.patientAge,
+          patientCondition: request.patientCondition,
+          contactPhone: request.contactPhone,
+          specialRequirements: request.specialRequirements,
+          notes: request.notes,
+          hospitalId: hospitalUser.id
+        }
       });
-      console.log(`Created transport request: ${request.id} for ${request.patientName}`);
+      console.log('Created transport request:', createdRequest.id, createdRequest.origin, '→', createdRequest.destination);
     }
 
-    console.log('Test transport requests added successfully!');
-    console.log('You can now test the route optimization system.');
-
+    console.log('✅ Test transport requests created successfully!');
+    
   } catch (error) {
-    console.error('Error adding test transport requests:', error);
+    console.error('❌ Error creating test transport requests:', error);
   } finally {
     await prisma.$disconnect();
   }

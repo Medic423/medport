@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+// import { useNavigate } from 'react-router-dom'; // Removed - using custom routing
 
 interface TripFormData {
   origin: string;

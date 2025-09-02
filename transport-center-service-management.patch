@@ -1,0 +1,1775 @@
+diff --git a/backend/prisma/schema.prisma b/backend/prisma/schema.prisma
+index 7bda2d7..d0b78a1 100644
+--- a/backend/prisma/schema.prisma
++++ b/backend/prisma/schema.prisma
+@@ -21,6 +21,7 @@ model User {
+   multiPatientTransports MultiPatientTransport[]
+   longDistanceTransports LongDistanceTransport[]
+   agencyPreferences HospitalAgencyPreference[]
++  addedServices     TransportAgency[]  @relation("TransportCenterAddedServices")
+ }
+ 
+ model Facility {
+@@ -109,6 +110,10 @@ model TransportAgency {
+   capabilities      Json?
+   pricingStructure  Json?
+   isActive          Boolean            @default(true)
++  // Transport Center service management fields
++  addedBy           String?            // User ID who added this service
++  status            ServiceStatus      @default(ACTIVE) // ACTIVE, INACTIVE, PENDING
++  addedAt           DateTime?          // When service was added by Transport Center
+   createdAt         DateTime           @default(now())
+   updatedAt         DateTime           @updatedAt
+   routes            Route[]
+@@ -124,6 +129,7 @@ model TransportAgency {
+   agencyPerformance AgencyPerformance[]
+   transportBids     TransportBid[]
+   hospitalPreferences HospitalAgencyPreference[]
++  addedByUser       User?              @relation("TransportCenterAddedServices", fields: [addedBy], references: [id])
+ }
+ 
+ model Unit {
+@@ -818,6 +824,12 @@ enum UserRole {
+   TRANSPORT_AGENCY
+ }
+ 
++enum ServiceStatus {
++  ACTIVE
++  INACTIVE
++  PENDING
++}
++
+ enum FacilityType {
+   HOSPITAL
+   NURSING_HOME
+diff --git a/backend/src/routes/transportCenter.ts b/backend/src/routes/transportCenter.ts
+index 217b345..7b02074 100644
+--- a/backend/src/routes/transportCenter.ts
++++ b/backend/src/routes/transportCenter.ts
+@@ -1,356 +1,264 @@
+-import express, { Response } from 'express';
++import express, { Request, Response, NextFunction } from 'express';
+ import { z } from 'zod';
+-import { PrismaClient } from '@prisma/client';
+-import bcrypt from 'bcryptjs';
+-import jwt from 'jsonwebtoken';
++import transportCenterService, { addServiceSchema, updateServiceSchema } from '../services/transportCenterService';
+ import { authenticateToken } from '../middleware/auth';
+ 
+-const prisma = new PrismaClient();
+-
+ const router = express.Router();
+ 
+-// Validation schemas
+-const coordinatorRegistrationSchema = z.object({
+-  email: z.string().email('Invalid email format'),
+-  password: z.string().min(8, 'Password must be at least 8 characters'),
+-  name: z.string().min(2, 'Name must be at least 2 characters'),
+-  phone: z.string().min(10, 'Phone number must be at least 10 characters'),
+-  role: z.enum(['ADMIN', 'COORDINATOR']).default('COORDINATOR'),
+-  permissions: z.array(z.string()).optional()
+-});
+-
+-const coordinatorLoginSchema = z.object({
+-  email: z.string().email('Invalid email format'),
+-  password: z.string().min(1, 'Password is required')
+-});
++// Middleware to ensure only Transport Center users can access these endpoints
++const requireTransportCenter = (req: any, res: Response, next: NextFunction) => {
++  const user = req.user;
++  
++  if (!user || (user.role !== 'COORDINATOR' && user.role !== 'center')) {
++    return res.status(403).json({
++      success: false,
++      message: 'Access denied. Transport Center access required.'
++    });
++  }
++  
++  next();
++};
+ 
+-// Transport Center Coordinator Registration (Protected - only admins can create coordinators)
+-router.post('/register', authenticateToken, async (req: any, res: Response) => {
++// Add new EMS service (Transport Center only)
++router.post('/add-service', authenticateToken, requireTransportCenter, async (req: any, res: Response) => {
+   try {
+-    // Check if user has permission to create coordinators
+-    if (!['ADMIN'].includes(req.user.role)) {
+-      return res.status(403).json({
+-        success: false,
+-        message: 'Insufficient permissions to create coordinators'
+-      });
+-    }
+-
+-    console.log('[TRANSPORT-CENTER-REGISTER] Registration attempt:', { email: req.body.email, name: req.body.name });
++    console.log('[TRANSPORT-CENTER] Adding new service:', req.body);
+     
+-    const validatedData = coordinatorRegistrationSchema.parse(req.body);
++    const userId = req.user.id;
++    const serviceData = addServiceSchema.parse(req.body);
++    
++    const service = await transportCenterService.addService(serviceData, userId);
+     
+-    // Check if user already exists
+-    const existingUser = await prisma.user.findUnique({
+-      where: { email: validatedData.email }
+-    });
+-
+-    if (existingUser) {
+-      return res.status(400).json({
+-        success: false,
+-        message: 'User with this email already exists'
+-      });
+-    }
+-
+-    // Hash password
+-    const saltRounds = 12;
+-    const hashedPassword = await bcrypt.hash(validatedData.password, saltRounds);
+-
+-    // Create coordinator user
+-    const coordinator = await prisma.user.create({
+-      data: {
+-        email: validatedData.email,
+-        password: hashedPassword,
+-        name: validatedData.name,
+-        role: validatedData.role,
+-        isActive: true,
+-
+-
+-      }
+-    });
+-
+-    // Generate JWT token
+-    const token = jwt.sign(
+-      { 
+-        id: coordinator.id, 
+-        email: coordinator.email, 
+-        role: coordinator.role,
+-        isTransportCenter: true
+-      },
+-      process.env.JWT_SECRET!,
+-      { expiresIn: '24h' }
+-    );
+-
+-    console.log('[TRANSPORT-CENTER-REGISTER] Success:', { coordinatorId: coordinator.id });
+-
+     res.status(201).json({
+       success: true,
+-      message: 'Transport Center coordinator created successfully',
+-      data: {
+-        coordinator: {
+-          id: coordinator.id,
+-          name: coordinator.name,
+-          email: coordinator.email,
+-          role: coordinator.role
+-        },
+-        token: token
+-      }
++      message: 'Service added successfully',
++      data: service
+     });
+   } catch (error) {
+-    console.error('[TRANSPORT-CENTER-REGISTER] Error:', error);
++    console.error('[TRANSPORT-CENTER] Error adding service:', error);
+     
+     if (error instanceof z.ZodError) {
+       return res.status(400).json({
+         success: false,
+         message: 'Validation error',
+-        errors: (error as any).errors.map((err: any) => ({
++        errors: error.issues.map((err: any) => ({
+           field: err.path.join('.'),
+           message: err.message
+         }))
+       });
+     }
+-
++    
++    if (error instanceof Error) {
++      return res.status(400).json({
++        success: false,
++        message: error.message
++      });
++    }
++    
+     res.status(500).json({
+       success: false,
+-      message: 'Internal server error'
++      message: 'Failed to add service'
+     });
+   }
+ });
+ 
+-// Transport Center Coordinator Login
+-router.post('/login', async (req, res) => {
++// Get all services (Transport Center only)
++router.get('/services', authenticateToken, requireTransportCenter, async (req: any, res: Response) => {
+   try {
+-    console.log('[TRANSPORT-CENTER-LOGIN] Login attempt:', { email: req.body.email });
+-    
+-    // BYPASS ALL AUTHENTICATION - ALWAYS SUCCEED
+-    console.log('[TRANSPORT-CENTER-LOGIN] Bypassing all auth checks - logging in as admin');
+-    
+-    // Create a mock admin user
+-    const mockUser = {
+-      id: 'bypass-admin-001',
+-      name: 'Bypass Admin',
+-      email: req.body.email || 'admin@medport.com',
+-      role: 'ADMIN'
+-    };
+-
+-    // Generate JWT token with both role and userType for compatibility
+-    const token = jwt.sign(
+-      { 
+-        id: mockUser.id, 
+-        email: mockUser.email, 
+-        role: mockUser.role,
+-        userType: 'center', // Add userType for simplified system
+-        isTransportCenter: true
+-      },
+-      process.env.JWT_SECRET!,
+-      { expiresIn: '24h' }
+-    );
+-
+-    console.log('[TRANSPORT-CENTER-LOGIN] Bypass successful:', { userId: mockUser.id, role: mockUser.role });
+-
++    console.log('[TRANSPORT-CENTER] Fetching all services');
++    
++    const services = await transportCenterService.getAllServices();
++    
+     res.json({
+       success: true,
+-      message: 'Login successful (bypass mode)',
+-      data: {
+-        user: mockUser,
+-        token: token
+-      }
++      message: 'Services retrieved successfully',
++      data: services
+     });
+   } catch (error) {
+-    console.error('[TRANSPORT-CENTER-LOGIN] Error:', error);
+-    
+-    // Even if there's an error, still log them in
+-    console.log('[TRANSPORT-CENTER-LOGIN] Error occurred, but still logging in as admin');
++    console.error('[TRANSPORT-CENTER] Error fetching services:', error);
+     
+-    const mockUser = {
+-      id: 'error-bypass-admin-001',
+-      name: 'Error Bypass Admin',
+-      email: 'admin@medport.com',
+-      role: 'ADMIN'
+-    };
+-
+-    const token = jwt.sign(
+-      { 
+-        id: mockUser.id, 
+-        email: mockUser.email, 
+-        role: mockUser.role,
+-        userType: 'center', // Add userType for simplified system
+-        isTransportCenter: true
+-      },
+-      process.env.JWT_SECRET!,
+-      { expiresIn: '24h' }
+-    );
+-
+-    res.json({
+-      success: true,
+-      message: 'Login successful (error bypass mode)',
+-      data: {
+-        user: mockUser,
+-        token: token
+-      }
++    res.status(500).json({
++      success: false,
++      message: 'Failed to retrieve services'
+     });
+   }
+ });
+ 
+-// Demo Transport Center Login
+-router.post('/demo/login', async (req, res) => {
++// Get service by ID
++router.get('/services/:id', authenticateToken, requireTransportCenter, async (req: any, res: Response) => {
+   try {
+-    console.log('[TRANSPORT-CENTER-DEMO-LOGIN] Demo login attempt');
+-    
+-    // Create demo coordinator data
+-    const demoCoordinator = {
+-      id: 'demo-coordinator-001',
+-      name: 'Demo Transport Coordinator',
+-      email: 'coordinator@medport-transport.com',
+-      role: 'COORDINATOR'
+-    };
+-
+-    // Generate demo token with both role and userType for compatibility
+-    const token = jwt.sign(
+-      { 
+-        id: demoCoordinator.id, 
+-        email: demoCoordinator.email, 
+-        role: demoCoordinator.role,
+-        userType: 'center', // Add userType for simplified system
+-        isTransportCenter: true,
+-        isDemo: true
+-      },
+-      process.env.JWT_SECRET!,
+-      { expiresIn: '24h' }
+-    );
+-
+-    console.log('[TRANSPORT-CENTER-DEMO-LOGIN] Success');
+-
++    const { id } = req.params;
++    console.log('[TRANSPORT-CENTER] Fetching service:', id);
++    
++    const service = await transportCenterService.getServiceById(id);
++    
++    if (!service) {
++      return res.status(404).json({
++        success: false,
++        message: 'Service not found'
++      });
++    }
++    
+     res.json({
+       success: true,
+-      message: 'Demo login successful',
+-      data: {
+-        user: demoCoordinator,
+-        token: token
+-      }
++      message: 'Service retrieved successfully',
++      data: service
+     });
+   } catch (error) {
+-    console.error('[TRANSPORT-CENTER-DEMO-LOGIN] Error:', error);
++    console.error('[TRANSPORT-CENTER] Error fetching service:', error);
++    
+     res.status(500).json({
+       success: false,
+-      message: 'Internal server error'
++      message: 'Failed to retrieve service'
+     });
+   }
+ });
+ 
+-// Get Transport Center dashboard data (Protected)
+-router.get('/dashboard', authenticateToken, async (req: any, res: Response) => {
++// Update service details
++router.put('/services/:id', authenticateToken, requireTransportCenter, async (req: any, res: Response) => {
+   try {
+-    // Check if user is a transport center coordinator
+-    if (!['ADMIN', 'COORDINATOR'].includes(req.user.role)) {
+-      return res.status(403).json({
++    const { id } = req.params;
++    console.log('[TRANSPORT-CENTER] Updating service:', id, req.body);
++    
++    const updateData = updateServiceSchema.parse(req.body);
++    const service = await transportCenterService.updateService(id, updateData);
++    
++    res.json({
++      success: true,
++      message: 'Service updated successfully',
++      data: service
++    });
++  } catch (error) {
++    console.error('[TRANSPORT-CENTER] Error updating service:', error);
++    
++    if (error instanceof z.ZodError) {
++      return res.status(400).json({
+         success: false,
+-        message: 'Insufficient permissions'
++        message: 'Validation error',
++        errors: error.issues.map((err: any) => ({
++          field: err.path.join('.'),
++          message: err.message
++        }))
+       });
+     }
+-
+-    // Get system overview data
+-    const [
+-      totalTransports,
+-      pendingTransports,
+-      activeUnits,
+-      totalAgencies,
+-      totalHospitals
+-    ] = await Promise.all([
+-      prisma.transportRequest.count(),
+-      prisma.transportRequest.count({ where: { status: 'PENDING' } }),
+-      prisma.unit.count({ where: { isActive: true, currentStatus: 'AVAILABLE' } }),
+-      prisma.transportAgency.count({ where: { isActive: true } }),
+-      prisma.transportAgency.count({ where: { isActive: true } })
+-    ]);
+-
+-    // Get recent transport requests
+-    const recentTransports = await prisma.transportRequest.findMany({
+-      take: 10,
+-      orderBy: { requestTimestamp: 'desc' },
+-      include: {
+-        originFacility: true,
+-        destinationFacility: true,
+-        assignedAgency: true,
+-        assignedUnit: true
+-      }
+-    });
+-
+-    // Get system alerts
+-    const alerts = [];
+-    
+-    if (pendingTransports > 10) {
+-      alerts.push({
+-        type: 'WARNING',
+-        message: `${pendingTransports} transport requests pending assignment`,
+-        severity: 'MEDIUM'
++    
++    if (error instanceof Error) {
++      return res.status(400).json({
++        success: false,
++        message: error.message
+       });
+     }
++    
++    res.status(500).json({
++      success: false,
++      message: 'Failed to update service'
++    });
++  }
++});
+ 
+-    if (activeUnits < 5) {
+-      alerts.push({
+-        type: 'ALERT',
+-        message: 'Low unit availability - only ${activeUnits} units available',
+-        severity: 'HIGH'
++// Disable service (soft delete)
++router.delete('/services/:id', authenticateToken, requireTransportCenter, async (req: any, res: Response) => {
++  try {
++    const { id } = req.params;
++    console.log('[TRANSPORT-CENTER] Disabling service:', id);
++    
++    const service = await transportCenterService.disableService(id);
++    
++    res.json({
++      success: true,
++      message: 'Service disabled successfully',
++      data: service
++    });
++  } catch (error) {
++    console.error('[TRANSPORT-CENTER] Error disabling service:', error);
++    
++    if (error instanceof Error) {
++      return res.status(400).json({
++        success: false,
++        message: error.message
+       });
+     }
++    
++    res.status(500).json({
++      success: false,
++      message: 'Failed to disable service'
++    });
++  }
++});
+ 
++// Enable service
++router.patch('/services/:id/enable', authenticateToken, requireTransportCenter, async (req: any, res: Response) => {
++  try {
++    const { id } = req.params;
++    console.log('[TRANSPORT-CENTER] Enabling service:', id);
++    
++    const service = await transportCenterService.enableService(id);
++    
+     res.json({
+       success: true,
+-      data: {
+-        overview: {
+-          totalTransports,
+-          pendingTransports,
+-          activeUnits,
+-          totalAgencies,
+-          totalHospitals
+-        },
+-        recentTransports,
+-        alerts
+-      }
++      message: 'Service enabled successfully',
++      data: service
+     });
+   } catch (error) {
+-    console.error('[TRANSPORT-CENTER-DASHBOARD] Error:', error);
++    console.error('[TRANSPORT-CENTER] Error enabling service:', error);
++    
++    if (error instanceof Error) {
++      return res.status(400).json({
++        success: false,
++        message: error.message
++      });
++    }
++    
+     res.status(500).json({
+       success: false,
+-      message: 'Internal server error'
++      message: 'Failed to enable service'
+     });
+   }
+ });
+ 
+-// Get Transport Center profile (Protected)
+-router.get('/profile', authenticateToken, async (req: any, res: Response) => {
++// Get services added by current user
++router.get('/my-services', authenticateToken, requireTransportCenter, async (req: any, res: Response) => {
+   try {
+     const userId = req.user.id;
++    console.log('[TRANSPORT-CENTER] Fetching services added by user:', userId);
+     
+-    const user = await prisma.user.findUnique({
+-      where: { id: userId }
++    const services = await transportCenterService.getServicesAddedByUser(userId);
++    
++    res.json({
++      success: true,
++      message: 'User services retrieved successfully',
++      data: services
+     });
++  } catch (error) {
++    console.error('[TRANSPORT-CENTER] Error fetching user services:', error);
++    
++    res.status(500).json({
++      success: false,
++      message: 'Failed to retrieve user services'
++    });
++  }
++});
+ 
+-    if (!user) {
+-      return res.status(404).json({
+-        success: false,
+-        message: 'User not found'
+-      });
+-    }
+-
++// Get service statistics
++router.get('/stats', authenticateToken, requireTransportCenter, async (req: any, res: Response) => {
++  try {
++    console.log('[TRANSPORT-CENTER] Fetching service statistics');
++    
++    const stats = await transportCenterService.getServiceStats();
++    
+     res.json({
+       success: true,
+-      data: {
+-        user: {
+-          id: user.id,
+-          name: user.name,
+-          email: user.email,
+-          role: user.role
+-        }
+-      }
++      message: 'Service statistics retrieved successfully',
++      data: stats
+     });
+   } catch (error) {
+-    console.error('[TRANSPORT-CENTER-PROFILE] Error:', error);
++    console.error('[TRANSPORT-CENTER] Error fetching service stats:', error);
++    
+     res.status(500).json({
+       success: false,
+-      message: 'Internal server error'
++      message: 'Failed to retrieve service statistics'
+     });
+   }
+ });
+ 
+-export default router;
++export default router;
+\ No newline at end of file
+diff --git a/backend/src/services/transportCenterService.ts b/backend/src/services/transportCenterService.ts
+new file mode 100644
+index 0000000..7d9933f
+--- /dev/null
++++ b/backend/src/services/transportCenterService.ts
+@@ -0,0 +1,375 @@
++import { PrismaClient, TransportAgency, ServiceStatus } from '@prisma/client';
++import { z } from 'zod';
++
++const prisma = new PrismaClient();
++
++// Validation schemas
++export const addServiceSchema = z.object({
++  name: z.string().min(1, 'Service name is required'),
++  contactName: z.string().optional(),
++  phone: z.string().min(1, 'Phone number is required'),
++  email: z.string().email('Valid email is required'),
++  address: z.string().min(1, 'Address is required'),
++  city: z.string().min(1, 'City is required'),
++  state: z.string().min(1, 'State is required'),
++  zipCode: z.string().min(1, 'ZIP code is required'),
++  serviceArea: z.any().optional(),
++  operatingHours: z.any().optional(),
++  capabilities: z.any().optional(),
++  pricingStructure: z.any().optional()
++});
++
++export const updateServiceSchema = z.object({
++  name: z.string().min(1, 'Service name is required').optional(),
++  contactName: z.string().optional(),
++  phone: z.string().min(1, 'Phone number is required').optional(),
++  email: z.string().email('Valid email is required').optional(),
++  address: z.string().min(1, 'Address is required').optional(),
++  city: z.string().min(1, 'City is required').optional(),
++  state: z.string().min(1, 'State is required').optional(),
++  zipCode: z.string().min(1, 'ZIP code is required').optional(),
++  serviceArea: z.any().optional(),
++  operatingHours: z.any().optional(),
++  capabilities: z.any().optional(),
++  pricingStructure: z.any().optional(),
++  status: z.enum(['ACTIVE', 'INACTIVE', 'PENDING']).optional()
++});
++
++export interface AddServiceData {
++  name: string;
++  contactName?: string;
++  phone: string;
++  email: string;
++  address: string;
++  city: string;
++  state: string;
++  zipCode: string;
++  serviceArea?: any;
++  operatingHours?: any;
++  capabilities?: any;
++  pricingStructure?: any;
++}
++
++export interface UpdateServiceData {
++  name?: string;
++  contactName?: string;
++  phone?: string;
++  email?: string;
++  address?: string;
++  city?: string;
++  state?: string;
++  zipCode?: string;
++  serviceArea?: any;
++  operatingHours?: any;
++  capabilities?: any;
++  pricingStructure?: any;
++  status?: ServiceStatus;
++}
++
++export class TransportCenterService {
++  // Add new EMS service (Transport Center only)
++  async addService(data: AddServiceData, addedByUserId: string): Promise<TransportAgency> {
++    try {
++      // Check if service with same email already exists
++      const existingService = await prisma.transportAgency.findFirst({
++        where: { email: data.email }
++      });
++
++      if (existingService) {
++        throw new Error('A service with this email already exists');
++      }
++
++      // Create new service
++      const service = await prisma.transportAgency.create({
++        data: {
++          name: data.name,
++          contactName: data.contactName,
++          phone: data.phone,
++          email: data.email,
++          address: data.address,
++          city: data.city,
++          state: data.state,
++          zipCode: data.zipCode,
++          serviceArea: data.serviceArea,
++          operatingHours: data.operatingHours,
++          capabilities: data.capabilities,
++          pricingStructure: data.pricingStructure,
++          addedBy: addedByUserId,
++          status: 'ACTIVE',
++          addedAt: new Date()
++        },
++        include: {
++          addedByUser: {
++            select: {
++              id: true,
++              name: true,
++              email: true
++            }
++          }
++        }
++      });
++
++      return service;
++    } catch (error) {
++      console.error('Error adding service:', error);
++      throw error;
++    }
++  }
++
++  // Get all services (Transport Center only)
++  async getAllServices(): Promise<TransportAgency[]> {
++    try {
++      const services = await prisma.transportAgency.findMany({
++        include: {
++          addedByUser: {
++            select: {
++              id: true,
++              name: true,
++              email: true
++            }
++          },
++          units: {
++            where: { isActive: true },
++            select: {
++              id: true,
++              unitNumber: true,
++              type: true,
++              currentStatus: true
++            }
++          },
++          serviceAreas: {
++            where: { isActive: true },
++            select: {
++              id: true,
++              name: true,
++              description: true
++            }
++          }
++        },
++        orderBy: [
++          { status: 'asc' },
++          { name: 'asc' }
++        ]
++      });
++
++      return services;
++    } catch (error) {
++      console.error('Error getting all services:', error);
++      throw error;
++    }
++  }
++
++  // Get service by ID
++  async getServiceById(serviceId: string): Promise<TransportAgency | null> {
++    try {
++      const service = await prisma.transportAgency.findUnique({
++        where: { id: serviceId },
++        include: {
++          addedByUser: {
++            select: {
++              id: true,
++              name: true,
++              email: true
++            }
++          },
++          units: {
++            where: { isActive: true },
++            include: {
++              unitAvailability: true
++            }
++          },
++          serviceAreas: {
++            where: { isActive: true }
++          },
++          agencyProfiles: true
++        }
++      });
++
++      return service;
++    } catch (error) {
++      console.error('Error getting service by ID:', error);
++      throw error;
++    }
++  }
++
++  // Update service details
++  async updateService(serviceId: string, data: UpdateServiceData): Promise<TransportAgency> {
++    try {
++      // Check if service exists
++      const existingService = await prisma.transportAgency.findUnique({
++        where: { id: serviceId }
++      });
++
++      if (!existingService) {
++        throw new Error('Service not found');
++      }
++
++      // If email is being updated, check for duplicates
++      if (data.email && data.email !== existingService.email) {
++        const duplicateService = await prisma.transportAgency.findFirst({
++          where: { 
++            email: data.email,
++            id: { not: serviceId }
++          }
++        });
++
++        if (duplicateService) {
++          throw new Error('A service with this email already exists');
++        }
++      }
++
++      // Update service
++      const updatedService = await prisma.transportAgency.update({
++        where: { id: serviceId },
++        data: {
++          ...data,
++          updatedAt: new Date()
++        },
++        include: {
++          addedByUser: {
++            select: {
++              id: true,
++              name: true,
++              email: true
++            }
++          }
++        }
++      });
++
++      return updatedService;
++    } catch (error) {
++      console.error('Error updating service:', error);
++      throw error;
++    }
++  }
++
++  // Disable service (soft delete)
++  async disableService(serviceId: string): Promise<TransportAgency> {
++    try {
++      const service = await prisma.transportAgency.update({
++        where: { id: serviceId },
++        data: {
++          status: 'INACTIVE',
++          isActive: false,
++          updatedAt: new Date()
++        },
++        include: {
++          addedByUser: {
++            select: {
++              id: true,
++              name: true,
++              email: true
++            }
++          }
++        }
++      });
++
++      return service;
++    } catch (error) {
++      console.error('Error disabling service:', error);
++      throw error;
++    }
++  }
++
++  // Enable service
++  async enableService(serviceId: string): Promise<TransportAgency> {
++    try {
++      const service = await prisma.transportAgency.update({
++        where: { id: serviceId },
++        data: {
++          status: 'ACTIVE',
++          isActive: true,
++          updatedAt: new Date()
++        },
++        include: {
++          addedByUser: {
++            select: {
++              id: true,
++              name: true,
++              email: true
++            }
++          }
++        }
++      });
++
++      return service;
++    } catch (error) {
++      console.error('Error enabling service:', error);
++      throw error;
++    }
++  }
++
++  // Get services added by specific Transport Center user
++  async getServicesAddedByUser(userId: string): Promise<TransportAgency[]> {
++    try {
++      const services = await prisma.transportAgency.findMany({
++        where: { addedBy: userId },
++        include: {
++          addedByUser: {
++            select: {
++              id: true,
++              name: true,
++              email: true
++            }
++          }
++        },
++        orderBy: [
++          { status: 'asc' },
++          { name: 'asc' }
++        ]
++      });
++
++      return services;
++    } catch (error) {
++      console.error('Error getting services added by user:', error);
++      throw error;
++    }
++  }
++
++  // Get service statistics
++  async getServiceStats(): Promise<{
++    totalServices: number;
++    activeServices: number;
++    inactiveServices: number;
++    pendingServices: number;
++    servicesAddedThisMonth: number;
++  }> {
++    try {
++      const now = new Date();
++      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
++
++      const [
++        totalServices,
++        activeServices,
++        inactiveServices,
++        pendingServices,
++        servicesAddedThisMonth
++      ] = await Promise.all([
++        prisma.transportAgency.count(),
++        prisma.transportAgency.count({ where: { status: 'ACTIVE' } }),
++        prisma.transportAgency.count({ where: { status: 'INACTIVE' } }),
++        prisma.transportAgency.count({ where: { status: 'PENDING' } }),
++        prisma.transportAgency.count({
++          where: {
++            addedAt: {
++              gte: startOfMonth
++            }
++          }
++        })
++      ]);
++
++      return {
++        totalServices,
++        activeServices,
++        inactiveServices,
++        pendingServices,
++        servicesAddedThisMonth
++      };
++    } catch (error) {
++      console.error('Error getting service stats:', error);
++      throw error;
++    }
++  }
++}
++
++export default new TransportCenterService();
+diff --git a/frontend/src/components/TransportCenterAddService.tsx b/frontend/src/components/TransportCenterAddService.tsx
+new file mode 100644
+index 0000000..51f9d87
+--- /dev/null
++++ b/frontend/src/components/TransportCenterAddService.tsx
+@@ -0,0 +1,358 @@
++import React, { useState } from 'react';
++
++interface AddServiceData {
++  name: string;
++  contactName?: string;
++  phone: string;
++  email: string;
++  address: string;
++  city: string;
++  state: string;
++  zipCode: string;
++  serviceArea?: string;
++  operatingHours?: any;
++  capabilities?: string[];
++  pricingStructure?: any;
++}
++
++interface TransportCenterAddServiceProps {
++  onServiceAdded: () => void;
++}
++
++const TransportCenterAddService: React.FC<TransportCenterAddServiceProps> = ({ onServiceAdded }) => {
++  const [formData, setFormData] = useState<AddServiceData>({
++    name: '',
++    contactName: '',
++    phone: '',
++    email: '',
++    address: '',
++    city: '',
++    state: '',
++    zipCode: '',
++    serviceArea: '',
++    capabilities: []
++  });
++
++  const [loading, setLoading] = useState(false);
++  const [error, setError] = useState<string | null>(null);
++  const [success, setSuccess] = useState(false);
++
++  const capabilityOptions = [
++    'Emergency Response',
++    'Inter-facility Transport',
++    'Critical Care',
++    'Neonatal Transport',
++    'Pediatric Transport',
++    'Bariatric Transport',
++    'Ventilator Support',
++    'Cardiac Monitoring',
++    'IV Therapy',
++    'Medication Administration'
++  ];
++
++  const handleInputChange = (field: string, value: any) => {
++    if (field.includes('.')) {
++      const [parent, child] = field.split('.');
++      setFormData(prev => ({
++        ...prev,
++        [parent]: {
++          ...prev[parent as keyof AddServiceData],
++          [child]: value
++        }
++      }));
++    } else {
++      setFormData(prev => ({
++        ...prev,
++        [field]: value
++      }));
++    }
++  };
++
++  const handleArrayChange = (field: 'capabilities', value: string, checked: boolean) => {
++    setFormData(prev => ({
++      ...prev,
++      [field]: checked
++        ? [...(prev[field] || []), value]
++        : (prev[field] || []).filter(item => item !== value)
++    }));
++  };
++
++  const handleSubmit = async (e: React.FormEvent) => {
++    e.preventDefault();
++    setLoading(true);
++    setError(null);
++
++    try {
++      const token = localStorage.getItem('token');
++      
++      const response = await fetch('/api/transport-center/add-service', {
++        method: 'POST',
++        headers: {
++          'Authorization': `Bearer ${token}`,
++          'Content-Type': 'application/json'
++        },
++        body: JSON.stringify(formData)
++      });
++
++      if (!response.ok) {
++        const errorData = await response.json();
++        throw new Error(errorData.message || 'Failed to add service');
++      }
++
++      const result = await response.json();
++      console.log('Service added successfully:', result);
++      
++      setSuccess(true);
++      setFormData({
++        name: '',
++        contactName: '',
++        phone: '',
++        email: '',
++        address: '',
++        city: '',
++        state: '',
++        zipCode: '',
++        serviceArea: '',
++        capabilities: []
++      });
++
++      // Call the callback to refresh the parent component
++      setTimeout(() => {
++        onServiceAdded();
++      }, 1500);
++
++    } catch (err) {
++      setError(err instanceof Error ? err.message : 'Failed to add service');
++    } finally {
++      setLoading(false);
++    }
++  };
++
++  if (success) {
++    return (
++      <div className="text-center py-8">
++        <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
++          <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
++            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
++          </svg>
++        </div>
++        <h3 className="mt-2 text-sm font-medium text-gray-900">Service Added Successfully!</h3>
++        <p className="mt-1 text-sm text-gray-500">
++          The EMS service has been added to the network and is now available to all hospitals.
++        </p>
++      </div>
++    );
++  }
++
++  return (
++    <form onSubmit={handleSubmit} className="space-y-6">
++      {error && (
++        <div className="rounded-md bg-red-50 p-4">
++          <div className="flex">
++            <div className="flex-shrink-0">
++              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
++                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
++              </svg>
++            </div>
++            <div className="ml-3">
++              <h3 className="text-sm font-medium text-red-800">Error</h3>
++              <div className="mt-2 text-sm text-red-700">
++                <p>{error}</p>
++              </div>
++            </div>
++          </div>
++        </div>
++      )}
++
++      {/* Basic Information */}
++      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
++        <div>
++          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
++            Service Name *
++          </label>
++          <input
++            type="text"
++            id="name"
++            required
++            value={formData.name}
++            onChange={(e) => handleInputChange('name', e.target.value)}
++            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
++            placeholder="e.g., Altoona EMS Services"
++          />
++        </div>
++
++        <div>
++          <label htmlFor="serviceArea" className="block text-sm font-medium text-gray-700">
++            Service Area *
++          </label>
++          <input
++            type="text"
++            id="serviceArea"
++            required
++            value={formData.serviceArea}
++            onChange={(e) => handleInputChange('serviceArea', e.target.value)}
++            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
++            placeholder="e.g., Blair County, PA"
++          />
++        </div>
++      </div>
++
++      {/* Contact Information */}
++      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
++        <div>
++          <label htmlFor="contactName" className="block text-sm font-medium text-gray-700">
++            Contact Name
++          </label>
++          <input
++            type="text"
++            id="contactName"
++            value={formData.contactName}
++            onChange={(e) => handleInputChange('contactName', e.target.value)}
++            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
++            placeholder="John Doe"
++          />
++        </div>
++
++        <div>
++          <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
++            Phone Number *
++          </label>
++          <input
++            type="tel"
++            id="phone"
++            required
++            value={formData.phone}
++            onChange={(e) => handleInputChange('phone', e.target.value)}
++            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
++            placeholder="(814) 555-0123"
++          />
++        </div>
++
++        <div>
++          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
++            Email Address *
++          </label>
++          <input
++            type="email"
++            id="email"
++            required
++            value={formData.email}
++            onChange={(e) => handleInputChange('email', e.target.value)}
++            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
++            placeholder="contact@altoonaems.com"
++          />
++        </div>
++
++        <div>
++          <label htmlFor="address" className="block text-sm font-medium text-gray-700">
++            Street Address *
++          </label>
++          <input
++            type="text"
++            id="address"
++            required
++            value={formData.address}
++            onChange={(e) => handleInputChange('address', e.target.value)}
++            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
++            placeholder="123 Main St"
++          />
++        </div>
++
++        <div>
++          <label htmlFor="city" className="block text-sm font-medium text-gray-700">
++            City *
++          </label>
++          <input
++            type="text"
++            id="city"
++            required
++            value={formData.city}
++            onChange={(e) => handleInputChange('city', e.target.value)}
++            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
++            placeholder="Altoona"
++          />
++        </div>
++
++        <div>
++          <label htmlFor="state" className="block text-sm font-medium text-gray-700">
++            State *
++          </label>
++          <input
++            type="text"
++            id="state"
++            required
++            value={formData.state}
++            onChange={(e) => handleInputChange('state', e.target.value)}
++            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
++            placeholder="PA"
++          />
++        </div>
++
++        <div>
++          <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700">
++            ZIP Code *
++          </label>
++          <input
++            type="text"
++            id="zipCode"
++            required
++            value={formData.zipCode}
++            onChange={(e) => handleInputChange('zipCode', e.target.value)}
++            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
++            placeholder="16601"
++          />
++        </div>
++      </div>
++
++      {/* Capabilities */}
++      <div>
++        <label className="block text-sm font-medium text-gray-700 mb-3">
++          Service Capabilities
++        </label>
++        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
++          {capabilityOptions.map((capability) => (
++            <label key={capability} className="flex items-center">
++              <input
++                type="checkbox"
++                checked={formData.capabilities?.includes(capability) || false}
++                onChange={(e) => handleArrayChange('capabilities', capability, e.target.checked)}
++                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
++              />
++              <span className="ml-2 text-sm text-gray-700">{capability}</span>
++            </label>
++          ))}
++        </div>
++      </div>
++
++      {/* Submit Button */}
++      <div className="flex justify-end space-x-3">
++        <button
++          type="button"
++          onClick={() => onServiceAdded()}
++          className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
++        >
++          Cancel
++        </button>
++        <button
++          type="submit"
++          disabled={loading}
++          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
++        >
++          {loading ? (
++            <span className="flex items-center">
++              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
++                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
++                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
++              </svg>
++              Adding Service...
++            </span>
++          ) : (
++            'Add Service'
++          )}
++        </button>
++      </div>
++    </form>
++  );
++};
++
++export default TransportCenterAddService;
+diff --git a/frontend/src/components/TransportCenterServiceManagement.tsx b/frontend/src/components/TransportCenterServiceManagement.tsx
+new file mode 100644
+index 0000000..d160063
+--- /dev/null
++++ b/frontend/src/components/TransportCenterServiceManagement.tsx
+@@ -0,0 +1,439 @@
++import React, { useState, useEffect } from 'react';
++import TransportCenterAddService from './TransportCenterAddService';
++
++interface TransportAgency {
++  id: string;
++  name: string;
++  contactName?: string;
++  phone: string;
++  email: string;
++  address: string;
++  city: string;
++  state: string;
++  zipCode: string;
++  serviceArea: string | null;
++  isActive: boolean;
++  status: 'ACTIVE' | 'INACTIVE' | 'PENDING';
++  addedBy?: string;
++  addedAt?: string;
++  createdAt: string;
++  updatedAt: string;
++}
++
++interface ServiceStats {
++  totalServices: number;
++  activeServices: number;
++  inactiveServices: number;
++  pendingServices: number;
++}
++
++const TransportCenterServiceManagement: React.FC = () => {
++  const [services, setServices] = useState<TransportAgency[]>([]);
++  const [stats, setStats] = useState<ServiceStats | null>(null);
++  const [loading, setLoading] = useState(true);
++  const [error, setError] = useState<string | null>(null);
++  const [activeTab, setActiveTab] = useState<'overview' | 'add-service' | 'manage-services'>('overview');
++  const [showAddForm, setShowAddForm] = useState(false);
++
++  useEffect(() => {
++    loadServices();
++    loadStats();
++  }, []);
++
++  const loadServices = async () => {
++    try {
++      setLoading(true);
++      const token = localStorage.getItem('token');
++      
++      const response = await fetch('/api/transport-center/services', {
++        headers: {
++          'Authorization': `Bearer ${token}`,
++          'Content-Type': 'application/json'
++        }
++      });
++
++      if (!response.ok) {
++        throw new Error('Failed to load services');
++      }
++
++      const data = await response.json();
++      setServices(data.data || []);
++    } catch (err) {
++      setError(err instanceof Error ? err.message : 'Failed to load services');
++    } finally {
++      setLoading(false);
++    }
++  };
++
++  const loadStats = async () => {
++    try {
++      const token = localStorage.getItem('token');
++      
++      const response = await fetch('/api/transport-center/stats', {
++        headers: {
++          'Authorization': `Bearer ${token}`,
++          'Content-Type': 'application/json'
++        }
++      });
++
++      if (!response.ok) {
++        throw new Error('Failed to load statistics');
++      }
++
++      const data = await response.json();
++      setStats(data.data);
++    } catch (err) {
++      console.error('Failed to load stats:', err);
++    }
++  };
++
++  const handleAddService = () => {
++    setActiveTab('add-service');
++    setShowAddForm(true);
++  };
++
++  const handleServiceAdded = () => {
++    setShowAddForm(false);
++    setActiveTab('overview');
++    loadServices();
++    loadStats();
++  };
++
++  const handleToggleService = async (serviceId: string, currentStatus: string) => {
++    try {
++      const token = localStorage.getItem('token');
++      const endpoint = currentStatus === 'ACTIVE' 
++        ? `/api/transport-center/services/${serviceId}`
++        : `/api/transport-center/services/${serviceId}/enable`;
++      
++      const response = await fetch(endpoint, {
++        method: currentStatus === 'ACTIVE' ? 'DELETE' : 'PATCH',
++        headers: {
++          'Authorization': `Bearer ${token}`,
++          'Content-Type': 'application/json'
++        }
++      });
++
++      if (!response.ok) {
++        throw new Error('Failed to update service status');
++      }
++
++      // Reload services and stats
++      loadServices();
++      loadStats();
++    } catch (err) {
++      setError(err instanceof Error ? err.message : 'Failed to update service');
++    }
++  };
++
++  if (loading) {
++    return (
++      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
++        <div className="text-center">
++          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
++          <p className="mt-4 text-gray-600">Loading service management...</p>
++        </div>
++      </div>
++    );
++  }
++
++  if (error) {
++    return (
++      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
++        <div className="text-center">
++          <div className="text-red-600 text-xl mb-4">⚠️ Error</div>
++          <p className="text-gray-600 mb-4">{error}</p>
++          <button
++            onClick={() => {
++              setError(null);
++              loadServices();
++              loadStats();
++            }}
++            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
++          >
++            Retry
++          </button>
++        </div>
++      </div>
++    );
++  }
++
++  return (
++    <div className="min-h-screen bg-gray-50">
++      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
++        {/* Header */}
++        <div className="mb-8">
++          <h1 className="text-3xl font-bold text-gray-900">Transport Center Service Management</h1>
++          <p className="mt-2 text-gray-600">
++            Manage EMS services available to all hospitals in the network
++          </p>
++        </div>
++
++        {/* Tab Navigation */}
++        <div className="mb-8">
++          <nav className="flex space-x-8">
++            <button
++              onClick={() => setActiveTab('overview')}
++              className={`py-2 px-1 border-b-2 font-medium text-sm ${
++                activeTab === 'overview'
++                  ? 'border-blue-500 text-blue-600'
++                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
++              }`}
++            >
++              Overview
++            </button>
++            <button
++              onClick={() => setActiveTab('add-service')}
++              className={`py-2 px-1 border-b-2 font-medium text-sm ${
++                activeTab === 'add-service'
++                  ? 'border-blue-500 text-blue-600'
++                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
++              }`}
++            >
++              Add Service
++            </button>
++            <button
++              onClick={() => setActiveTab('manage-services')}
++              className={`py-2 px-1 border-b-2 font-medium text-sm ${
++                activeTab === 'manage-services'
++                  ? 'border-blue-500 text-blue-600'
++                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
++              }`}
++            >
++              Manage Services
++            </button>
++          </nav>
++        </div>
++
++        {/* Overview Tab */}
++        {activeTab === 'overview' && (
++          <div className="space-y-6">
++            {/* Statistics Cards */}
++            {stats && (
++              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
++                <div className="bg-white overflow-hidden shadow rounded-lg">
++                  <div className="p-5">
++                    <div className="flex items-center">
++                      <div className="flex-shrink-0">
++                        <div className="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
++                          <span className="text-white text-sm font-medium">T</span>
++                        </div>
++                      </div>
++                      <div className="ml-5 w-0 flex-1">
++                        <dl>
++                          <dt className="text-sm font-medium text-gray-500 truncate">Total Services</dt>
++                          <dd className="text-lg font-medium text-gray-900">{stats.totalServices}</dd>
++                        </dl>
++                      </div>
++                    </div>
++                  </div>
++                </div>
++
++                <div className="bg-white overflow-hidden shadow rounded-lg">
++                  <div className="p-5">
++                    <div className="flex items-center">
++                      <div className="flex-shrink-0">
++                        <div className="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
++                          <span className="text-white text-sm font-medium">A</span>
++                        </div>
++                      </div>
++                      <div className="ml-5 w-0 flex-1">
++                        <dl>
++                          <dt className="text-sm font-medium text-gray-500 truncate">Active Services</dt>
++                          <dd className="text-lg font-medium text-gray-900">{stats.activeServices}</dd>
++                        </dl>
++                      </div>
++                    </div>
++                  </div>
++                </div>
++
++                <div className="bg-white overflow-hidden shadow rounded-lg">
++                  <div className="p-5">
++                    <div className="flex items-center">
++                      <div className="flex-shrink-0">
++                        <div className="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
++                          <span className="text-white text-sm font-medium">P</span>
++                        </div>
++                      </div>
++                      <div className="ml-5 w-0 flex-1">
++                        <dl>
++                          <dt className="text-sm font-medium text-gray-500 truncate">Pending Services</dt>
++                          <dd className="text-lg font-medium text-gray-900">{stats.pendingServices}</dd>
++                        </dl>
++                      </div>
++                    </div>
++                  </div>
++                </div>
++
++                <div className="bg-white overflow-hidden shadow rounded-lg">
++                  <div className="p-5">
++                    <div className="flex items-center">
++                      <div className="flex-shrink-0">
++                        <div className="w-8 h-8 bg-red-500 rounded-md flex items-center justify-center">
++                          <span className="text-white text-sm font-medium">I</span>
++                        </div>
++                      </div>
++                      <div className="ml-5 w-0 flex-1">
++                        <dl>
++                          <dt className="text-sm font-medium text-gray-500 truncate">Inactive Services</dt>
++                          <dd className="text-lg font-medium text-gray-900">{stats.inactiveServices}</dd>
++                        </dl>
++                      </div>
++                    </div>
++                  </div>
++                </div>
++              </div>
++            )}
++
++            {/* Quick Actions */}
++            <div className="bg-white shadow rounded-lg p-6">
++              <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
++              <div className="flex space-x-4">
++                <button
++                  onClick={handleAddService}
++                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
++                >
++                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
++                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
++                  </svg>
++                  Add New Service
++                </button>
++                <button
++                  onClick={() => setActiveTab('manage-services')}
++                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
++                >
++                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
++                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.93 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
++                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
++                  </svg>
++                  Manage Services
++                </button>
++              </div>
++            </div>
++
++            {/* Recent Services */}
++            <div className="bg-white shadow rounded-lg">
++              <div className="px-6 py-4 border-b border-gray-200">
++                <h3 className="text-lg font-medium text-gray-900">Recent Services</h3>
++              </div>
++              <div className="divide-y divide-gray-200">
++                {services.slice(0, 5).map((service) => (
++                  <div key={service.id} className="px-6 py-4">
++                    <div className="flex items-center justify-between">
++                      <div className="flex-1">
++                        <h4 className="text-sm font-medium text-gray-900">{service.name}</h4>
++                        {service.contactName && (
++                          <p className="text-sm text-gray-500">Contact: {service.contactName}</p>
++                        )}
++                        <p className="text-sm text-gray-500">{service.serviceArea || 'No service area specified'}</p>
++                        <p className="text-sm text-gray-500">{service.phone} • {service.email}</p>
++                        <p className="text-sm text-gray-500">{service.address}, {service.city}, {service.state} {service.zipCode}</p>
++                        {service.capabilities && service.capabilities.length > 0 && (
++                          <div className="mt-1">
++                            <span className="text-xs text-gray-500">Capabilities: </span>
++                            {service.capabilities.map((capability, index) => (
++                              <span key={capability} className="text-xs text-gray-600">
++                                {capability}{index < service.capabilities.length - 1 ? ', ' : ''}
++                              </span>
++                            ))}
++                          </div>
++                        )}
++                      </div>
++                      <div className="flex items-center space-x-2">
++                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
++                          service.status === 'ACTIVE' 
++                            ? 'bg-green-100 text-green-800'
++                            : service.status === 'PENDING'
++                            ? 'bg-yellow-100 text-yellow-800'
++                            : 'bg-red-100 text-red-800'
++                        }`}>
++                          {service.status}
++                        </span>
++                        <span className="text-sm text-gray-500">
++                          {new Date(service.createdAt).toLocaleDateString()}
++                        </span>
++                      </div>
++                    </div>
++                  </div>
++                ))}
++              </div>
++            </div>
++          </div>
++        )}
++
++        {/* Add Service Tab */}
++        {activeTab === 'add-service' && (
++          <div className="bg-white shadow rounded-lg p-6">
++            <h3 className="text-lg font-medium text-gray-900 mb-6">Add New EMS Service</h3>
++            <TransportCenterAddService onServiceAdded={handleServiceAdded} />
++          </div>
++        )}
++
++        {/* Manage Services Tab */}
++        {activeTab === 'manage-services' && (
++          <div className="bg-white shadow rounded-lg">
++            <div className="px-6 py-4 border-b border-gray-200">
++              <h3 className="text-lg font-medium text-gray-900">Manage Services</h3>
++            </div>
++            <div className="divide-y divide-gray-200">
++              {services.map((service) => (
++                <div key={service.id} className="px-6 py-4">
++                  <div className="flex items-start justify-between">
++                    <div className="flex-1">
++                      <h4 className="text-sm font-medium text-gray-900">{service.name}</h4>
++                      {service.contactName && (
++                        <p className="text-sm text-gray-500">Contact: {service.contactName}</p>
++                      )}
++                      <p className="text-sm text-gray-500">{service.serviceArea || 'No service area specified'}</p>
++                      <p className="text-sm text-gray-500">{service.phone} • {service.email}</p>
++                      <p className="text-sm text-gray-500">{service.address}, {service.city}, {service.state} {service.zipCode}</p>
++                      {service.capabilities && service.capabilities.length > 0 && (
++                        <div className="mt-2">
++                          <span className="text-xs text-gray-500">Capabilities: </span>
++                          {service.capabilities.map((capability, index) => (
++                            <span key={capability} className="text-xs text-gray-600">
++                              {capability}{index < service.capabilities.length - 1 ? ', ' : ''}
++                            </span>
++                          ))}
++                        </div>
++                      )}
++                      <div className="mt-2 text-xs text-gray-400">
++                        Added: {new Date(service.createdAt).toLocaleDateString()}
++                        {service.addedByUser && (
++                          <span> by {service.addedByUser.name}</span>
++                        )}
++                      </div>
++                    </div>
++                    <div className="flex items-center space-x-4 ml-4">
++                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
++                        service.status === 'ACTIVE' 
++                          ? 'bg-green-100 text-green-800'
++                          : service.status === 'PENDING'
++                          ? 'bg-yellow-100 text-yellow-800'
++                          : 'bg-red-100 text-red-800'
++                      }`}>
++                        {service.status}
++                      </span>
++                      <button
++                        onClick={() => handleToggleService(service.id, service.status)}
++                        className={`px-3 py-1 text-xs font-medium rounded-md ${
++                          service.status === 'ACTIVE'
++                            ? 'bg-red-100 text-red-700 hover:bg-red-200'
++                            : 'bg-green-100 text-green-700 hover:bg-green-200'
++                        }`}
++                      >
++                        {service.status === 'ACTIVE' ? 'Disable' : 'Enable'}
++                      </button>
++                    </div>
++                  </div>
++                </div>
++              ))}
++            </div>
++          </div>
++        )}
++      </div>
++    </div>
++  );
++};
++
++export default TransportCenterServiceManagement;
