@@ -22,7 +22,7 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
   if (authHeader === 'demo-token' || authHeader === 'Bearer demo-token') {
     console.log('[AUTH] Demo mode authentication bypassed');
     req.user = {
-      id: 'demo-user',
+      id: 'cmf2mdpnx0000ccuti77tb3s9', // Use actual demo user ID from database
       email: 'demo@medport.com',
       role: 'ADMIN'
     };

@@ -22,7 +22,7 @@ export const simpleAuthenticateToken = (req: SimpleAuthRequest, res: Response, n
   if (authHeader === 'demo-token' || authHeader === 'Bearer demo-token') {
     console.log('[SIMPLE_AUTH] Demo mode authentication bypassed');
     req.user = {
-      id: 'demo-user',
+      id: 'cmf2mdpnx0000ccuti77tb3s9', // Use actual demo user ID from database
       email: 'demo@medport.com',
       userType: 'center' // Demo user gets center access
     };
