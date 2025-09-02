@@ -126,6 +126,13 @@ export class SimpleNavigationService {
               category: 'Management'
             },
             {
+              id: 'service-management',
+              name: 'Service Management',
+              path: 'transport-center-services',
+              icon: 'add_business',
+              category: 'Management'
+            },
+            {
               id: 'system-settings',
               name: 'System Settings',
               path: 'settings',

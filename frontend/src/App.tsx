@@ -25,6 +25,7 @@ import RevenueOpportunities from './components/RevenueOpportunities';
 import AgencyAnalytics from './components/AgencyAnalytics';
 import QRCodeSystem from './pages/QRCodeSystem';
 import OfflineCapabilities from './pages/OfflineCapabilities';
+import TransportCenterServiceManagement from './components/TransportCenterServiceManagement';
 
 // New simplified components
 import HospitalDashboard from './pages/HospitalDashboard';
@@ -276,6 +277,7 @@ function App() {
         {currentPage === 'agency-analytics' && <AgencyAnalytics />}
         {currentPage === 'qr-code-system' && <QRCodeSystem />}
         {currentPage === 'offline-capabilities' && <OfflineCapabilities />}
+        {currentPage === 'transport-center-services' && <TransportCenterServiceManagement />}
       </main>
     </div>
   );
