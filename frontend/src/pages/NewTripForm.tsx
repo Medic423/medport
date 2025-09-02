@@ -1,5 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 // import { useNavigate } from 'react-router-dom'; // Removed - using custom routing
+
+interface Facility {
+  id: string;
+  name: string;
+  type: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  phone?: string;
+  email?: string;
+}
 
 interface TripFormData {
   origin: string;
@@ -48,6 +60,67 @@ const NewTripForm: React.FC<NewTripFormProps> = ({ onNavigate }) => {
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<TripFormData>>({});
+  
+  // Autocomplete state
+  const [filteredOriginFacilities, setFilteredOriginFacilities] = useState<Facility[]>([]);
+  const [filteredDestinationFacilities, setFilteredDestinationFacilities] = useState<Facility[]>([]);
+  const [showOriginSuggestions, setShowOriginSuggestions] = useState(false);
+  const [showDestinationSuggestions, setShowDestinationSuggestions] = useState(false);
+
+  // Search facilities for autocomplete
+  const searchFacilities = async (query: string, type: 'origin' | 'destination') => {
+    if (!query.trim()) {
+      if (type === 'origin') {
+        setFilteredOriginFacilities([]);
+        setShowOriginSuggestions(false);
+      } else {
+        setFilteredDestinationFacilities([]);
+        setShowDestinationSuggestions(false);
+      }
+      return;
+    }
+
+    try {
+      // Check for demo mode and get appropriate token
+      const isDemoMode = localStorage.getItem('demoMode') === 'true';
+      const token = isDemoMode ? 'demo-token' : localStorage.getItem('token');
+
+      const response = await fetch(
+        `/api/transport-requests/facilities/search?name=${encodeURIComponent(query)}&limit=10`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        const filtered = data.facilities || [];
+        
+        if (type === 'origin') {
+          setFilteredOriginFacilities(filtered);
+          setShowOriginSuggestions(true);
+        } else {
+          setFilteredDestinationFacilities(filtered);
+          setShowDestinationSuggestions(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error searching facilities:', error);
+    }
+  };
+
+  // Select a facility from autocomplete
+  const selectFacility = (facility: Facility, type: 'origin' | 'destination') => {
+    if (type === 'origin') {
+      setFormData(prev => ({ ...prev, origin: facility.name }));
+      setShowOriginSuggestions(false);
+    } else {
+      setFormData(prev => ({ ...prev, destination: facility.name }));
+      setShowDestinationSuggestions(false);
+    }
+  };
 
   const handleInputChange = (field: string, value: any) => {
     if (field.includes('.')) {
@@ -64,6 +137,13 @@ const NewTripForm: React.FC<NewTripFormProps> = ({ onNavigate }) => {
         ...prev,
         [field]: value
       }));
+
+      // Trigger autocomplete search for origin/destination
+      if (field === 'origin') {
+        searchFacilities(value, 'origin');
+      } else if (field === 'destination') {
+        searchFacilities(value, 'destination');
+      }
     }
   };
 
@@ -130,7 +210,7 @@ const NewTripForm: React.FC<NewTripFormProps> = ({ onNavigate }) => {
         <div className="bg-white shadow rounded-lg p-6">
           <h2 className="text-lg font-medium text-gray-900 mb-4">Trip Details</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
+            <div className="relative">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Origin Facility *
               </label>
@@ -138,15 +218,35 @@ const NewTripForm: React.FC<NewTripFormProps> = ({ onNavigate }) => {
                 type="text"
                 value={formData.origin}
                 onChange={(e) => handleInputChange('origin', e.target.value)}
+                onFocus={() => formData.origin && setShowOriginSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowOriginSuggestions(false), 200)}
                 className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
                   errors.origin ? 'border-red-500' : 'border-gray-300'
                 }`}
-                placeholder="e.g., City General Hospital"
+                placeholder="Start typing to search facilities..."
               />
               {errors.origin && <p className="mt-1 text-sm text-red-600">{errors.origin}</p>}
+              
+              {/* Autocomplete dropdown */}
+              {showOriginSuggestions && filteredOriginFacilities.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                  {filteredOriginFacilities.map((facility) => (
+                    <div
+                      key={facility.id}
+                      onClick={() => selectFacility(facility, 'origin')}
+                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                    >
+                      <div className="font-medium text-gray-900">{facility.name}</div>
+                      <div className="text-sm text-gray-500">
+                        {facility.address}, {facility.city}, {facility.state} {facility.zipCode}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            <div>
+            <div className="relative">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Destination Facility *
               </label>
@@ -154,12 +254,32 @@ const NewTripForm: React.FC<NewTripFormProps> = ({ onNavigate }) => {
                 type="text"
                 value={formData.destination}
                 onChange={(e) => handleInputChange('destination', e.target.value)}
+                onFocus={() => formData.destination && setShowDestinationSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowDestinationSuggestions(false), 200)}
                 className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
                   errors.destination ? 'border-red-500' : 'border-gray-300'
                 }`}
-                placeholder="e.g., Regional Medical Center"
+                placeholder="Start typing to search facilities..."
               />
               {errors.destination && <p className="mt-1 text-sm text-red-600">{errors.destination}</p>}
+              
+              {/* Autocomplete dropdown */}
+              {showDestinationSuggestions && filteredDestinationFacilities.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                  {filteredDestinationFacilities.map((facility) => (
+                    <div
+                      key={facility.id}
+                      onClick={() => selectFacility(facility, 'destination')}
+                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                    >
+                      <div className="font-medium text-gray-900">{facility.name}</div>
+                      <div className="text-sm text-gray-500">
+                        {facility.address}, {facility.city}, {facility.state} {facility.zipCode}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div>
