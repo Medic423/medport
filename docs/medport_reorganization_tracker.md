@@ -567,9 +567,14 @@
 
 **Database Siloing Strategy**: 
 - **Problem**: Single database creates single point of failure and cross-module side effects
-- **Solution**: Three siloed databases (Hospital, EMS, Center) with event-driven communication
+- **Solution**: Three siloed databases (Hospital, EMS, Center) with cross-database access
+- **Revised Strategy**: Cross-database queries for required access patterns
+  - Hospital DB: Contains all trips, Hospital users, facilities
+  - EMS DB: Contains EMS agencies, units, bids, routes
+  - Center DB: Contains ALL user accounts, system config, analytics
+  - Cross-DB Access: Hospitals see EMS agencies, EMS sees trips, Center sees everything
 - **Benefits**: Fault isolation, independent scaling, development safety, performance optimization
-- **Documentation**: See `docs/database_siloing_strategy.md` for complete implementation plan
+- **Documentation**: See `docs/revised_database_siloing_strategy.md` for complete implementation plan
 
 **Status**: ⚠️ PARTIALLY FUNCTIONAL - Core hospital workflow working, service management broken
 **Priority**: 🚨 HIGH - Database siloing required before any new feature development
