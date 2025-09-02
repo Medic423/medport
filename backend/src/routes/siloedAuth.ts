@@ -1,10 +1,9 @@
 import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import { PrismaClient } from '@prisma/client';
+import { databaseManager } from '../services/databaseManager';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // Helper function to generate JWT token
 const generateToken = (user: any, userType: string) => {
@@ -33,7 +32,8 @@ router.post('/center-login', async (req: Request, res: Response) => {
     }
 
     // Find user with coordinator role (maps to center)
-    const user = await prisma.user.findFirst({
+    const centerDB = databaseManager.getCenterDB();
+    const user = await centerDB.user.findFirst({
       where: {
         email: email,
         role: 'COORDINATOR'
@@ -91,7 +91,8 @@ router.post('/hospital-login', async (req: Request, res: Response) => {
     }
 
     // Find user with admin role (maps to hospital)
-    const user = await prisma.user.findFirst({
+    const centerDB = databaseManager.getCenterDB();
+    const user = await centerDB.user.findFirst({
       where: {
         email: email,
         role: 'ADMIN'
@@ -149,7 +150,8 @@ router.post('/ems-login', async (req: Request, res: Response) => {
     }
 
     // Find user with transport agency role (maps to ems)
-    const user = await prisma.user.findFirst({
+    const centerDB = databaseManager.getCenterDB();
+    const user = await centerDB.user.findFirst({
       where: {
         email: email,
         role: 'TRANSPORT_AGENCY'

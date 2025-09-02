@@ -60,19 +60,20 @@ export class EventBus extends EventEmitter {
       console.log('[EventBus] Trip created:', data.tripId);
 
       // 1. Create available trip in EMS DB for agencies to see
-      const emsDB = databaseManager.getEMSDB();
-      await emsDB.availableTrip.create({
-        data: {
-          transportRequestId: data.tripId,
-          hospitalId: data.hospitalId,
-          transportLevel: data.transportLevel,
-          priority: data.priority,
-          originFacilityId: data.originFacilityId,
-          destinationFacilityId: data.destinationFacilityId,
-          status: 'AVAILABLE',
-          createdAt: new Date()
-        }
-      });
+      // TODO: Implement availableTrip model in EMS schema
+      // const emsDB = databaseManager.getEMSDB();
+      // await emsDB.availableTrip.create({
+      //   data: {
+      //     transportRequestId: data.tripId,
+      //     hospitalId: data.hospitalId,
+      //     transportLevel: data.transportLevel,
+      //     priority: data.priority,
+      //     originFacilityId: data.originFacilityId,
+      //     destinationFacilityId: data.destinationFacilityId,
+      //     status: 'AVAILABLE',
+      //     createdAt: new Date()
+      //   }
+      // });
 
       // 2. Log analytics in Center DB
       const centerDB = databaseManager.getCenterDB();
@@ -109,7 +110,7 @@ export class EventBus extends EventEmitter {
       await hospitalDB.transportRequest.update({
         where: { id: data.tripId },
         data: {
-          status: 'ASSIGNED',
+          status: 'SCHEDULED',
           assignedAgencyId: data.agencyId,
           assignedUnitId: data.unitId,
           acceptedTimestamp: new Date()
@@ -203,10 +204,11 @@ export class EventBus extends EventEmitter {
       });
 
       // 2. Remove from EMS DB available trips
-      const emsDB = databaseManager.getEMSDB();
-      await emsDB.availableTrip.deleteMany({
-        where: { transportRequestId: data.tripId }
-      });
+      // TODO: Implement availableTrip model in EMS schema
+      // const emsDB = databaseManager.getEMSDB();
+      // await emsDB.availableTrip.deleteMany({
+      //   where: { transportRequestId: data.tripId }
+      // });
 
       // 3. Log cancellation analytics in Center DB
       const centerDB = databaseManager.getCenterDB();

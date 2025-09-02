@@ -1,13 +1,12 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
 import { authenticateToken } from '../middleware/auth';
 import { AuthService } from '../services/authService';
 import { UserService } from '../services/userService';
+import { databaseManager } from '../services/databaseManager';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // User registration
 router.post('/register', async (req: Request, res: Response) => {
@@ -19,8 +18,11 @@ router.post('/register', async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
+    // All user accounts stored in Center DB
+    const centerDB = databaseManager.getCenterDB();
+
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await centerDB.user.findUnique({
       where: { email }
     });
 
@@ -33,12 +35,13 @@ router.post('/register', async (req: Request, res: Response) => {
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
     // Create user
-    const user = await prisma.user.create({
+    const user = await centerDB.user.create({
       data: {
         email,
         password: hashedPassword,
         name,
-        role: role || 'USER'
+        role: role || 'COORDINATOR',
+        userType: 'CENTER' // Default to CENTER for new users
       }
     });
 
@@ -72,8 +75,11 @@ router.post('/login', async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
+    // All user authentication handled by Center DB
+    const centerDB = databaseManager.getCenterDB();
+
     // Find user
-    const user = await prisma.user.findUnique({
+    const user = await centerDB.user.findUnique({
       where: { email }
     });
 
@@ -110,7 +116,9 @@ router.post('/login', async (req: Request, res: Response) => {
 // Get user profile (protected route)
 router.get('/profile', authenticateToken, async (req: any, res: Response) => {
   try {
-    const user = await prisma.user.findUnique({
+    // All user data in Center DB
+    const centerDB = databaseManager.getCenterDB();
+    const user = await centerDB.user.findUnique({
       where: { id: req.user.id },
       select: {
         id: true,
@@ -139,7 +147,9 @@ router.put('/profile', authenticateToken, async (req: any, res: Response) => {
   try {
     const { name } = req.body;
 
-    const updatedUser = await prisma.user.update({
+    // All user data in Center DB
+    const centerDB = databaseManager.getCenterDB();
+    const updatedUser = await centerDB.user.update({
       where: { id: req.user.id },
       data: { name },
       select: {

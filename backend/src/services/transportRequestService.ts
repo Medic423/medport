@@ -1,9 +1,8 @@
-import { PrismaClient, TransportRequest, TransportLevel, Priority, RequestStatus, Facility, User } from '@prisma/client';
+import { TransportRequest, TransportLevel, Priority, RequestStatus, Facility, User } from '@prisma/client';
 import { createHash } from 'crypto';
 import distanceService from './distanceService';
 import { notificationService } from './notificationService';
-
-const prisma = new PrismaClient();
+import { databaseManager } from './databaseManager';
 
 export interface CreateTransportRequestData {
   patientId: string;
@@ -55,6 +54,9 @@ export class TransportRequestService {
    * Create a new transport request with HIPAA-compliant patient ID
    */
   async createTransportRequest(data: CreateTransportRequestData): Promise<TransportRequest> {
+    // Transport requests stored in Hospital DB
+    const hospitalDB = databaseManager.getHospitalDB();
+    
     // Generate unique patient ID if not provided
     const patientId = data.patientId || this.generatePatientId();
 
@@ -64,8 +66,8 @@ export class TransportRequestService {
     }
 
     const [originFacility, destinationFacility] = await Promise.all([
-      prisma.facility.findUnique({ where: { id: data.originFacilityId } }),
-      prisma.facility.findUnique({ where: { id: data.destinationFacilityId } })
+      hospitalDB.facility.findUnique({ where: { id: data.originFacilityId } }),
+      hospitalDB.facility.findUnique({ where: { id: data.destinationFacilityId } })
     ]);
 
     if (!originFacility || !destinationFacility) {
@@ -73,8 +75,9 @@ export class TransportRequestService {
     }
 
     // Create the transport request
-    const transportRequest = await prisma.transportRequest.create({
+    const transportRequest = await hospitalDB.transportRequest.create({
       data: {
+        hospitalId: 'default-hospital', // TODO: Get from user context
         patientId,
         originFacilityId: data.originFacilityId,
         destinationFacilityId: data.destinationFacilityId,
@@ -105,16 +108,18 @@ export class TransportRequestService {
     // Send notifications to selected agencies if any
     if (data.selectedAgencies && data.selectedAgencies.length > 0) {
       try {
-        // Get agency details for notifications
-        const agencies = await prisma.transportAgency.findMany({
+        // Get agency details for notifications (agencies in Center DB)
+        const centerDB = databaseManager.getCenterDB();
+        const agencies = await centerDB.eMSAgency.findMany({
           where: { id: { in: data.selectedAgencies } },
           select: { id: true, name: true, phone: true, email: true }
         });
 
-        // Get facility details for notification content
+        // Get facility details for notification content (facilities in Hospital DB)
+        const hospitalDB = databaseManager.getHospitalDB();
         const [originFacility, destinationFacility] = await Promise.all([
-          prisma.facility.findUnique({ where: { id: data.originFacilityId } }),
-          prisma.facility.findUnique({ where: { id: data.destinationFacilityId } })
+          hospitalDB.facility.findUnique({ where: { id: data.originFacilityId } }),
+          hospitalDB.facility.findUnique({ where: { id: data.destinationFacilityId } })
         ]);
 
         // Send notifications to each agency
@@ -181,14 +186,14 @@ export class TransportRequestService {
    * Get transport request by ID with full details
    */
   async getTransportRequestById(id: string): Promise<TransportRequestWithDetails | null> {
-    return prisma.transportRequest.findUnique({
+    // Transport requests stored in Hospital DB
+    const hospitalDB = databaseManager.getHospitalDB();
+    return hospitalDB.transportRequest.findUnique({
       where: { id },
       include: {
         originFacility: true,
         destinationFacility: true,
-        createdBy: true,
-        assignedAgency: true,
-        assignedUnit: true
+        createdBy: true
       }
     });
   }
@@ -222,21 +227,22 @@ export class TransportRequestService {
     if (whereFilters.destinationFacilityId) where.destinationFacilityId = whereFilters.destinationFacilityId;
     if (whereFilters.createdById) where.createdById = whereFilters.createdById;
 
+    // Transport requests stored in Hospital DB
+    const hospitalDB = databaseManager.getHospitalDB();
+    
     const [requests, total] = await Promise.all([
-      prisma.transportRequest.findMany({
+      hospitalDB.transportRequest.findMany({
         where,
-        include: {
-          originFacility: true,
-          destinationFacility: true,
-          createdBy: true,
-          assignedAgency: true,
-          assignedUnit: true
-        },
+              include: {
+        originFacility: true,
+        destinationFacility: true,
+        createdBy: true
+      },
         orderBy: { requestTimestamp: 'desc' },
         skip,
         take: limit
       }),
-      prisma.transportRequest.count({ where })
+      hospitalDB.transportRequest.count({ where })
     ]);
 
     return {
@@ -251,8 +257,11 @@ export class TransportRequestService {
    * Update transport request
    */
   async updateTransportRequest(id: string, data: UpdateTransportRequestData): Promise<TransportRequest> {
+    // Transport requests stored in Hospital DB
+    const hospitalDB = databaseManager.getHospitalDB();
+    
     // Validate request exists
-    const existingRequest = await prisma.transportRequest.findUnique({
+    const existingRequest = await hospitalDB.transportRequest.findUnique({
       where: { id }
     });
 
@@ -266,7 +275,7 @@ export class TransportRequestService {
     }
 
     // Update the request
-    const updatedRequest = await prisma.transportRequest.update({
+    const updatedRequest = await hospitalDB.transportRequest.update({
       where: { id },
       data: {
         ...data,
@@ -284,7 +293,10 @@ export class TransportRequestService {
    * Duplicate transport request for similar transports
    */
   async duplicateTransportRequest(id: string, modifications: Partial<CreateTransportRequestData>): Promise<TransportRequest> {
-    const originalRequest = await prisma.transportRequest.findUnique({
+    // Transport requests stored in Hospital DB
+    const hospitalDB = databaseManager.getHospitalDB();
+    
+    const originalRequest = await hospitalDB.transportRequest.findUnique({
       where: { id },
       include: {
         originFacility: true,
@@ -355,17 +367,20 @@ export class TransportRequestService {
     byPriority: Record<Priority, number>;
     byTransportLevel: Record<TransportLevel, number>;
   }> {
+    // Transport requests stored in Hospital DB
+    const hospitalDB = databaseManager.getHospitalDB();
+    
     const [total, byStatus, byPriority, byTransportLevel] = await Promise.all([
-      prisma.transportRequest.count(),
-      prisma.transportRequest.groupBy({
+      hospitalDB.transportRequest.count(),
+      hospitalDB.transportRequest.groupBy({
         by: ['status'],
         _count: { status: true }
       }),
-      prisma.transportRequest.groupBy({
+      hospitalDB.transportRequest.groupBy({
         by: ['priority'],
         _count: { priority: true }
       }),
-      prisma.transportRequest.groupBy({
+      hospitalDB.transportRequest.groupBy({
         by: ['transportLevel'],
         _count: { transportLevel: true }
       })
@@ -399,7 +414,10 @@ export class TransportRequestService {
    */
   async calculateLoadedMiles(transportRequestId: string): Promise<number> {
     try {
-      const transportRequest = await prisma.transportRequest.findUnique({
+      // Transport requests stored in Hospital DB
+      const hospitalDB = databaseManager.getHospitalDB();
+      
+      const transportRequest = await hospitalDB.transportRequest.findUnique({
         where: { id: transportRequestId },
         select: { originFacilityId: true, destinationFacilityId: true }
       });
@@ -499,7 +517,8 @@ export class TransportRequestService {
       const updatedEtaUpdates = [...existingEtaUpdates, etaUpdate];
 
       // Update the transport request
-      const updatedRequest = await prisma.transportRequest.update({
+      const hospitalDB = databaseManager.getHospitalDB();
+      const updatedRequest = await hospitalDB.transportRequest.update({
         where: { id: requestId },
         data: {
           estimatedArrivalTime: etaData.estimatedArrivalTime ? new Date(etaData.estimatedArrivalTime) : undefined,
@@ -507,13 +526,11 @@ export class TransportRequestService {
           etaUpdates: updatedEtaUpdates,
           updatedAt: new Date()
         },
-        include: {
-          originFacility: true,
-          destinationFacility: true,
-          createdBy: true,
-          assignedAgency: true,
-          assignedUnit: true
-        }
+              include: {
+        originFacility: true,
+        destinationFacility: true,
+        createdBy: true
+      }
       });
 
       return updatedRequest as TransportRequestWithDetails;
@@ -556,7 +573,8 @@ export class TransportRequestService {
       const updatedEtaUpdates = [...existingEtaUpdates, etaUpdate];
 
       // Update the transport request
-      const updatedRequest = await prisma.transportRequest.update({
+      const hospitalDB = databaseManager.getHospitalDB();
+      const updatedRequest = await hospitalDB.transportRequest.update({
         where: { id: requestId },
         data: {
           status: 'SCHEDULED',
@@ -567,13 +585,11 @@ export class TransportRequestService {
           etaUpdates: updatedEtaUpdates,
           updatedAt: new Date()
         },
-        include: {
-          originFacility: true,
-          destinationFacility: true,
-          createdBy: true,
-          assignedAgency: true,
-          assignedUnit: true
-        }
+              include: {
+        originFacility: true,
+        destinationFacility: true,
+        createdBy: true
+      }
       });
 
       return updatedRequest as TransportRequestWithDetails;
@@ -598,20 +614,19 @@ export class TransportRequestService {
       }
 
       // Update the transport request
-      const updatedRequest = await prisma.transportRequest.update({
+      const hospitalDB = databaseManager.getHospitalDB();
+      const updatedRequest = await hospitalDB.transportRequest.update({
         where: { id: requestId },
         data: {
           status: 'CANCELLED',
           cancellationReason: reason,
           updatedAt: new Date()
         },
-        include: {
-          originFacility: true,
-          destinationFacility: true,
-          createdBy: true,
-          assignedAgency: true,
-          assignedUnit: true
-        }
+              include: {
+        originFacility: true,
+        destinationFacility: true,
+        createdBy: true
+      }
       });
 
       return updatedRequest as TransportRequestWithDetails;

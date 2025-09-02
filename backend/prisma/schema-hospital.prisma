@@ -17,6 +17,7 @@ model HospitalUser {
   email       String   @unique
   password    String
   name        String
+  role        UserRole @default(COORDINATOR)
   hospitalName String
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -51,37 +52,68 @@ model HospitalFacility {
 
   // Relations
   hospitalUser HospitalUser @relation(fields: [hospitalId], references: [id])
-  originRequests TransportRequest[] @relation("OriginFacility")
-  destinationRequests TransportRequest[] @relation("DestinationFacility")
 
   @@map("hospital_facilities")
 }
 
+// General facility model (used by transport requests)
+model Facility {
+  id                  String             @id @default(cuid())
+  name                String
+  type                FacilityType
+  address             String
+  city                String
+  state               String
+  zipCode             String
+  coordinates         Json?
+  phone               String?
+  email               String?
+  operatingHours      Json?
+  capabilities        Json?
+  isActive            Boolean            @default(true)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  // Relations
+  destinationRequests TransportRequest[] @relation("DestinationFacility")
+  originRequests      TransportRequest[] @relation("OriginFacility")
+
+  @@map("facilities")
+}
+
 model TransportRequest {
-  id                    String   @id @default(cuid())
-  hospitalId            String
-  patientId             String   // Auto-generated non-identifiable ID
-  originFacilityId      String
-  destinationFacilityId String
-  transportLevel        TransportLevel
-  priority              Priority
-  status                TransportStatus @default(PENDING)
-  specialRequirements   String?
-  requestTimestamp      DateTime @default(now())
-  acceptedTimestamp     DateTime?
-  pickupTimestamp       DateTime?
-  completionTimestamp   DateTime?
-  assignedAgencyId      String?
-  assignedUnitId        String?
-  createdById           String
-  cancellationReason    String?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                     String           @id @default(cuid())
+  hospitalId             String
+  patientId              String
+  originFacilityId       String
+  destinationFacilityId  String
+  transportLevel         TransportLevel
+  priority               Priority         @default(MEDIUM)
+  status                 RequestStatus    @default(PENDING)
+  specialRequirements    String?
+  requestTimestamp       DateTime         @default(now())
+  acceptedTimestamp      DateTime?
+  pickupTimestamp        DateTime?
+  completionTimestamp    DateTime?
+  assignedAgencyId       String?
+  assignedUnitId         String?
+  createdById            String
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+  routeOptimizationScore Float?
+  chainingOpportunities  Json?
+  timeFlexibility        Int?
+  revenuePotential       Float?
+  // ETA tracking fields
+  estimatedArrivalTime   DateTime?
+  estimatedPickupTime    DateTime?
+  etaUpdates            Json?            // Array of ETA updates with timestamps
+  cancellationReason    String?          // Reason for cancellation
 
   // Relations
   hospitalUser HospitalUser @relation("HospitalRequests", fields: [hospitalId], references: [id])
-  originFacility HospitalFacility @relation("OriginFacility", fields: [originFacilityId], references: [id])
-  destinationFacility HospitalFacility @relation("DestinationFacility", fields: [destinationFacilityId], references: [id])
+  originFacility Facility @relation("OriginFacility", fields: [originFacilityId], references: [id])
+  destinationFacility Facility @relation("DestinationFacility", fields: [destinationFacilityId], references: [id])
   createdBy HospitalUser @relation("CreatedRequests", fields: [createdById], references: [id])
   agencyPreferences HospitalAgencyPreference[]
 
@@ -120,11 +152,26 @@ enum Priority {
   URGENT
 }
 
-enum TransportStatus {
+enum RequestStatus {
   PENDING
-  ASSIGNED
-  IN_PROGRESS
+  SCHEDULED
+  IN_TRANSIT
   COMPLETED
   CANCELLED
+}
+
+enum UserRole {
+  ADMIN
+  COORDINATOR
+  BILLING_STAFF
+  TRANSPORT_AGENCY
+}
+
+enum FacilityType {
+  HOSPITAL
+  NURSING_HOME
+  CANCER_CENTER
+  REHAB_FACILITY
+  URGENT_CARE
 }
 

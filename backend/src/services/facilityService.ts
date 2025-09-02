@@ -1,6 +1,6 @@
-import { PrismaClient, Facility, FacilityType } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { Facility } from '@prisma/client';
+import { FacilityType } from '../../dist/prisma/hospital';
+import { databaseManager } from './databaseManager';
 
 export interface FacilitySearchFilters {
   name?: string;
@@ -43,14 +43,15 @@ export class FacilityService {
     }
     if (whereFilters.isActive !== undefined) where.isActive = whereFilters.isActive;
 
+    const hospitalDB = databaseManager.getHospitalDB();
     const [facilities, total] = await Promise.all([
-      prisma.facility.findMany({
+      hospitalDB.facility.findMany({
         where,
         orderBy: { name: 'asc' },
         skip,
         take: parseInt(limit.toString())
       }),
-      prisma.facility.count({ where })
+      hospitalDB.facility.count({ where })
     ]);
 
     return {
@@ -65,7 +66,8 @@ export class FacilityService {
    * Get facility by ID
    */
   async getFacilityById(id: string): Promise<Facility | null> {
-    return prisma.facility.findUnique({
+    const hospitalDB = databaseManager.getHospitalDB();
+    return hospitalDB.facility.findUnique({
       where: { id }
     });
   }
@@ -86,7 +88,8 @@ export class FacilityService {
     operatingHours?: any;
     capabilities?: any;
   }): Promise<Facility> {
-    return prisma.facility.create({
+    const hospitalDB = databaseManager.getHospitalDB();
+    return hospitalDB.facility.create({
       data: {
         ...data,
         isActive: true
@@ -98,7 +101,8 @@ export class FacilityService {
    * Get facilities by type
    */
   async getFacilitiesByType(type: FacilityType): Promise<Facility[]> {
-    return prisma.facility.findMany({
+    const hospitalDB = databaseManager.getHospitalDB();
+    return hospitalDB.facility.findMany({
       where: { type, isActive: true },
       orderBy: { name: 'asc' }
     });
@@ -108,11 +112,12 @@ export class FacilityService {
    * Get facilities in a specific area (city/state)
    */
   async getFacilitiesInArea(city?: string, state?: string): Promise<Facility[]> {
+    const hospitalDB = databaseManager.getHospitalDB();
     const where: any = { isActive: true };
     if (city) where.city = { contains: city, mode: 'insensitive' };
     if (state) where.state = { contains: state, mode: 'insensitive' };
 
-    return prisma.facility.findMany({
+    return hospitalDB.facility.findMany({
       where,
       orderBy: { name: 'asc' }
     });
@@ -122,7 +127,8 @@ export class FacilityService {
    * Get facility types for filtering
    */
   async getFacilityTypes(): Promise<FacilityType[]> {
-    const types = await prisma.facility.groupBy({
+    const hospitalDB = databaseManager.getHospitalDB();
+    const types = await hospitalDB.facility.groupBy({
       by: ['type'],
       where: { isActive: true }
     });
@@ -133,7 +139,8 @@ export class FacilityService {
    * Get cities with facilities
    */
   async getCitiesWithFacilities(): Promise<string[]> {
-    const cities = await prisma.facility.groupBy({
+    const hospitalDB = databaseManager.getHospitalDB();
+    const cities = await hospitalDB.facility.groupBy({
       by: ['city'],
       where: { isActive: true },
       orderBy: { city: 'asc' }
@@ -145,7 +152,8 @@ export class FacilityService {
    * Get states with facilities
    */
   async getStatesWithFacilities(): Promise<string[]> {
-    const states = await prisma.facility.groupBy({
+    const hospitalDB = databaseManager.getHospitalDB();
+    const states = await hospitalDB.facility.groupBy({
       by: ['state'],
       where: { isActive: true },
       orderBy: { state: 'asc' }
@@ -163,18 +171,19 @@ export class FacilityService {
     active: number;
     inactive: number;
   }> {
+    const hospitalDB = databaseManager.getHospitalDB();
     const [total, byType, byState, active, inactive] = await Promise.all([
-      prisma.facility.count(),
-      prisma.facility.groupBy({
+      hospitalDB.facility.count(),
+      hospitalDB.facility.groupBy({
         by: ['type'],
         _count: { type: true }
       }),
-      prisma.facility.groupBy({
+      hospitalDB.facility.groupBy({
         by: ['state'],
         _count: { state: true }
       }),
-      prisma.facility.count({ where: { isActive: true } }),
-      prisma.facility.count({ where: { isActive: false } })
+      hospitalDB.facility.count({ where: { isActive: true } }),
+      hospitalDB.facility.count({ where: { isActive: false } })
     ]);
 
     const typeStats = byType.reduce((acc, item) => {
@@ -212,8 +221,9 @@ export class FacilityService {
     capabilities?: any;
     isActive?: boolean;
   }): Promise<Facility | null> {
+    const hospitalDB = databaseManager.getHospitalDB();
     try {
-      return await prisma.facility.update({
+      return await hospitalDB.facility.update({
         where: { id },
         data: {
           ...data,
@@ -230,8 +240,9 @@ export class FacilityService {
    * Delete a facility (soft delete by setting isActive to false)
    */
   async deleteFacility(id: string): Promise<boolean> {
+    const hospitalDB = databaseManager.getHospitalDB();
     try {
-      await prisma.facility.update({
+      await hospitalDB.facility.update({
         where: { id },
         data: {
           isActive: false,

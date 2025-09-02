@@ -1,6 +1,5 @@
-import { PrismaClient, User, UserRole } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { User, UserRole } from '@prisma/client';
+import { databaseManager } from './databaseManager';
 
 export interface CreateUserData {
   email: string;
@@ -46,8 +45,11 @@ export class UserService {
       ];
     }
 
+    // All user data in Center DB
+    const centerDB = databaseManager.getCenterDB();
+    
     const [users, total] = await Promise.all([
-      prisma.user.findMany({
+      centerDB.user.findMany({
         where,
         select: {
           id: true,
@@ -62,7 +64,7 @@ export class UserService {
         take: limit,
         orderBy: { createdAt: 'desc' }
       }),
-      prisma.user.count({ where })
+      centerDB.user.count({ where })
     ]);
 
     return {
@@ -80,7 +82,10 @@ export class UserService {
    * Get user by ID
    */
   static async getUserById(userId: string) {
-    const user = await prisma.user.findUnique({
+    // All user data in Center DB
+    const centerDB = databaseManager.getCenterDB();
+    
+    const user = await centerDB.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
@@ -104,8 +109,11 @@ export class UserService {
    * Create a new user (admin only)
    */
   static async createUser(data: CreateUserData, createdBy: string) {
+    // All user data in Center DB
+    const centerDB = databaseManager.getCenterDB();
+    
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await centerDB.user.findUnique({
       where: { email: data.email }
     });
 
@@ -118,12 +126,13 @@ export class UserService {
     const saltRounds = parseInt(process.env.BCRYPT_ROUNDS || '12');
     const hashedPassword = await bcrypt.hash(data.password, saltRounds);
 
-    const user = await prisma.user.create({
+    const user = await centerDB.user.create({
       data: {
         email: data.email,
         password: hashedPassword,
         name: data.name,
         role: data.role,
+        userType: 'CENTER', // Default to CENTER for new users
         isActive: true
       },
       select: {
@@ -144,8 +153,11 @@ export class UserService {
    * Update user (admin only)
    */
   static async updateUser(userId: string, data: UpdateUserData, updatedBy: string) {
+    // All user data in Center DB
+    const centerDB = databaseManager.getCenterDB();
+    
     // Check if user exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await centerDB.user.findUnique({
       where: { id: userId }
     });
 
@@ -155,7 +167,7 @@ export class UserService {
 
     // If updating email, check for duplicates
     if (data.email && data.email !== existingUser.email) {
-      const emailExists = await prisma.user.findUnique({
+      const emailExists = await centerDB.user.findUnique({
         where: { email: data.email }
       });
 
@@ -164,7 +176,7 @@ export class UserService {
       }
     }
 
-    const user = await prisma.user.update({
+    const user = await centerDB.user.update({
       where: { id: userId },
       data,
       select: {
@@ -185,8 +197,11 @@ export class UserService {
    * Delete user (admin only)
    */
   static async deleteUser(userId: string, deletedBy: string) {
+    // All user data in Center DB
+    const centerDB = databaseManager.getCenterDB();
+    
     // Check if user exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await centerDB.user.findUnique({
       where: { id: userId }
     });
 
@@ -195,7 +210,7 @@ export class UserService {
     }
 
     // Soft delete - just deactivate
-    await prisma.user.update({
+    await centerDB.user.update({
       where: { id: userId },
       data: { isActive: false }
     });
@@ -207,10 +222,13 @@ export class UserService {
    * Get user statistics
    */
   static async getUserStats() {
+    // All user data in Center DB
+    const centerDB = databaseManager.getCenterDB();
+    
     const [totalUsers, activeUsers, usersByRole] = await Promise.all([
-      prisma.user.count(),
-      prisma.user.count({ where: { isActive: true } }),
-      prisma.user.groupBy({
+      centerDB.user.count(),
+      centerDB.user.count({ where: { isActive: true } }),
+      centerDB.user.groupBy({
         by: ['role'],
         _count: { role: true }
       })
@@ -231,7 +249,10 @@ export class UserService {
    * Bulk update user roles (admin only)
    */
   static async bulkUpdateUserRoles(userIds: string[], newRole: UserRole, updatedBy: string) {
-    const result = await prisma.user.updateMany({
+    // All user data in Center DB
+    const centerDB = databaseManager.getCenterDB();
+    
+    const result = await centerDB.user.updateMany({
       where: { id: { in: userIds } },
       data: { role: newRole }
     });
@@ -246,7 +267,10 @@ export class UserService {
    * Get users by role
    */
   static async getUsersByRole(role: UserRole) {
-    return prisma.user.findMany({
+    // All user data in Center DB
+    const centerDB = databaseManager.getCenterDB();
+    
+    return centerDB.user.findMany({
       where: { role, isActive: true },
       select: {
         id: true,

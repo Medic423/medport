@@ -16,7 +16,8 @@ model User {
   id        String   @id @default(cuid())
   email     String   @unique
   password  String
-  name      String
+  name      String?
+  role      UserRole @default(COORDINATOR)
   userType  UserType // 'hospital', 'ems', 'center'
   hospitalId String? // Foreign key reference to Hospital DB
   agencyId  String?  // Foreign key reference to EMS DB
@@ -174,6 +175,13 @@ enum UserType {
   HOSPITAL
   EMS
   CENTER
+}
+
+enum UserRole {
+  ADMIN
+  COORDINATOR
+  BILLING_STAFF
+  TRANSPORT_AGENCY
 }
 
 enum ServiceStatus {

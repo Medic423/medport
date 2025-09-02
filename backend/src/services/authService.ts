@@ -1,8 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { PrismaClient, User, UserRole } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { User, UserRole } from '@prisma/client';
+import { databaseManager } from './databaseManager';
 
 export interface UserRegistrationData {
   email: string;
@@ -33,8 +32,11 @@ export class AuthService {
    * Register a new user
    */
   static async registerUser(data: UserRegistrationData): Promise<AuthResponse> {
+    // All user accounts are stored in Center DB
+    const centerDB = databaseManager.getCenterDB();
+    
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await centerDB.user.findUnique({
       where: { email: data.email }
     });
 
@@ -47,12 +49,13 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(data.password, saltRounds);
 
     // Create user
-    const user = await prisma.user.create({
+    const user = await centerDB.user.create({
       data: {
         email: data.email,
         password: hashedPassword,
         name: data.name,
         role: data.role || UserRole.COORDINATOR,
+        userType: 'CENTER', // Default to CENTER for new users
         isActive: true
       }
     });
@@ -78,8 +81,11 @@ export class AuthService {
    * Authenticate user login
    */
   static async loginUser(data: UserLoginData): Promise<AuthResponse> {
+    // All user authentication handled by Center DB
+    const centerDB = databaseManager.getCenterDB();
+    
     // Find user by email
-    const user = await prisma.user.findUnique({
+    const user = await centerDB.user.findUnique({
       where: { email: data.email }
     });
 
@@ -121,7 +127,9 @@ export class AuthService {
     try {
       const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET!) as any;
       
-      const user = await prisma.user.findUnique({
+      // All user data in Center DB
+      const centerDB = databaseManager.getCenterDB();
+      const user = await centerDB.user.findUnique({
         where: { id: decoded.id }
       });
 
@@ -140,7 +148,9 @@ export class AuthService {
    * Get user profile
    */
   static async getUserProfile(userId: string) {
-    const user = await prisma.user.findUnique({
+    // All user data in Center DB
+    const centerDB = databaseManager.getCenterDB();
+    const user = await centerDB.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
@@ -164,7 +174,9 @@ export class AuthService {
    * Update user profile
    */
   static async updateUserProfile(userId: string, data: { name?: string; email?: string }) {
-    const user = await prisma.user.update({
+    // All user data in Center DB
+    const centerDB = databaseManager.getCenterDB();
+    const user = await centerDB.user.update({
       where: { id: userId },
       data,
       select: {
@@ -185,7 +197,9 @@ export class AuthService {
    * Change user password
    */
   static async changePassword(userId: string, currentPassword: string, newPassword: string) {
-    const user = await prisma.user.findUnique({
+    // All user data in Center DB
+    const centerDB = databaseManager.getCenterDB();
+    const user = await centerDB.user.findUnique({
       where: { id: userId }
     });
 
@@ -204,7 +218,7 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
 
     // Update password
-    await prisma.user.update({
+    await centerDB.user.update({
       where: { id: userId },
       data: { password: hashedPassword }
     });
@@ -216,7 +230,9 @@ export class AuthService {
    * Deactivate user account
    */
   static async deactivateUser(userId: string) {
-    await prisma.user.update({
+    // All user data in Center DB
+    const centerDB = databaseManager.getCenterDB();
+    await centerDB.user.update({
       where: { id: userId },
       data: { isActive: false }
     });

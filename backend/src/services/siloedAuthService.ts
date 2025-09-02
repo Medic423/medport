@@ -91,7 +91,7 @@ export class SiloedAuthService {
       console.error('[SiloedAuth] Authentication error:', error);
       return {
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -166,7 +166,7 @@ export class SiloedAuthService {
       console.error('[SiloedAuth] User creation error:', error);
       return {
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -249,7 +249,7 @@ export class SiloedAuthService {
       console.error('[SiloedAuth] Get user error:', error);
       return {
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -311,7 +311,7 @@ export class SiloedAuthService {
       console.error('[SiloedAuth] Update user error:', error);
       return {
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -338,7 +338,7 @@ export class SiloedAuthService {
       console.error('[SiloedAuth] Token verification error:', error);
       return {
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
