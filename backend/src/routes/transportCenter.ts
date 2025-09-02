@@ -1,354 +1,262 @@
-import express, { Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import transportCenterService, { addServiceSchema, updateServiceSchema } from '../services/transportCenterService';
 import { authenticateToken } from '../middleware/auth';
-
-const prisma = new PrismaClient();
 
 const router = express.Router();
 
-// Validation schemas
-const coordinatorRegistrationSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  phone: z.string().min(10, 'Phone number must be at least 10 characters'),
-  role: z.enum(['ADMIN', 'COORDINATOR']).default('COORDINATOR'),
-  permissions: z.array(z.string()).optional()
-});
+// Middleware to ensure only Transport Center users can access these endpoints
+const requireTransportCenter = (req: any, res: Response, next: NextFunction) => {
+  const user = req.user;
+  
+  if (!user || (user.role !== 'COORDINATOR' && user.role !== 'center')) {
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied. Transport Center access required.'
+    });
+  }
+  
+  next();
+};
 
-const coordinatorLoginSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(1, 'Password is required')
-});
-
-// Transport Center Coordinator Registration (Protected - only admins can create coordinators)
-router.post('/register', authenticateToken, async (req: any, res: Response) => {
+// Add new EMS service (Transport Center only)
+router.post('/add-service', authenticateToken, requireTransportCenter, async (req: any, res: Response) => {
   try {
-    // Check if user has permission to create coordinators
-    if (!['ADMIN'].includes(req.user.role)) {
-      return res.status(403).json({
-        success: false,
-        message: 'Insufficient permissions to create coordinators'
-      });
-    }
-
-    console.log('[TRANSPORT-CENTER-REGISTER] Registration attempt:', { email: req.body.email, name: req.body.name });
+    console.log('[TRANSPORT-CENTER] Adding new service:', req.body);
     
-    const validatedData = coordinatorRegistrationSchema.parse(req.body);
+    const userId = req.user.id;
+    const serviceData = addServiceSchema.parse(req.body);
     
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email: validatedData.email }
-    });
-
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: 'User with this email already exists'
-      });
-    }
-
-    // Hash password
-    const saltRounds = 12;
-    const hashedPassword = await bcrypt.hash(validatedData.password, saltRounds);
-
-    // Create coordinator user
-    const coordinator = await prisma.user.create({
-      data: {
-        email: validatedData.email,
-        password: hashedPassword,
-        name: validatedData.name,
-        role: validatedData.role,
-        isActive: true,
-
-
-      }
-    });
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { 
-        id: coordinator.id, 
-        email: coordinator.email, 
-        role: coordinator.role,
-        isTransportCenter: true
-      },
-      process.env.JWT_SECRET!,
-      { expiresIn: '24h' }
-    );
-
-    console.log('[TRANSPORT-CENTER-REGISTER] Success:', { coordinatorId: coordinator.id });
-
+    const service = await transportCenterService.addService(serviceData, userId);
+    
     res.status(201).json({
       success: true,
-      message: 'Transport Center coordinator created successfully',
-      data: {
-        coordinator: {
-          id: coordinator.id,
-          name: coordinator.name,
-          email: coordinator.email,
-          role: coordinator.role
-        },
-        token: token
-      }
+      message: 'Service added successfully',
+      data: service
     });
   } catch (error) {
-    console.error('[TRANSPORT-CENTER-REGISTER] Error:', error);
+    console.error('[TRANSPORT-CENTER] Error adding service:', error);
     
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
         message: 'Validation error',
-        errors: (error as any).errors.map((err: any) => ({
+        errors: error.issues.map((err: any) => ({
           field: err.path.join('.'),
           message: err.message
         }))
       });
     }
-
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
-    });
-  }
-});
-
-// Transport Center Coordinator Login
-router.post('/login', async (req, res) => {
-  try {
-    console.log('[TRANSPORT-CENTER-LOGIN] Login attempt:', { email: req.body.email });
     
-    // BYPASS ALL AUTHENTICATION - ALWAYS SUCCEED
-    console.log('[TRANSPORT-CENTER-LOGIN] Bypassing all auth checks - logging in as admin');
-    
-    // Create a mock admin user
-    const mockUser = {
-      id: 'bypass-admin-001',
-      name: 'Bypass Admin',
-      email: req.body.email || 'admin@medport.com',
-      role: 'ADMIN'
-    };
-
-    // Generate JWT token with both role and userType for compatibility
-    const token = jwt.sign(
-      { 
-        id: mockUser.id, 
-        email: mockUser.email, 
-        role: mockUser.role,
-        userType: 'center', // Add userType for simplified system
-        isTransportCenter: true
-      },
-      process.env.JWT_SECRET!,
-      { expiresIn: '24h' }
-    );
-
-    console.log('[TRANSPORT-CENTER-LOGIN] Bypass successful:', { userId: mockUser.id, role: mockUser.role });
-
-    res.json({
-      success: true,
-      message: 'Login successful (bypass mode)',
-      data: {
-        user: mockUser,
-        token: token
-      }
-    });
-  } catch (error) {
-    console.error('[TRANSPORT-CENTER-LOGIN] Error:', error);
-    
-    // Even if there's an error, still log them in
-    console.log('[TRANSPORT-CENTER-LOGIN] Error occurred, but still logging in as admin');
-    
-    const mockUser = {
-      id: 'error-bypass-admin-001',
-      name: 'Error Bypass Admin',
-      email: 'admin@medport.com',
-      role: 'ADMIN'
-    };
-
-    const token = jwt.sign(
-      { 
-        id: mockUser.id, 
-        email: mockUser.email, 
-        role: mockUser.role,
-        userType: 'center', // Add userType for simplified system
-        isTransportCenter: true
-      },
-      process.env.JWT_SECRET!,
-      { expiresIn: '24h' }
-    );
-
-    res.json({
-      success: true,
-      message: 'Login successful (error bypass mode)',
-      data: {
-        user: mockUser,
-        token: token
-      }
-    });
-  }
-});
-
-// Demo Transport Center Login
-router.post('/demo/login', async (req, res) => {
-  try {
-    console.log('[TRANSPORT-CENTER-DEMO-LOGIN] Demo login attempt');
-    
-    // Create demo coordinator data
-    const demoCoordinator = {
-      id: 'demo-coordinator-001',
-      name: 'Demo Transport Coordinator',
-      email: 'coordinator@medport-transport.com',
-      role: 'COORDINATOR'
-    };
-
-    // Generate demo token with both role and userType for compatibility
-    const token = jwt.sign(
-      { 
-        id: demoCoordinator.id, 
-        email: demoCoordinator.email, 
-        role: demoCoordinator.role,
-        userType: 'center', // Add userType for simplified system
-        isTransportCenter: true,
-        isDemo: true
-      },
-      process.env.JWT_SECRET!,
-      { expiresIn: '24h' }
-    );
-
-    console.log('[TRANSPORT-CENTER-DEMO-LOGIN] Success');
-
-    res.json({
-      success: true,
-      message: 'Demo login successful',
-      data: {
-        user: demoCoordinator,
-        token: token
-      }
-    });
-  } catch (error) {
-    console.error('[TRANSPORT-CENTER-DEMO-LOGIN] Error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
-    });
-  }
-});
-
-// Get Transport Center dashboard data (Protected)
-router.get('/dashboard', authenticateToken, async (req: any, res: Response) => {
-  try {
-    // Check if user is a transport center coordinator
-    if (!['ADMIN', 'COORDINATOR'].includes(req.user.role)) {
-      return res.status(403).json({
+    if (error instanceof Error) {
+      return res.status(400).json({
         success: false,
-        message: 'Insufficient permissions'
+        message: error.message
       });
     }
-
-    // Get system overview data
-    const [
-      totalTransports,
-      pendingTransports,
-      activeUnits,
-      totalAgencies,
-      totalHospitals
-    ] = await Promise.all([
-      prisma.transportRequest.count(),
-      prisma.transportRequest.count({ where: { status: 'PENDING' } }),
-      prisma.unit.count({ where: { isActive: true, currentStatus: 'AVAILABLE' } }),
-      prisma.transportAgency.count({ where: { isActive: true } }),
-      prisma.transportAgency.count({ where: { isActive: true } })
-    ]);
-
-    // Get recent transport requests
-    const recentTransports = await prisma.transportRequest.findMany({
-      take: 10,
-      orderBy: { requestTimestamp: 'desc' },
-      include: {
-        originFacility: true,
-        destinationFacility: true,
-        assignedAgency: true,
-        assignedUnit: true
-      }
-    });
-
-    // Get system alerts
-    const alerts = [];
     
-    if (pendingTransports > 10) {
-      alerts.push({
-        type: 'WARNING',
-        message: `${pendingTransports} transport requests pending assignment`,
-        severity: 'MEDIUM'
-      });
-    }
-
-    if (activeUnits < 5) {
-      alerts.push({
-        type: 'ALERT',
-        message: 'Low unit availability - only ${activeUnits} units available',
-        severity: 'HIGH'
-      });
-    }
-
-    res.json({
-      success: true,
-      data: {
-        overview: {
-          totalTransports,
-          pendingTransports,
-          activeUnits,
-          totalAgencies,
-          totalHospitals
-        },
-        recentTransports,
-        alerts
-      }
-    });
-  } catch (error) {
-    console.error('[TRANSPORT-CENTER-DASHBOARD] Error:', error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: 'Failed to add service'
     });
   }
 });
 
-// Get Transport Center profile (Protected)
-router.get('/profile', authenticateToken, async (req: any, res: Response) => {
+// Get all services (Transport Center only)
+router.get('/services', authenticateToken, requireTransportCenter, async (req: any, res: Response) => {
   try {
-    const userId = req.user.id;
+    console.log('[TRANSPORT-CENTER] Fetching all services');
     
-    const user = await prisma.user.findUnique({
-      where: { id: userId }
+    const services = await transportCenterService.getAllServices();
+    
+    res.json({
+      success: true,
+      message: 'Services retrieved successfully',
+      data: services
     });
+  } catch (error) {
+    console.error('[TRANSPORT-CENTER] Error fetching services:', error);
+    
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve services'
+    });
+  }
+});
 
-    if (!user) {
+// Get service by ID
+router.get('/services/:id', authenticateToken, requireTransportCenter, async (req: any, res: Response) => {
+  try {
+    const { id } = req.params;
+    console.log('[TRANSPORT-CENTER] Fetching service:', id);
+    
+    const service = await transportCenterService.getServiceById(id);
+    
+    if (!service) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: 'Service not found'
       });
     }
-
+    
     res.json({
       success: true,
-      data: {
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role
-        }
-      }
+      message: 'Service retrieved successfully',
+      data: service
     });
   } catch (error) {
-    console.error('[TRANSPORT-CENTER-PROFILE] Error:', error);
+    console.error('[TRANSPORT-CENTER] Error fetching service:', error);
+    
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: 'Failed to retrieve service'
+    });
+  }
+});
+
+// Update service details
+router.put('/services/:id', authenticateToken, requireTransportCenter, async (req: any, res: Response) => {
+  try {
+    const { id } = req.params;
+    console.log('[TRANSPORT-CENTER] Updating service:', id, req.body);
+    
+    const updateData = updateServiceSchema.parse(req.body);
+    const service = await transportCenterService.updateService(id, updateData);
+    
+    res.json({
+      success: true,
+      message: 'Service updated successfully',
+      data: service
+    });
+  } catch (error) {
+    console.error('[TRANSPORT-CENTER] Error updating service:', error);
+    
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors: error.issues.map((err: any) => ({
+          field: err.path.join('.'),
+          message: err.message
+        }))
+      });
+    }
+    
+    if (error instanceof Error) {
+      return res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update service'
+    });
+  }
+});
+
+// Disable service (soft delete)
+router.delete('/services/:id', authenticateToken, requireTransportCenter, async (req: any, res: Response) => {
+  try {
+    const { id } = req.params;
+    console.log('[TRANSPORT-CENTER] Disabling service:', id);
+    
+    const service = await transportCenterService.disableService(id);
+    
+    res.json({
+      success: true,
+      message: 'Service disabled successfully',
+      data: service
+    });
+  } catch (error) {
+    console.error('[TRANSPORT-CENTER] Error disabling service:', error);
+    
+    if (error instanceof Error) {
+      return res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      message: 'Failed to disable service'
+    });
+  }
+});
+
+// Enable service
+router.patch('/services/:id/enable', authenticateToken, requireTransportCenter, async (req: any, res: Response) => {
+  try {
+    const { id } = req.params;
+    console.log('[TRANSPORT-CENTER] Enabling service:', id);
+    
+    const service = await transportCenterService.enableService(id);
+    
+    res.json({
+      success: true,
+      message: 'Service enabled successfully',
+      data: service
+    });
+  } catch (error) {
+    console.error('[TRANSPORT-CENTER] Error enabling service:', error);
+    
+    if (error instanceof Error) {
+      return res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      message: 'Failed to enable service'
+    });
+  }
+});
+
+// Get services added by current user
+router.get('/my-services', authenticateToken, requireTransportCenter, async (req: any, res: Response) => {
+  try {
+    const userId = req.user.id;
+    console.log('[TRANSPORT-CENTER] Fetching services added by user:', userId);
+    
+    const services = await transportCenterService.getServicesAddedByUser(userId);
+    
+    res.json({
+      success: true,
+      message: 'User services retrieved successfully',
+      data: services
+    });
+  } catch (error) {
+    console.error('[TRANSPORT-CENTER] Error fetching user services:', error);
+    
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve user services'
+    });
+  }
+});
+
+// Get service statistics
+router.get('/stats', authenticateToken, requireTransportCenter, async (req: any, res: Response) => {
+  try {
+    console.log('[TRANSPORT-CENTER] Fetching service statistics');
+    
+    const stats = await transportCenterService.getServiceStats();
+    
+    res.json({
+      success: true,
+      message: 'Service statistics retrieved successfully',
+      data: stats
+    });
+  } catch (error) {
+    console.error('[TRANSPORT-CENTER] Error fetching service stats:', error);
+    
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve service statistics'
     });
   }
 });
