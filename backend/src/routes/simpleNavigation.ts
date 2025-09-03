@@ -1,11 +1,11 @@
 import { Router, Response } from 'express';
-import { simpleAuthenticateToken, SimpleAuthRequest } from '../middleware/simpleAuth';
+import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { SimpleNavigationService } from '../services/simpleNavigationService';
 
 const router = Router();
 
 // Get navigation for current user's type
-router.get('/navigation', simpleAuthenticateToken, async (req: SimpleAuthRequest, res: Response) => {
+router.get('/navigation', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user || !req.user.userType) {
       console.error('[SIMPLE_NAVIGATION] Missing user or user type:', req.user);
@@ -39,7 +39,7 @@ router.get('/navigation', simpleAuthenticateToken, async (req: SimpleAuthRequest
 });
 
 // Get user's landing page based on user type
-router.get('/landing-page', simpleAuthenticateToken, async (req: SimpleAuthRequest, res: Response) => {
+router.get('/landing-page', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user || !req.user.userType) {
       console.error('[SIMPLE_NAVIGATION] Missing user or user type for landing page:', req.user);
@@ -71,7 +71,7 @@ router.get('/landing-page', simpleAuthenticateToken, async (req: SimpleAuthReque
 });
 
 // Get user type information
-router.get('/user-type', simpleAuthenticateToken, async (req: SimpleAuthRequest, res: Response) => {
+router.get('/user-type', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user || !req.user.userType) {
       console.error('[SIMPLE_NAVIGATION] Missing user or user type for user type info:', req.user);

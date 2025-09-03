@@ -9,7 +9,7 @@ const router = express.Router();
 const demoModeMiddleware = (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
   const authHeader = req.headers.authorization;
   if (authHeader === 'Bearer demo-token') {
-    req.user = { id: 'demo-user', email: 'demo@medport.com', role: 'admin' };
+    req.user = { id: 'demo-user', email: 'demo@medport.com', role: 'admin', userType: 'hospital' };
     return next();
   }
   return authenticateToken(req, res, next);
