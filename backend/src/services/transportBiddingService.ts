@@ -1,6 +1,5 @@
-import { PrismaClient, TransportBid, TransportRequest, TransportAgency, AgencyUser } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { TransportBid, TransportRequest, TransportAgency, AgencyUser } from '@prisma/client';
+import { databaseManager } from './databaseManager';
 
 export interface BidSubmissionData {
   transportRequestId: string;
@@ -25,8 +24,12 @@ export class TransportBiddingService {
   // Submit a bid on a transport request
   async submitBid(data: BidSubmissionData): Promise<TransportBid> {
     try {
+      // Get database instances
+      const centerDB = databaseManager.getCenterDB();
+      const emsDB = databaseManager.getEMSDB();
+
       // Validate that the transport request exists and is available for bidding
-      const transportRequest = await prisma.transportRequest.findUnique({
+      const transportRequest = await centerDB.transportRequest.findUnique({
         where: { id: data.transportRequestId },
         include: { assignedAgency: true }
       });
@@ -44,7 +47,7 @@ export class TransportBiddingService {
       }
 
       // Check if agency has already submitted a bid for this request
-      const existingBid = await prisma.transportBid.findFirst({
+      const existingBid = await centerDB.transportBid.findFirst({
         where: {
           transportRequestId: data.transportRequestId,
           agencyId: data.agencyId,
@@ -57,7 +60,7 @@ export class TransportBiddingService {
       }
 
       // Validate agency has appropriate unit type available
-      const availableUnit = await prisma.unit.findFirst({
+      const availableUnit = await emsDB.unit.findFirst({
         where: {
           agencyId: data.agencyId,
           type: data.unitType,
@@ -75,7 +78,7 @@ export class TransportBiddingService {
       }
 
       // Create the bid
-      const bid = await prisma.transportBid.create({
+      const bid = await centerDB.transportBid.create({
         data: {
           transportRequestId: data.transportRequestId,
           agencyId: data.agencyId,
@@ -135,7 +138,7 @@ export class TransportBiddingService {
         }
       }
 
-      return await prisma.transportBid.findMany({
+      return await centerDB.transportBid.findMany({
         where,
         include: {
           transportRequest: {
@@ -158,7 +161,7 @@ export class TransportBiddingService {
   // Get bids for a specific transport request
   async getBidsForTransport(transportRequestId: string): Promise<TransportBid[]> {
     try {
-      return await prisma.transportBid.findMany({
+      return await centerDB.transportBid.findMany({
         where: { transportRequestId },
         include: {
           agency: true,
@@ -178,7 +181,7 @@ export class TransportBiddingService {
   // Get agency's bid history
   async getAgencyBidHistory(agencyId: string, limit: number = 50): Promise<TransportBid[]> {
     try {
-      return await prisma.transportBid.findMany({
+      return await centerDB.transportBid.findMany({
         where: { agencyId },
         include: {
           transportRequest: {
@@ -202,7 +205,7 @@ export class TransportBiddingService {
   // Accept a bid (coordinator action)
   async acceptBid(bidId: string, reviewedBy: string, reviewNotes?: string): Promise<TransportBid> {
     try {
-      const bid = await prisma.transportBid.findUnique({
+      const bid = await centerDB.transportBid.findUnique({
         where: { id: bidId },
         include: { transportRequest: true }
       });
@@ -216,7 +219,7 @@ export class TransportBiddingService {
       }
 
       // Start a transaction to update bid and transport request
-      const result = await prisma.$transaction(async (tx) => {
+      const result = await centerDB.$transaction(async (tx) => {
         // Update the bid status
         const updatedBid = await tx.transportBid.update({
           where: { id: bidId },
@@ -267,7 +270,7 @@ export class TransportBiddingService {
   // Reject a bid (coordinator action)
   async rejectBid(bidId: string, reviewedBy: string, reviewNotes?: string): Promise<TransportBid> {
     try {
-      const bid = await prisma.transportBid.findUnique({
+      const bid = await centerDB.transportBid.findUnique({
         where: { id: bidId }
       });
 
@@ -279,7 +282,7 @@ export class TransportBiddingService {
         throw new Error('Bid is not pending');
       }
 
-      const updatedBid = await prisma.transportBid.update({
+      const updatedBid = await centerDB.transportBid.update({
         where: { id: bidId },
         data: {
           status: 'REJECTED',
@@ -301,7 +304,7 @@ export class TransportBiddingService {
   // Withdraw a bid (agency action)
   async withdrawBid(bidId: string, agencyId: string): Promise<TransportBid> {
     try {
-      const bid = await prisma.transportBid.findUnique({
+      const bid = await centerDB.transportBid.findUnique({
         where: { id: bidId }
       });
 
@@ -317,7 +320,7 @@ export class TransportBiddingService {
         throw new Error('Bid cannot be withdrawn');
       }
 
-      const updatedBid = await prisma.transportBid.update({
+      const updatedBid = await centerDB.transportBid.update({
         where: { id: bidId },
         data: {
           status: 'EXPIRED',
@@ -338,10 +341,10 @@ export class TransportBiddingService {
   async getAgencyBidStats(agencyId: string): Promise<any> {
     try {
       const [totalBids, acceptedBids, rejectedBids, pendingBids] = await Promise.all([
-        prisma.transportBid.count({ where: { agencyId } }),
-        prisma.transportBid.count({ where: { agencyId, status: 'ACCEPTED' } }),
-        prisma.transportBid.count({ where: { agencyId, status: 'REJECTED' } }),
-        prisma.transportBid.count({ where: { agencyId, status: 'PENDING' } })
+        centerDB.transportBid.count({ where: { agencyId } }),
+        centerDB.transportBid.count({ where: { agencyId, status: 'ACCEPTED' } }),
+        centerDB.transportBid.count({ where: { agencyId, status: 'REJECTED' } }),
+        centerDB.transportBid.count({ where: { agencyId, status: 'PENDING' } })
       ]);
 
       const acceptanceRate = totalBids > 0 ? (acceptedBids / totalBids) * 100 : 0;
@@ -395,7 +398,7 @@ export class TransportBiddingService {
       }
 
       // Exclude transports that the agency has already bid on
-      const existingBids = await prisma.transportBid.findMany({
+      const existingBids = await centerDB.transportBid.findMany({
         where: { agencyId },
         select: { transportRequestId: true }
       });
@@ -405,7 +408,7 @@ export class TransportBiddingService {
         where.id = { notIn: bidTransportIds };
       }
 
-      return await prisma.transportRequest.findMany({
+      return await centerDB.transportRequest.findMany({
         where,
         include: {
           originFacility: true,
@@ -431,7 +434,7 @@ export class TransportBiddingService {
       const expirationHours = 24; // Bids expire after 24 hours
       const expirationDate = new Date(Date.now() - expirationHours * 60 * 60 * 1000);
 
-      const result = await prisma.transportBid.updateMany({
+      const result = await centerDB.transportBid.updateMany({
         where: {
           status: 'PENDING',
           submittedAt: { lt: expirationDate }

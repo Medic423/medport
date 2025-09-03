@@ -1,4 +1,3 @@
-import { PrismaClient } from '@prisma/client';
 import { 
   CCTUnit, 
   ResourceAvailability, 
@@ -15,8 +14,7 @@ import {
 } from '../types/resource';
 import { Priority, TransportLevel, RequestStatus } from '../types/transport';
 import { UnitStatus } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { databaseManager } from './databaseManager';
 
 export class ResourceManagementService {
 
@@ -42,7 +40,8 @@ export class ResourceManagementService {
         where.currentStatus = UnitStatus.AVAILABLE;
       }
 
-      const units = await prisma.unit.findMany({
+      const emsDB = databaseManager.getEMSDB();
+      const units = await emsDB.unit.findMany({
         where,
         include: {
           agency: true,
@@ -143,20 +142,21 @@ export class ResourceManagementService {
     try {
       console.log('[RESOURCE_SERVICE] Getting resource availability');
       
+      const emsDB = databaseManager.getEMSDB();
       const [cctUnits, crewMembers, equipment] = await Promise.all([
-        prisma.unit.count({
+        emsDB.unit.count({
           where: {
             type: TransportLevel.CCT,
             isActive: true
           }
         }),
-        prisma.unit.count({
+        emsDB.unit.count({
           where: {
             type: TransportLevel.CCT,
             isActive: true
           }
         }),
-        prisma.unit.count({
+        emsDB.unit.count({
           where: {
             type: TransportLevel.CCT,
             isActive: true
@@ -164,7 +164,7 @@ export class ResourceManagementService {
         })
       ]);
 
-      const availableUnits = await prisma.unit.count({
+      const availableUnits = await emsDB.unit.count({
         where: {
           type: TransportLevel.CCT,
           currentStatus: UnitStatus.AVAILABLE,
@@ -172,7 +172,7 @@ export class ResourceManagementService {
         }
       });
 
-      const inUseUnits = await prisma.unit.count({
+      const inUseUnits = await emsDB.unit.count({
         where: {
           type: TransportLevel.CCT,
           currentStatus: UnitStatus.IN_USE,
@@ -180,7 +180,7 @@ export class ResourceManagementService {
         }
       });
 
-      const outOfServiceUnits = await prisma.unit.count({
+      const outOfServiceUnits = await emsDB.unit.count({
         where: {
           type: TransportLevel.CCT,
           currentStatus: UnitStatus.OUT_OF_SERVICE,
@@ -188,7 +188,7 @@ export class ResourceManagementService {
         }
       });
 
-      const maintenanceUnits = await prisma.unit.count({
+      const maintenanceUnits = await emsDB.unit.count({
         where: {
           type: TransportLevel.CCT,
           currentStatus: UnitStatus.MAINTENANCE,
@@ -517,7 +517,8 @@ export class ResourceManagementService {
       console.log('[RESOURCE_SERVICE] Updating unit status:', { unitId, newStatus, reason, updatedBy });
       
       // Get current unit status
-      const unit = await prisma.unit.findUnique({
+      const emsDB = databaseManager.getEMSDB();
+      const unit = await emsDB.unit.findUnique({
         where: { id: unitId }
       });
 
@@ -528,7 +529,7 @@ export class ResourceManagementService {
       const previousStatus = unit.currentStatus;
 
       // Update unit status in database
-      await prisma.unit.update({
+      await emsDB.unit.update({
         where: { id: unitId },
         data: {
           currentStatus: newStatus,

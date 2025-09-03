@@ -1,7 +1,4 @@
-import { PrismaClient } from '@prisma/client';
 import revenueTrackingService from './revenueTrackingService';
-
-const prisma = new PrismaClient();
 
 export interface RevenueOpportunity {
   id: string;
