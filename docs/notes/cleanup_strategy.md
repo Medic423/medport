@@ -404,7 +404,7 @@ const emsDB = databaseManager.getEMSDB();
 1. ✅ `routeCardGenerationService.ts` - Updated to use DatabaseManager pattern
 2. ✅ `distanceService.ts` - Updated to use DatabaseManager pattern  
 3. ✅ `matchingService.ts` - Updated to use DatabaseManager pattern
-4. ✅ `emergencyDepartmentService.ts` - Updated to use DatabaseManager pattern
+4. ✅ `emergencyDepartmentService.ts` - Updated to use DatabaseManager pattern, routes enabled, navigation restored
 5. ✅ `advancedTransportService.ts` - Updated to use DatabaseManager pattern
 
 ### **Missing Tables in Hospital Database:**
