@@ -24,7 +24,7 @@ export const simpleAuthenticateToken = (req: SimpleAuthRequest, res: Response, n
     req.user = {
       id: 'cmf2mdpnx0000ccuti77tb3s9', // Use actual demo user ID from database
       email: 'demo@medport.com',
-      userType: 'center' // Demo user gets center access
+      userType: 'hospital' // Demo user gets hospital access for testing
     };
     return next();
   }

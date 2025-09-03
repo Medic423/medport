@@ -35,6 +35,13 @@ export class SimpleNavigationService {
               category: 'Main'
             },
             {
+              id: 'emergency-department',
+              name: 'Emergency Department',
+              path: 'emergency-department',
+              icon: 'local_hospital',
+              category: 'Main'
+            },
+            {
               id: 'notifications',
               name: 'Notifications',
               path: 'notifications',
