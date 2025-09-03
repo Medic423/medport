@@ -299,7 +299,7 @@ export class RealTimeTrackingService {
           status: 'IN_PROGRESS',
         },
         include: {
-          routeStops: true,
+          assignedUnit: true,
         },
       });
 
@@ -524,9 +524,9 @@ export class RealTimeTrackingService {
       // Get facility information for each event
       const eventsWithFacilities = await Promise.all(
         events.map(async (event) => {
-          const facility = await hospitalDB.facility.findUnique({
+          const facility = event.facilityId ? await hospitalDB.facility.findUnique({
             where: { id: event.facilityId },
-          });
+          }) : null;
           
           return {
             id: event.id,

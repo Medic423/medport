@@ -77,7 +77,6 @@ export class QRCodeService {
         include: {
           originFacility: true,
           destinationFacility: true,
-          assignedUnit: true,
           createdBy: true
         }
       });
@@ -133,8 +132,7 @@ export class QRCodeService {
         where: { patientId },
         include: {
           originFacility: true,
-          destinationFacility: true,
-          assignedUnit: true
+          destinationFacility: true
         },
         orderBy: { requestTimestamp: 'desc' },
         take: 1

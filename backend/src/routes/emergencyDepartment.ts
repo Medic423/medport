@@ -115,7 +115,7 @@ router.get('/capacity-alerts/:emergencyDepartmentId', async (req, res) => {
     if (!ed) {
       return res.status(404).json({ error: 'Emergency department not found' });
     }
-    res.json(ed.capacityAlerts);
+    res.json((ed as any).capacityAlerts);
   } catch (error) {
     console.error('ED_ROUTE: Error fetching capacity alerts:', error);
     res.status(500).json({ error: 'Failed to fetch capacity alerts' });

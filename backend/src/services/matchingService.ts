@@ -1,7 +1,6 @@
-import { PrismaClient } from '@prisma/client';
 import { TransportRequest, TransportAgency, UnitAvailability, TransportBid } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { TransportRequest as HospitalTransportRequest } from '../../dist/prisma/hospital';
+import { databaseManager } from './databaseManager';
 
 export interface MatchingCriteria {
   transportLevel: 'BLS' | 'ALS' | 'CCT';
@@ -84,13 +83,14 @@ export class MatchingService {
     try {
       console.log('[MATCHING-SERVICE] Getting available agencies for criteria:', criteria);
       
-      const agencies = await prisma.transportAgency.findMany({
+      const emsDB = databaseManager.getEMSDB();
+      const agencies = await emsDB.transportAgency.findMany({
         where: {
           // Check if agency has units available for the required transport level
           units: {
             some: {
               type: criteria.transportLevel,
-              unitAvailability: {
+              availability: {
                 some: {
                   status: 'AVAILABLE'
                 }
@@ -103,7 +103,7 @@ export class MatchingService {
         include: {
           units: {
             include: {
-              unitAvailability: true
+              availability: true
             }
           },
           serviceAreas: true
@@ -115,7 +115,7 @@ export class MatchingService {
       // For demo purposes, if no agencies have units, return all active agencies
       if (agencies.length === 0) {
         console.log('[MATCHING-SERVICE] No agencies with units found, returning all active agencies for demo');
-        const allAgencies = await prisma.transportAgency.findMany({
+        const allAgencies = await emsDB.transportAgency.findMany({
           where: { isActive: true },
           include: {
             units: true,
@@ -475,7 +475,8 @@ export class MatchingService {
    */
   async getAgencyPreferences(agencyId: string): Promise<MatchingPreferences | null> {
     try {
-      const agency = await prisma.transportAgency.findUnique({
+      const emsDB = databaseManager.getEMSDB();
+      const agency = await emsDB.transportAgency.findUnique({
         where: { id: agencyId },
         include: {
           units: true
@@ -525,23 +526,24 @@ export class MatchingService {
    */
   async getMatchHistory(agencyId: string, limit: number = 50): Promise<any[]> {
     try {
-      const bids = await prisma.transportBid.findMany({
+      const centerDB = databaseManager.getCenterDB();
+      const bids = await centerDB.transportBid.findMany({
         where: { agencyId },
         include: {
           transportRequest: {
             include: {
               originFacility: true,
               destinationFacility: true
-            }
-          }
-        },
+            } as any
+          } as any
+        } as any,
         orderBy: { submittedAt: 'desc' },
         take: limit
       });
       
       return bids.map(bid => ({
         bidId: bid.id,
-        transportRequest: bid.transportRequest,
+        transportRequest: (bid as any).transportRequest,
         status: bid.status,
         submittedAt: bid.submittedAt,
         acceptedAt: bid.reviewedAt, // Using reviewedAt as acceptedAt for now

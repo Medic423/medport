@@ -2,9 +2,7 @@ import { Router } from 'express';
 import { z, ZodError } from 'zod';
 import matchingService from '../services/matchingService';
 import { authenticateToken } from '../middleware/auth';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { databaseManager } from '../services/databaseManager';
 
 const router = Router();
 
@@ -392,12 +390,15 @@ router.get('/demo/test-db', async (req, res) => {
   try {
     console.log('[MATCHING-API] Demo: Testing database content...');
     
+    const emsDB = databaseManager.getEMSDB();
+    const hospitalDB = databaseManager.getHospitalDB();
+    
     // Check agencies
-    const agencies = await prisma.transportAgency.findMany({
+    const agencies = await emsDB.transportAgency.findMany({
       include: {
         units: {
           include: {
-            unitAvailability: true
+            availability: true
           }
         }
       }
@@ -406,16 +407,16 @@ router.get('/demo/test-db', async (req, res) => {
     console.log('[MATCHING-API] Demo: Found agencies:', agencies.length);
     
     // Check facilities
-    const facilities = await prisma.facility.findMany({
+    const facilities = await hospitalDB.facility.findMany({
       take: 5
     });
     
     console.log('[MATCHING-API] Demo: Found facilities:', facilities.length);
     
     // Check units
-    const units = await prisma.unit.findMany({
+    const units = await emsDB.unit.findMany({
       include: {
-        unitAvailability: true
+        availability: true
       }
     });
     
@@ -441,7 +442,7 @@ router.get('/demo/test-db', async (req, res) => {
           id: units[0].id,
           type: units[0].type,
           agencyId: units[0].agencyId,
-          availabilityCount: units[0].unitAvailability?.length || 0
+          availabilityCount: units[0].availability?.length || 0
         } : null
       }
     });

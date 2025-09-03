@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { databaseManager } from './databaseManager';
 
 export interface EmergencyDepartmentData {
   id?: string;
@@ -53,6 +51,7 @@ export interface ProviderForecastData {
 
 export interface DemandPatternData {
   facilityId: string;
+  emergencyDepartmentId: string;
   patternType: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'SEASONAL' | 'EVENT_DRIVEN';
   dayOfWeek?: number;
   hourOfDay?: number;
@@ -69,7 +68,8 @@ export class EmergencyDepartmentService {
     console.log('ED_SERVICE: Creating emergency department for facility:', data.facilityId);
     
     try {
-      const ed = await prisma.emergencyDepartment.create({
+      const hospitalDB = databaseManager.getHospitalDB();
+      const ed = await hospitalDB.emergencyDepartment.create({
         data: {
           facilityId: data.facilityId,
           name: data.name,
@@ -101,15 +101,16 @@ export class EmergencyDepartmentService {
     console.log('ED_SERVICE: Fetching emergency department for facility:', facilityId);
     
     try {
-      const ed = await prisma.emergencyDepartment.findUnique({
-        where: { facilityId },
+      const hospitalDB = databaseManager.getHospitalDB();
+      const ed = await hospitalDB.emergencyDepartment.findUnique({
+        where: { id: facilityId },
         include: {
           facility: true,
           bedStatusUpdates: {
             orderBy: { createdAt: 'desc' },
             take: 10
           },
-          transportQueues: {
+          transportQueue: {
             where: { status: { in: ['WAITING', 'ASSIGNED'] } },
             include: {
               transportRequest: {
@@ -118,8 +119,7 @@ export class EmergencyDepartmentService {
                   destinationFacility: true
                 }
               },
-              assignedProvider: true,
-              assignedUnit: true
+              assignedProvider: true
             },
             orderBy: { queuePosition: 'asc' }
           },
@@ -141,8 +141,9 @@ export class EmergencyDepartmentService {
     console.log('ED_SERVICE: Updating emergency department for facility:', facilityId);
     
     try {
-      const ed = await prisma.emergencyDepartment.update({
-        where: { facilityId },
+      const hospitalDB = databaseManager.getHospitalDB();
+      const ed = await hospitalDB.emergencyDepartment.update({
+        where: { id: facilityId },
         data,
         include: {
           facility: true
@@ -162,12 +163,13 @@ export class EmergencyDepartmentService {
     console.log('ED_SERVICE: Updating bed status for ED:', data.emergencyDepartmentId);
     
     try {
-      const bedUpdate = await prisma.bedStatusUpdate.create({
+      const hospitalDB = databaseManager.getHospitalDB();
+      const bedUpdate = await hospitalDB.bedStatusUpdate.create({
         data
       });
 
       // Update the emergency department bed counts
-      const ed = await prisma.emergencyDepartment.findUnique({
+      const ed = await hospitalDB.emergencyDepartment.findUnique({
         where: { id: data.emergencyDepartmentId }
       });
 
@@ -206,7 +208,7 @@ export class EmergencyDepartmentService {
         const newCensus = newOccupiedBeds + newHallwayBeds;
         const capacityPercentage = (newCensus / ed.totalBeds) * 100;
 
-        await prisma.emergencyDepartment.update({
+        await hospitalDB.emergencyDepartment.update({
           where: { id: data.emergencyDepartmentId },
           data: {
             availableBeds: newAvailableBeds,
@@ -243,8 +245,9 @@ export class EmergencyDepartmentService {
     console.log('ED_SERVICE: Adding transport request to queue for ED:', data.emergencyDepartmentId);
     
     try {
+      const hospitalDB = databaseManager.getHospitalDB();
       // Get current queue length and assign position
-      const currentQueue = await prisma.transportQueue.findMany({
+      const currentQueue = await hospitalDB.transportQueue.findMany({
         where: { 
           emergencyDepartmentId: data.emergencyDepartmentId,
           status: { in: ['WAITING', 'ASSIGNED'] }
@@ -255,7 +258,7 @@ export class EmergencyDepartmentService {
 
       const newPosition = currentQueue.length > 0 ? currentQueue[0].queuePosition + 1 : 1;
 
-      const queueEntry = await prisma.transportQueue.create({
+      const queueEntry = await hospitalDB.transportQueue.create({
         data: {
           ...data,
           queuePosition: newPosition
@@ -272,7 +275,7 @@ export class EmergencyDepartmentService {
       });
 
       // Update ED queue length
-      await prisma.emergencyDepartment.update({
+      await hospitalDB.emergencyDepartment.update({
         where: { id: data.emergencyDepartmentId },
         data: {
           transportQueueLength: { increment: 1 }
@@ -302,7 +305,8 @@ export class EmergencyDepartmentService {
         updateData.assignedUnitId = assignedUnitId;
       }
 
-      const queueEntry = await prisma.transportQueue.update({
+      const hospitalDB = databaseManager.getHospitalDB();
+      const queueEntry = await hospitalDB.transportQueue.update({
         where: { id: queueId },
         data: updateData,
         include: {
@@ -313,13 +317,13 @@ export class EmergencyDepartmentService {
             }
           },
           assignedProvider: true,
-          assignedUnit: true
+
         }
       });
 
       // If completed or cancelled, update ED queue length
       if (status === 'COMPLETED' || status === 'CANCELLED') {
-        await prisma.emergencyDepartment.update({
+        await hospitalDB.emergencyDepartment.update({
           where: { id: queueEntry.emergencyDepartmentId },
           data: {
             transportQueueLength: { decrement: 1 }
@@ -339,7 +343,8 @@ export class EmergencyDepartmentService {
     console.log('ED_SERVICE: Fetching transport queue for ED:', emergencyDepartmentId);
     
     try {
-      const queue = await prisma.transportQueue.findMany({
+      const hospitalDB = databaseManager.getHospitalDB();
+      const queue = await hospitalDB.transportQueue.findMany({
         where: { 
           emergencyDepartmentId,
           status: { in: ['WAITING', 'ASSIGNED', 'IN_PROGRESS'] }
@@ -352,7 +357,7 @@ export class EmergencyDepartmentService {
             }
           },
           assignedProvider: true,
-          assignedUnit: true
+
         },
         orderBy: [
           { priority: 'desc' },
@@ -379,7 +384,8 @@ export class EmergencyDepartmentService {
     console.log('ED_SERVICE: Creating capacity alert for ED:', data.emergencyDepartmentId);
     
     try {
-      const alert = await prisma.capacityAlert.create({
+      const hospitalDB = databaseManager.getHospitalDB();
+      const alert = await hospitalDB.capacityAlert.create({
         data: {
           emergencyDepartmentId: data.emergencyDepartmentId,
           alertType: data.alertType as any,
@@ -402,7 +408,8 @@ export class EmergencyDepartmentService {
     console.log('ED_SERVICE: Acknowledging capacity alert:', alertId);
     
     try {
-      const alert = await prisma.capacityAlert.update({
+      const hospitalDB = databaseManager.getHospitalDB();
+      const alert = await hospitalDB.capacityAlert.update({
         where: { id: alertId },
         data: {
           isActive: false,
@@ -424,7 +431,8 @@ export class EmergencyDepartmentService {
     console.log('ED_SERVICE: Creating provider forecast for agency:', data.agencyId);
     
     try {
-      const forecast = await prisma.providerForecast.create({
+      const centerDB = databaseManager.getCenterDB();
+      const forecast = await centerDB.providerForecast.create({
         data: {
           agencyId: data.agencyId,
           forecastDate: data.forecastDate,
@@ -436,9 +444,7 @@ export class EmergencyDepartmentService {
           factors: data.factors,
           recommendations: data.recommendations
         },
-        include: {
-          agency: true
-        }
+
       });
       
       console.log('ED_SERVICE: Provider forecast created successfully');
@@ -457,11 +463,9 @@ export class EmergencyDepartmentService {
       if (agencyId) where.agencyId = agencyId;
       if (forecastType) where.forecastType = forecastType;
 
-      const forecasts = await prisma.providerForecast.findMany({
+      const centerDB = databaseManager.getCenterDB();
+      const forecasts = await centerDB.providerForecast.findMany({
         where,
-        include: {
-          agency: true
-        },
         orderBy: { forecastDate: 'desc' }
       });
       
@@ -477,9 +481,11 @@ export class EmergencyDepartmentService {
     console.log('ED_SERVICE: Creating demand pattern for facility:', data.facilityId);
     
     try {
-      const pattern = await prisma.demandPattern.create({
+      const hospitalDB = databaseManager.getHospitalDB();
+      const pattern = await hospitalDB.demandPattern.create({
         data: {
           facilityId: data.facilityId,
+          emergencyDepartmentId: data.emergencyDepartmentId,
           patternType: data.patternType,
           dayOfWeek: data.dayOfWeek,
           hourOfDay: data.hourOfDay,
@@ -510,7 +516,8 @@ export class EmergencyDepartmentService {
       if (facilityId) where.facilityId = facilityId;
       if (patternType) where.patternType = patternType;
 
-      const patterns = await prisma.demandPattern.findMany({
+      const hospitalDB = databaseManager.getHospitalDB();
+      const patterns = await hospitalDB.demandPattern.findMany({
         where,
         include: {
           facility: true
@@ -530,10 +537,11 @@ export class EmergencyDepartmentService {
     console.log('ED_SERVICE: Calculating ED metrics for:', emergencyDepartmentId);
     
     try {
-      const ed = await prisma.emergencyDepartment.findUnique({
+      const hospitalDB = databaseManager.getHospitalDB();
+      const ed = await hospitalDB.emergencyDepartment.findUnique({
         where: { id: emergencyDepartmentId },
         include: {
-          transportQueues: {
+          transportQueue: {
             where: { status: { in: ['WAITING', 'ASSIGNED'] } }
           }
         }
@@ -566,8 +574,9 @@ export class EmergencyDepartmentService {
     console.log('ED_SERVICE: Forecasting provider demand for agency:', agencyId);
     
     try {
+      const centerDB = databaseManager.getCenterDB();
       // Get historical data for the agency
-      const historicalForecasts = await prisma.providerForecast.findMany({
+      const historicalForecasts = await centerDB.providerForecast.findMany({
         where: { 
           agencyId,
           forecastDate: { lte: forecastDate }

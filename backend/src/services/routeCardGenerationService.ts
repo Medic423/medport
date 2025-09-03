@@ -1,4 +1,5 @@
-import { PrismaClient, Route, RouteStop, TransportRequest, RouteOptimizationType } from '@prisma/client';
+import { Route, RouteStop, TransportRequest, RouteOptimizationType } from '@prisma/client';
+import { databaseManager } from './databaseManager';
 
 // Import types from the route optimization service
 interface ChainedTripOpportunity {
@@ -25,7 +26,7 @@ interface ChainedTripOpportunity {
   temporalEfficiency: number;
 }
 
-const prisma = new PrismaClient();
+// DatabaseManager will be used instead of direct PrismaClient
 
 export interface EnhancedRouteCard {
   id: string;
@@ -215,10 +216,11 @@ export class RouteCardGenerationService {
    */
   private async getRouteStopsWithDetails(routeStops: RouteStop[]): Promise<RouteStopDetail[]> {
     const detailedStops: RouteStopDetail[] = [];
+    const hospitalDB = databaseManager.getHospitalDB();
 
     for (let i = 0; i < routeStops.length; i++) {
       const stop = routeStops[i];
-      const facility = await prisma.facility.findUnique({
+      const facility = await hospitalDB.facility.findUnique({
         where: { id: stop.facilityId }
       });
 

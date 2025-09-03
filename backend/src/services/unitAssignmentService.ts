@@ -88,8 +88,8 @@ export class UnitAssignmentService {
           ...where
         },
         include: {
-          unitAvailability: {
-            orderBy: { lastUpdated: 'desc' },
+          availability: {
+            orderBy: { updatedAt: 'desc' },
             take: 1
           }
         }
@@ -112,7 +112,7 @@ export class UnitAssignmentService {
             shiftStart: unit.shiftStart,
             shiftEnd: unit.shiftEnd,
             estimatedRevenue: 0, // Will be calculated based on assignments
-            lastStatusUpdate: unit.unitAvailability?.[0]?.lastUpdated || unit.updatedAt
+            lastStatusUpdate: unit.availability?.[0]?.updatedAt || unit.updatedAt
           };
         })
       );
@@ -153,9 +153,9 @@ export class UnitAssignmentService {
     const units = await emsDB.unit.findMany({
       where,
       include: {
-        unitAvailability: {
+        availability: {
           orderBy: {
-            lastUpdated: 'desc'
+            updatedAt: 'desc'
           },
           take: 1
         }
@@ -325,7 +325,7 @@ export class UnitAssignmentService {
     
     const availability = await emsDB.unitAvailability.findFirst({
       where: { unitId },
-      orderBy: { lastUpdated: 'desc' }
+      orderBy: { updatedAt: 'desc' }
     });
     
     if (!availability) {
@@ -333,8 +333,8 @@ export class UnitAssignmentService {
       const newAvailability = await emsDB.unitAvailability.create({
         data: {
           unitId,
-          status: UnitStatus.IN_USE,
-          lastUpdated: new Date()
+          status: 'ASSIGNED',
+          startTime: new Date()
         }
       });
       return newAvailability.id;
@@ -528,8 +528,8 @@ export class UnitAssignmentService {
       const units = await emsDB.unit.findMany({
         where: { isActive: true },
         include: {
-          unitAvailability: {
-            orderBy: { lastUpdated: 'desc' },
+          availability: {
+            orderBy: { updatedAt: 'desc' },
             take: 1
           },
           unitAssignments: {

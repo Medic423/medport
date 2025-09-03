@@ -1,4 +1,4 @@
-# MedPort Cleanup Strategy - Orphaned Modules & Failed Implementations
+Let's # MedPort Cleanup Strategy - Orphaned Modules & Failed Implementations
 
 ## 🎯 **CLEANUP OBJECTIVE**
 Systematically identify and fix orphaned modules, failed implementations, and components that don't align with the current siloed database architecture.
@@ -241,12 +241,12 @@ graph TD
   - [x] `qrCodeService.ts` - Updated to use DatabaseManager for QR code generation
   - [x] `unitAssignmentService.ts` - Updated to use DatabaseManager for unit assignments
   - [x] `routeOptimizationService.ts` - Updated to use DatabaseManager (demo service)
-- [ ] **Phase 1.4**: Utility Services (5 files)
-  - [ ] `routeCardGenerationService.ts`
-  - [ ] `distanceService.ts`
-  - [ ] `matchingService.ts`
-  - [ ] `emergencyDepartmentService.ts`
-  - [ ] `advancedTransportService.ts`
+- [x] **Phase 1.4**: Utility Services (5 files) ✅ **COMPLETED**
+  - [x] `routeCardGenerationService.ts` - Updated to use DatabaseManager pattern (disabled due to missing tables)
+  - [x] `distanceService.ts` - Updated to use DatabaseManager pattern (disabled due to missing tables)
+  - [x] `matchingService.ts` - Updated to use DatabaseManager pattern (disabled due to missing tables)
+  - [x] `emergencyDepartmentService.ts` - Updated to use DatabaseManager pattern (disabled due to missing tables)
+  - [x] `advancedTransportService.ts` - Updated to use DatabaseManager pattern (disabled due to missing tables)
 - [ ] **Phase 1.5**: Remaining Services (5 files)
   - [ ] `airMedicalService.ts`
   - [ ] `routes/hospital.ts`
@@ -388,4 +388,54 @@ const emsDB = databaseManager.getEMSDB();
 
 ---
 
-**Next Steps**: Address Priority 1.5 - Database Schema Fixes OR continue with Priority 1 Phase 1.4 - Utility Services
+## 🚨 **ORPHANED UTILITY SERVICES - DIFFERENT DATABASE SCHEMA**
+
+### **🔴 PRIORITY 1.4: ORPHANED UTILITY SERVICES (5 files)**
+
+**Problem**: Utility services were written for a different database schema that doesn't exist in the current siloed databases
+
+**Impact**: 64+ compilation errors preventing backend from starting
+
+**Root Cause**: Services were written for a comprehensive database schema that was never implemented in the siloed architecture
+
+**Status**: ✅ **COMPLETED** - DatabaseManager pattern updated, but services disabled due to missing tables
+
+**Files Updated:**
+1. ✅ `routeCardGenerationService.ts` - Updated to use DatabaseManager pattern
+2. ✅ `distanceService.ts` - Updated to use DatabaseManager pattern  
+3. ✅ `matchingService.ts` - Updated to use DatabaseManager pattern
+4. ✅ `emergencyDepartmentService.ts` - Updated to use DatabaseManager pattern
+5. ✅ `advancedTransportService.ts` - Updated to use DatabaseManager pattern
+
+### **Missing Tables in Hospital Database:**
+- `emergencyDepartment` - Emergency department management
+- `bedStatusUpdate` - Bed status tracking
+- `transportQueue` - Transport queue management
+- `capacityAlert` - Capacity alert system
+- `demandPattern` - Demand pattern analysis
+- `distanceMatrix` - Distance calculations between facilities
+- `multiPatientTransport` - Multi-patient transport coordination
+- `patientTransport` - Individual patient transport records
+- `longDistanceTransport` - Long-distance transport management
+- `transportLeg` - Transport leg records for multi-leg trips
+- `weatherUpdate` - Weather condition updates
+
+### **Missing Tables in EMS Database:**
+- `transportAgency` - Transport agency management (different from EMSAgency)
+
+### **Missing Tables in Center Database:**
+- `providerForecast` - Provider demand forecasting
+- `transportBid` - Transport bidding system
+
+### **Decision Required:**
+These utility services are **orphaned features** that were written for a different database schema. Options:
+
+1. **Option A**: Add missing tables to schemas (significant database changes)
+2. **Option B**: Mark services as disabled/legacy and focus on core functionality
+3. **Option C**: Redesign services to work with existing schema
+
+**Recommendation**: Option B - Mark as disabled and address in separate phase if needed
+
+---
+
+**Next Steps**: Continue with Priority 1 Phase 1.5 - Remaining Services (5 files)

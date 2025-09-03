@@ -29,6 +29,7 @@ model User {
   hospital Hospital? @relation(fields: [hospitalId], references: [id])
   agency   Agency? @relation(fields: [agencyId], references: [id])
   auditLogs AuditLog[]
+  transportRequests TransportRequest[]
 
   @@map("users")
 }
@@ -64,6 +65,7 @@ model Agency {
   city        String
   state       String
   zipCode     String
+  serviceArea Json?    // Service area configuration
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -188,5 +190,101 @@ enum ServiceStatus {
   ACTIVE
   INACTIVE
   PENDING
+}
+
+// Transport Bidding System
+model TransportBid {
+  id                String   @id @default(cuid())
+  agencyId          String   // Reference to EMS agency
+  transportRequestId String   // Reference to Hospital DB transport request
+  bidAmount         Decimal?
+  estimatedArrival  DateTime?
+  estimatedPickup   DateTime?
+  estimatedCompletion DateTime?
+  specialNotes      String?
+  status            BidStatus @default(PENDING)
+  submittedAt       DateTime @default(now())
+  acceptedAt        DateTime?
+  rejectedAt        DateTime?
+  rejectionReason   String?
+  reviewedAt        DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  transportRequest TransportRequest @relation(fields: [transportRequestId], references: [id])
+
+  @@map("transport_bids")
+}
+
+// Provider Forecasting System
+model ProviderForecast {
+  id                    String   @id @default(cuid())
+  agencyId              String   // Reference to EMS agency
+  forecastDate          DateTime
+  forecastType          ForecastType
+  predictedDemand       Int
+  availableCapacity     Int
+  capacityUtilization   Float
+  confidence            Float    // 0-1
+  factors               Json?    // Additional forecasting factors
+  recommendations       String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("provider_forecasts")
+}
+
+// Transport Request reference (links to Hospital DB)
+model TransportRequest {
+  id                     String           @id @default(cuid())
+  hospitalId             String
+  patientId              String
+  originFacilityId       String
+  destinationFacilityId  String
+  transportLevel         String
+  priority               String
+  status                 String
+  specialRequirements    String?
+  requestTimestamp       DateTime
+  acceptedTimestamp      DateTime?
+  pickupTimestamp        DateTime?
+  completionTimestamp    DateTime?
+  assignedAgencyId       String?
+  assignedUnitId         String?
+  createdById            String
+  createdAt              DateTime
+  updatedAt              DateTime
+  routeOptimizationScore Float?
+  chainingOpportunities  Json?
+  timeFlexibility        Int?
+  revenuePotential       Float?
+  estimatedArrivalTime   DateTime?
+  estimatedPickupTime    DateTime?
+  etaUpdates            Json?
+  cancellationReason    String?
+
+  // Relations
+  createdBy User @relation(fields: [createdById], references: [id])
+  transportBids TransportBid[]
+
+  @@map("transport_requests")
+}
+
+// Additional Enums
+enum BidStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+  EXPIRED
+}
+
+enum ForecastType {
+  DAILY
+  WEEKLY
+  MONTHLY
+  SEASONAL
+  EVENT_BASED
 }
 

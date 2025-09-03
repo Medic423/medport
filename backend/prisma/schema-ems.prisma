@@ -41,6 +41,53 @@ model EMSAgency {
   @@map("ems_agencies")
 }
 
+// Transport Agency model for matching service
+model TransportAgency {
+  id                String   @id @default(cuid())
+  name              String
+  contactName       String
+  phone             String
+  email             String
+  address           String
+  city              String
+  state             String
+  zipCode           String
+  serviceArea       Json?    // Service area configuration
+  operatingHours    String
+  capabilities      String[]
+  transportLevels   String[] // BLS, ALS, CCT
+  maxDistance       Float?   // Maximum service distance
+  pricingStructure  Json?    // Pricing configuration
+  isActive          Boolean  @default(true)
+  status            ServiceStatus @default(ACTIVE)
+  addedBy           String?
+  addedAt           DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  units             Unit[]
+  serviceAreas      ServiceArea[]
+
+  @@map("transport_agencies")
+}
+
+model ServiceArea {
+  id                String   @id @default(cuid())
+  transportAgencyId String
+  name              String
+  coordinates       Json?    // GeoJSON polygon or circle
+  radius            Float?   // For circular service areas
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  transportAgency   TransportAgency @relation(fields: [transportAgencyId], references: [id])
+
+  @@map("service_areas")
+}
+
 model Unit {
   id              String   @id @default(cuid())
   agencyId        String
@@ -57,7 +104,11 @@ model Unit {
 
   // Relations
   agency EMSAgency @relation(fields: [agencyId], references: [id])
+  transportAgency TransportAgency? @relation(fields: [agencyId], references: [id], map: "units_transportAgencyId_fkey")
   availability UnitAvailability[]
+  gpsTracking GPSTracking[]
+  unitAssignments UnitAssignment[]
+  routes Route[]
 
   @@map("units")
 }
@@ -74,6 +125,7 @@ model UnitAvailability {
 
   // Relations
   unit Unit @relation(fields: [unitId], references: [id])
+  unitAssignments UnitAssignment[]
 
   @@map("unit_availability")
 }
@@ -162,5 +214,196 @@ enum RouteStatus {
   ACTIVE
   INACTIVE
   ARCHIVED
+}
+
+// GPS Tracking and Real-time Location Services
+model GPSTracking {
+  id              String   @id @default(cuid())
+  unitId          String
+  latitude        Float
+  longitude       Float
+  altitude        Float?
+  speed           Float?
+  heading         Float?
+  accuracy        Float?
+  batteryLevel    Int?
+  signalStrength  Int?
+  locationType    String   @default("GPS")
+  source          String   @default("UNIT_DEVICE")
+  isActive        Boolean  @default(true)
+  timestamp       DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  unit Unit @relation(fields: [unitId], references: [id])
+  locationHistory LocationHistory[]
+  etaUpdates ETAUpdate[]
+  geofenceEvents GeofenceEvent[]
+  routeDeviations RouteDeviation[]
+
+  @@map("gps_tracking")
+}
+
+model LocationHistory {
+  id              String   @id @default(cuid())
+  gpsTrackingId   String
+  latitude        Float
+  longitude       Float
+  altitude        Float?
+  speed           Float?
+  heading         Float?
+  accuracy        Float?
+  locationType    String   @default("GPS")
+  source          String   @default("UNIT_DEVICE")
+  timestamp       DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  // Relations
+  gpsTracking GPSTracking @relation(fields: [gpsTrackingId], references: [id])
+
+  @@map("location_history")
+}
+
+model GeofenceEvent {
+  id              String   @id @default(cuid())
+  gpsTrackingId   String
+  facilityId      String?  // Reference to Hospital DB facility
+  geofenceType    String   @default("FACILITY_ARRIVAL")
+  eventType       String   @default("ENTERED")
+  latitude        Float
+  longitude       Float
+  radius          Float    // in meters
+  isActive        Boolean  @default(true)
+  notes           String?
+  timestamp       DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  gpsTracking GPSTracking @relation(fields: [gpsTrackingId], references: [id])
+
+  @@map("geofence_events")
+}
+
+model UnitAssignment {
+  id                  String   @id @default(cuid())
+  unitId              String
+  unitAvailabilityId  String
+  transportRequestId  String   // Reference to Hospital DB transport request
+  assignmentType      String   @default("PRIMARY")
+  startTime           DateTime
+  endTime             DateTime?
+  status              String   @default("ACTIVE")
+  assignedBy          String?  // Reference to Center DB user
+  notes               String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  unit Unit @relation(fields: [unitId], references: [id])
+  unitAvailability UnitAvailability @relation(fields: [unitAvailabilityId], references: [id])
+
+  @@map("unit_assignments")
+}
+
+model Route {
+  id              String   @id @default(cuid())
+  assignedUnitId  String
+  routeNumber     String
+  routeType       String   @default("OPTIMIZED")
+  status          String   @default("IN_PROGRESS")
+  startTime       DateTime?
+  endTime         DateTime?
+  waypoints       Json?    // Array of coordinates
+  routeStops      Json?    // Array of route stops
+  distance        Float?
+  estimatedTime   Int?     // Minutes
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  assignedUnit Unit @relation(fields: [assignedUnitId], references: [id])
+  routeDeviations RouteDeviation[]
+
+  @@map("routes")
+}
+
+model RouteDeviation {
+  id                  String   @id @default(cuid())
+  gpsTrackingId       String
+  routeId             String
+  deviationType       String   @default("ROUTE_DEVIATION")
+  severity            String   @default("MEDIUM")
+  description         String
+  currentLatitude     Float
+  currentLongitude    Float
+  expectedLatitude    Float
+  expectedLongitude   Float
+  distanceOffRoute    Float    // in meters
+  isResolved          Boolean  @default(false)
+  resolvedAt          DateTime?
+  notes               String?
+  timestamp           DateTime @default(now())
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  gpsTracking GPSTracking @relation(fields: [gpsTrackingId], references: [id])
+  route Route @relation(fields: [routeId], references: [id])
+
+  @@map("route_deviations")
+}
+
+model TrafficCondition {
+  id              String   @id @default(cuid())
+  location        Json     // { latitude: number, longitude: number, radius: number }
+  conditionType   String   @default("CONGESTION")
+  severity        String   @default("MEDIUM")
+  description     String
+  startTime       DateTime
+  endTime         DateTime?
+  isActive        Boolean  @default(true)
+  impactFactor    Float    @default(1.0) // Multiplier for ETA calculations
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("traffic_conditions")
+}
+
+model WeatherImpact {
+  id              String   @id @default(cuid())
+  location        Json     // { latitude: number, longitude: number, radius: number }
+  weatherType     String   @default("RAIN")
+  severity        String   @default("MODERATE")
+  description     String
+  startTime       DateTime
+  endTime         DateTime?
+  isActive        Boolean  @default(true)
+  impactFactor    Float    @default(1.0) // Multiplier for ETA calculations
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("weather_impacts")
+}
+
+model ETAUpdate {
+  id                  String   @id @default(cuid())
+  gpsTrackingId       String
+  destinationId       String
+  destinationType     String   @default("FACILITY")
+  currentETA          DateTime
+  trafficFactor       Float    @default(1.0)
+  weatherFactor       Float    @default(1.0)
+  routeConditions     Json?    // Additional route condition data
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  gpsTracking GPSTracking @relation(fields: [gpsTrackingId], references: [id])
+
+  @@map("eta_updates")
 }
 

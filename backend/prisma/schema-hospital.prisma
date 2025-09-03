@@ -28,6 +28,9 @@ model HospitalUser {
   createdRequests TransportRequest[] @relation("CreatedRequests")
   hospitalFacilities HospitalFacility[]
   agencyPreferences HospitalAgencyPreference[]
+  multiPatientTransportCoordinators MultiPatientTransport[] @relation("MultiPatientTransportCoordinator")
+  longDistanceTransportCoordinators LongDistanceTransport[] @relation("LongDistanceTransportCoordinator")
+  transportQueueProviders TransportQueue[] @relation("TransportQueueProvider")
 
   @@map("hospital_users")
 }
@@ -77,6 +80,19 @@ model Facility {
   // Relations
   destinationRequests TransportRequest[] @relation("DestinationFacility")
   originRequests      TransportRequest[] @relation("OriginFacility")
+  emergencyDepartments EmergencyDepartment[]
+  demandPatterns      DemandPattern[]
+  distanceFrom        DistanceMatrix[] @relation("DistanceFrom")
+  distanceTo          DistanceMatrix[] @relation("DistanceTo")
+  multiPatientTransports MultiPatientTransport[]
+  longDistanceTransports LongDistanceTransport[]
+  longDistanceDestinations LongDistanceTransport[] @relation("LongDistanceDestination")
+  weatherUpdates      WeatherUpdate[]
+  patientTransportOrigins PatientTransport[] @relation("PatientTransportOrigin")
+  patientTransportDestinations PatientTransport[] @relation("PatientTransportDestination")
+  transportLegOrigins TransportLeg[] @relation("TransportLegOrigin")
+  transportLegDestinations TransportLeg[] @relation("TransportLegDestination")
+  routeStops RouteStop[] @relation("RouteStopFacility")
 
   @@map("facilities")
 }
@@ -116,6 +132,7 @@ model TransportRequest {
   destinationFacility Facility @relation("DestinationFacility", fields: [destinationFacilityId], references: [id])
   createdBy HospitalUser @relation("CreatedRequests", fields: [createdById], references: [id])
   agencyPreferences HospitalAgencyPreference[]
+  transportQueue TransportQueue[]
 
   @@map("transport_requests")
 }
@@ -133,6 +150,8 @@ model HospitalAgencyPreference {
   // Relations
   hospitalUser HospitalUser @relation(fields: [hospitalId], references: [id])
   transportRequests TransportRequest[]
+  multiPatientTransportAssignments MultiPatientTransport[] @relation("MultiPatientTransportAgency")
+  longDistanceTransportAssignments LongDistanceTransport[] @relation("LongDistanceTransportAgency")
 
   @@map("hospital_agency_preferences")
 }
@@ -174,5 +193,391 @@ enum FacilityType {
   REHAB_FACILITY
   URGENT_CARE
   SPECIALTY_CLINIC
+}
+
+// Emergency Department Management
+model EmergencyDepartment {
+  id                    String   @id @default(cuid())
+  facilityId            String
+  name                  String
+  totalBeds             Int
+  availableBeds         Int
+  occupiedBeds          Int
+  hallwayBeds           Int
+  criticalBeds          Int
+  capacityThreshold     Int
+  currentCensus         Int
+  transportQueueLength  Int
+  averageWaitTime       Int      // in minutes
+  peakHours             Json?    // { start: string, end: string, days: number[] }
+  isActive              Boolean  @default(true)
+  lastUpdated           DateTime @default(now())
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  facility              Facility @relation(fields: [facilityId], references: [id])
+  bedStatusUpdates      BedStatusUpdate[]
+  transportQueue        TransportQueue[]
+  capacityAlerts        CapacityAlert[]
+  demandPatterns        DemandPattern[]
+
+  @@map("emergency_departments")
+}
+
+model BedStatusUpdate {
+  id                    String   @id @default(cuid())
+  emergencyDepartmentId String
+  updateType            BedUpdateType
+  bedCount              Int
+  updateReason          String?
+  notes                 String?
+  updatedBy             String?
+  createdAt             DateTime @default(now())
+
+  // Relations
+  emergencyDepartment   EmergencyDepartment @relation(fields: [emergencyDepartmentId], references: [id])
+
+  @@map("bed_status_updates")
+}
+
+model TransportQueue {
+  id                    String   @id @default(cuid())
+  emergencyDepartmentId String
+  transportRequestId    String
+  queuePosition         Int
+  priority              Priority
+  waitTime              Int      // in minutes
+  estimatedWaitTime     Int?     // in minutes
+  status                QueueStatus @default(WAITING)
+  assignedProviderId    String?
+  assignedUnitId        String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  emergencyDepartment   EmergencyDepartment @relation(fields: [emergencyDepartmentId], references: [id])
+  transportRequest      TransportRequest @relation(fields: [transportRequestId], references: [id])
+  assignedProvider      HospitalUser? @relation("TransportQueueProvider", fields: [assignedProviderId], references: [id])
+
+  @@map("transport_queue")
+}
+
+model CapacityAlert {
+  id                    String   @id @default(cuid())
+  emergencyDepartmentId String
+  alertType             AlertType
+  severity              AlertSeverity
+  message               String
+  threshold             Int?
+  currentValue          Int?
+  isActive              Boolean  @default(true)
+  acknowledgedBy        String?
+  acknowledgedAt        DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  emergencyDepartment   EmergencyDepartment @relation(fields: [emergencyDepartmentId], references: [id])
+
+  @@map("capacity_alerts")
+}
+
+model DemandPattern {
+  id                    String   @id @default(cuid())
+  facilityId            String
+  emergencyDepartmentId String
+  patternType           PatternType
+  dayOfWeek             Int?     // 0-6 (Sunday-Saturday)
+  hourOfDay             Int?     // 0-23
+  averageDemand         Float
+  peakDemand            Float
+  seasonalFactor        Float
+  trendDirection        TrendDirection
+  confidence            Float    // 0-1
+  lastUpdated           DateTime @default(now())
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  facility              Facility @relation(fields: [facilityId], references: [id])
+  emergencyDepartment   EmergencyDepartment @relation(fields: [emergencyDepartmentId], references: [id])
+
+  @@map("demand_patterns")
+}
+
+// Distance Matrix for route optimization
+model DistanceMatrix {
+  id                    String   @id @default(cuid())
+  fromFacilityId        String
+  toFacilityId          String
+  distanceMiles         Float
+  estimatedTimeMinutes  Int
+  routeType             RouteType @default(FASTEST)
+  trafficFactor         Float?   @default(1.0)
+  tolls                 Float?   @default(0.0)
+  fuelEfficiency        Float?
+  lastUpdated           DateTime @default(now())
+  createdAt             DateTime @default(now())
+
+  // Relations
+  fromFacility          Facility @relation("DistanceFrom", fields: [fromFacilityId], references: [id])
+  toFacility            Facility @relation("DistanceTo", fields: [toFacilityId], references: [id])
+
+  @@unique([fromFacilityId, toFacilityId, routeType])
+  @@map("distance_matrix")
+}
+
+// Advanced Transport Management
+model MultiPatientTransport {
+  id                    String   @id @default(cuid())
+  facilityId            String
+  transportType         String   // "MULTI_PATIENT", "LONG_DISTANCE"
+  totalPatients         Int
+  totalDistance         Float
+  estimatedDuration     Int      // in minutes
+  status                TransportStatus @default(PLANNED)
+  priority              Priority
+  specialRequirements   String?
+  assignedAgencyId      String?
+  assignedUnitId        String?
+  batchNumber           String?
+  coordinatorId         String?
+  plannedStartTime      DateTime?
+  plannedEndTime        DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  facility              Facility @relation(fields: [facilityId], references: [id])
+  coordinator           HospitalUser? @relation("MultiPatientTransportCoordinator", fields: [coordinatorId], references: [id])
+  assignedAgency        HospitalAgencyPreference? @relation("MultiPatientTransportAgency", fields: [assignedAgencyId], references: [id])
+  patientTransports     PatientTransport[]
+  transportLegs         TransportLeg[]
+  routeStops            RouteStop[]
+
+  @@map("multi_patient_transports")
+}
+
+model PatientTransport {
+  id                    String   @id @default(cuid())
+  multiPatientTransportId String
+  patientId             String
+  originFacilityId      String
+  destinationFacilityId String
+  transportLevel        TransportLevel
+  priority              Priority
+  status                TransportStatus @default(PLANNED)
+  specialRequirements   String?
+  sequenceOrder         Int?
+  estimatedPickupTime   DateTime?
+  estimatedDropoffTime  DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  multiPatientTransport MultiPatientTransport @relation(fields: [multiPatientTransportId], references: [id])
+  originFacility        Facility @relation("PatientTransportOrigin", fields: [originFacilityId], references: [id])
+  destinationFacility   Facility @relation("PatientTransportDestination", fields: [destinationFacilityId], references: [id])
+
+  @@map("patient_transports")
+}
+
+model LongDistanceTransport {
+  id                    String   @id @default(cuid())
+  facilityId            String
+  destinationFacilityId String
+  distance              Float
+  estimatedDuration     Int      // in minutes
+  transportType         String   // "AIR", "GROUND", "COMBINED"
+  isMultiLeg            Boolean  @default(false)
+  legCount              Int      @default(1)
+  status                TransportStatus @default(PLANNED)
+  priority              Priority
+  specialRequirements   String?
+  weatherDependent      Boolean  @default(false)
+  assignedAgencyId      String?
+  assignedUnitId        String?
+  transportNumber       String?
+  coordinatorId         String?
+  totalDistance         Float?
+  costEstimate          Float?
+  revenuePotential      Float?
+  weatherConditions     Json?
+  plannedStartTime      DateTime?
+  plannedEndTime        DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  facility              Facility @relation(fields: [facilityId], references: [id])
+  destinationFacility   Facility @relation("LongDistanceDestination", fields: [destinationFacilityId], references: [id])
+  coordinator           HospitalUser? @relation("LongDistanceTransportCoordinator", fields: [coordinatorId], references: [id])
+  assignedAgency        HospitalAgencyPreference? @relation("LongDistanceTransportAgency", fields: [assignedAgencyId], references: [id])
+  transportLegs         TransportLeg[]
+  weatherUpdates        WeatherUpdate[]
+
+  @@map("long_distance_transports")
+}
+
+model TransportLeg {
+  id                    String   @id @default(cuid())
+  multiPatientTransportId String?
+  longDistanceTransportId String?
+  legType               String   // "PICKUP", "TRANSIT", "DELIVERY"
+  legNumber             Int
+  sequence              Int
+  patientId             String?
+  transportLevel        TransportLevel?
+  specialRequirements   String?
+  originFacilityId      String?
+  destinationFacilityId String?
+  fromLocation          String
+  toLocation            String
+  distance              Float
+  estimatedDuration     Int      // in minutes
+  actualDuration        Int?     // in minutes
+  status                LegStatus @default(PLANNED)
+  startTime             DateTime?
+  endTime               DateTime?
+  plannedStartTime      DateTime?
+  plannedEndTime        DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  multiPatientTransport MultiPatientTransport? @relation(fields: [multiPatientTransportId], references: [id])
+  longDistanceTransport LongDistanceTransport? @relation(fields: [longDistanceTransportId], references: [id])
+  originFacility        Facility? @relation("TransportLegOrigin", fields: [originFacilityId], references: [id])
+  destinationFacility   Facility? @relation("TransportLegDestination", fields: [destinationFacilityId], references: [id])
+
+  @@map("transport_legs")
+}
+
+model RouteStop {
+  id                    String   @id @default(cuid())
+  multiPatientTransportId String
+  facilityId            String
+  stopType              String   // "PICKUP", "DROPOFF", "TRANSIT"
+  sequence              Int
+  estimatedArrivalTime  DateTime?
+  actualArrivalTime     DateTime?
+  estimatedDepartureTime DateTime?
+  actualDepartureTime   DateTime?
+  status                String   @default("PLANNED") // "PLANNED", "IN_PROGRESS", "COMPLETED", "SKIPPED"
+  notes                 String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  multiPatientTransport MultiPatientTransport @relation(fields: [multiPatientTransportId], references: [id])
+  facility              Facility @relation("RouteStopFacility", fields: [facilityId], references: [id])
+
+  @@map("route_stops")
+}
+
+model WeatherUpdate {
+  id                    String   @id @default(cuid())
+  facilityId            String
+  longDistanceTransportId String?
+  location              String?
+  weatherCondition      String
+  temperature           Float?
+  windSpeed             Float?
+  windDirection         String?
+  visibility            Float?
+  precipitation         Float?
+  cloudCover            Float?
+  impactLevel           String   // "LOW", "MODERATE", "HIGH", "SEVERE"
+  transportAffected     Boolean  @default(false)
+  estimatedDelay        Int?     // in minutes
+  validUntil            DateTime
+  createdAt             DateTime @default(now())
+
+  // Relations
+  facility              Facility @relation(fields: [facilityId], references: [id])
+  longDistanceTransport LongDistanceTransport? @relation(fields: [longDistanceTransportId], references: [id])
+
+  @@map("weather_updates")
+}
+
+// Additional Enums
+enum BedUpdateType {
+  BED_ADDED
+  BED_REMOVED
+  BED_OCCUPIED
+  BED_VACATED
+  HALLWAY_BED_ADDED
+  HALLWAY_BED_REMOVED
+  CRITICAL_BED_UPDATE
+}
+
+enum QueueStatus {
+  WAITING
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  ESCALATED
+}
+
+enum AlertType {
+  CAPACITY_THRESHOLD
+  BED_SHORTAGE
+  LONG_WAIT_TIMES
+  TRANSPORT_DELAY
+  STAFFING_SHORTAGE
+}
+
+enum AlertSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum PatternType {
+  DAILY
+  WEEKLY
+  MONTHLY
+  SEASONAL
+  EVENT_DRIVEN
+}
+
+enum TrendDirection {
+  INCREASING
+  DECREASING
+  STABLE
+  CYCLICAL
+  UNKNOWN
+}
+
+enum RouteType {
+  FASTEST
+  SHORTEST
+  AVOID_TOLLS
+  AVOID_HIGHWAYS
+  MOST_EFFICIENT
+  LOWEST_COST
+  SCENIC
+}
+
+enum TransportStatus {
+  PLANNED
+  PLANNING
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  DELAYED
+  PENDING
+}
+
+enum LegStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  DELAYED
+  CANCELLED
 }
 

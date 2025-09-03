@@ -52,14 +52,28 @@ export class ResourceManagementService {
         unitNumber: unit.unitNumber,
         agencyId: unit.agencyId,
         agencyName: `Agency ${unit.agencyId}`, // Demo data
-        type: unit.type as any,
-        capabilities: unit.capabilities,
-        currentStatus: unit.currentStatus as any,
+        type: TransportLevel.CCT,
+        capabilities: {
+          criticalCareLevel: 'BASIC_CCT',
+          ventilatorSupport: true,
+          cardiacMonitoring: true,
+          invasiveProcedures: false,
+          neonatalSupport: false,
+          pediatricSupport: true,
+          traumaSupport: true,
+          specialtyCertifications: ['ACLS', 'PALS'],
+          maxPatientCapacity: 1
+        },
+        currentStatus: unit.currentStatus,
         currentLocation: unit.currentLocation as any,
+        shiftStart: unit.shiftStart?.toISOString() || new Date().toISOString(),
+        shiftEnd: unit.shiftEnd?.toISOString() || new Date().toISOString(),
+        crewMembers: [], // Demo data
+        equipment: [], // Demo data
         isActive: unit.isActive,
-        lastUpdated: unit.updatedAt,
-        currentTransportRequestId: null, // Demo data
-        estimatedAvailability: null // Demo data
+        lastStatusUpdate: unit.updatedAt.toISOString(),
+        currentTransportRequestId: undefined, // Demo data
+        estimatedReturnTime: undefined // Demo data
       }));
 
       console.log('[RESOURCE_SERVICE] Found CCT units:', cctUnits.length);
@@ -93,7 +107,7 @@ export class ResourceManagementService {
       const busyUnits = await emsDB.unit.count({
         where: { 
           isActive: true,
-          currentStatus: 'BUSY'
+          currentStatus: 'IN_USE'
         }
       });
 
@@ -105,12 +119,26 @@ export class ResourceManagementService {
       });
 
       const availability: ResourceAvailability = {
-        totalUnits,
-        availableUnits,
-        busyUnits,
-        outOfServiceUnits,
-        utilizationRate: totalUnits > 0 ? (busyUnits / totalUnits) * 100 : 0,
-        lastUpdated: new Date()
+        cctUnits: {
+          total: totalUnits,
+          available: availableUnits,
+          inUse: busyUnits,
+          outOfService: outOfServiceUnits,
+          maintenance: 0
+        },
+        crewMembers: {
+          total: 0,
+          available: 0,
+          inUse: 0,
+          offDuty: 0
+        },
+        equipment: {
+          total: 0,
+          available: 0,
+          inUse: 0,
+          maintenance: 0
+        },
+        lastUpdated: new Date().toISOString()
       };
 
       console.log('[RESOURCE_SERVICE] Resource availability calculated:', availability);
@@ -141,15 +169,16 @@ export class ResourceManagementService {
 
       const priorityQueue: PriorityQueueItem[] = transportRequests.map((request, index) => ({
         id: request.id,
+        transportRequestId: request.id,
         priority: request.priority as any,
-        transportLevel: request.transportLevel as any,
-        patientName: `Patient ${index + 1}`, // Demo data
-        originFacility: `Facility ${index + 1}`, // Demo data
-        destinationFacility: `Destination ${index + 1}`, // Demo data
-        estimatedDuration: 45 + Math.random() * 30, // Demo data
-        waitTime: Date.now() - request.createdAt.getTime(),
-        assignedUnit: null, // Demo data
-        status: request.status as any
+        escalationLevel: 'LEVEL_1',
+        waitTime: Math.floor((Date.now() - request.createdAt.getTime()) / (1000 * 60)), // minutes
+        estimatedResponseTime: 15 + Math.random() * 30, // Demo data
+        facilityUrgency: 'MEDIUM',
+        patientCondition: 'STABLE',
+        queuePosition: index + 1,
+        addedToQueue: request.createdAt.toISOString(),
+        lastUpdated: new Date().toISOString()
       }));
 
       console.log('[RESOURCE_SERVICE] Priority queue calculated:', priorityQueue.length, 'items');
@@ -216,20 +245,30 @@ export class ResourceManagementService {
       // For demo purposes, return mock capacity planning data
       const capacityPlanning: CapacityPlanning[] = [
         {
-          facility: 'UPMC Altoona',
-          currentCapacity: 85,
-          projectedCapacity: 92,
-          recommendedUnits: 3,
-          timeFrame: 'Next 4 hours',
-          riskLevel: 'MEDIUM'
+          id: '1',
+          facilityId: 'facility-1',
+          facilityName: 'UPMC Altoona',
+          date: new Date().toISOString().split('T')[0],
+          timeSlot: '08:00-12:00',
+          projectedDemand: 92,
+          availableResources: 85,
+          capacityGap: 7,
+          recommendations: ['Add 2 additional units', 'Extend shift coverage'],
+          riskLevel: 'MEDIUM',
+          lastUpdated: new Date().toISOString()
         },
         {
-          facility: 'Penn Highlands',
-          currentCapacity: 72,
-          projectedCapacity: 78,
-          recommendedUnits: 2,
-          timeFrame: 'Next 6 hours',
-          riskLevel: 'LOW'
+          id: '2',
+          facilityId: 'facility-2',
+          facilityName: 'Penn Highlands',
+          date: new Date().toISOString().split('T')[0],
+          timeSlot: '12:00-16:00',
+          projectedDemand: 78,
+          availableResources: 72,
+          capacityGap: 6,
+          recommendations: ['Add 1 additional unit'],
+          riskLevel: 'LOW',
+          lastUpdated: new Date().toISOString()
         }
       ];
 
@@ -251,7 +290,7 @@ export class ResourceManagementService {
       const updatedUnit = await emsDB.unit.update({
         where: { id: unitId },
         data: {
-          currentStatus: status.status as any,
+          currentStatus: status.newStatus,
           currentLocation: status.location,
           updatedAt: new Date()
         }
@@ -288,23 +327,41 @@ export class ResourceManagementService {
       const busyUnits = await emsDB.unit.count({
         where: { 
           isActive: true,
-          currentStatus: 'BUSY'
+          currentStatus: 'IN_USE'
         }
       });
 
       const report: ResourceUtilizationReport = {
-        timeRange,
-        totalUnits,
-        availableUnits,
-        busyUnits,
-        utilizationRate: totalUnits > 0 ? (busyUnits / totalUnits) * 100 : 0,
-        averageResponseTime: 18.5, // Demo data
-        peakUtilizationTime: '14:00-16:00', // Demo data
+        period: 'DAILY',
+        startDate: timeRange.start.toISOString(),
+        endDate: timeRange.end.toISOString(),
+        cctUnits: {
+          totalHours: totalUnits * 24,
+          activeHours: busyUnits * 24,
+          utilizationRate: totalUnits > 0 ? (busyUnits / totalUnits) * 100 : 0,
+          averageResponseTime: 18.5,
+          totalTransports: busyUnits * 2,
+          revenueGenerated: busyUnits * 500
+        },
+        crewMembers: {
+          totalHours: 0,
+          activeHours: 0,
+          utilizationRate: 0,
+          overtimeHours: 0,
+          certifications: {}
+        },
+        equipment: {
+          totalHours: 0,
+          activeHours: 0,
+          utilizationRate: 0,
+          maintenanceHours: 0,
+          downtimeHours: 0
+        },
         recommendations: [
           'Consider adding 2 additional BLS units during peak hours',
           'Optimize unit placement for faster response times'
         ],
-        generatedAt: new Date()
+        generatedAt: new Date().toISOString()
       };
 
       console.log('[RESOURCE_SERVICE] Resource utilization report generated');

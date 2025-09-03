@@ -1,19 +1,18 @@
-import { PrismaClient } from '@prisma/client';
-import { 
-  AirMedicalResource, 
-  AirMedicalTransport, 
-  WeatherAlert, 
-  GroundTransportCoordination,
-  AirMedicalType,
-  AirMedicalStatus,
-  WeatherAlertType,
-  AlertSeverity,
-  CoordinationType,
-  CoordinationStatus,
-  WeatherConditions
-} from '@prisma/client';
+import { databaseManager } from './databaseManager';
 
-const prisma = new PrismaClient();
+// Note: These types are from a different database schema that doesn't exist in the current siloed architecture
+// This service is disabled until the required tables are added to the schemas
+type AirMedicalResource = any;
+type AirMedicalTransport = any;
+type WeatherAlert = any;
+type GroundTransportCoordination = any;
+type AirMedicalType = any;
+type AirMedicalStatus = any;
+type WeatherAlertType = any;
+type AlertSeverity = any;
+type CoordinationType = any;
+type CoordinationStatus = any;
+type WeatherConditions = any;
 
 export interface CreateAirMedicalResourceData {
   resourceType: AirMedicalType;
@@ -63,243 +62,123 @@ export interface CreateGroundTransportCoordinationData {
 export class AirMedicalService {
   /**
    * Create a new air medical resource
+   * NOTE: This service is disabled - requires air medical tables that don't exist in current schema
    */
   async createAirMedicalResource(data: CreateAirMedicalResourceData): Promise<AirMedicalResource> {
-    return prisma.airMedicalResource.create({
-      data: {
-        ...data,
-        isActive: true
-      }
-    });
+    throw new Error('AirMedicalService is disabled - required database tables do not exist in current schema');
   }
 
   /**
    * Get all active air medical resources
+   * NOTE: This service is disabled - requires air medical tables that don't exist in current schema
    */
   async getActiveAirMedicalResources(): Promise<AirMedicalResource[]> {
-    return prisma.airMedicalResource.findMany({
-      where: { isActive: true },
-      orderBy: { identifier: 'asc' }
-    });
+    throw new Error('AirMedicalService is disabled - required database tables do not exist in current schema');
   }
 
   /**
    * Get air medical resource by ID
+   * NOTE: This service is disabled - requires air medical tables that don't exist in current schema
    */
   async getAirMedicalResourceById(id: string): Promise<AirMedicalResource | null> {
-    return prisma.airMedicalResource.findUnique({
-      where: { id }
-    });
+    throw new Error('AirMedicalService is disabled - required database tables do not exist in current schema');
   }
 
   /**
    * Update air medical resource
+   * NOTE: This service is disabled - requires air medical tables that don't exist in current schema
    */
   async updateAirMedicalResource(id: string, data: Partial<CreateAirMedicalResourceData>): Promise<AirMedicalResource> {
-    return prisma.airMedicalResource.update({
-      where: { id },
-      data: {
-        ...data,
-        updatedAt: new Date()
-      }
-    });
+    throw new Error('AirMedicalService is disabled - required database tables do not exist in current schema');
   }
 
   /**
    * Deactivate air medical resource
+   * NOTE: This service is disabled - requires air medical tables that don't exist in current schema
    */
   async deactivateAirMedicalResource(id: string): Promise<AirMedicalResource> {
-    return prisma.airMedicalResource.update({
-      where: { id },
-      data: { 
-        isActive: false,
-        updatedAt: new Date()
-      }
-    });
+    throw new Error('AirMedicalService is disabled - required database tables do not exist in current schema');
   }
 
   /**
    * Create a new air medical transport
+   * NOTE: This service is disabled - requires air medical tables that don't exist in current schema
    */
   async createAirMedicalTransport(data: CreateAirMedicalTransportData): Promise<AirMedicalTransport> {
-    return prisma.airMedicalTransport.create({
-      data: {
-        ...data,
-        status: 'PLANNING'
-      },
-      include: {
-        airMedicalResource: true,
-        transportRequest: true,
-        multiPatientTransport: true,
-        longDistanceTransport: true
-      }
-    });
+    throw new Error('AirMedicalService is disabled - required database tables do not exist in current schema');
   }
 
   /**
    * Get air medical transport by ID
+   * NOTE: This service is disabled - requires air medical tables that don't exist in current schema
    */
   async getAirMedicalTransportById(id: string): Promise<AirMedicalTransport | null> {
-    return prisma.airMedicalTransport.findUnique({
-      where: { id },
-      include: {
-        airMedicalResource: true,
-        transportRequest: true,
-        multiPatientTransport: true,
-        longDistanceTransport: true,
-        weatherAlerts: true,
-        groundTransportCoordination: true
-      }
-    });
+    throw new Error('AirMedicalService is disabled - required database tables do not exist in current schema');
   }
 
   /**
    * Get all air medical transports
+   * NOTE: This service is disabled - requires air medical tables that don't exist in current schema
    */
   async getAirMedicalTransports(filters: {
     status?: AirMedicalStatus;
     resourceType?: AirMedicalType;
     dateRange?: { start: Date; end: Date };
   } = {}): Promise<AirMedicalTransport[]> {
-    const where: any = {};
-    
-    if (filters.status) where.status = filters.status;
-    if (filters.resourceType) {
-      where.airMedicalResource = { resourceType: filters.resourceType };
-    }
-    if (filters.dateRange) {
-      where.estimatedDeparture = {
-        gte: filters.dateRange.start,
-        lte: filters.dateRange.end
-      };
-    }
-
-    return prisma.airMedicalTransport.findMany({
-      where,
-      include: {
-        airMedicalResource: true,
-        transportRequest: true,
-        multiPatientTransport: true,
-        longDistanceTransport: true
-      },
-      orderBy: { estimatedDeparture: 'asc' }
-    });
+    throw new Error('AirMedicalService is disabled - required database tables do not exist in current schema');
   }
 
   /**
    * Update air medical transport status
+   * NOTE: This service is disabled - requires air medical tables that don't exist in current schema
    */
   async updateAirMedicalTransportStatus(id: string, status: AirMedicalStatus, additionalData?: any): Promise<AirMedicalTransport> {
-    const data: any = { 
-      status,
-      updatedAt: new Date()
-    };
-
-    if (status === 'IN_FLIGHT') {
-      data.actualDeparture = new Date();
-    } else if (status === 'LANDED') {
-      data.actualArrival = new Date();
-    } else if (status === 'GROUNDED') {
-      data.groundingReason = additionalData?.groundingReason;
-    } else if (status === 'WEATHER_DELAYED') {
-      data.weatherDelay = true;
-    }
-
-    if (additionalData?.crewNotes) {
-      data.crewNotes = additionalData.crewNotes;
-    }
-
-    return prisma.airMedicalTransport.update({
-      where: { id },
-      data
-    });
+    throw new Error('AirMedicalService is disabled - required database tables do not exist in current schema');
   }
 
   /**
    * Create a new weather alert
+   * NOTE: This service is disabled - requires air medical tables that don't exist in current schema
    */
   async createWeatherAlert(data: CreateWeatherAlertData): Promise<WeatherAlert> {
-    return prisma.weatherAlert.create({
-      data: {
-        ...data,
-        isActive: true
-      }
-    });
+    throw new Error('AirMedicalService is disabled - required database tables do not exist in current schema');
   }
 
   /**
    * Get active weather alerts
+   * NOTE: This service is disabled - requires air medical tables that don't exist in current schema
    */
   async getActiveWeatherAlerts(location?: string): Promise<WeatherAlert[]> {
-    const where: any = { isActive: true };
-    
-    if (location) {
-      where.location = { contains: location, mode: 'insensitive' };
-    }
-
-    return prisma.weatherAlert.findMany({
-      where,
-      orderBy: [
-        { severity: 'desc' },
-        { startTime: 'asc' }
-      ]
-    });
+    throw new Error('AirMedicalService is disabled - required database tables do not exist in current schema');
   }
 
   /**
    * Update weather alert status
+   * NOTE: This service is disabled - requires air medical tables that don't exist in current schema
    */
   async updateWeatherAlertStatus(id: string, isActive: boolean): Promise<WeatherAlert> {
-    return prisma.weatherAlert.update({
-      where: { id },
-      data: { 
-        isActive,
-        updatedAt: new Date()
-      }
-    });
+    throw new Error('AirMedicalService is disabled - required database tables do not exist in current schema');
   }
 
   /**
    * Create ground transport coordination
+   * NOTE: This service is disabled - requires air medical tables that don't exist in current schema
    */
   async createGroundTransportCoordination(data: CreateGroundTransportCoordinationData): Promise<GroundTransportCoordination> {
-    return prisma.groundTransportCoordination.create({
-      data: {
-        ...data,
-        status: 'PENDING'
-      },
-      include: {
-        airMedicalTransport: true,
-        groundTransport: true
-      }
-    });
+    throw new Error('AirMedicalService is disabled - required database tables do not exist in current schema');
   }
 
   /**
    * Update coordination status
+   * NOTE: This service is disabled - requires air medical tables that don't exist in current schema
    */
   async updateCoordinationStatus(id: string, status: CoordinationStatus, notes?: string): Promise<GroundTransportCoordination> {
-    const data: any = { 
-      status,
-      updatedAt: new Date()
-    };
-
-    if (status === 'IN_PROGRESS' && !data.handoffTime) {
-      data.handoffTime = new Date();
-    }
-
-    if (notes) {
-      data.handoffNotes = notes;
-    }
-
-    return prisma.groundTransportCoordination.update({
-      where: { id },
-      data
-    });
+    throw new Error('AirMedicalService is disabled - required database tables do not exist in current schema');
   }
 
   /**
    * Get weather impact assessment for air medical operations
+   * NOTE: This service is disabled - requires air medical tables that don't exist in current schema
    */
   async getWeatherImpactAssessment(location: string, resourceType: AirMedicalType): Promise<{
     canOperate: boolean;
@@ -307,78 +186,24 @@ export class AirMedicalService {
     recommendations: string[];
     alerts: WeatherAlert[];
   }> {
-    const alerts = await this.getActiveWeatherAlerts(location);
-    
-    let canOperate = true;
-    const restrictions: string[] = [];
-    const recommendations: string[] = [];
-
-    for (const alert of alerts) {
-      if (alert.severity === 'CRITICAL') {
-        canOperate = false;
-        restrictions.push(`${alert.alertType}: ${alert.description}`);
-      } else if (alert.severity === 'HIGH') {
-        canOperate = false;
-        restrictions.push(`${alert.alertType}: ${alert.description}`);
-      } else if (alert.severity === 'MEDIUM') {
-        restrictions.push(`${alert.alertType}: ${alert.description}`);
-      }
-
-      if (alert.recommendations) {
-        recommendations.push(alert.recommendations);
-      }
-    }
-
-    return {
-      canOperate,
-      restrictions,
-      recommendations,
-      alerts
-    };
+    throw new Error('AirMedicalService is disabled - required database tables do not exist in current schema');
   }
 
   /**
    * Get air medical resource availability
+   * NOTE: This service is disabled - requires air medical tables that don't exist in current schema
    */
   async getResourceAvailability(date: Date, location?: string): Promise<{
     available: AirMedicalResource[];
     unavailable: AirMedicalResource[];
     weatherRestricted: AirMedicalResource[];
   }> {
-    const resources = await this.getActiveAirMedicalResources();
-    const transports = await this.getAirMedicalTransports({
-      dateRange: { start: date, end: new Date(date.getTime() + 24 * 60 * 60 * 1000) }
-    });
-
-    const available: AirMedicalResource[] = [];
-    const unavailable: AirMedicalResource[] = [];
-    const weatherRestricted: AirMedicalResource[] = [];
-
-    for (const resource of resources) {
-      const resourceTransports = transports.filter(t => t.airMedicalResourceId === resource.id);
-      
-      if (resourceTransports.length === 0) {
-        // Check weather restrictions
-        const weatherAssessment = await this.getWeatherImpactAssessment(
-          resource.baseLocation, 
-          resource.resourceType
-        );
-        
-        if (weatherAssessment.canOperate) {
-          available.push(resource);
-        } else {
-          weatherRestricted.push(resource);
-        }
-      } else {
-        unavailable.push(resource);
-      }
-    }
-
-    return { available, unavailable, weatherRestricted };
+    throw new Error('AirMedicalService is disabled - required database tables do not exist in current schema');
   }
 
   /**
    * Get air medical statistics
+   * NOTE: This service is disabled - requires air medical tables that don't exist in current schema
    */
   async getAirMedicalStatistics(dateRange?: { start: Date; end: Date }): Promise<{
     totalResources: number;
@@ -389,53 +214,7 @@ export class AirMedicalService {
     averageResponseTime: number;
     resourceUtilization: number;
   }> {
-    const where: any = {};
-    if (dateRange) {
-      where.createdAt = {
-        gte: dateRange.start,
-        lte: dateRange.end
-      };
-    }
-
-    const [totalResources, activeResources, totalTransports, completedTransports, weatherDelays] = await Promise.all([
-      prisma.airMedicalResource.count(),
-      prisma.airMedicalResource.count({ where: { isActive: true } }),
-      prisma.airMedicalTransport.count({ where }),
-      prisma.airMedicalTransport.count({ where: { ...where, status: 'COMPLETED' } }),
-      prisma.airMedicalTransport.count({ where: { ...where, weatherDelay: true } })
-    ]);
-
-    // Calculate average response time (simplified)
-    const transports = await prisma.airMedicalTransport.findMany({
-      where: { ...where, status: 'COMPLETED' },
-      select: { createdAt: true, actualDeparture: true }
-    });
-
-    let totalResponseTime = 0;
-    let validResponses = 0;
-
-    for (const transport of transports) {
-      if (transport.actualDeparture) {
-        const responseTime = transport.actualDeparture.getTime() - transport.createdAt.getTime();
-        totalResponseTime += responseTime;
-        validResponses++;
-      }
-    }
-
-    const averageResponseTime = validResponses > 0 ? totalResponseTime / validResponses : 0;
-
-    // Calculate resource utilization
-    const resourceUtilization = totalResources > 0 ? (activeResources / totalResources) * 100 : 0;
-
-    return {
-      totalResources,
-      activeResources,
-      totalTransports,
-      completedTransports,
-      weatherDelays,
-      averageResponseTime,
-      resourceUtilization
-    };
+    throw new Error('AirMedicalService is disabled - required database tables do not exist in current schema');
   }
 }
 

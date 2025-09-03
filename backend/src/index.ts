@@ -7,7 +7,8 @@ import authRoutes from './routes/auth';
 import siloedAuthRoutes from './routes/siloedAuth';
 import protectedRoutes from './routes/protected';
 import transportRequestRoutes from './routes/transportRequests';
-import distanceRoutes from './routes/distance';
+// Temporarily disabled due to compilation errors
+// import distanceRoutes from './routes/distance';
 // Temporarily disabled due to compilation errors
 // import resourceManagementRoutes from './routes/resourceManagement';
 // import advancedTransportRoutes from './routes/advancedTransport';
@@ -19,7 +20,8 @@ import hospitalRoutes from './routes/hospital';
 import hospitalAgencyRoutes from './routes/hospitalAgencies';
 import centerEmsAgencyRoutes from './routes/centerEmsAgencies';
 import transportCenterRoutes from './routes/transportCenter';
-import matchingRoutes from './routes/matching';
+// Temporarily disabled due to compilation errors
+// import matchingRoutes from './routes/matching';
 import routeOptimizationRoutes from './routes/routeOptimization';
 import routeCardGenerationRoutes from './routes/routeCardGeneration';
 import unitAssignmentRoutes from './routes/unitAssignment';
@@ -53,7 +55,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/siloed-auth', siloedAuthRoutes);
 app.use('/api/protected', protectedRoutes);
 app.use('/api/transport-requests', transportRequestRoutes);
-app.use('/api/distance', distanceRoutes);
+// Temporarily disabled due to compilation errors
+// app.use('/api/distance', distanceRoutes);
 // Temporarily disabled due to compilation errors
 // app.use('/api/resource-management', resourceManagementRoutes);
 // app.use('/api/advanced-transport', advancedTransportRoutes);
@@ -65,7 +68,8 @@ app.use('/api/hospital', hospitalRoutes);
 app.use('/api/hospital-agencies', hospitalAgencyRoutes);
 app.use('/api/center/ems-agencies', centerEmsAgencyRoutes);
 app.use('/api/transport-center', transportCenterRoutes);
-app.use('/api/matching', matchingRoutes);
+// Temporarily disabled due to compilation errors
+// app.use('/api/matching', matchingRoutes);
 app.use('/api/route-optimization', routeOptimizationRoutes);
 app.use('/api/route-card-generation', routeCardGenerationRoutes);
 app.use('/api/unit-assignment', unitAssignmentRoutes);

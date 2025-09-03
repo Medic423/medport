@@ -1,11 +1,9 @@
 import express from 'express';
 import { z } from 'zod';
-import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { authenticateToken } from '../middleware/auth';
-
-const prisma = new PrismaClient();
+import { databaseManager } from '../services/databaseManager';
 
 const router = express.Router();
 
@@ -55,8 +53,11 @@ router.post('/register', async (req, res) => {
     
     const validatedData = hospitalRegistrationSchema.parse(req.body);
     
+    const hospitalDB = databaseManager.getHospitalDB();
+    const centerDB = databaseManager.getCenterDB();
+    
     // Check if hospital already exists
-    const existingHospital = await prisma.facility.findFirst({
+    const existingHospital = await hospitalDB.facility.findFirst({
       where: {
         OR: [
           { name: validatedData.name },
@@ -73,7 +74,7 @@ router.post('/register', async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await centerDB.user.findUnique({
       where: { email: validatedData.adminUser.email }
     });
 
@@ -89,7 +90,7 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(validatedData.adminUser.password, saltRounds);
 
     // Create hospital facility
-    const hospital = await prisma.facility.create({
+    const hospital = await hospitalDB.facility.create({
       data: {
         name: validatedData.name,
         type: validatedData.type,
@@ -107,18 +108,19 @@ router.post('/register', async (req, res) => {
     });
 
     // Create admin user
-    const adminUser = await prisma.user.create({
+    const adminUser = await centerDB.user.create({
       data: {
         email: validatedData.adminUser.email,
         password: hashedPassword,
         name: validatedData.adminUser.name,
         role: validatedData.adminUser.role,
+        userType: 'HOSPITAL',
         isActive: true
       }
     });
 
     // Create hospital organization record
-    const hospitalOrg = await prisma.transportAgency.create({
+    const hospitalOrg = await centerDB.agency.create({
       data: {
         name: validatedData.name,
         contactName: validatedData.contactName,
@@ -297,8 +299,9 @@ router.post('/login', async (req, res) => {
 router.get('/profile', authenticateToken, async (req: any, res) => {
   try {
     const userId = req.user.id;
+    const centerDB = databaseManager.getCenterDB();
     
-    const user = await prisma.user.findUnique({
+    const user = await centerDB.user.findUnique({
       where: { id: userId }
     });
 
@@ -345,8 +348,10 @@ router.get('/transports', authenticateToken, async (req: any, res) => {
   try {
     const userId = req.user.id;
     const { status, limit = 50, offset = 0 } = req.query;
+    const centerDB = databaseManager.getCenterDB();
+    const hospitalDB = databaseManager.getHospitalDB();
     
-    const user = await prisma.user.findUnique({
+    const user = await centerDB.user.findUnique({
       where: { id: userId }
     });
 
@@ -364,13 +369,11 @@ router.get('/transports', authenticateToken, async (req: any, res) => {
       whereClause.status = status;
     }
 
-    const transports = await prisma.transportRequest.findMany({
+    const transports = await hospitalDB.transportRequest.findMany({
       where: whereClause,
       include: {
         originFacility: true,
         destinationFacility: true,
-        assignedAgency: true,
-        assignedUnit: true,
         createdBy: true
       },
       orderBy: { requestTimestamp: 'desc' },
@@ -378,7 +381,7 @@ router.get('/transports', authenticateToken, async (req: any, res) => {
       skip: parseInt(offset as string)
     });
 
-    const total = await prisma.transportRequest.count({
+    const total = await hospitalDB.transportRequest.count({
       where: whereClause
     });
 

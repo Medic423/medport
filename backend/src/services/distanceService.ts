@@ -1,7 +1,7 @@
-import { PrismaClient, DistanceMatrix, Facility, RouteType } from '@prisma/client';
+import { DistanceMatrix, Facility } from '@prisma/client';
+import { RouteType } from '../../dist/prisma/hospital';
 import axios from 'axios';
-
-const prisma = new PrismaClient();
+import { databaseManager } from './databaseManager';
 
 // Cache for distance calculations to avoid repeated API calls
 const distanceCache = new Map<string, { distance: number; time: number; timestamp: number }>();
@@ -79,9 +79,10 @@ export class DistanceService {
 
     // Check if facilities exist
     try {
+      const hospitalDB = databaseManager.getHospitalDB();
       const [fromFacility, toFacility] = await Promise.all([
-        prisma.facility.findUnique({ where: { id: data.fromFacilityId } }),
-        prisma.facility.findUnique({ where: { id: data.toFacilityId } })
+        hospitalDB.facility.findUnique({ where: { id: data.fromFacilityId } }),
+        hospitalDB.facility.findUnique({ where: { id: data.toFacilityId } })
       ]);
 
       if (!fromFacility) {
@@ -189,7 +190,8 @@ export class DistanceService {
         where.distanceMiles = { ...where.distanceMiles, lte: filters.maxDistance };
       }
 
-      const distances = await prisma.distanceMatrix.findMany({
+      const hospitalDB = databaseManager.getHospitalDB();
+      const distances = await hospitalDB.distanceMatrix.findMany({
         where,
         include: {
           fromFacility: {
@@ -270,11 +272,13 @@ export class DistanceService {
    */
   async upsertDistanceMatrix(data: BulkDistanceData): Promise<DistanceMatrix> {
     try {
-      return await prisma.distanceMatrix.upsert({
+      const hospitalDB = databaseManager.getHospitalDB();
+      return await (hospitalDB.distanceMatrix.upsert as any)({
         where: {
-          fromFacilityId_toFacilityId: {
+          fromFacilityId_toFacilityId_routeType: {
             fromFacilityId: data.fromFacilityId,
-            toFacilityId: data.toFacilityId
+            toFacilityId: data.toFacilityId,
+            routeType: data.routeType
           }
         },
         update: {
@@ -314,9 +318,10 @@ export class DistanceService {
     lastUpdated: Date | null;
   }> {
     try {
+      const hospitalDB = databaseManager.getHospitalDB();
       const [totalEntries, stats, facilityCount, lastUpdated] = await Promise.all([
-        prisma.distanceMatrix.count(),
-        prisma.distanceMatrix.aggregate({
+        hospitalDB.distanceMatrix.count(),
+        hospitalDB.distanceMatrix.aggregate({
           _avg: {
             distanceMiles: true,
             estimatedTimeMinutes: true
@@ -330,8 +335,8 @@ export class DistanceService {
             estimatedTimeMinutes: true
           }
         }),
-        prisma.facility.count({ where: { isActive: true } }),
-        prisma.distanceMatrix.findFirst({
+        hospitalDB.facility.count({ where: { isActive: true } }),
+        hospitalDB.distanceMatrix.findFirst({
           orderBy: { lastUpdated: 'desc' },
           select: { lastUpdated: true }
         })
@@ -375,15 +380,16 @@ export class DistanceService {
     try {
       console.log('DISTANCE_SERVICE: Starting distance matrix optimization...');
 
+      const hospitalDB = databaseManager.getHospitalDB();
       // Find and remove self-referencing entries
-      const selfReferencing = await prisma.distanceMatrix.findMany({
+      const selfReferencing = await hospitalDB.distanceMatrix.findMany({
         where: {
-          fromFacilityId: { equals: prisma.distanceMatrix.fields.toFacilityId }
+          fromFacilityId: { equals: hospitalDB.distanceMatrix.fields.toFacilityId }
         }
       });
 
       if (selfReferencing.length > 0) {
-        await prisma.distanceMatrix.deleteMany({
+        await hospitalDB.distanceMatrix.deleteMany({
           where: {
             id: { in: selfReferencing.map(e => e.id) }
           }
@@ -393,7 +399,7 @@ export class DistanceService {
       }
 
       // Find and validate bidirectional consistency
-      const allEntries = await prisma.distanceMatrix.findMany({
+      const allEntries = await hospitalDB.distanceMatrix.findMany({
         include: {
           fromFacility: { select: { name: true } },
           toFacility: { select: { name: true } }
@@ -413,7 +419,7 @@ export class DistanceService {
       }
 
       // Update lastUpdated for all entries to trigger cache refresh
-      await prisma.distanceMatrix.updateMany({
+      await hospitalDB.distanceMatrix.updateMany({
         data: { lastUpdated: new Date() }
       });
       results.entriesUpdated = allEntries.length;
@@ -592,12 +598,14 @@ export class DistanceService {
     routeType: RouteType = 'FASTEST'
   ): Promise<DistanceMatrix> {
     try {
+      const hospitalDB = databaseManager.getHospitalDB();
       // Check if distance matrix entry exists
-      let distanceMatrix = await prisma.distanceMatrix.findUnique({
+      let distanceMatrix = await (hospitalDB.distanceMatrix.findUnique as any)({
         where: {
-          fromFacilityId_toFacilityId: {
+          fromFacilityId_toFacilityId_routeType: {
             fromFacilityId,
-            toFacilityId
+            toFacilityId,
+            routeType
           }
         }
       });
@@ -613,8 +621,8 @@ export class DistanceService {
 
       // Get facility details
       const [fromFacility, toFacility] = await Promise.all([
-        prisma.facility.findUnique({ where: { id: fromFacilityId } }),
-        prisma.facility.findUnique({ where: { id: toFacilityId } })
+        hospitalDB.facility.findUnique({ where: { id: fromFacilityId } }),
+        hospitalDB.facility.findUnique({ where: { id: toFacilityId } })
       ]);
 
       if (!fromFacility || !toFacility) {
@@ -626,7 +634,7 @@ export class DistanceService {
 
       if (distanceMatrix) {
         // Update existing entry
-        distanceMatrix = await prisma.distanceMatrix.update({
+        distanceMatrix = await (hospitalDB.distanceMatrix.update as any)({
           where: { id: distanceMatrix.id },
           data: {
             distanceMiles: distanceResult.distanceMiles,
@@ -639,7 +647,7 @@ export class DistanceService {
         });
       } else {
         // Create new entry
-        distanceMatrix = await prisma.distanceMatrix.create({
+        distanceMatrix = await (hospitalDB.distanceMatrix.create as any)({
           data: {
             fromFacilityId,
             toFacilityId,
@@ -663,13 +671,15 @@ export class DistanceService {
   /**
    * Get distance matrix for a specific facility pair
    */
-  async getDistanceMatrix(fromFacilityId: string, toFacilityId: string): Promise<DistanceMatrix | null> {
+  async getDistanceMatrix(fromFacilityId: string, toFacilityId: string, routeType: RouteType = 'FASTEST'): Promise<DistanceMatrix | null> {
     try {
-      return await prisma.distanceMatrix.findUnique({
+      const hospitalDB = databaseManager.getHospitalDB();
+      return await (hospitalDB.distanceMatrix.findUnique as any)({
         where: {
-          fromFacilityId_toFacilityId: {
+          fromFacilityId_toFacilityId_routeType: {
             fromFacilityId,
-            toFacilityId
+            toFacilityId,
+            routeType
           }
         }
       });
@@ -684,7 +694,8 @@ export class DistanceService {
    */
   async getDistancesFromFacility(facilityId: string): Promise<DistanceMatrix[]> {
     try {
-      return await prisma.distanceMatrix.findMany({
+      const hospitalDB = databaseManager.getHospitalDB();
+      return await (hospitalDB.distanceMatrix.findMany as any)({
         where: { fromFacilityId: facilityId },
         include: {
           toFacility: {
@@ -709,7 +720,8 @@ export class DistanceService {
    */
   async getDistancesToFacility(facilityId: string): Promise<DistanceMatrix[]> {
     try {
-      return await prisma.distanceMatrix.findMany({
+      const hospitalDB = databaseManager.getHospitalDB();
+      return await (hospitalDB.distanceMatrix.findMany as any)({
         where: { toFacilityId: facilityId },
         include: {
           fromFacility: {
@@ -738,11 +750,13 @@ export class DistanceService {
     data: Partial<Omit<DistanceMatrix, 'id' | 'fromFacilityId' | 'toFacilityId'>>
   ): Promise<DistanceMatrix> {
     try {
-      return await prisma.distanceMatrix.update({
+      const hospitalDB = databaseManager.getHospitalDB();
+      return await (hospitalDB.distanceMatrix.update as any)({
         where: {
-          fromFacilityId_toFacilityId: {
+          fromFacilityId_toFacilityId_routeType: {
             fromFacilityId,
-            toFacilityId
+            toFacilityId,
+            routeType: data.routeType || 'FASTEST'
           }
         },
         data: {
@@ -759,13 +773,15 @@ export class DistanceService {
   /**
    * Delete distance matrix entry
    */
-  async deleteDistanceMatrix(fromFacilityId: string, toFacilityId: string): Promise<void> {
+  async deleteDistanceMatrix(fromFacilityId: string, toFacilityId: string, routeType: RouteType = 'FASTEST'): Promise<void> {
     try {
-      await prisma.distanceMatrix.delete({
+      const hospitalDB = databaseManager.getHospitalDB();
+      await hospitalDB.distanceMatrix.delete({
         where: {
-          fromFacilityId_toFacilityId: {
+          fromFacilityId_toFacilityId_routeType: {
             fromFacilityId,
-            toFacilityId
+            toFacilityId,
+            routeType
           }
         }
       });

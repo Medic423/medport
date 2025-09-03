@@ -29,12 +29,12 @@ router.use(demoOrAuth);
  */
 router.post('/multi-patient', async (req, res) => {
   try {
-    const { coordinatorId, patientTransports, plannedStartTime, plannedEndTime } = req.body;
+    const { facilityId, coordinatorId, patientTransports, plannedStartTime, plannedEndTime } = req.body;
 
-    if (!coordinatorId || !patientTransports || !plannedStartTime || !plannedEndTime) {
+    if (!facilityId || !coordinatorId || !patientTransports || !plannedStartTime || !plannedEndTime) {
       return res.status(400).json({
         message: 'Missing required fields',
-        error: 'coordinatorId, patientTransports, plannedStartTime, and plannedEndTime are required'
+        error: 'facilityId, coordinatorId, patientTransports, plannedStartTime, and plannedEndTime are required'
       });
     }
 
@@ -46,6 +46,7 @@ router.post('/multi-patient', async (req, res) => {
     }
 
     const result = await advancedTransportService.createMultiPatientTransport({
+      facilityId,
       coordinatorId,
       patientTransports,
       plannedStartTime,
@@ -72,12 +73,12 @@ router.post('/multi-patient', async (req, res) => {
  */
 router.post('/long-distance', async (req, res) => {
   try {
-    const { coordinatorId, transportLegs, weatherConditions } = req.body;
+    const { facilityId, destinationFacilityId, coordinatorId, transportLegs, weatherConditions } = req.body;
 
-    if (!coordinatorId || !transportLegs) {
+    if (!facilityId || !destinationFacilityId || !coordinatorId || !transportLegs) {
       return res.status(400).json({
         message: 'Missing required fields',
-        error: 'coordinatorId and transportLegs are required'
+        error: 'facilityId, destinationFacilityId, coordinatorId, and transportLegs are required'
       });
     }
 
@@ -89,6 +90,8 @@ router.post('/long-distance', async (req, res) => {
     }
 
     const result = await advancedTransportService.createLongDistanceTransport({
+      facilityId,
+      destinationFacilityId,
       coordinatorId,
       transportLegs,
       weatherConditions

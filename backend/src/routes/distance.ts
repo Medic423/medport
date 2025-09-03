@@ -1,10 +1,9 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth';
 import distanceService from '../services/distanceService';
-import { PrismaClient } from '@prisma/client';
+import { databaseManager } from '../services/databaseManager';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // Apply authentication middleware to all routes
 router.use(authenticateToken);
@@ -67,10 +66,12 @@ router.post('/matrix', async (req, res) => {
       });
     }
 
+    const hospitalDB = databaseManager.getHospitalDB();
+    
     // Check if facilities exist
     const [fromFacility, toFacility] = await Promise.all([
-      prisma.facility.findUnique({ where: { id: fromFacilityId } }),
-      prisma.facility.findUnique({ where: { id: toFacilityId } })
+      hospitalDB.facility.findUnique({ where: { id: fromFacilityId } }),
+      hospitalDB.facility.findUnique({ where: { id: toFacilityId } })
     ]);
 
     if (!fromFacility || !toFacility) {
@@ -253,10 +254,12 @@ router.get('/calculate', async (req, res) => {
       });
     }
 
+    const hospitalDB = databaseManager.getHospitalDB();
+    
     // Get facility details
     const [fromFacility, toFacility] = await Promise.all([
-      prisma.facility.findUnique({ where: { id: fromFacilityId as string } }),
-      prisma.facility.findUnique({ where: { id: toFacilityId as string } })
+      hospitalDB.facility.findUnique({ where: { id: fromFacilityId as string } }),
+      hospitalDB.facility.findUnique({ where: { id: toFacilityId as string } })
     ]);
 
     if (!fromFacility || !toFacility) {
@@ -566,11 +569,13 @@ router.get('/matrix/all', async (req, res) => {
     if (fromFacilityId) where.fromFacilityId = fromFacilityId;
     if (toFacilityId) where.toFacilityId = toFacilityId;
 
+    const hospitalDB = databaseManager.getHospitalDB();
+    
     // Get total count
-    const total = await prisma.distanceMatrix.count({ where });
+    const total = await hospitalDB.distanceMatrix.count({ where });
 
     // Get paginated results
-    const distanceMatrices = await prisma.distanceMatrix.findMany({
+    const distanceMatrices = await hospitalDB.distanceMatrix.findMany({
       where,
       skip: offset,
       take: limitNum,
