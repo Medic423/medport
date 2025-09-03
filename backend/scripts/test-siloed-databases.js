@@ -222,9 +222,8 @@ async function createTestFacilities(hospitals, hospitalUsers) {
   log('🏢 Creating test facilities in Hospital DB...', 'blue');
   
   try {
-    const facility1 = await hospitalDB.hospitalFacility.create({
+    const facility1 = await hospitalDB.facility.create({
       data: {
-        hospitalId: hospitalUsers.hospitalUser1.id,
         name: 'Test General Hospital - Main Campus',
         type: 'HOSPITAL',
         address: '123 Medical Drive',
@@ -241,9 +240,8 @@ async function createTestFacilities(hospitals, hospitalUsers) {
     });
     log(`  ✅ Created facility: ${facility1.name}`, 'green');
 
-    const facility2 = await hospitalDB.hospitalFacility.create({
+    const facility2 = await hospitalDB.facility.create({
       data: {
-        hospitalId: hospitalUsers.hospitalUser2.id,
         name: 'Test Regional - Emergency Department',
         type: 'HOSPITAL',
         address: '456 Health Boulevard',
@@ -260,9 +258,8 @@ async function createTestFacilities(hospitals, hospitalUsers) {
     });
     log(`  ✅ Created facility: ${facility2.name}`, 'green');
 
-    const facility3 = await hospitalDB.hospitalFacility.create({
+    const facility3 = await hospitalDB.facility.create({
       data: {
-        hospitalId: hospitalUsers.hospitalUser1.id,
         name: 'Test Nursing Home',
         type: 'NURSING_HOME',
         address: '789 Care Street',

@@ -130,3 +130,4 @@ echo "   1. Verify backup integrity"
 echo "   2. Store backup in safe location (external drive, cloud storage)"
 echo "   3. Proceed with database siloing strategy"
 echo ""
+

@@ -59,7 +59,7 @@ const agencyLoginSchema = z.object({
 
 const unitAvailabilitySchema = z.object({
   unitId: z.string().min(1, 'Unit ID is required'),
-  status: z.enum(['AVAILABLE', 'IN_USE', 'OUT_OF_SERVICE', 'MAINTENANCE']),
+  status: z.enum(['AVAILABLE', 'ASSIGNED', 'ON_BREAK', 'OFF_DUTY']),
   location: z.any().optional(),
   shiftStart: z.string().datetime().optional(),
   shiftEnd: z.string().datetime().optional(),

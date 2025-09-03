@@ -1,7 +1,6 @@
-import { PrismaClient, TransportAgency, ServiceStatus } from '@prisma/client';
+import { EMSAgency, ServiceStatus } from '../../dist/prisma/center';
+import { databaseManager } from './databaseManager';
 import { z } from 'zod';
-
-const prisma = new PrismaClient();
 
 // Validation schemas
 export const addServiceSchema = z.object({
@@ -68,10 +67,11 @@ export interface UpdateServiceData {
 
 export class TransportCenterService {
   // Add new EMS service (Transport Center only)
-  async addService(data: AddServiceData, addedByUserId: string): Promise<TransportAgency> {
+  async addService(data: AddServiceData, addedByUserId: string): Promise<EMSAgency> {
     try {
       // Check if service with same email already exists
-      const existingService = await prisma.transportAgency.findFirst({
+      const centerDB = databaseManager.getCenterDB();
+      const existingService = await centerDB.eMSAgency.findFirst({
         where: { email: data.email }
       });
 
@@ -80,10 +80,10 @@ export class TransportCenterService {
       }
 
       // Create new service
-      const service = await prisma.transportAgency.create({
+      const service = await centerDB.eMSAgency.create({
         data: {
           name: data.name,
-          contactName: data.contactName,
+          contactName: data.contactName || '',
           phone: data.phone,
           email: data.email,
           address: data.address,
@@ -97,15 +97,6 @@ export class TransportCenterService {
           addedBy: addedByUserId,
           status: 'ACTIVE',
           addedAt: new Date()
-        },
-        include: {
-          addedByUser: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          }
         }
       });
 
@@ -117,35 +108,10 @@ export class TransportCenterService {
   }
 
   // Get all services (Transport Center only)
-  async getAllServices(): Promise<TransportAgency[]> {
+  async getAllServices(): Promise<EMSAgency[]> {
     try {
-      const services = await prisma.transportAgency.findMany({
-        include: {
-          addedByUser: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          },
-          units: {
-            where: { isActive: true },
-            select: {
-              id: true,
-              unitNumber: true,
-              type: true,
-              currentStatus: true
-            }
-          },
-          serviceAreas: {
-            where: { isActive: true },
-            select: {
-              id: true,
-              name: true,
-              description: true
-            }
-          }
-        },
+      const centerDB = databaseManager.getCenterDB();
+      const services = await centerDB.eMSAgency.findMany({
         orderBy: [
           { status: 'asc' },
           { name: 'asc' }
@@ -160,29 +126,11 @@ export class TransportCenterService {
   }
 
   // Get service by ID
-  async getServiceById(serviceId: string): Promise<TransportAgency | null> {
+  async getServiceById(serviceId: string): Promise<EMSAgency | null> {
     try {
-      const service = await prisma.transportAgency.findUnique({
-        where: { id: serviceId },
-        include: {
-          addedByUser: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          },
-          units: {
-            where: { isActive: true },
-            include: {
-              unitAvailability: true
-            }
-          },
-          serviceAreas: {
-            where: { isActive: true }
-          },
-          agencyProfiles: true
-        }
+      const centerDB = databaseManager.getCenterDB();
+      const service = await centerDB.eMSAgency.findUnique({
+        where: { id: serviceId }
       });
 
       return service;
@@ -193,10 +141,11 @@ export class TransportCenterService {
   }
 
   // Update service details
-  async updateService(serviceId: string, data: UpdateServiceData): Promise<TransportAgency> {
+  async updateService(serviceId: string, data: UpdateServiceData): Promise<EMSAgency> {
     try {
+      const centerDB = databaseManager.getCenterDB();
       // Check if service exists
-      const existingService = await prisma.transportAgency.findUnique({
+      const existingService = await centerDB.eMSAgency.findUnique({
         where: { id: serviceId }
       });
 
@@ -206,7 +155,7 @@ export class TransportCenterService {
 
       // If email is being updated, check for duplicates
       if (data.email && data.email !== existingService.email) {
-        const duplicateService = await prisma.transportAgency.findFirst({
+        const duplicateService = await centerDB.eMSAgency.findFirst({
           where: { 
             email: data.email,
             id: { not: serviceId }
@@ -219,20 +168,11 @@ export class TransportCenterService {
       }
 
       // Update service
-      const updatedService = await prisma.transportAgency.update({
+      const updatedService = await centerDB.eMSAgency.update({
         where: { id: serviceId },
         data: {
           ...data,
           updatedAt: new Date()
-        },
-        include: {
-          addedByUser: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          }
         }
       });
 
@@ -244,23 +184,15 @@ export class TransportCenterService {
   }
 
   // Disable service (soft delete)
-  async disableService(serviceId: string): Promise<TransportAgency> {
+  async disableService(serviceId: string): Promise<EMSAgency> {
     try {
-      const service = await prisma.transportAgency.update({
+      const centerDB = databaseManager.getCenterDB();
+      const service = await centerDB.eMSAgency.update({
         where: { id: serviceId },
         data: {
           status: 'INACTIVE',
           isActive: false,
           updatedAt: new Date()
-        },
-        include: {
-          addedByUser: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          }
         }
       });
 
@@ -272,23 +204,15 @@ export class TransportCenterService {
   }
 
   // Enable service
-  async enableService(serviceId: string): Promise<TransportAgency> {
+  async enableService(serviceId: string): Promise<EMSAgency> {
     try {
-      const service = await prisma.transportAgency.update({
+      const centerDB = databaseManager.getCenterDB();
+      const service = await centerDB.eMSAgency.update({
         where: { id: serviceId },
         data: {
           status: 'ACTIVE',
           isActive: true,
           updatedAt: new Date()
-        },
-        include: {
-          addedByUser: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          }
         }
       });
 
@@ -300,19 +224,11 @@ export class TransportCenterService {
   }
 
   // Get services added by specific Transport Center user
-  async getServicesAddedByUser(userId: string): Promise<TransportAgency[]> {
+  async getServicesAddedByUser(userId: string): Promise<EMSAgency[]> {
     try {
-      const services = await prisma.transportAgency.findMany({
+      const centerDB = databaseManager.getCenterDB();
+      const services = await centerDB.eMSAgency.findMany({
         where: { addedBy: userId },
-        include: {
-          addedByUser: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          }
-        },
         orderBy: [
           { status: 'asc' },
           { name: 'asc' }
@@ -335,6 +251,7 @@ export class TransportCenterService {
     servicesAddedThisMonth: number;
   }> {
     try {
+      const centerDB = databaseManager.getCenterDB();
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
@@ -345,11 +262,11 @@ export class TransportCenterService {
         pendingServices,
         servicesAddedThisMonth
       ] = await Promise.all([
-        prisma.transportAgency.count(),
-        prisma.transportAgency.count({ where: { status: 'ACTIVE' } }),
-        prisma.transportAgency.count({ where: { status: 'INACTIVE' } }),
-        prisma.transportAgency.count({ where: { status: 'PENDING' } }),
-        prisma.transportAgency.count({
+        centerDB.eMSAgency.count(),
+        centerDB.eMSAgency.count({ where: { status: 'ACTIVE' } }),
+        centerDB.eMSAgency.count({ where: { status: 'INACTIVE' } }),
+        centerDB.eMSAgency.count({ where: { status: 'PENDING' } }),
+        centerDB.eMSAgency.count({
           where: {
             addedAt: {
               gte: startOfMonth

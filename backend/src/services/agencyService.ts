@@ -1,8 +1,7 @@
-import { PrismaClient, TransportAgency, AgencyUser, AgencyProfile, Unit, UnitAvailability, ServiceArea, AgencyPerformance } from '@prisma/client';
+import { EMSAgency, Unit, UnitAvailability, ServiceStatus, UnitType, UnitStatus, AvailabilityStatus } from '../../dist/prisma/ems';
+import { databaseManager } from './databaseManager';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-
-const prisma = new PrismaClient();
 
 export interface AgencyRegistrationData {
   name: string;
@@ -13,9 +12,9 @@ export interface AgencyRegistrationData {
   city: string;
   state: string;
   zipCode: string;
-  serviceArea?: any;
-  operatingHours?: any;
-  capabilities?: any;
+  serviceArea?: string[];
+  operatingHours?: string;
+  capabilities?: string[];
   pricingStructure?: any;
   adminUser: {
     email: string;
@@ -35,7 +34,7 @@ export interface AgencyUserData {
 
 export interface UnitAvailabilityData {
   unitId: string;
-  status: 'AVAILABLE' | 'IN_USE' | 'OUT_OF_SERVICE' | 'MAINTENANCE';
+  status: 'AVAILABLE' | 'ASSIGNED' | 'ON_BREAK' | 'OFF_DUTY';
   location?: any;
   shiftStart?: Date;
   shiftEnd?: Date;
@@ -44,22 +43,13 @@ export interface UnitAvailabilityData {
   notes?: string;
 }
 
-export interface ServiceAreaData {
-  name: string;
-  description?: string;
-  geographicBoundaries: any;
-  coverageRadius?: number;
-  primaryServiceArea?: boolean;
-  operatingHours?: any;
-  specialRestrictions?: string;
-}
-
 export class AgencyService {
   // Agency Registration and Management
-  async registerAgency(data: AgencyRegistrationData): Promise<{ agency: TransportAgency; adminUser: AgencyUser; token: string }> {
+  async registerAgency(data: AgencyRegistrationData): Promise<{ agency: EMSAgency; adminUser: any; token: string }> {
     try {
       // Check if agency email already exists
-      const existingAgency = await prisma.transportAgency.findFirst({
+      const emsDB = databaseManager.getEMSDB();
+      const existingAgency = await emsDB.eMSAgency.findFirst({
         where: { email: data.email }
       });
 
@@ -67,17 +57,8 @@ export class AgencyService {
         throw new Error('Agency with this email already exists');
       }
 
-      // Check if admin user email already exists
-      const existingUser = await prisma.agencyUser.findFirst({
-        where: { email: data.adminUser.email }
-      });
-
-      if (existingUser) {
-        throw new Error('Admin user with this email already exists');
-      }
-
-      // Create agency
-      const agency = await prisma.transportAgency.create({
+      // Create agency in EMS database
+      const agency = await emsDB.eMSAgency.create({
         data: {
           name: data.name,
           contactName: data.contactName,
@@ -87,33 +68,27 @@ export class AgencyService {
           city: data.city,
           state: data.state,
           zipCode: data.zipCode,
-          serviceArea: data.serviceArea,
-          operatingHours: data.operatingHours,
-          capabilities: data.capabilities,
+          serviceArea: data.serviceArea || [],
+          operatingHours: data.operatingHours || '24/7',
+          capabilities: data.capabilities || [],
           pricingStructure: data.pricingStructure,
+          status: 'ACTIVE',
+          isActive: true
         }
       });
 
-      // Hash admin user password
+      // Create admin user in Center database
+      const centerDB = databaseManager.getCenterDB();
       const hashedPassword = await bcrypt.hash(data.adminUser.password, 12);
-
-      // Create admin user
-      const adminUser = await prisma.agencyUser.create({
+      
+      const adminUser = await centerDB.user.create({
         data: {
-          agencyId: agency.id,
           email: data.adminUser.email,
           password: hashedPassword,
           name: data.adminUser.name,
-          role: 'ADMIN',
-          phone: data.adminUser.phone,
-        }
-      });
-
-      // Create default agency profile
-      await prisma.agencyProfile.create({
-        data: {
+          userType: 'EMS',
           agencyId: agency.id,
-          description: `Transport agency serving ${data.city}, ${data.state}`,
+          isActive: true
         }
       });
 
@@ -122,8 +97,8 @@ export class AgencyService {
         { 
           userId: adminUser.id, 
           agencyId: agency.id, 
-          role: adminUser.role,
-          type: 'agency'
+          userType: 'EMS',
+          role: 'ADMIN'
         },
         process.env.JWT_SECRET || 'fallback-secret',
         { expiresIn: '24h' }
@@ -136,10 +111,15 @@ export class AgencyService {
     }
   }
 
-  async loginAgencyUser(email: string, password: string): Promise<{ user: AgencyUser; agency: TransportAgency; token: string }> {
+  async loginAgencyUser(email: string, password: string): Promise<{ user: any; agency: EMSAgency; token: string }> {
     try {
-      const user = await prisma.agencyUser.findFirst({
-        where: { email, isActive: true },
+      const centerDB = databaseManager.getCenterDB();
+      const user = await centerDB.user.findFirst({
+        where: { 
+          email, 
+          isActive: true,
+          userType: 'EMS'
+        },
         include: { agency: true }
       });
 
@@ -152,41 +132,44 @@ export class AgencyService {
         throw new Error('Invalid credentials');
       }
 
-      // Update last login
-      await prisma.agencyUser.update({
-        where: { id: user.id },
-        data: { lastLogin: new Date() }
+      // Get agency details from EMS database
+      const emsDB = databaseManager.getEMSDB();
+      const agency = await emsDB.eMSAgency.findUnique({
+        where: { id: user.agencyId! }
       });
+
+      if (!agency) {
+        throw new Error('Agency not found');
+      }
 
       // Generate JWT token
       const token = jwt.sign(
         { 
           userId: user.id, 
           agencyId: user.agencyId, 
-          role: user.role,
-          type: 'agency'
+          userType: 'EMS',
+          role: user.role
         },
         process.env.JWT_SECRET || 'fallback-secret',
         { expiresIn: '24h' }
       );
 
-      return { user, agency: user.agency, token };
+      return { user, agency, token };
     } catch (error) {
       console.error('Agency login error:', error);
       throw error;
     }
   }
 
-  async getAgencyById(agencyId: string): Promise<TransportAgency | null> {
+  async getAgencyById(agencyId: string): Promise<EMSAgency | null> {
     try {
-      return await prisma.transportAgency.findUnique({
+      const emsDB = databaseManager.getEMSDB();
+      return await emsDB.eMSAgency.findUnique({
         where: { id: agencyId },
         include: {
-          agencyProfiles: true,
-          serviceAreas: true,
           units: {
             include: {
-              unitAvailability: true
+              availability: true
             }
           }
         }
@@ -197,26 +180,14 @@ export class AgencyService {
     }
   }
 
-  async updateAgencyProfile(agencyId: string, data: Partial<AgencyProfile>): Promise<AgencyProfile> {
+  async updateAgencyProfile(agencyId: string, data: any): Promise<EMSAgency> {
     try {
-      // Filter out problematic fields and handle JSON types
-      const { id, createdAt, updatedAt, agencyId: _, ...restData } = data;
-      
-      // Convert JsonValue to proper Prisma JSON type
-      const cleanData: any = {};
-      Object.keys(restData).forEach(key => {
-        const value = (restData as any)[key];
-        if (value !== undefined) {
-          cleanData[key] = value;
-        }
-      });
-      
-      return await prisma.agencyProfile.upsert({
-        where: { agencyId },
-        update: cleanData,
-        create: {
-          agencyId,
-          ...cleanData
+      const emsDB = databaseManager.getEMSDB();
+      return await emsDB.eMSAgency.update({
+        where: { id: agencyId },
+        data: {
+          ...data,
+          updatedAt: new Date()
         }
       });
     } catch (error) {
@@ -225,19 +196,21 @@ export class AgencyService {
     }
   }
 
-  // Agency User Management
-  async createAgencyUser(agencyId: string, data: AgencyUserData): Promise<AgencyUser> {
+  // Agency User Management (using Center database)
+  async createAgencyUser(agencyId: string, data: AgencyUserData): Promise<any> {
     try {
+      const centerDB = databaseManager.getCenterDB();
       const hashedPassword = await bcrypt.hash(data.password, 12);
 
-      return await prisma.agencyUser.create({
+      return await centerDB.user.create({
         data: {
-          agencyId,
           email: data.email,
           password: hashedPassword,
           name: data.name,
-          role: data.role || 'STAFF',
-          phone: data.phone,
+          userType: 'EMS',
+          agencyId: agencyId,
+          role: data.role === 'STAFF' ? 'COORDINATOR' : (data.role === 'ADMIN' ? 'ADMIN' : 'COORDINATOR'),
+          isActive: true
         }
       });
     } catch (error) {
@@ -246,17 +219,20 @@ export class AgencyService {
     }
   }
 
-  async getAgencyUsers(agencyId: string): Promise<Partial<AgencyUser>[]> {
+  async getAgencyUsers(agencyId: string): Promise<any[]> {
     try {
-      return await prisma.agencyUser.findMany({
-        where: { agencyId, isActive: true },
+      const centerDB = databaseManager.getCenterDB();
+      return await centerDB.user.findMany({
+        where: { 
+          agencyId, 
+          isActive: true,
+          userType: 'EMS'
+        },
         select: {
           id: true,
           email: true,
           name: true,
           role: true,
-          phone: true,
-          lastLogin: true,
           createdAt: true
         }
       });
@@ -266,13 +242,14 @@ export class AgencyService {
     }
   }
 
-  async updateAgencyUser(userId: string, data: Partial<AgencyUser>): Promise<AgencyUser> {
+  async updateAgencyUser(userId: string, data: any): Promise<any> {
     try {
+      const centerDB = databaseManager.getCenterDB();
       if (data.password) {
         data.password = await bcrypt.hash(data.password, 12);
       }
 
-      return await prisma.agencyUser.update({
+      return await centerDB.user.update({
         where: { id: userId },
         data
       });
@@ -282,21 +259,30 @@ export class AgencyService {
     }
   }
 
-  // Unit Management
+  // Unit Management (using EMS database)
   async createUnit(agencyId: string, data: any): Promise<Unit> {
     try {
-      const unit = await prisma.unit.create({
+      const emsDB = databaseManager.getEMSDB();
+      const unit = await emsDB.unit.create({
         data: {
           agencyId,
-          ...data
+          unitNumber: data.unitNumber,
+          type: data.type || 'BLS',
+          capabilities: data.capabilities || [],
+          currentStatus: 'AVAILABLE',
+          currentLocation: data.currentLocation,
+          shiftStart: data.shiftStart,
+          shiftEnd: data.shiftEnd,
+          isActive: true
         }
       });
 
       // Create initial unit availability record
-      await prisma.unitAvailability.create({
+      await emsDB.unitAvailability.create({
         data: {
           unitId: unit.id,
-          status: 'AVAILABLE'
+          status: 'AVAILABLE',
+          startTime: new Date()
         }
       });
 
@@ -309,14 +295,11 @@ export class AgencyService {
 
   async getAgencyUnits(agencyId: string): Promise<Unit[]> {
     try {
-      return await prisma.unit.findMany({
+      const emsDB = databaseManager.getEMSDB();
+      return await emsDB.unit.findMany({
         where: { agencyId, isActive: true },
         include: {
-          unitAvailability: true,
-          unitAssignments: {
-            where: { status: 'ACTIVE' },
-            include: { transportRequest: true }
-          }
+          availability: true
         }
       });
     } catch (error) {
@@ -327,25 +310,33 @@ export class AgencyService {
 
   async updateUnitAvailability(unitId: string, data: UnitAvailabilityData): Promise<UnitAvailability> {
     try {
+      const emsDB = databaseManager.getEMSDB();
       // First try to find existing availability record
-      const existing = await prisma.unitAvailability.findFirst({
+      const existing = await emsDB.unitAvailability.findFirst({
         where: { unitId }
       });
 
       if (existing) {
         // Update existing record
-        return await prisma.unitAvailability.update({
+        return await emsDB.unitAvailability.update({
           where: { id: existing.id },
           data: {
-            ...data,
-            lastUpdated: new Date()
+            status: data.status as any,
+            startTime: data.shiftStart || new Date(),
+            endTime: data.shiftEnd,
+            notes: data.notes,
+            updatedAt: new Date()
           }
         });
       } else {
         // Create new record
-        return await prisma.unitAvailability.create({
+        return await emsDB.unitAvailability.create({
           data: {
-            ...data
+            unitId,
+            status: data.status as any,
+            startTime: data.shiftStart || new Date(),
+            endTime: data.shiftEnd,
+            notes: data.notes
           }
         });
       }
@@ -355,93 +346,17 @@ export class AgencyService {
     }
   }
 
-  // Service Area Management
-  async createServiceArea(agencyId: string, data: ServiceAreaData): Promise<ServiceArea> {
-    try {
-      return await prisma.serviceArea.create({
-        data: {
-          agencyId,
-          ...data
-        }
-      });
-    } catch (error) {
-      console.error('Create service area error:', error);
-      throw error;
-    }
-  }
-
-  async getAgencyServiceAreas(agencyId: string): Promise<ServiceArea[]> {
-    try {
-      return await prisma.serviceArea.findMany({
-        where: { agencyId, isActive: true }
-      });
-    } catch (error) {
-      console.error('Get service areas error:', error);
-      throw error;
-    }
-  }
-
-  // Performance Tracking
-  async getAgencyPerformance(agencyId: string, periodStart: Date, periodEnd: Date): Promise<AgencyPerformance | null> {
-    try {
-      return await prisma.agencyPerformance.findFirst({
-        where: {
-          agencyId,
-          periodStart,
-          periodEnd
-        }
-      });
-    } catch (error) {
-      console.error('Get agency performance error:', error);
-      throw error;
-    }
-  }
-
-  async updateAgencyPerformance(agencyId: string, data: Partial<AgencyPerformance>): Promise<AgencyPerformance> {
-    try {
-      if (!data.periodStart || !data.periodEnd) {
-        throw new Error('Period start and end dates are required');
-      }
-
-      // First try to find existing performance record
-      const existing = await prisma.agencyPerformance.findFirst({
-        where: {
-          agencyId,
-          periodStart: data.periodStart,
-          periodEnd: data.periodEnd
-        }
-      });
-
-      if (existing) {
-        // Update existing record
-        const { id, createdAt, updatedAt, agencyId: _, ...cleanData } = data;
-        return await prisma.agencyPerformance.update({
-          where: { id: existing.id },
-          data: cleanData
-        });
-      } else {
-        // Create new record
-        const { id, createdAt, updatedAt, ...cleanData } = data;
-        return await prisma.agencyPerformance.create({
-          data: {
-            agencyId,
-            periodStart: data.periodStart!,
-            periodEnd: data.periodEnd!,
-            ...cleanData
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Update agency performance error:', error);
-      throw error;
-    }
-  }
-
   // Utility Methods
   async validateAgencyAccess(userId: string, agencyId: string): Promise<boolean> {
     try {
-      const user = await prisma.agencyUser.findFirst({
-        where: { id: userId, agencyId, isActive: true }
+      const centerDB = databaseManager.getCenterDB();
+      const user = await centerDB.user.findFirst({
+        where: { 
+          id: userId, 
+          agencyId, 
+          isActive: true,
+          userType: 'EMS'
+        }
       });
       return !!user;
     } catch (error) {
@@ -452,19 +367,13 @@ export class AgencyService {
 
   async getAgencyStats(agencyId: string): Promise<any> {
     try {
-      const [totalUnits, availableUnits, totalTransports, completedTransports] = await Promise.all([
-        prisma.unit.count({ where: { agencyId, isActive: true } }),
-        prisma.unitAvailability.count({ 
+      const emsDB = databaseManager.getEMSDB();
+      const [totalUnits, availableUnits] = await Promise.all([
+        emsDB.unit.count({ where: { agencyId, isActive: true } }),
+        emsDB.unitAvailability.count({ 
           where: { 
             unit: { agencyId, isActive: true },
             status: 'AVAILABLE'
-          }
-        }),
-        prisma.transportRequest.count({ where: { assignedAgencyId: agencyId } }),
-        prisma.transportRequest.count({ 
-          where: { 
-            assignedAgencyId: agencyId,
-            status: 'COMPLETED'
           }
         })
       ]);
@@ -472,9 +381,7 @@ export class AgencyService {
       return {
         totalUnits,
         availableUnits,
-        totalTransports,
-        completedTransports,
-        completionRate: totalTransports > 0 ? (completedTransports / totalTransports) * 100 : 0
+        utilizationRate: totalUnits > 0 ? (availableUnits / totalUnits) * 100 : 0
       };
     } catch (error) {
       console.error('Get agency stats error:', error);

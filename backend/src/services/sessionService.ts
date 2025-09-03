@@ -1,7 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { PrismaClient, User } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { databaseManager } from './databaseManager';
 
 export interface SessionData {
   userId: string;
@@ -31,7 +29,8 @@ export class SessionService {
       const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
       
       // Check if user still exists and is active
-      const user = await prisma.user.findUnique({
+      const centerDB = databaseManager.getCenterDB();
+      const user = await centerDB.user.findUnique({
         where: { id: decoded.id }
       });
 
@@ -69,7 +68,8 @@ export class SessionService {
    * Create a new session for a user
    */
   static async createSession(userId: string, deviceInfo?: string, ipAddress?: string): Promise<SessionData> {
-    const user = await prisma.user.findUnique({
+    const centerDB = databaseManager.getCenterDB();
+    const user = await centerDB.user.findUnique({
       where: { id: userId }
     });
 
@@ -156,7 +156,8 @@ export class SessionService {
       }
 
       // Check if user still exists and is active
-      const user = await prisma.user.findUnique({
+      const centerDB = databaseManager.getCenterDB();
+      const user = await centerDB.user.findUnique({
         where: { id: decoded.id }
       });
 

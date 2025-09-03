@@ -1,0 +1,25 @@
+MedPort Project Backup
+=====================
+Date: Tue Sep  2 12:10:00 EDT 2025
+Git Commit: 2fae14cbd5dc9d5f542c29c94eefd851aae0da91
+Git Branch: main
+Project Size: 1.8G
+Backup Size: 938M
+Backup Purpose: Pre-database siloing safety backup
+
+Files Included:
+- Full project directory
+- Database dump (if available)
+- Environment files
+- This information file
+
+Restore Instructions:
+1. Copy the medport directory back to /Users/scooper/Code/
+2. Restore database: psql $DATABASE_URL < database-backup.sql
+3. Extract environment files: tar -xzf env-backup.tar.gz
+4. Run npm install in backend and frontend directories
+5. Start services using your start script
+
+Emergency:
+- GitHub Repository: https://github.com/Medic423/medport.git
+- Current working state is committed to main branch

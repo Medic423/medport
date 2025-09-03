@@ -6,9 +6,9 @@ import ResourceManagement from './pages/ResourceManagement';
 import AdvancedTransport from './pages/AdvancedTransport';
 import AirMedical from './pages/AirMedical';
 import EmergencyDepartment from './pages/EmergencyDepartment';
-import AgencyRegistration from './pages/AgencyRegistration';
-import AgencyLogin from './pages/AgencyLogin';
-import AgencyDashboard from './pages/AgencyDashboard';
+
+
+
 import RouteOptimization from './pages/RouteOptimization';
 import UnitAssignment from './pages/UnitAssignment';
 import NotificationDashboard from './components/NotificationDashboard';
@@ -262,9 +262,9 @@ function App() {
         {currentPage === 'advanced-transport' && <AdvancedTransport />}
         {currentPage === 'air-medical' && <AirMedical />}
         {currentPage === 'emergency-department' && <EmergencyDepartment />}
-        {currentPage === 'agency-registration' && <AgencyRegistration onNavigate={handleNavigation} />}
-        {currentPage === 'agency-login' && <AgencyLogin onNavigate={handleNavigation} />}
-        {currentPage === 'agency-dashboard' && <AgencyDashboard onNavigate={handleNavigation} />}
+
+
+
         {currentPage === 'route-optimization' && <RouteOptimization />}
         {currentPage === 'unit-assignment' && <UnitAssignment />}
         {currentPage === 'analytics' && <Analytics />}

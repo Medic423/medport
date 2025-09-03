@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { databaseManager } from './databaseManager';
 
 export interface FreemiumSettings {
   userId: string;
@@ -27,21 +25,22 @@ export class FreemiumService {
     try {
       // For now, return default settings based on user type
       // In a real implementation, this would query a freemium_settings table
-      const user = await prisma.user.findUnique({
+      const centerDB = databaseManager.getCenterDB();
+      const user = await centerDB.user.findUnique({
         where: { id: userId },
-        select: { role: true }
+        select: { role: true, userType: true }
       });
 
       if (!user) return null;
 
-      // Map database roles to user types
+      // Map database userType to service user types
       const userTypeMap: Record<string, 'center' | 'hospital' | 'ems'> = {
-        'COORDINATOR': 'center',
-        'ADMIN': 'hospital', 
-        'TRANSPORT_AGENCY': 'ems'
+        'CENTER': 'center',
+        'HOSPITAL': 'hospital', 
+        'EMS': 'ems'
       };
 
-      const userType = userTypeMap[user.role] || 'hospital';
+      const userType = userTypeMap[user.userType] || 'hospital';
 
       // Default feature settings based on user type
       const defaultSettings: FreemiumSettings = {
