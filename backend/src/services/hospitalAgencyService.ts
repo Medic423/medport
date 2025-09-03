@@ -27,12 +27,11 @@ export class HospitalAgencyService {
       };
 
       // Filter by transport level if specified
+      // Note: Unit filtering requires cross-database query since units are in EMS DB
+      // For now, we'll filter by agency capabilities instead
       if (filters.transportLevel) {
-        whereClause.units = {
-          some: {
-            type: filters.transportLevel,
-            isActive: true
-          }
+        whereClause.capabilities = {
+          has: filters.transportLevel
         };
       }
 
