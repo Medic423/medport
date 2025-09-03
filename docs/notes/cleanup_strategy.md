@@ -235,12 +235,12 @@ graph TD
   - [x] `agencyAnalyticsService.ts` - Removed unused Prisma client (uses revenueTrackingService)
   - [x] `transportBiddingService.ts` - Updated to use Center + EMS databases for bidding system
   - [x] `analyticsService.ts` - Updated to use all three databases for comprehensive analytics
-- [ ] **Phase 1.3**: Real-time Services (5 files)
-  - [ ] `webSocketService.ts`
-  - [ ] `realTimeTrackingService.ts`
-  - [ ] `qrCodeService.ts`
-  - [ ] `unitAssignmentService.ts`
-  - [ ] `routeOptimizationService.ts`
+- [x] **Phase 1.3**: Real-time Services (5 files) ✅ **COMPLETED**
+  - [x] `webSocketService.ts` - Updated to use DatabaseManager for real-time communication
+  - [x] `realTimeTrackingService.ts` - Updated to use DatabaseManager for GPS tracking
+  - [x] `qrCodeService.ts` - Updated to use DatabaseManager for QR code generation
+  - [x] `unitAssignmentService.ts` - Updated to use DatabaseManager for unit assignments
+  - [x] `routeOptimizationService.ts` - Updated to use DatabaseManager (demo service)
 - [ ] **Phase 1.4**: Utility Services (5 files)
   - [ ] `routeCardGenerationService.ts`
   - [ ] `distanceService.ts`
@@ -339,7 +339,53 @@ const emsDB = databaseManager.getEMSDB();
   - ✅ **analyticsService.ts** - Updated to use all three databases for comprehensive analytics
   - ✅ **Login functionality restored** - Backend and frontend servers running successfully on ports 5002 and 3002
   - ⚠️ **Note**: Some services temporarily disabled to resolve compilation errors and restore login functionality
+- ✅ **COMPLETED Priority 1 Phase 1.3 - Real-time Services (5 files)**
+  - ✅ **webSocketService.ts** - Updated to use DatabaseManager for real-time communication
+  - ✅ **realTimeTrackingService.ts** - Updated to use DatabaseManager for GPS tracking
+  - ✅ **qrCodeService.ts** - Updated to use DatabaseManager for QR code generation
+  - ✅ **unitAssignmentService.ts** - Updated to use DatabaseManager for unit assignments
+  - ✅ **routeOptimizationService.ts** - Updated to use DatabaseManager (demo service)
+  - ⚠️ **Note**: DatabaseManager pattern updates complete, but compilation errors due to missing database tables
 
 ---
 
-**Next Steps**: Continue with Priority 1 Phase 1.3 - Real-time Services (5 files) OR Priority 3 - Duplicate Functionality
+## 🚨 **NEW PRIORITY: DATABASE SCHEMA FIXES**
+
+### **🔴 PRIORITY 1.5: CRITICAL - DATABASE SCHEMA MISMATCHES**
+
+**Problem**: Services updated to use DatabaseManager but database schemas don't match service expectations
+
+**Impact**: 58+ compilation errors preventing backend from starting
+
+**Root Cause**: Services were written for a different database schema than what exists in the siloed databases
+
+**Missing Tables in EMS Database:**
+- `gPSTracking` - GPS tracking data
+- `locationHistory` - Location history records
+- `geofenceEvent` - Geofence events
+- `unitAssignment` - Unit assignment records
+- `route` - Route information
+- `routeDeviation` - Route deviation tracking
+- `trafficCondition` - Traffic conditions
+- `weatherImpact` - Weather impact data
+- `eTAUpdate` - ETA updates
+
+**Missing Relations:**
+- `Unit.unitAvailability` → should be `Unit.availability`
+- `TransportRequest.assignedUnit` → doesn't exist in Hospital DB
+- `TransportRequest.createdBy` → should be `TransportRequest.createdById`
+
+**Schema Field Mismatches:**
+- `UnitAvailability.lastUpdated` → should be `UnitAvailability.updatedAt`
+- `UnitAvailability.status` → type mismatch (UnitStatus vs AvailabilityStatus)
+
+**Next Steps**: 
+1. **Add missing tables** to appropriate database schemas
+2. **Fix field name mismatches** between services and schemas
+3. **Update type definitions** to match actual schema
+4. **Test compilation** and functionality
+5. **Re-enable disabled services**
+
+---
+
+**Next Steps**: Address Priority 1.5 - Database Schema Fixes OR continue with Priority 1 Phase 1.4 - Utility Services

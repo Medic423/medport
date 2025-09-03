@@ -1,9 +1,7 @@
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import { Server as HTTPServer } from 'http';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { databaseManager } from './databaseManager';
 
 export interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -264,15 +262,17 @@ export class WebSocketService {
   }
 
   private async storeLocationUpdate(update: LocationUpdate) {
+    const emsDB = databaseManager.getEMSDB();
+    
     // Store in GPS tracking table
-    let gpsTracking = await prisma.gPSTracking.findFirst({
+    let gpsTracking = await emsDB.gPSTracking.findFirst({
       where: { unitId: update.unitId, isActive: true },
       orderBy: { timestamp: 'desc' },
     });
 
     if (gpsTracking) {
       // Update existing record
-      gpsTracking = await prisma.gPSTracking.update({
+      gpsTracking = await emsDB.gPSTracking.update({
         where: { id: gpsTracking.id },
         data: {
           latitude: update.latitude,
@@ -287,7 +287,7 @@ export class WebSocketService {
       });
     } else {
       // Create new record
-      gpsTracking = await prisma.gPSTracking.create({
+      gpsTracking = await emsDB.gPSTracking.create({
         data: {
           unitId: update.unitId,
           latitude: update.latitude,
@@ -305,7 +305,7 @@ export class WebSocketService {
     }
 
     // Store in location history
-    await prisma.locationHistory.create({
+    await emsDB.locationHistory.create({
       data: {
         gpsTrackingId: gpsTracking.id,
         latitude: update.latitude,
@@ -320,7 +320,9 @@ export class WebSocketService {
   }
 
   private async storeTransportRequestUpdate(update: TransportRequestUpdate) {
-    await prisma.transportRequest.update({
+    const hospitalDB = databaseManager.getHospitalDB();
+    
+    await hospitalDB.transportRequest.update({
       where: { id: update.id },
       data: {
         status: update.status as any, // Cast to any to handle enum conversion
@@ -331,8 +333,10 @@ export class WebSocketService {
   }
 
   private async storeGeofenceEvent(event: GeofenceEvent) {
+    const emsDB = databaseManager.getEMSDB();
+    
     // First get the GPS tracking record for this unit
-    const gpsTracking = await prisma.gPSTracking.findFirst({
+    const gpsTracking = await emsDB.gPSTracking.findFirst({
       where: { unitId: event.unitId, isActive: true },
       orderBy: { timestamp: 'desc' },
     });
@@ -341,7 +345,7 @@ export class WebSocketService {
       throw new Error(`No active GPS tracking found for unit ${event.unitId}`);
     }
 
-    await prisma.geofenceEvent.create({
+    await emsDB.geofenceEvent.create({
       data: {
         gpsTrackingId: gpsTracking.id,
         facilityId: event.facilityId,
@@ -432,7 +436,8 @@ export class WebSocketService {
         socket.emit('units:status', demoStatus);
       } else {
         // Send real data from database
-        const units = await prisma.gPSTracking.findMany({
+        const emsDB = databaseManager.getEMSDB();
+        const units = await emsDB.gPSTracking.findMany({
           where: {
             unitId: { in: unitIds },
             isActive: true,

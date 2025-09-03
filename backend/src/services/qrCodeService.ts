@@ -1,7 +1,5 @@
 import QRCode from 'qrcode';
-import { PrismaClient, TransportRequest, Facility, User } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { databaseManager } from './databaseManager';
 
 export interface QRCodeData {
   type: 'TRANSPORT_REQUEST' | 'PATIENT_ID' | 'ROUTE_INFO' | 'FACILITY_INFO';
@@ -70,13 +68,15 @@ export class QRCodeService {
    */
   async generateTransportRequestQR(requestId: string): Promise<{ qrCodeDataUrl: string; qrCodeData: QRCodeData }> {
     try {
+      const hospitalDB = databaseManager.getHospitalDB();
+      const centerDB = databaseManager.getCenterDB();
+      
       // Fetch transport request with full details
-      const transportRequest = await prisma.transportRequest.findUnique({
+      const transportRequest = await hospitalDB.transportRequest.findUnique({
         where: { id: requestId },
         include: {
           originFacility: true,
           destinationFacility: true,
-          assignedAgency: true,
           assignedUnit: true,
           createdBy: true
         }
@@ -86,12 +86,20 @@ export class QRCodeService {
         throw new Error(`Transport request ${requestId} not found`);
       }
 
+      // Get assigned agency information if available
+      let assignedAgency = null;
+      if (transportRequest.assignedAgencyId) {
+        assignedAgency = await centerDB.eMSAgency.findUnique({
+          where: { id: transportRequest.assignedAgencyId },
+        });
+      }
+
       // Prepare QR code data
       const qrCodeData: QRCodeData = {
         type: 'TRANSPORT_REQUEST',
         id: requestId,
         timestamp: new Date().toISOString(),
-        data: this.prepareTransportRequestData(transportRequest),
+        data: this.prepareTransportRequestData(transportRequest, assignedAgency),
         metadata: {
           version: this.VERSION,
           generatedBy: transportRequest.createdBy.email,
@@ -117,13 +125,15 @@ export class QRCodeService {
    */
   async generatePatientQR(patientId: string): Promise<{ qrCodeDataUrl: string; qrCodeData: QRCodeData }> {
     try {
+      const hospitalDB = databaseManager.getHospitalDB();
+      const centerDB = databaseManager.getCenterDB();
+      
       // Find transport requests for this patient
-      const transportRequests = await prisma.transportRequest.findMany({
+      const transportRequests = await hospitalDB.transportRequest.findMany({
         where: { patientId },
         include: {
           originFacility: true,
           destinationFacility: true,
-          assignedAgency: true,
           assignedUnit: true
         },
         orderBy: { requestTimestamp: 'desc' },
@@ -136,13 +146,21 @@ export class QRCodeService {
 
       const latestRequest = transportRequests[0];
 
+      // Get assigned agency information if available
+      let assignedAgency = null;
+      if (latestRequest.assignedAgencyId) {
+        assignedAgency = await centerDB.eMSAgency.findUnique({
+          where: { id: latestRequest.assignedAgencyId },
+        });
+      }
+
       const qrCodeData: QRCodeData = {
         type: 'PATIENT_ID',
         id: patientId,
         timestamp: new Date().toISOString(),
         data: {
           patientId,
-          latestTransportRequest: this.prepareTransportRequestData(latestRequest),
+          latestTransportRequest: this.prepareTransportRequestData(latestRequest, assignedAgency),
           totalRequests: transportRequests.length
         },
         metadata: {
@@ -206,7 +224,9 @@ export class QRCodeService {
    */
   async generateFacilityQR(facilityId: string): Promise<{ qrCodeDataUrl: string; qrCodeData: QRCodeData }> {
     try {
-      const facility = await prisma.facility.findUnique({
+      const hospitalDB = databaseManager.getHospitalDB();
+      
+      const facility = await hospitalDB.facility.findUnique({
         where: { id: facilityId }
       });
 
@@ -313,7 +333,7 @@ export class QRCodeService {
   /**
    * Prepare transport request data for QR code
    */
-  private prepareTransportRequestData(transportRequest: any): TransportRequestQRData {
+  private prepareTransportRequestData(transportRequest: any, assignedAgency?: any): TransportRequestQRData {
     return {
       requestId: transportRequest.id,
       patientId: transportRequest.patientId,
@@ -338,11 +358,11 @@ export class QRCodeService {
       status: transportRequest.status,
       specialRequirements: transportRequest.specialRequirements,
       requestTimestamp: transportRequest.requestTimestamp.toISOString(),
-      assignedAgency: transportRequest.assignedAgency ? {
-        id: transportRequest.assignedAgency.id,
-        name: transportRequest.assignedAgency.name,
-        contactName: transportRequest.assignedAgency.contactName,
-        phone: transportRequest.assignedAgency.phone
+      assignedAgency: assignedAgency ? {
+        id: assignedAgency.id,
+        name: assignedAgency.name,
+        contactName: assignedAgency.contactName,
+        phone: assignedAgency.phone
       } : undefined,
       assignedUnit: transportRequest.assignedUnit ? {
         id: transportRequest.assignedUnit.id,

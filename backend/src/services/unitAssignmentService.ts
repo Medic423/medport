@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { databaseManager } from './databaseManager';
 import { 
   UnitAssignmentRequest, 
   UnitAssignmentResponse, 
@@ -10,8 +10,6 @@ import {
   AssignmentOptimizationResult
 } from '../types/unitAssignment';
 import { TransportLevel, UnitStatus, RequestStatus, Priority } from '@prisma/client';
-
-const prisma = new PrismaClient();
 
 export class UnitAssignmentService {
 
@@ -81,13 +79,15 @@ export class UnitAssignmentService {
     try {
       console.log('[UNIT_ASSIGNMENT_SERVICE] Getting all units with filters:', where);
       
-      const units = await prisma.unit.findMany({
+      const emsDB = databaseManager.getEMSDB();
+      const centerDB = databaseManager.getCenterDB();
+      
+      const units = await emsDB.unit.findMany({
         where: {
           isActive: true,
           ...where
         },
         include: {
-          agency: true,
           unitAvailability: {
             orderBy: { lastUpdated: 'desc' },
             take: 1
@@ -95,18 +95,29 @@ export class UnitAssignmentService {
         }
       });
 
-      return units.map(unit => ({
-        id: unit.id,
-        unitNumber: unit.unitNumber,
-        type: unit.type,
-        currentStatus: unit.currentStatus,
-        agencyName: unit.agency.name,
-        currentLocation: unit.currentLocation,
-        shiftStart: unit.shiftStart,
-        shiftEnd: unit.shiftEnd,
-        estimatedRevenue: 0, // Will be calculated based on assignments
-        lastStatusUpdate: unit.unitAvailability?.[0]?.lastUpdated || unit.updatedAt
-      }));
+      // Get agency information for each unit
+      const unitsWithAgencies = await Promise.all(
+        units.map(async (unit) => {
+          const agency = await centerDB.eMSAgency.findUnique({
+            where: { id: unit.agencyId },
+          });
+          
+          return {
+            id: unit.id,
+            unitNumber: unit.unitNumber,
+            type: unit.type,
+            currentStatus: unit.currentStatus,
+            agencyName: agency?.name || 'Unknown Agency',
+            currentLocation: unit.currentLocation,
+            shiftStart: unit.shiftStart,
+            shiftEnd: unit.shiftEnd,
+            estimatedRevenue: 0, // Will be calculated based on assignments
+            lastStatusUpdate: unit.unitAvailability?.[0]?.lastUpdated || unit.updatedAt
+          };
+        })
+      );
+
+      return unitsWithAgencies;
 
     } catch (error) {
       console.error('[UNIT_ASSIGNMENT_SERVICE] Error getting all units:', error);
@@ -120,6 +131,9 @@ export class UnitAssignmentService {
   async getAvailableUnits(transportLevel: TransportLevel, agencyId?: string): Promise<any[]> {
     try {
       console.log('[UNIT_ASSIGNMENT_SERVICE] Getting available units for:', { transportLevel, agencyId });
+      
+      const emsDB = databaseManager.getEMSDB();
+      const centerDB = databaseManager.getCenterDB();
       
       const where: any = {
       type: transportLevel,
@@ -136,10 +150,9 @@ export class UnitAssignmentService {
       where.agencyId = agencyId;
     }
 
-    const units = await prisma.unit.findMany({
+    const units = await emsDB.unit.findMany({
       where,
       include: {
-        agency: true,
         unitAvailability: {
           orderBy: {
             lastUpdated: 'desc'
@@ -149,12 +162,26 @@ export class UnitAssignmentService {
       }
     });
 
-    console.log(`[UNIT_ASSIGNMENT_SERVICE] Found ${units.length} available units for ${transportLevel}`);
-    units.forEach(unit => {
+    // Get agency information for each unit
+    const unitsWithAgencies = await Promise.all(
+      units.map(async (unit) => {
+        const agency = await centerDB.eMSAgency.findUnique({
+          where: { id: unit.agencyId },
+        });
+        
+        return {
+          ...unit,
+          agency: agency
+        };
+      })
+    );
+
+    console.log(`[UNIT_ASSIGNMENT_SERVICE] Found ${unitsWithAgencies.length} available units for ${transportLevel}`);
+    unitsWithAgencies.forEach(unit => {
       console.log(`[UNIT_ASSIGNMENT_SERVICE] Unit: ${unit.unitNumber} (${unit.type}) - Status: ${unit.currentStatus}`);
     });
 
-    return units;
+    return unitsWithAgencies;
     } catch (error) {
       console.error('[UNIT_ASSIGNMENT_SERVICE] Error getting available units:', error);
       return [];
@@ -170,7 +197,9 @@ export class UnitAssignmentService {
     assignmentTime: Date
   ): Promise<Array<{unitId: string, unitNumber: string, score: number, estimatedRevenue: number}>> {
     
-    const transportRequest = await prisma.transportRequest.findUnique({
+    const hospitalDB = databaseManager.getHospitalDB();
+    
+    const transportRequest = await hospitalDB.transportRequest.findUnique({
       where: { id: transportRequestId },
       include: {
         originFacility: true,
@@ -273,7 +302,9 @@ export class UnitAssignmentService {
    * Create unit assignment record
    */
   private async createUnitAssignment(assignmentData: any) {
-    return await prisma.unitAssignment.create({
+    const emsDB = databaseManager.getEMSDB();
+    
+    return await emsDB.unitAssignment.create({
       data: {
         unitId: assignmentData.unitId,
         unitAvailabilityId: await this.getUnitAvailabilityId(assignmentData.unitId),
@@ -290,14 +321,16 @@ export class UnitAssignmentService {
    * Get unit availability ID for assignment
    */
   private async getUnitAvailabilityId(unitId: string): Promise<string> {
-    const availability = await prisma.unitAvailability.findFirst({
+    const emsDB = databaseManager.getEMSDB();
+    
+    const availability = await emsDB.unitAvailability.findFirst({
       where: { unitId },
       orderBy: { lastUpdated: 'desc' }
     });
     
     if (!availability) {
       // Create new availability record if none exists
-      const newAvailability = await prisma.unitAvailability.create({
+      const newAvailability = await emsDB.unitAvailability.create({
         data: {
           unitId,
           status: UnitStatus.IN_USE,
@@ -314,7 +347,9 @@ export class UnitAssignmentService {
    * Update unit status
    */
   private async updateUnitStatus(unitId: string, status: UnitStatus) {
-    await prisma.unit.update({
+    const emsDB = databaseManager.getEMSDB();
+    
+    await emsDB.unit.update({
       where: { id: unitId },
       data: { currentStatus: status }
     });
@@ -324,7 +359,9 @@ export class UnitAssignmentService {
    * Update transport request status
    */
   private async updateTransportRequestStatus(transportRequestId: string, status: RequestStatus) {
-    await prisma.transportRequest.update({
+    const hospitalDB = databaseManager.getHospitalDB();
+    
+    await hospitalDB.transportRequest.update({
       where: { id: transportRequestId },
       data: { status }
     });
@@ -335,28 +372,41 @@ export class UnitAssignmentService {
    */
   async getUnitPerformanceMetrics(unitId: string, timeRange: { start: Date, end: Date }): Promise<UnitPerformanceMetrics> {
     try {
-      const assignments = await prisma.unitAssignment.findMany({
+      const emsDB = databaseManager.getEMSDB();
+      const hospitalDB = databaseManager.getHospitalDB();
+      
+      const assignments = await emsDB.unitAssignment.findMany({
         where: {
           unitId,
           startTime: { gte: timeRange.start },
           endTime: { lte: timeRange.end },
           status: 'COMPLETED'
-        },
-        include: {
-          transportRequest: {
+        }
+      });
+
+      // Get transport request details for each assignment
+      const assignmentsWithRequests = await Promise.all(
+        assignments.map(async (assignment) => {
+          const transportRequest = await hospitalDB.transportRequest.findUnique({
+            where: { id: assignment.transportRequestId },
             include: {
               originFacility: true,
               destinationFacility: true
             }
-          }
-        }
-      });
+          });
+          
+          return {
+            ...assignment,
+            transportRequest
+          };
+        })
+      );
 
       let totalMiles = 0;
       let totalRevenue = 0;
       let completedTransports = 0;
 
-      for (const assignment of assignments) {
+      for (const assignment of assignmentsWithRequests) {
         if (assignment.transportRequest) {
           // Calculate miles (in production, this would use actual distance matrix)
           const miles = this.calculateTransportMiles(assignment.transportRequest);
@@ -422,7 +472,10 @@ export class UnitAssignmentService {
    */
   async detectAssignmentConflicts(unitId: string, startTime: Date, endTime: Date): Promise<AssignmentConflict[]> {
     try {
-      const conflicts = await prisma.unitAssignment.findMany({
+      const emsDB = databaseManager.getEMSDB();
+      const hospitalDB = databaseManager.getHospitalDB();
+      
+      const conflicts = await emsDB.unitAssignment.findMany({
         where: {
           unitId,
           status: 'ACTIVE',
@@ -432,13 +485,24 @@ export class UnitAssignmentService {
               endTime: { gte: startTime }
             }
           ]
-        },
-        include: {
-          transportRequest: true
         }
       });
 
-      return conflicts.map(conflict => ({
+      // Get transport request details for each conflict
+      const conflictsWithRequests = await Promise.all(
+        conflicts.map(async (conflict) => {
+          const transportRequest = await hospitalDB.transportRequest.findUnique({
+            where: { id: conflict.transportRequestId },
+          });
+          
+          return {
+            ...conflict,
+            transportRequest
+          };
+        })
+      );
+
+      return conflictsWithRequests.map(conflict => ({
         conflictId: conflict.id,
         conflictingAssignmentId: conflict.id,
         conflictType: 'TIME_OVERLAP',
@@ -458,10 +522,12 @@ export class UnitAssignmentService {
    */
   async getUnitAvailabilityMatrix(): Promise<UnitAvailabilityMatrix> {
     try {
-      const units = await prisma.unit.findMany({
+      const emsDB = databaseManager.getEMSDB();
+      const centerDB = databaseManager.getCenterDB();
+      
+      const units = await emsDB.unit.findMany({
         where: { isActive: true },
         include: {
-          agency: true,
           unitAvailability: {
             orderBy: { lastUpdated: 'desc' },
             take: 1
@@ -476,8 +542,22 @@ export class UnitAssignmentService {
         }
       });
 
+      // Get agency information for each unit
+      const unitsWithAgencies = await Promise.all(
+        units.map(async (unit) => {
+          const agency = await centerDB.eMSAgency.findUnique({
+            where: { id: unit.agencyId },
+          });
+          
+          return {
+            ...unit,
+            agency: agency
+          };
+        })
+      );
+
       const matrix = {
-        totalUnits: units.length,
+        totalUnits: unitsWithAgencies.length,
         availableUnits: 0,
         inUseUnits: 0,
         outOfServiceUnits: 0,
@@ -488,10 +568,10 @@ export class UnitAssignmentService {
         lastUpdated: new Date()
       };
 
-      for (const unit of units) {
+      for (const unit of unitsWithAgencies) {
         const status = unit.currentStatus;
         const type = unit.type;
-        const agencyName = unit.agency.name;
+        const agencyName = unit.agency?.name || 'Unknown Agency';
 
         // Count by status
         matrix.unitsByStatus[status] = (matrix.unitsByStatus[status] || 0) + 1;
@@ -535,7 +615,9 @@ export class UnitAssignmentService {
       console.log('[UNIT_ASSIGNMENT_SERVICE] Optimizing unit assignments with params:', optimizationParams);
 
       // Get unassigned transport requests
-      const unassignedRequests = await prisma.transportRequest.findMany({
+      const hospitalDB = databaseManager.getHospitalDB();
+      
+      const unassignedRequests = await hospitalDB.transportRequest.findMany({
         where: {
           status: RequestStatus.PENDING,
           assignedUnitId: null
@@ -626,7 +708,7 @@ export class UnitAssignmentService {
 
             // Update transport request status and assign unit
             await this.updateTransportRequestStatus(request.id, 'SCHEDULED');
-            await prisma.transportRequest.update({
+            await hospitalDB.transportRequest.update({
               where: { id: request.id },
               data: { assignedUnitId: bestUnit.unit.id }
             });
@@ -679,20 +761,14 @@ export class UnitAssignmentService {
    */
   async getAssignments(where: any, skip: number, limit: number): Promise<any[]> {
     try {
-      return await prisma.unitAssignment.findMany({
+      const emsDB = databaseManager.getEMSDB();
+      const centerDB = databaseManager.getCenterDB();
+      const hospitalDB = databaseManager.getHospitalDB();
+      
+      const assignments = await emsDB.unitAssignment.findMany({
         where,
         include: {
-          unit: {
-            include: {
-              agency: true
-            }
-          },
-          transportRequest: {
-            include: {
-              originFacility: true,
-              destinationFacility: true
-            }
-          }
+          unit: true
         },
         orderBy: {
           startTime: 'desc'
@@ -700,6 +776,34 @@ export class UnitAssignmentService {
         skip,
         take: limit
       });
+
+      // Get agency and transport request details for each assignment
+      const assignmentsWithDetails = await Promise.all(
+        assignments.map(async (assignment) => {
+          const agency = await centerDB.eMSAgency.findUnique({
+            where: { id: assignment.unit.agencyId },
+          });
+          
+          const transportRequest = await hospitalDB.transportRequest.findUnique({
+            where: { id: assignment.transportRequestId },
+            include: {
+              originFacility: true,
+              destinationFacility: true
+            }
+          });
+          
+          return {
+            ...assignment,
+            unit: {
+              ...assignment.unit,
+              agency: agency
+            },
+            transportRequest
+          };
+        })
+      );
+
+      return assignmentsWithDetails;
     } catch (error) {
       console.error('[UNIT_ASSIGNMENT_SERVICE] Error getting assignments:', error);
       throw error;
@@ -711,7 +815,9 @@ export class UnitAssignmentService {
    */
   async getAssignmentCount(where: any): Promise<number> {
     try {
-      return await prisma.unitAssignment.count({ where });
+      const emsDB = databaseManager.getEMSDB();
+      
+      return await emsDB.unitAssignment.count({ where });
     } catch (error) {
       console.error('[UNIT_ASSIGNMENT_SERVICE] Error getting assignment count:', error);
       throw error;
@@ -723,7 +829,9 @@ export class UnitAssignmentService {
    */
   async updateAssignment(assignmentId: string, updateData: any): Promise<any> {
     try {
-      return await prisma.unitAssignment.update({
+      const emsDB = databaseManager.getEMSDB();
+      
+      return await emsDB.unitAssignment.update({
         where: { id: assignmentId },
         data: updateData
       });
@@ -738,7 +846,9 @@ export class UnitAssignmentService {
    */
   async cancelAssignment(assignmentId: string): Promise<any> {
     try {
-      const assignment = await prisma.unitAssignment.update({
+      const emsDB = databaseManager.getEMSDB();
+      
+      const assignment = await emsDB.unitAssignment.update({
         where: { id: assignmentId },
         data: { 
           status: 'CANCELLED',

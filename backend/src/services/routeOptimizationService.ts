@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { databaseManager } from './databaseManager';
 
 export class RouteOptimizationService {
   async optimizeRoutes(optimizationRequest: any) {

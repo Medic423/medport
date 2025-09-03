@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { databaseManager } from './databaseManager';
 import { calculateDistance, calculateBearing } from '../utils/geoUtils';
-
-const prisma = new PrismaClient();
 
 export interface GPSLocation {
   latitude: number;
@@ -38,8 +36,10 @@ export class RealTimeTrackingService {
    */
   async updateUnitLocation(update: LocationUpdate): Promise<any> {
     try {
+      const emsDB = databaseManager.getEMSDB();
+      
       // Get or create GPS tracking record for the unit
-      let gpsTracking = await prisma.gPSTracking.findFirst({
+      let gpsTracking = await emsDB.gPSTracking.findFirst({
         where: {
           unitId: update.unitId,
           isActive: true,
@@ -51,7 +51,7 @@ export class RealTimeTrackingService {
 
       if (!gpsTracking) {
         // Create new GPS tracking record
-        gpsTracking = await prisma.gPSTracking.create({
+        gpsTracking = await emsDB.gPSTracking.create({
           data: {
             unitId: update.unitId,
             latitude: update.location.latitude,
@@ -69,7 +69,7 @@ export class RealTimeTrackingService {
         });
       } else {
         // Update existing GPS tracking record
-        gpsTracking = await prisma.gPSTracking.update({
+        gpsTracking = await emsDB.gPSTracking.update({
           where: { id: gpsTracking.id },
           data: {
             latitude: update.location.latitude,
@@ -86,7 +86,7 @@ export class RealTimeTrackingService {
       }
 
       // Store location in history
-      await prisma.locationHistory.create({
+      await emsDB.locationHistory.create({
         data: {
           gpsTrackingId: gpsTracking.id,
           latitude: update.location.latitude,
@@ -101,7 +101,7 @@ export class RealTimeTrackingService {
       });
 
       // Update unit's current location
-      await prisma.unit.update({
+      await emsDB.unit.update({
         where: { id: update.unitId },
         data: {
           currentLocation: {
@@ -130,7 +130,10 @@ export class RealTimeTrackingService {
    */
   async calculateETA(request: ETARequest): Promise<any> {
     try {
-      const gpsTracking = await prisma.gPSTracking.findFirst({
+      const emsDB = databaseManager.getEMSDB();
+      const hospitalDB = databaseManager.getHospitalDB();
+      
+      const gpsTracking = await emsDB.gPSTracking.findFirst({
         where: {
           unitId: request.unitId,
           isActive: true,
@@ -147,7 +150,7 @@ export class RealTimeTrackingService {
       // Get destination coordinates
       let destinationCoords;
       if (request.destinationType === 'FACILITY') {
-        const facility = await prisma.facility.findUnique({
+        const facility = await hospitalDB.facility.findUnique({
           where: { id: request.destinationId },
         });
         if (!facility?.coordinates) {
@@ -178,7 +181,7 @@ export class RealTimeTrackingService {
       const eta = new Date(Date.now() + etaMinutes * 60 * 1000);
 
       // Store ETA update
-      const etaUpdate = await prisma.eTAUpdate.create({
+      const etaUpdate = await emsDB.eTAUpdate.create({
         data: {
           gpsTrackingId: gpsTracking.id,
           destinationId: request.destinationId,
@@ -215,20 +218,25 @@ export class RealTimeTrackingService {
    */
   private async checkGeofenceEvents(gpsTrackingId: string, location: GPSLocation): Promise<void> {
     try {
+      const emsDB = databaseManager.getEMSDB();
+      const hospitalDB = databaseManager.getHospitalDB();
+      
       // Get all active geofences
-      const geofences = await prisma.geofenceEvent.findMany({
+      const geofences = await emsDB.geofenceEvent.findMany({
         where: {
           isActive: true,
-        },
-        include: {
-          facility: true,
         },
       });
 
       for (const geofence of geofences) {
-        if (geofence.facility) {
-          const facilityCoords = geofence.facility.coordinates as any;
-          if (facilityCoords) {
+        if (geofence.facilityId) {
+          // Get facility coordinates from Hospital DB
+          const facility = await hospitalDB.facility.findUnique({
+            where: { id: geofence.facilityId },
+          });
+          
+          if (facility?.coordinates) {
+            const facilityCoords = facility.coordinates as any;
             const distance = calculateDistance(
               location.latitude,
               location.longitude,
@@ -239,7 +247,7 @@ export class RealTimeTrackingService {
             // Check if unit is within geofence radius
             if (distance <= geofence.radius / 1000) { // Convert meters to kilometers
               // Create or update geofence event
-              await prisma.geofenceEvent.upsert({
+              await emsDB.geofenceEvent.upsert({
                 where: {
                   id: geofence.id,
                 },
@@ -273,8 +281,11 @@ export class RealTimeTrackingService {
    */
   private async checkRouteDeviations(gpsTrackingId: string, location: GPSLocation): Promise<void> {
     try {
+      const emsDB = databaseManager.getEMSDB();
+      const hospitalDB = databaseManager.getHospitalDB();
+      
       // Get the unit ID from the GPS tracking record
-      const gpsTracking = await prisma.gPSTracking.findUnique({
+      const gpsTracking = await emsDB.gPSTracking.findUnique({
         where: { id: gpsTrackingId },
         select: { unitId: true },
       });
@@ -282,17 +293,13 @@ export class RealTimeTrackingService {
       if (!gpsTracking) return;
 
       // Get active routes for the unit
-      const routes = await prisma.route.findMany({
+      const routes = await emsDB.route.findMany({
         where: {
           assignedUnitId: gpsTracking.unitId,
           status: 'IN_PROGRESS',
         },
         include: {
-          routeStops: {
-            include: {
-              facility: true,
-            },
-          },
+          routeStops: true,
         },
       });
 
@@ -310,7 +317,7 @@ export class RealTimeTrackingService {
 
           // If deviation is more than 1km, create a route deviation alert
           if (deviation > 1) {
-            await prisma.routeDeviation.create({
+            await emsDB.routeDeviation.create({
               data: {
                 gpsTrackingId,
                 routeId: route.id,
@@ -354,8 +361,10 @@ export class RealTimeTrackingService {
    */
   private async getTrafficFactor(latitude: number, longitude: number): Promise<number> {
     try {
+      const emsDB = databaseManager.getEMSDB();
+      
       // Check for active traffic conditions in the area
-      const trafficConditions = await prisma.trafficCondition.findMany({
+      const trafficConditions = await emsDB.trafficCondition.findMany({
         where: {
           isActive: true,
           startTime: { lte: new Date() },
@@ -380,8 +389,10 @@ export class RealTimeTrackingService {
    */
   private async getWeatherFactor(latitude: number, longitude: number): Promise<number> {
     try {
+      const emsDB = databaseManager.getEMSDB();
+      
       // Check for active weather impacts in the area
-      const weatherImpacts = await prisma.weatherImpact.findMany({
+      const weatherImpacts = await emsDB.weatherImpact.findMany({
         where: {
           isActive: true,
           startTime: { lte: new Date() },
@@ -406,36 +417,46 @@ export class RealTimeTrackingService {
    */
   async getActiveUnitLocations(): Promise<any[]> {
     try {
-      const activeUnits = await prisma.gPSTracking.findMany({
+      const emsDB = databaseManager.getEMSDB();
+      const centerDB = databaseManager.getCenterDB();
+      
+      const activeUnits = await emsDB.gPSTracking.findMany({
         where: {
           isActive: true,
         },
         include: {
-          unit: {
-            include: {
-              agency: true,
-            },
-          },
+          unit: true,
         },
         orderBy: {
           timestamp: 'desc',
         },
       });
 
-      return activeUnits.map(tracking => ({
-        id: tracking.id,
-        unitId: tracking.unitId,
-        unitNumber: tracking.unit.unitNumber,
-        agencyName: tracking.unit.agency.name,
-        latitude: tracking.latitude,
-        longitude: tracking.longitude,
-        speed: tracking.speed,
-        heading: tracking.heading,
-        batteryLevel: tracking.batteryLevel,
-        signalStrength: tracking.signalStrength,
-        timestamp: tracking.timestamp,
-        lastUpdated: tracking.timestamp,
-      }));
+      // Get agency information for each unit
+      const unitsWithAgencies = await Promise.all(
+        activeUnits.map(async (tracking) => {
+          const agency = await centerDB.eMSAgency.findUnique({
+            where: { id: tracking.unit.agencyId },
+          });
+          
+          return {
+            id: tracking.id,
+            unitId: tracking.unitId,
+            unitNumber: tracking.unit.unitNumber,
+            agencyName: agency?.name || 'Unknown Agency',
+            latitude: tracking.latitude,
+            longitude: tracking.longitude,
+            speed: tracking.speed,
+            heading: tracking.heading,
+            batteryLevel: tracking.batteryLevel,
+            signalStrength: tracking.signalStrength,
+            timestamp: tracking.timestamp,
+            lastUpdated: tracking.timestamp,
+          };
+        })
+      );
+
+      return unitsWithAgencies;
     } catch (error) {
       console.error('Error getting active unit locations:', error);
       throw error;
@@ -447,9 +468,10 @@ export class RealTimeTrackingService {
    */
   async getUnitLocationHistory(unitId: string, hours: number = 24): Promise<any[]> {
     try {
+      const emsDB = databaseManager.getEMSDB();
       const cutoffTime = new Date(Date.now() - hours * 60 * 60 * 1000);
 
-      const history = await prisma.locationHistory.findMany({
+      const history = await emsDB.locationHistory.findMany({
         where: {
           gpsTracking: {
             unitId,
@@ -481,9 +503,11 @@ export class RealTimeTrackingService {
    */
   async getUnitGeofenceEvents(unitId: string, hours: number = 24): Promise<any[]> {
     try {
+      const emsDB = databaseManager.getEMSDB();
+      const hospitalDB = databaseManager.getHospitalDB();
       const cutoffTime = new Date(Date.now() - hours * 60 * 60 * 1000);
 
-      const events = await prisma.geofenceEvent.findMany({
+      const events = await emsDB.geofenceEvent.findMany({
         where: {
           gpsTracking: {
             unitId,
@@ -492,22 +516,30 @@ export class RealTimeTrackingService {
             gte: cutoffTime,
           },
         },
-        include: {
-          facility: true,
-        },
         orderBy: {
           timestamp: 'desc',
         },
       });
 
-      return events.map(event => ({
-        id: event.id,
-        facilityName: event.facility?.name,
-        geofenceType: event.geofenceType,
-        eventType: event.eventType,
-        timestamp: event.timestamp,
-        notes: event.notes,
-      }));
+      // Get facility information for each event
+      const eventsWithFacilities = await Promise.all(
+        events.map(async (event) => {
+          const facility = await hospitalDB.facility.findUnique({
+            where: { id: event.facilityId },
+          });
+          
+          return {
+            id: event.id,
+            facilityName: facility?.name || 'Unknown Facility',
+            geofenceType: event.geofenceType,
+            eventType: event.eventType,
+            timestamp: event.timestamp,
+            notes: event.notes,
+          };
+        })
+      );
+
+      return eventsWithFacilities;
     } catch (error) {
       console.error('Error getting unit geofence events:', error);
       throw error;
@@ -519,9 +551,10 @@ export class RealTimeTrackingService {
    */
   async getUnitRouteDeviations(unitId: string, hours: number = 24): Promise<any[]> {
     try {
+      const emsDB = databaseManager.getEMSDB();
       const cutoffTime = new Date(Date.now() - hours * 60 * 60 * 1000);
 
-      const deviations = await prisma.routeDeviation.findMany({
+      const deviations = await emsDB.routeDeviation.findMany({
         where: {
           gpsTracking: {
             unitId,
