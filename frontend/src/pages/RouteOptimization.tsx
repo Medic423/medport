@@ -282,9 +282,6 @@ const RouteOptimization: React.FC = () => {
                 <div className="text-sm font-medium text-gray-900">
                   {user?.name || 'Demo User'}
                 </div>
-                <div className="text-sm text-gray-500">
-                  {user?.role || 'COORDINATOR'}
-                </div>
                 {isDemoMode && (
                   <div className="text-xs text-blue-600 font-medium">
                     Demo Mode
