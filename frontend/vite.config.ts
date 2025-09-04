@@ -9,12 +9,13 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     server: {
-      port: 3002,
-      strictPort: true, // Don't try other ports if 3002 is busy
-      host: true, // Allow external connections
+      port: 3002, // Back to standard port
+      strictPort: true,
+      host: 'localhost',
+      hmr: false, // Disable HMR to avoid WebSocket issues
       proxy: {
         '/api': {
-          target: 'http://localhost:5002',
+          target: 'http://localhost:5001',
           changeOrigin: true,
           secure: false
         }
