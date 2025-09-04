@@ -6,7 +6,7 @@ export interface AuthRequest extends Request {
     id: string;
     email: string;
     role: string;
-    userType?: string;
+    userType: 'hospital' | 'ems' | 'center';
   };
 }
 
@@ -25,7 +25,8 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
     req.user = {
       id: 'cmf2mdpnx0000ccuti77tb3s9', // Use actual demo user ID from database
       email: 'demo@medport.com',
-      role: 'ADMIN'
+      role: 'ADMIN',
+      userType: 'hospital' // Demo user gets hospital access for testing
     };
     return next();
   }
@@ -52,11 +53,30 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
       userType: decoded.userType
     });
     
+    // Map role to userType for unified system
+    let userType: 'hospital' | 'ems' | 'center';
+    if (decoded.userType) {
+      userType = decoded.userType;
+    } else if (decoded.role) {
+      // Legacy role mapping for backward compatibility
+      if (decoded.role === 'ADMIN' || decoded.role === 'COORDINATOR') {
+        userType = 'center';
+      } else if (decoded.role === 'BILLING_STAFF' || decoded.role === 'HOSPITAL_STAFF') {
+        userType = 'hospital';
+      } else if (decoded.role === 'TRANSPORT_AGENCY' || decoded.role === 'EMS_PROVIDER') {
+        userType = 'ems';
+      } else {
+        userType = 'hospital'; // Default fallback
+      }
+    } else {
+      userType = 'hospital'; // Default fallback
+    }
+    
     req.user = {
       id: decoded.id,
       email: decoded.email,
       role: decoded.role,
-      userType: decoded.userType
+      userType: userType
     };
     
     // Validate user object was set
@@ -72,4 +92,52 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
   }
 };
 
-// requireRole function removed - using simple user type system instead
+// Freemium authorization middleware
+export const requireFeatureAccess = (featureName: string) => {
+  return async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      // Import FreemiumService dynamically to avoid circular dependencies
+      const { FreemiumService } = await import('../services/freemiumService');
+      
+      if (!req.user) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+
+      // Center users have access to all features
+      if (req.user.userType === 'center') {
+        return next();
+      }
+
+      // Check if user has access to the specific feature
+      const hasAccess = await FreemiumService.hasFeatureAccess(req.user.id, featureName as any);
+      
+      if (!hasAccess) {
+        return res.status(403).json({ 
+          message: `Feature '${featureName}' is not enabled for your account`,
+          feature: featureName,
+          upgradeRequired: true
+        });
+      }
+
+      next();
+    } catch (error) {
+      console.error('[AUTH] Feature access check failed:', error);
+      return res.status(500).json({ message: 'Failed to verify feature access' });
+    }
+  };
+};
+
+// User type authorization middleware
+export const requireUserType = (userTypes: ('hospital' | 'ems' | 'center')[]) => {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    if (!userTypes.includes(req.user.userType)) {
+      return res.status(403).json({ message: 'Insufficient permissions for this user type' });
+    }
+
+    next();
+  };
+};

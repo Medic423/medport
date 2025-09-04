@@ -75,10 +75,20 @@ export class TransportRequestService {
       throw new Error('One or both facilities not found');
     }
 
+    // Get the hospital ID from the user who created the request
+    const createdByUser = await hospitalDB.hospitalUser.findUnique({
+      where: { id: data.createdById },
+      select: { id: true }
+    });
+
+    if (!createdByUser) {
+      throw new Error('User not found');
+    }
+
     // Create the transport request
     const transportRequest = await hospitalDB.transportRequest.create({
       data: {
-        hospitalId: 'default-hospital', // TODO: Get from user context
+        hospitalId: data.createdById, // Use the user ID as hospital ID for now
         patientId,
         originFacilityId: data.originFacilityId,
         destinationFacilityId: data.destinationFacilityId,
