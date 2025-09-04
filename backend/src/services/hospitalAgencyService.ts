@@ -26,13 +26,10 @@ export class HospitalAgencyService {
         isActive: true
       };
 
-      // Filter by transport level if specified
+      // Filter by transport level if specified (using capabilities field)
       if (filters.transportLevel) {
-        whereClause.units = {
-          some: {
-            type: filters.transportLevel,
-            isActive: true
-          }
+        whereClause.capabilities = {
+          has: filters.transportLevel
         };
       }
 
