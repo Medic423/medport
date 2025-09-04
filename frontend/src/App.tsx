@@ -16,6 +16,7 @@ import SimpleSettings from './components/SimpleSettings';
 import FreemiumManagement from './components/FreemiumManagement';
 import Analytics from './pages/Analytics';
 import AgencyPortal from './pages/AgencyPortal';
+import AgencyDashboard from './components/AgencyDashboard';
 import UnitManagement from './components/UnitManagement';
 import BidManagement from './components/BidManagement';
 import MatchingSystem from './components/MatchingSystem';
