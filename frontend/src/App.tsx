@@ -48,7 +48,7 @@ function App() {
   useEffect(() => {
     // Check if user is already authenticated
     const token = localStorage.getItem('token');
-    const userRole = localStorage.getItem('userRole');
+    const userType = localStorage.getItem('userType');
     const landingPage = localStorage.getItem('landingPage');
     
     // Check if we should force logout (for debugging)
@@ -66,23 +66,29 @@ function App() {
       return;
     }
     
-    console.log('[App] Authentication check:', { token: !!token, userRole, landingPage });
+    console.log('[App] Authentication check:', { token: !!token, userType, landingPage });
     
-    if (token && userRole) {
+    if (token && userType) {
       console.log('[App] User is authenticated, setting up session');
       setIsAuthenticated(true);
       setUserData({
-        role: userRole,
+        userType: userType,
         email: localStorage.getItem('userEmail')
       });
       
       // Fetch navigation data for the authenticated user
       fetchNavigation(token);
       
-      // Use the stored landing page or default to status-board
-      if (landingPage) {
+      // Use the stored current page, landing page, or default to status-board
+      const storedCurrentPage = localStorage.getItem('currentPage');
+      if (storedCurrentPage) {
+        console.log('[App] Restoring current page from localStorage:', storedCurrentPage);
+        setCurrentPage(storedCurrentPage);
+      } else if (landingPage) {
+        console.log('[App] Using landing page:', landingPage);
         setCurrentPage(landingPage);
       } else {
+        console.log('[App] Using default page: status-board');
         setCurrentPage('status-board');
       }
     } else {
@@ -135,9 +141,10 @@ function App() {
   const handleLogout = () => {
     // Clear all authentication data
     localStorage.removeItem('token');
-    localStorage.removeItem('userRole');
+    localStorage.removeItem('userType');
     localStorage.removeItem('userEmail');
     localStorage.removeItem('landingPage');
+    localStorage.removeItem('currentPage');
     localStorage.removeItem('demoMode');
     
     setIsAuthenticated(false);
@@ -146,7 +153,10 @@ function App() {
   };
 
   const handleNavigation = (page: string) => {
+    console.log('[App] Navigating to page:', page);
     setCurrentPage(page);
+    // Store the current page in localStorage for persistence across refreshes
+    localStorage.setItem('currentPage', page);
   };
 
   const handleTripSubmit = async (formData: any) => {
@@ -280,6 +290,22 @@ function App() {
         {currentPage === 'qr-code-system' && <QRCodeSystem />}
         {currentPage === 'offline-capabilities' && <OfflineCapabilities />}
         {currentPage === 'transport-center-services' && <TransportCenterServiceManagement />}
+        
+        {/* Fallback route for unknown pages */}
+        {currentPage !== 'login' && !isAuthenticated && (
+          <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="text-center">
+              <h1 className="text-2xl font-bold text-gray-900 mb-4">Page Not Found</h1>
+              <p className="text-gray-600 mb-4">The page you're looking for doesn't exist.</p>
+              <button
+                onClick={() => setCurrentPage('login')}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Go to Login
+              </button>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
