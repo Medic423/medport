@@ -15,7 +15,7 @@ import transportRequestRoutes from './routes/transportRequests';
 // import facilityRoutes from './routes/facilities';
 // import airMedicalRoutes from './routes/airMedical';
 // import emergencyDepartmentRoutes from './routes/emergencyDepartment';
-// import agencyRoutes from './routes/agency';
+import agencyRoutes from './routes/agency';
 import hospitalRoutes from './routes/hospital';
 import hospitalAgencyRoutes from './routes/hospitalAgencies';
 import centerEmsAgencyRoutes from './routes/centerEmsAgencies';
@@ -43,7 +43,7 @@ const PORT = process.env.PORT || 5001;
 app.use(helmet());
 // CORS configuration
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN || "http://localhost:3002",
+  origin: process.env.CORS_ORIGIN || ["http://localhost:3002", "http://localhost:3003"],
   credentials: true,
   optionsSuccessStatus: 200
 };
@@ -63,7 +63,7 @@ app.use('/api/transport-requests', transportRequestRoutes);
 // app.use('/api/facilities', facilityRoutes);
 // app.use('/api/air-medical', airMedicalRoutes);
 // app.use('/api/emergency-department', emergencyDepartmentRoutes);
-// app.use('/api/agency', agencyRoutes);
+app.use('/api/agency', agencyRoutes);
 app.use('/api/hospital', hospitalRoutes);
 app.use('/api/hospital-agencies', hospitalAgencyRoutes);
 app.use('/api/center/ems-agencies', centerEmsAgencyRoutes);

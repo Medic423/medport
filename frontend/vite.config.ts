@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     server: {
-      port: 3002, // Back to standard port
+      port: 3003, // Use port 3003 to avoid root process conflicts
       strictPort: true,
       host: 'localhost',
       hmr: false, // Disable HMR to avoid WebSocket issues

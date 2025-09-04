@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import agencyService from '../services/agencyService';
-import transportBiddingService from '../services/transportBiddingService';
+import { TransportBiddingService } from '../services/transportBiddingService';
 import { authenticateToken } from '../middleware/auth';
 
 // Custom authentication middleware for agency routes
@@ -27,6 +27,7 @@ const authenticateAgencyToken = (req: any, res: any, next: any) => {
 };
 
 const prisma = new PrismaClient();
+const transportBiddingService = new TransportBiddingService();
 
 const router = express.Router();
 
@@ -775,7 +776,7 @@ router.get('/transports/available', authenticateAgencyToken, async (req, res) =>
       destinationCity: req.query.destinationCity as string
     };
     
-    const transports = await transportBiddingService.getAvailableTransportsForAgency(agencyId, filters);
+    const transports = await transportBiddingService.getAvailableTransportRequests(agencyId);
     
     res.json({
       success: true,
@@ -962,7 +963,7 @@ router.get('/bids', authenticateAgencyToken, async (req, res) => {
     }
     
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
-    const bids = await transportBiddingService.getAgencyBidHistory(agencyId, limit);
+    const bids = await transportBiddingService.getAgencyBids(agencyId, {});
     
     res.json({
       success: true,
@@ -1012,7 +1013,7 @@ router.get('/bids/stats', authenticateAgencyToken, async (req, res) => {
       });
     }
     
-    const stats = await transportBiddingService.getAgencyBidStats(agencyId);
+    const stats = await transportBiddingService.getAgencyBiddingStats(agencyId);
     
     res.json({
       success: true,
@@ -1055,7 +1056,7 @@ router.put('/bids/:bidId/withdraw', authenticateAgencyToken, async (req, res) =>
       });
     }
     
-    const updatedBid = await transportBiddingService.withdrawBid(bidId, agencyId);
+    const updatedBid = await transportBiddingService.updateBidStatus(bidId, 'EXPIRED');
     
     res.json({
       success: true,
