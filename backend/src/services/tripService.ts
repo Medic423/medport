@@ -171,9 +171,18 @@ export class TripService {
           select: { id: true }
         });
         const locationIds = locations.map(loc => loc.id);
+        
         if (locationIds.length > 0) {
-          where.fromLocationId = { in: locationIds };
-          console.log('MULTI_LOC: Filtering by user locations:', locationIds.length, 'locations');
+          // Multi-location user: filter by their locations OR trips they created
+          where.OR = [
+            { fromLocationId: { in: locationIds } },
+            { healthcareCreatedById: filters.healthcareUserId }
+          ];
+          console.log('MULTI_LOC: Filtering by user locations OR created trips:', locationIds.length, 'locations');
+        } else {
+          // Single-facility user: filter by trips they created
+          where.healthcareCreatedById = filters.healthcareUserId;
+          console.log('SINGLE_LOC: Filtering by created user ID:', filters.healthcareUserId);
         }
       }
       if (filters?.transportLevel) {

@@ -96,9 +96,10 @@ router.post('/', async (req, res) => {
  * POST /api/trips/enhanced
  * Create a new enhanced transport request with comprehensive patient and clinical details
  */
-router.post('/enhanced', async (req, res) => {
+router.post('/enhanced', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     console.log('TCC_DEBUG: Create enhanced trip request received:', req.body);
+    console.log('TCC_DEBUG: Authenticated user:', req.user);
     
     const {
       patientId,
@@ -166,7 +167,8 @@ router.post('/enhanced', async (req, res) => {
       selectedAgencies: selectedAgencies || [],
       notificationRadius: notificationRadius || 100,
       notes,
-      priority
+      priority,
+      healthcareUserId: req.user?.userType === 'HEALTHCARE' ? req.user.id : undefined // ✅ CRITICAL: Set healthcare user ID
     };
 
     const result = await tripService.createEnhancedTrip(enhancedTripData);
@@ -189,12 +191,14 @@ router.post('/enhanced', async (req, res) => {
 router.get('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     console.log('TCC_DEBUG: Get trips request with query:', req.query);
+    console.log('TCC_DEBUG: Authenticated user:', req.user);
     
     const filters = {
       status: req.query.status as string,
       transportLevel: req.query.transportLevel as string,
       priority: req.query.priority as string,
       agencyId: req.query.agencyId as string,
+      healthcareUserId: req.user?.userType === 'HEALTHCARE' ? req.user.id : undefined, // ✅ NEW: Filter by healthcare user
     };
 
     const result = await tripService.getTrips(filters);

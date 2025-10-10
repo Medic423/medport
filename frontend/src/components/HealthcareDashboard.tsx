@@ -112,7 +112,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
 
   const loadTrips = async () => {
     try {
-      const response = await api.get('/trips');
+      const response = await api.get('/api/trips');
       if (response.data) {
         const data = response.data;
         if (data.success && data.data) {
