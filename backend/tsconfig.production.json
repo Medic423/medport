@@ -1,0 +1,45 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "lib": ["ES2020", "DOM"],
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "moduleResolution": "node"
+  },
+  "include": [
+    "src/production-index.ts",
+    "src/services/productionDatabaseManager.ts",
+    "src/routes/**/*",
+    "src/middleware/**/*",
+    "src/services/authService.ts",
+    "src/services/analyticsService.ts",
+    "src/services/agencyService.ts",
+    "src/services/facilityService.ts",
+    "src/services/hospitalService.ts",
+    "src/services/tripService.ts",
+    "src/services/distanceService.ts",
+    "src/services/patientIdService.ts",
+    "src/services/revenueOptimizer.ts",
+    "src/services/backhaulDetector.ts",
+    "src/services/multiUnitOptimizer.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/tests/**/*",
+    "src/testData/**/*",
+    "src/testRunner.ts",
+    "src/services/databaseManager.ts",
+    "src/services/unitService.ts",
+    "src/index.ts"
+  ]
+}

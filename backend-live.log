@@ -1,0 +1,1011 @@
+
+> tcc-backend@1.0.0 dev
+> nodemon src/index.ts
+
+[33m[nodemon] 3.1.10[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): *.*[39m
+[33m[nodemon] watching extensions: ts,json[39m
+[32m[nodemon] starting `ts-node src/index.ts`[39m
+/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:859
+    return new TSError(diagnosticText, diagnosticCodes, diagnostics);
+           ^
+TSError: ⨯ Unable to compile TypeScript:
+src/routes/auth.ts(464,9): error TS2353: Object literal may only specify known properties, and 'latitude' does not exist in type '(Without<EMSAgencyCreateInput, EMSAgencyUncheckedCreateInput> & EMSAgencyUncheckedCreateInput) | (Without<...> & EMSAgencyCreateInput)'.
+
+    at createTSError (/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:859:12)
+    at reportTSError (/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:863:19)
+    at getOutput (/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:1077:36)
+    at Object.compile (/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:1433:41)
+    at Module.m._compile (/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:1617:30)
+    at node:internal/modules/cjs/loader:1824:10
+    at Object.require.extensions.<computed> [as .ts] (/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:1621:12)
+    at Module.load (node:internal/modules/cjs/loader:1427:32)
+    at Module._load (node:internal/modules/cjs/loader:1250:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14) {
+  diagnosticCodes: [ 2353 ]
+}
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/index.ts`[39m
+TCC_DEBUG: AuthService constructor - JWT_SECRET loaded: YES
+TCC_DEBUG: JWT_SECRET value: your-super-secret-jwt-key-here
+🚀 TCC Backend server running on port 5001
+📊 Health check: http://localhost:5001/health
+🔐 Auth endpoint: http://localhost:5001/api/auth/login
+🚗 Trips API: http://localhost:5001/api/trips
+🏥 Hospitals API: http://localhost:5001/api/tcc/hospitals
+🚑 Agencies API: http://localhost:5001/api/tcc/agencies
+🏢 Facilities API: http://localhost:5001/api/tcc/facilities
+📈 Analytics API: http://localhost:5001/api/tcc/analytics
+TCC_DEBUG: EMS Login request received: { email: 'test.ems2@test.com', password: '***' }
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg5fquvh0000yzo4jpf098t1',
+  email: 'test.ems2@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: EMS Login request received: { email: 'test.ems@test.com', password: '***' }
+TCC_DEBUG: User missing agencyId, creating/finding agency...
+TCC_DEBUG: Creating new agency for existing user...
+TCC_DEBUG: Updated user with agencyId: cmg5fr7iu0003yzo409b65pll
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg5fr7iu0003yzo409b65pll',
+  email: 'test.ems@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: EMS Login request received: { email: 'test.ems2@test.com', password: '***' }
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg5fquvh0000yzo4jpf098t1',
+  email: 'test.ems2@test.com',
+  userType: 'EMS'
+}
+🔍 Units API: req.user: {
+  id: 'cmg5fquvh0000yzo4jpf098t1',
+  email: 'test.ems2@test.com',
+  name: 'Test EMS 2',
+  userType: 'EMS',
+  agencyName: 'Test Agency 2'
+}
+🔍 Units API: agencyId: cmg5fquvh0000yzo4jpf098t1
+🔍 Units API: units found: 0
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/index.ts`[39m
+TCC_DEBUG: AuthService constructor - JWT_SECRET loaded: YES
+TCC_DEBUG: JWT_SECRET value: your-super-secret-jwt-key-here
+🚀 TCC Backend server running on port 5001
+📊 Health check: http://localhost:5001/health
+🔐 Auth endpoint: http://localhost:5001/api/auth/login
+🚗 Trips API: http://localhost:5001/api/trips
+🏥 Hospitals API: http://localhost:5001/api/tcc/hospitals
+🚑 Agencies API: http://localhost:5001/api/tcc/agencies
+🏢 Facilities API: http://localhost:5001/api/tcc/facilities
+📈 Analytics API: http://localhost:5001/api/tcc/analytics
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: Get trips request with query: { status: 'PENDING' }
+TCC_DEBUG: Getting trips with filters: {
+  status: 'PENDING',
+  transportLevel: undefined,
+  priority: undefined,
+  agencyId: undefined
+}
+TCC_DEBUG: Get trips request with query: { status: 'PENDING' }
+TCC_DEBUG: Getting trips with filters: {
+  status: 'PENDING',
+  transportLevel: undefined,
+  priority: undefined,
+  agencyId: undefined
+}
+TCC_DEBUG: Found trips: 2
+TCC_DEBUG: Get trips request with query: { status: 'ACCEPTED,IN_PROGRESS,COMPLETED' }
+TCC_DEBUG: Getting trips with filters: {
+  status: 'ACCEPTED,IN_PROGRESS,COMPLETED',
+  transportLevel: undefined,
+  priority: undefined,
+  agencyId: undefined
+}
+TCC_DEBUG: Found trips: 2
+TCC_DEBUG: Found trips: 8
+TCC_DEBUG: Get trips request with query: { status: 'ACCEPTED,IN_PROGRESS,COMPLETED' }
+TCC_DEBUG: Getting trips with filters: {
+  status: 'ACCEPTED,IN_PROGRESS,COMPLETED',
+  transportLevel: undefined,
+  priority: undefined,
+  agencyId: undefined
+}
+TCC_DEBUG: Found trips: 8
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: Get trips request with query: { status: 'PENDING' }
+TCC_DEBUG: Getting trips with filters: {
+  status: 'PENDING',
+  transportLevel: undefined,
+  priority: undefined,
+  agencyId: undefined
+}
+TCC_DEBUG: Found trips: 2
+TCC_DEBUG: Get trips request with query: { status: 'ACCEPTED,IN_PROGRESS,COMPLETED' }
+TCC_DEBUG: Getting trips with filters: {
+  status: 'ACCEPTED,IN_PROGRESS,COMPLETED',
+  transportLevel: undefined,
+  priority: undefined,
+  agencyId: undefined
+}
+TCC_DEBUG: Found trips: 8
+TCC_DEBUG: Get trips request with query: { status: 'PENDING' }
+TCC_DEBUG: Getting trips with filters: {
+  status: 'PENDING',
+  transportLevel: undefined,
+  priority: undefined,
+  agencyId: undefined
+}
+TCC_DEBUG: Found trips: 2
+TCC_DEBUG: Get trips request with query: { status: 'ACCEPTED,IN_PROGRESS,COMPLETED' }
+TCC_DEBUG: Getting trips with filters: {
+  status: 'ACCEPTED,IN_PROGRESS,COMPLETED',
+  transportLevel: undefined,
+  priority: undefined,
+  agencyId: undefined
+}
+TCC_DEBUG: Found trips: 8
+TCC_DEBUG: Get trips request with query: { status: 'PENDING' }
+TCC_DEBUG: Getting trips with filters: {
+  status: 'PENDING',
+  transportLevel: undefined,
+  priority: undefined,
+  agencyId: undefined
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: Found trips: 2
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: Get trips request with query: { status: 'ACCEPTED,IN_PROGRESS,COMPLETED' }
+TCC_DEBUG: Getting trips with filters: {
+  status: 'ACCEPTED,IN_PROGRESS,COMPLETED',
+  transportLevel: undefined,
+  priority: undefined,
+  agencyId: undefined
+}
+TCC_DEBUG: Found trips: 8
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: Get trips request with query: { status: 'PENDING' }
+TCC_DEBUG: Getting trips with filters: {
+  status: 'PENDING',
+  transportLevel: undefined,
+  priority: undefined,
+  agencyId: undefined
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: Found trips: 2
+TCC_DEBUG: Get trips request with query: { status: 'ACCEPTED,IN_PROGRESS,COMPLETED' }
+TCC_DEBUG: Getting trips with filters: {
+  status: 'ACCEPTED,IN_PROGRESS,COMPLETED',
+  transportLevel: undefined,
+  priority: undefined,
+  agencyId: undefined
+}
+TCC_DEBUG: Found trips: 8
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+🔍 Units API: req.user: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  name: 'Fred Ferguson',
+  userType: 'EMS',
+  agencyName: 'Moshannon Valley'
+}
+🔍 Units API: agencyId: cmg593s6k0000khzssz39h7tg
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+🔍 Units API: req.user: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  name: 'Fred Ferguson',
+  userType: 'EMS',
+  agencyName: 'Moshannon Valley'
+}
+🔍 Units API: agencyId: cmg593s6k0000khzssz39h7tg
+🔍 Units API: units found: 1
+🔍 Units API: units found: 1
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmg593s6k0000khzssz39h7tg',
+  email: 'ems.mountain@test.com',
+  userType: 'EMS'
+}
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m

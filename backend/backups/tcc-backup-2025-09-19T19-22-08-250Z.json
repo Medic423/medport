@@ -1,0 +1,10 @@
+{
+  "timestamp": "2025-09-19T19:22:08.250Z",
+  "version": "1.0",
+  "databases": {
+    "tcc": {},
+    "ems": {},
+    "hospital": {},
+    "center": {}
+  }
+}

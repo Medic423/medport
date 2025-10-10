@@ -1,0 +1,22 @@
+
+> tcc-frontend@1.0.0 dev
+> vite
+
+Port 3000 is in use, trying another one...
+
+  VITE v5.4.19  ready in 154 ms
+
+  ➜  Local:   http://localhost:3001/
+  ➜  Network: use --host to expose
+2:06:42 PM [vite] hmr update /src/components/Overview.tsx, /src/index.css
+2:06:46 PM [vite] hmr update /src/components/EMSDashboard.tsx, /src/index.css
+2:06:54 PM [vite] hmr update /src/components/EMSDashboard.tsx, /src/index.css
+2:07:01 PM [vite] hmr update /src/components/EMSDashboard.tsx, /src/index.css
+2:07:07 PM [vite] hmr update /src/components/EMSAnalytics.tsx, /src/index.css
+2:07:10 PM [vite] hmr update /src/components/EMSAnalytics.tsx, /src/index.css
+2:07:38 PM [vite] hmr update /src/components/EMSAnalytics.tsx, /src/index.css
+2:09:14 PM [vite] hmr update /src/components/EMSAnalytics.tsx, /src/index.css
+2:09:14 PM [vite] hmr update /src/components/Overview.tsx, /src/index.css
+2:09:14 PM [vite] hmr update /src/components/EMSDashboard.tsx, /src/index.css
+2:21:02 PM [vite] hmr update /src/components/UnitsManagement.tsx, /src/index.css
+2:21:02 PM [vite] hmr update /src/App.tsx, /src/index.css, /src/components/Login.tsx, /src/components/EMSLogin.tsx, /src/components/HealthcareLogin.tsx, /src/components/HealthcareRegistration.tsx, /src/components/EMSRegistration.tsx, /src/components/Overview.tsx, /src/components/Hospitals.tsx, /src/components/UserManagement.tsx, /src/components/HealthcarePortal.tsx, /src/components/NotificationSettings.tsx, /src/components/Agencies.tsx, /src/components/Analytics.tsx, /src/components/TCCUnitsManagement.tsx, /src/components/TCCRouteOptimizer.tsx, /src/components/TripsView.tsx, /src/components/EnhancedTripForm.tsx, /src/components/HospitalSettings.tsx, /src/components/EMSAnalytics.tsx, /src/components/FinancialDashboard.tsx, /src/components/RevenueSettings.tsx

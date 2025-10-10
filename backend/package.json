@@ -1,0 +1,53 @@
+{
+  "name": "tcc-backend",
+  "version": "1.0.0",
+  "description": "Transport Control Center Backend API",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "nodemon src/index.ts",
+    "dev:clean": "pkill -f nodemon 2>/dev/null || true; pkill -f 'ts-node src/index.ts' 2>/dev/null || true; lsof -ti:5001 | xargs kill -9 2>/dev/null || true; sleep 2; npm run dev",
+    "dev:health": "../scripts/check-server-health.sh",
+    "dev:safe": "npm run dev:health && npm run dev:clean",
+    "build": "prisma generate && tsc",
+    "build:prod": "prisma generate --schema=prisma/schema-production.prisma && tsc --project tsconfig.production.json",
+    "postinstall": "prisma generate",
+    "start": "node dist/production-index.js",
+    "start:prod": "node dist/production-index.js",
+    "setup-db": "node setup-db.js",
+    "db:generate": "prisma generate --schema=prisma/schema-center.prisma && prisma generate --schema=prisma/schema-hospital.prisma && prisma generate --schema=prisma/schema-ems.prisma",
+    "db:generate:prod": "prisma generate --schema=prisma/schema-production.prisma",
+    "db:push": "prisma db push --schema=prisma/schema-center.prisma && prisma db push --schema=prisma/schema-hospital.prisma && prisma db push --schema=prisma/schema-ems.prisma",
+    "db:push:prod": "prisma db push --schema=prisma/schema-production.prisma",
+    "db:seed": "ts-node prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.7.1",
+    "@sendgrid/mail": "^8.1.6",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cookie-parser": "^1.4.9",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/node": "^20.10.5",
+    "@types/nodemailer": "^6.4.19",
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^6.10.1",
+    "pg": "^8.16.3",
+    "prisma": "^5.7.1",
+    "twilio": "^5.10.0",
+    "typescript": "^5.3.3",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "nodemon": "^3.0.2",
+    "ts-node": "^10.9.2"
+  }
+}
