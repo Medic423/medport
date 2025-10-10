@@ -105,7 +105,7 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
     setLoading(true);
     try {
       // Load available trips (PENDING status)
-      const availableResponse = await api.get('/trips?status=PENDING');
+      const availableResponse = await api.get('/api/trips?status=PENDING');
       
       if (availableResponse.data) {
         const availableData = availableResponse.data;
@@ -132,7 +132,7 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
       }
 
       // Load accepted trips (ACCEPTED, IN_PROGRESS status only)
-      const acceptedResponse = await api.get('/trips?status=ACCEPTED,IN_PROGRESS');
+      const acceptedResponse = await api.get('/api/trips?status=ACCEPTED,IN_PROGRESS');
       
       if (acceptedResponse.data) {
         const acceptedData = acceptedResponse.data;
@@ -159,7 +159,7 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
       }
 
       // Load completed trips separately
-      const completedResponse = await api.get('/trips?status=COMPLETED');
+      const completedResponse = await api.get('/api/trips?status=COMPLETED');
       
       if (completedResponse.data) {
         const completedData = completedResponse.data;
