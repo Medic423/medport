@@ -292,6 +292,14 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
     }
   }, [formData.fromLocation, formData.fromLocationId, formOptions.facilities, user.manageMultipleLocations]);
 
+  // Load pickup locations when TCC facility is selected
+  useEffect(() => {
+    if (selectedTCCFacilityId && (user.userType === 'ADMIN' || user.userType === 'USER')) {
+      console.log('TCC_COMMAND: Loading pickup locations for selected TCC facility:', selectedTCCFacilityId);
+      loadPickupLocationsForHospital(selectedTCCFacilityId);
+    }
+  }, [selectedTCCFacilityId, user.userType]);
+
   // Load agencies when reaching step 4 (Agency Selection)
   useEffect(() => {
     console.log('TCC_DEBUG: Agency loading useEffect triggered', {

@@ -30,6 +30,12 @@ const Hospitals: React.FC = () => {
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Filtering state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [stateFilter, setStateFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('active');
 
   useEffect(() => {
     fetchHospitals();
@@ -38,11 +44,39 @@ const Hospitals: React.FC = () => {
   const fetchHospitals = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/api/tcc/hospitals');
-      setHospitals(response.data.data || []);
+      console.log('TCC_COMMAND: Fetching healthcare facilities...');
+      
+      // Fetch from healthcare_locations table (not old hospitals table)
+      const response = await api.get('/api/healthcare/locations/all');
+      
+      if (response.data?.success && Array.isArray(response.data.data)) {
+        // Map healthcare_locations to Hospital interface format
+        const facilitiesData = response.data.data.map((loc: any) => ({
+          id: loc.id,
+          name: loc.locationName,
+          address: loc.address,
+          city: loc.city,
+          state: loc.state,
+          zipCode: loc.zipCode,
+          phone: loc.phone || '',
+          email: '',
+          type: loc.facilityType,
+          capabilities: [],
+          region: loc.state,
+          latitude: loc.latitude,
+          longitude: loc.longitude,
+          isActive: loc.isActive,
+          requiresReview: false,
+          createdAt: loc.createdAt,
+          updatedAt: loc.updatedAt
+        }));
+        
+        setHospitals(facilitiesData);
+        console.log('TCC_COMMAND: Loaded', facilitiesData.length, 'healthcare facilities');
+      }
     } catch (err: any) {
       setError(err.message);
-      console.error('Error fetching hospitals:', err);
+      console.error('Error fetching healthcare facilities:', err);
     } finally {
       setLoading(false);
     }
@@ -243,7 +277,7 @@ const Hospitals: React.FC = () => {
 
       <div className="bg-white shadow rounded-lg overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-medium text-gray-900">Healthcare Facilities List</h3>
             <button 
               onClick={() => {
@@ -259,19 +293,100 @@ const Hospitals: React.FC = () => {
               Add Healthcare Facility
             </button>
           </div>
+          
+          {/* Search and Filter Controls */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="md:col-span-2">
+              <label className="block text-xs font-medium text-gray-600 mb-1">Search Facilities</label>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search by name, city, or ZIP..."
+                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">State</label>
+              <select
+                value={stateFilter}
+                onChange={(e) => setStateFilter(e.target.value)}
+                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+              >
+                <option value="">All States</option>
+                {Array.from(new Set(hospitals.map(h => h.state))).sort().map(state => (
+                  <option key={state} value={state}>{state}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
+                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active Only</option>
+                <option value="inactive">Inactive Only</option>
+              </select>
+            </div>
+          </div>
         </div>
 
-        {hospitals.length === 0 ? (
-          <div className="text-center py-12">
-            <Building2 className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No hospitals found</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Get started by adding a new hospital.
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+        {(() => {
+          // Apply filters
+          const filteredHospitals = hospitals.filter(hospital => {
+            // Search filter
+            const searchLower = searchTerm.toLowerCase();
+            const matchesSearch = !searchTerm || 
+              hospital.name.toLowerCase().includes(searchLower) ||
+              hospital.city.toLowerCase().includes(searchLower) ||
+              hospital.zipCode.includes(searchTerm) ||
+              hospital.address.toLowerCase().includes(searchLower);
+            
+            // State filter
+            const matchesState = !stateFilter || hospital.state === stateFilter;
+            
+            // Status filter
+            const matchesStatus = statusFilter === 'all' || 
+              (statusFilter === 'active' && hospital.isActive) ||
+              (statusFilter === 'inactive' && !hospital.isActive);
+            
+            return matchesSearch && matchesState && matchesStatus;
+          });
+          
+          return filteredHospitals.length === 0 ? (
+            <div className="text-center py-12">
+              <Building2 className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No facilities match your filters</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                {hospitals.length === 0 
+                  ? 'Get started by adding a new hospital.'
+                  : 'Try adjusting your search or filter criteria.'}
+              </p>
+              {(searchTerm || stateFilter || statusFilter !== 'active') && (
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setStateFilter('');
+                    setStatusFilter('active');
+                  }}
+                  className="mt-4 text-sm text-blue-600 hover:text-blue-800 underline"
+                >
+                  Clear all filters
+                </button>
+              )}
+            </div>
+          ) : (
+            <>
+              <div className="px-6 py-2 bg-gray-50 border-b border-gray-200">
+                <p className="text-xs text-gray-600">
+                  Showing {filteredHospitals.length} of {hospitals.length} facilities
+                </p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -292,7 +407,7 @@ const Hospitals: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {hospitals.map((hospital) => (
+                {filteredHospitals.map((hospital) => (
                   <tr key={hospital.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
@@ -382,7 +497,9 @@ const Hospitals: React.FC = () => {
               </tbody>
             </table>
           </div>
-        )}
+            </>
+          );
+        })()}
       </div>
 
       {/* Edit Hospital Modal */}

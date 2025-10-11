@@ -123,9 +123,7 @@ const TCCHospitalSettings: React.FC<TCCHospitalSettingsProps> = ({ user }) => {
       setPickupError(null);
       console.log('TCC_COMMAND: Loading pickup locations for facility:', facilityId);
       
-      const response = await api.get(`/api/pickup-locations`, {
-        params: { hospitalId: facilityId }
-      });
+      const response = await api.get(`/api/tcc/pickup-locations/hospital/${facilityId}`);
       
       console.log('TCC_COMMAND: Pickup locations response:', response.data);
       
@@ -198,7 +196,7 @@ const TCCHospitalSettings: React.FC<TCCHospitalSettingsProps> = ({ user }) => {
 
       if (editingPickupLocation) {
         // Update existing
-        await api.put(`/api/pickup-locations/${editingPickupLocation.id}`, {
+        await api.put(`/api/tcc/pickup-locations/${editingPickupLocation.id}`, {
           ...pickupFormData,
           hospitalId: facilityId
         });
@@ -206,7 +204,7 @@ const TCCHospitalSettings: React.FC<TCCHospitalSettingsProps> = ({ user }) => {
         console.log('TCC_COMMAND: Pickup location updated');
       } else {
         // Create new
-        await api.post('/api/pickup-locations', {
+        await api.post('/api/tcc/pickup-locations', {
           ...pickupFormData,
           hospitalId: facilityId,
           isActive: true
@@ -238,7 +236,7 @@ const TCCHospitalSettings: React.FC<TCCHospitalSettingsProps> = ({ user }) => {
       setPickupError(null);
       
       console.log('TCC_COMMAND: Deleting pickup location:', locationId);
-      await api.delete(`/api/pickup-locations/${locationId}`);
+      await api.delete(`/api/tcc/pickup-locations/${locationId}`);
       
       setPickupSuccess('Pickup location deleted successfully');
       await loadPickupLocations();
