@@ -158,6 +158,8 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
   const [selectedTCCFacilityId, setSelectedTCCFacilityId] = useState<string>('');
   const [tccHealthcareFacilities, setTccHealthcareFacilities] = useState<HealthcareLocation[]>([]);
   const [loadingTCCFacilities, setLoadingTCCFacilities] = useState(false);
+  const [tccFacilitySearch, setTccFacilitySearch] = useState<string>('');
+  const [tccStateFilter, setTccStateFilter] = useState<string>('');
 
   // Phase A: Function to reload facilities when geographic filter changes
   const reloadFacilities = async () => {
@@ -243,14 +245,15 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
       setLoadingTCCFacilities(true);
       console.log('TCC_COMMAND: Loading all healthcare facilities for command staff...');
       
-      const response = await api.get('/api/healthcare/locations');
+      // Use the /all endpoint for TCC command staff to get ALL facilities
+      const response = await api.get('/api/healthcare/locations/all');
       if (response.data?.success && Array.isArray(response.data.data)) {
-        const facilities = response.data.data.filter((f: HealthcareLocation) => f.isActive);
-        setTccHealthcareFacilities(facilities);
-        console.log('TCC_COMMAND: Loaded', facilities.length, 'active healthcare facilities');
+        setTccHealthcareFacilities(response.data.data);
+        console.log('TCC_COMMAND: Loaded', response.data.data.length, 'active healthcare facilities');
       }
     } catch (error) {
       console.error('TCC_COMMAND: Error loading healthcare facilities:', error);
+      setError('Failed to load healthcare facilities. Please refresh and try again.');
     } finally {
       setLoadingTCCFacilities(false);
     }
@@ -1447,38 +1450,103 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
             </div>
           ) : (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Healthcare Facility *
-              </label>
-              <select
-                value={selectedTCCFacilityId}
-                onChange={(e) => handleTCCFacilitySelection(e.target.value)}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base"
-                required
-              >
-                <option value="">-- Select Healthcare Facility --</option>
-                {tccHealthcareFacilities.map(facility => (
-                  <option key={facility.id} value={facility.id}>
-                    {facility.locationName} - {facility.city}, {facility.state} {facility.zipCode}
-                  </option>
-                ))}
-              </select>
+              {/* Search and Filter Controls */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Search Facilities
+                  </label>
+                  <input
+                    type="text"
+                    value={tccFacilitySearch}
+                    onChange={(e) => setTccFacilitySearch(e.target.value)}
+                    placeholder="Search by name or city..."
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Filter by State
+                  </label>
+                  <select
+                    value={tccStateFilter}
+                    onChange={(e) => setTccStateFilter(e.target.value)}
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                  >
+                    <option value="">All States</option>
+                    {Array.from(new Set(tccHealthcareFacilities.map(f => f.state))).sort().map(state => (
+                      <option key={state} value={state}>{state}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              
+              {/* Facility Selector */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Healthcare Facility *
+                </label>
+                <select
+                  value={selectedTCCFacilityId}
+                  onChange={(e) => handleTCCFacilitySelection(e.target.value)}
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base"
+                  required
+                >
+                  <option value="">-- Select Healthcare Facility --</option>
+                  {tccHealthcareFacilities
+                    .filter(facility => {
+                      // Filter by search term
+                      const searchLower = tccFacilitySearch.toLowerCase();
+                      const matchesSearch = !tccFacilitySearch || 
+                        facility.locationName.toLowerCase().includes(searchLower) ||
+                        facility.city.toLowerCase().includes(searchLower) ||
+                        facility.zipCode.includes(tccFacilitySearch);
+                      
+                      // Filter by state
+                      const matchesState = !tccStateFilter || facility.state === tccStateFilter;
+                      
+                      return matchesSearch && matchesState;
+                    })
+                    .map(facility => (
+                      <option key={facility.id} value={facility.id}>
+                        {facility.locationName} - {facility.city}, {facility.state} {facility.zipCode}
+                      </option>
+                    ))}
+                </select>
+                
+                <p className="mt-1 text-xs text-gray-500">
+                  Showing {tccHealthcareFacilities.filter(f => {
+                    const searchLower = tccFacilitySearch.toLowerCase();
+                    const matchesSearch = !tccFacilitySearch || 
+                      f.locationName.toLowerCase().includes(searchLower) ||
+                      f.city.toLowerCase().includes(searchLower) ||
+                      f.zipCode.includes(tccFacilitySearch);
+                    const matchesState = !tccStateFilter || f.state === tccStateFilter;
+                    return matchesSearch && matchesState;
+                  }).length} of {tccHealthcareFacilities.length} facilities
+                </p>
+              </div>
               
               {selectedTCCFacilityId && (
-                <div className="mt-2 flex items-start">
-                  <CheckCircle className="h-4 w-4 text-green-600 mr-1 mt-0.5" />
-                  <p className="text-sm text-green-700">
-                    Facility selected. Creating trip on behalf of{' '}
-                    <span className="font-semibold">
-                      {tccHealthcareFacilities.find(f => f.id === selectedTCCFacilityId)?.locationName}
-                    </span>
-                  </p>
+                <div className="mt-3 flex items-start bg-green-50 border border-green-200 rounded-md p-3">
+                  <CheckCircle className="h-5 w-5 text-green-600 mr-2 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-green-800">
+                      Facility Selected
+                    </p>
+                    <p className="text-sm text-green-700">
+                      Creating trip on behalf of{' '}
+                      <span className="font-semibold">
+                        {tccHealthcareFacilities.find(f => f.id === selectedTCCFacilityId)?.locationName}
+                      </span>
+                    </p>
+                  </div>
                 </div>
               )}
               
-              {!selectedTCCFacilityId && (
+              {!selectedTCCFacilityId && tccHealthcareFacilities.length > 0 && (
                 <p className="mt-2 text-xs text-gray-500">
-                  As TCC command staff, you have visibility into all facilities. Select a facility to proceed.
+                  As TCC command staff, you have visibility into all {tccHealthcareFacilities.length} facilities in the system.
                 </p>
               )}
             </div>

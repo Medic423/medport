@@ -14,6 +14,52 @@ router.use(authenticateToken);
 router.post('/', (req, res) => healthcareLocationsController.createLocation(req, res));
 
 /**
+ * GET /api/healthcare/locations/all
+ * Get ALL locations (TCC command staff only)
+ * Must be before / route to avoid conflicts
+ */
+router.get('/all', async (req, res) => {
+  try {
+    const user = (req as any).user;
+    
+    // Only TCC command staff can see all locations
+    if (user?.userType !== 'ADMIN' && user?.userType !== 'USER') {
+      return res.status(403).json({ 
+        success: false,
+        error: 'Access denied. TCC command staff only.' 
+      });
+    }
+    
+    console.log('TCC_COMMAND: Fetching all healthcare locations for:', user.email);
+    
+    const { databaseManager } = require('../services/databaseManager');
+    const db = databaseManager.getCenterDB();
+    
+    const locations = await db.healthcareLocation.findMany({
+      where: { isActive: true },
+      orderBy: [
+        { state: 'asc' },
+        { city: 'asc' },
+        { locationName: 'asc' }
+      ]
+    });
+    
+    console.log('TCC_COMMAND: Found', locations.length, 'active healthcare locations');
+    
+    res.json({ 
+      success: true, 
+      data: locations 
+    });
+  } catch (error) {
+    console.error('TCC_COMMAND: Error fetching all healthcare locations:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to fetch healthcare locations' 
+    });
+  }
+});
+
+/**
  * GET /api/healthcare/locations
  * Get all locations for the logged-in user
  */
