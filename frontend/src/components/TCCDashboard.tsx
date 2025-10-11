@@ -17,6 +17,7 @@ import Overview from './Overview';
 import TripsView from './TripsView';
 import TCCCreateTrip from './TCCCreateTrip';
 import Hospitals from './Hospitals';
+import TCCHospitalSettings from './TCCHospitalSettings';
 import Agencies from './Agencies';
 import HealthcarePortal from './HealthcarePortal';
 import EMSDashboard from './EMSDashboard';
@@ -232,7 +233,8 @@ const TCCDashboard: React.FC<TCCDashboardProps> = ({ user, onLogout }) => {
                 <Route path="/trips/create" element={<TCCCreateTrip user={user} />} />
                 <Route path="/analytics" element={<Analytics />} />
                 <Route path="/units" element={<TCCUnitsManagement />} />
-                <Route path="/hospitals/*" element={<Hospitals />} />
+                <Route path="/hospitals" element={<Hospitals />} />
+                <Route path="/hospitals/:facilityId/settings" element={<TCCHospitalSettings user={user} />} />
                 <Route path="/agencies/*" element={<Agencies />} />
                 <Route path="/route-optimization" element={<TCCRouteOptimizer />} />
                 <Route path="/healthcare-portal" element={<HealthcarePortal />} />

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Plus, Edit, Trash2, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Building2, Plus, Edit, Trash2, CheckCircle, XCircle, Clock, Settings } from 'lucide-react';
 import api from '../services/api';
 
 interface Hospital {
@@ -25,6 +26,7 @@ interface Hospital {
 }
 
 const Hospitals: React.FC = () => {
+  const navigate = useNavigate();
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -353,15 +355,22 @@ const Hospitals: React.FC = () => {
                           </>
                         )}
                         <button 
+                          onClick={() => navigate(`/dashboard/hospitals/${hospital.id}/settings`)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                          title="Manage Settings (Pickup Locations, etc.)"
+                        >
+                          <Settings className="h-4 w-4" />
+                        </button>
+                        <button 
                           onClick={() => handleEdit(hospital.id)}
-                          className="text-blue-600 hover:text-blue-900"
-                          title="Edit hospital"
+                          className="p-2 text-gray-600 hover:bg-gray-50 rounded-md transition-colors"
+                          title="Edit facility info"
                         >
                           <Edit className="h-4 w-4" />
                         </button>
                         <button 
                           onClick={() => handleDelete(hospital.id)}
-                          className="text-red-600 hover:text-red-900"
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
                           title="Delete hospital"
                         >
                           <Trash2 className="h-4 w-4" />
