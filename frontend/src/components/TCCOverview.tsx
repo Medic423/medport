@@ -117,17 +117,9 @@ const TCCOverview: React.FC<TCCOverviewProps> = ({ user, onClearSession }) => {
 
   return (
     <div className="space-y-6">
-      {/* Welcome Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-6 text-white">
-        <h1 className="text-2xl font-bold">Welcome back, {user.name}!</h1>
-        <p className="text-blue-100 mt-1">
-          TCC Command Center - {user.userType} Dashboard
-        </p>
-      </div>
-
       {/* Quick Actions */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {quickActions.map((action, index) => (
             <button
@@ -178,7 +170,7 @@ const TCCOverview: React.FC<TCCOverviewProps> = ({ user, onClearSession }) => {
       {/* Recent Activity */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
+          <h2 className="text-lg font-bold text-gray-900">Recent Activity</h2>
           <Activity className="h-5 w-5 text-gray-400" />
         </div>
         <div className="space-y-3">
@@ -211,7 +203,7 @@ const TCCOverview: React.FC<TCCOverviewProps> = ({ user, onClearSession }) => {
 
       {/* System Status */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">System Status</h2>
+        <h2 className="text-lg font-bold text-gray-900 mb-4">System Status</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
             <div className="h-3 w-3 bg-green-500 rounded-full"></div>

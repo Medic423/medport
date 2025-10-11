@@ -33,7 +33,7 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout }) => {
 
   const menuItems = [
     {
-      label: 'Overview',
+      label: 'Actions',
       path: '/dashboard',
       icon: BarChart3,
       hasDropdown: false
@@ -117,7 +117,7 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout }) => {
                 <span className="text-white font-bold text-lg">T</span>
               </div>
               <span className="ml-3 text-xl font-semibold text-gray-900">
-                TCC Command Center
+                Transport Command
               </span>
             </div>
           </div>
