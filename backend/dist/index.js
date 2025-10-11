@@ -28,6 +28,7 @@ const emsAnalytics_1 = __importDefault(require("./routes/emsAnalytics"));
 const backup_1 = __importDefault(require("./routes/backup"));
 const maintenance_1 = __importDefault(require("./routes/maintenance"));
 const healthcareLocations_1 = __importDefault(require("./routes/healthcareLocations"));
+const unitLocation_1 = __importDefault(require("./routes/unitLocation"));
 // Load environment variables
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -91,6 +92,7 @@ app.use('/api/agency-responses', agencyResponses_1.default);
 app.use('/api/notifications', notifications_1.default);
 // app.use('/api/admin/notifications', adminNotificationRoutes);
 app.use('/api/units', units_1.default);
+app.use('/api/units', unitLocation_1.default); // Unit location management
 app.use('/api/tcc/hospitals', hospitals_1.default);
 app.use('/api/tcc/agencies', agencies_1.default);
 app.use('/api/tcc/facilities', facilities_1.default);
