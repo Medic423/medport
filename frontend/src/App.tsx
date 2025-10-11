@@ -168,6 +168,7 @@ function AppContent() {
         } />
         <Route path="/healthcare-register" element={
           <HealthcareRegistration 
+            key="healthcare-register"
             onBack={handleBackToPublic}
             onSuccess={handleRegistrationSuccess}
           />

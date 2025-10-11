@@ -30,6 +30,8 @@ const Hospitals: React.FC = () => {
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  console.log('TCC_DEBUG: Hospitals component rendering');
   
   // Filtering state
   const [searchTerm, setSearchTerm] = useState('');
@@ -280,14 +282,26 @@ const Hospitals: React.FC = () => {
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-medium text-gray-900">Healthcare Facilities List</h3>
             <button 
-              onClick={() => {
-                // Clear the current session and redirect to main page for registration
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                // Redirect to main page with healthcare registration parameter
-                window.location.href = '/?register=healthcare';
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('TCC_DEBUG: Add Healthcare Facility button clicked');
+                console.log('TCC_DEBUG: Current location:', window.location.href);
+                console.log('TCC_DEBUG: Target URL:', window.location.origin + '/healthcare-register');
+                
+                // Navigate to healthcare registration without clearing TCC session
+                // Use full URL to escape the dashboard routing context
+                const targetUrl = window.location.origin + '/healthcare-register';
+                console.log('TCC_DEBUG: Navigating to:', targetUrl);
+                window.location.href = targetUrl;
+                
+                console.log('TCC_DEBUG: Navigation command executed');
               }}
+              onMouseDown={() => console.log('TCC_DEBUG: Button mouse down event')}
+              onMouseUp={() => console.log('TCC_DEBUG: Button mouse up event')}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+              style={{ position: 'relative', zIndex: 9999 }}
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Healthcare Facility
