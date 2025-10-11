@@ -661,7 +661,7 @@ router.get('/stream', async (req, res) => {
 async function getAllPendingRequests() {
     try {
         const prisma = databaseManager_1.databaseManager.getCenterDB();
-        const trips = await prisma.trip.findMany({
+        const trips = await prisma.transportRequest.findMany({
             where: {
                 status: 'PENDING'
             },
@@ -674,10 +674,6 @@ async function getAllPendingRequests() {
                 priority: true,
                 scheduledTime: true,
                 specialNeeds: true,
-                originLatitude: true,
-                originLongitude: true,
-                destinationLatitude: true,
-                destinationLongitude: true,
                 createdAt: true
             }
         });
@@ -692,15 +688,15 @@ async function getAllPendingRequests() {
             status: 'PENDING',
             specialRequirements: trip.specialNeeds || '',
             requestTimestamp: new Date(trip.createdAt),
-            readyStart: new Date(trip.scheduledTime),
-            readyEnd: new Date(new Date(trip.scheduledTime).getTime() + 60 * 60 * 1000), // 1 hour window
+            readyStart: trip.scheduledTime ? new Date(trip.scheduledTime) : new Date(trip.createdAt),
+            readyEnd: trip.scheduledTime ? new Date(new Date(trip.scheduledTime).getTime() + 60 * 60 * 1000) : new Date(new Date(trip.createdAt).getTime() + 60 * 60 * 1000), // 1 hour window
             originLocation: {
-                lat: trip.originLatitude || 40.7128,
-                lng: trip.originLongitude || -74.0060
+                lat: 40.7128, // Default coordinates since we don't have lat/lng in the schema
+                lng: -74.0060
             },
             destinationLocation: {
-                lat: trip.destinationLatitude || 40.7589,
-                lng: trip.destinationLongitude || -73.9851
+                lat: 40.7589, // Default coordinates since we don't have lat/lng in the schema
+                lng: -73.9851
             }
         }));
     }

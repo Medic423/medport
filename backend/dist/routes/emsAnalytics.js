@@ -91,24 +91,36 @@ router.get('/trips', async (req, res) => {
         }
         const prisma = databaseManager_1.databaseManager.getCenterDB();
         const [totalTrips, completedTrips, pendingTrips, cancelledTrips, responseTimes, tripDurations, byLevel, byPriority] = await Promise.all([
-            prisma.trip.count({ where: { assignedAgencyId: agencyId } }),
-            prisma.trip.count({ where: { assignedAgencyId: agencyId, status: 'COMPLETED' } }),
-            prisma.trip.count({ where: { assignedAgencyId: agencyId, status: 'PENDING' } }),
-            prisma.trip.count({ where: { assignedAgencyId: agencyId, status: 'CANCELLED' } }),
-            prisma.trip.findMany({ where: { assignedAgencyId: agencyId, responseTimeMinutes: { not: null } }, select: { responseTimeMinutes: true } }),
-            prisma.trip.findMany({ where: { assignedAgencyId: agencyId, actualTripTimeMinutes: { not: null } }, select: { actualTripTimeMinutes: true } }),
-            prisma.trip.groupBy({ by: ['transportLevel'], where: { assignedAgencyId: agencyId }, _count: { transportLevel: true } }),
-            prisma.trip.groupBy({ by: ['priority'], where: { assignedAgencyId: agencyId }, _count: { priority: true } })
+            prisma.transportRequest.count({ where: { assignedAgencyId: agencyId } }),
+            prisma.transportRequest.count({ where: { assignedAgencyId: agencyId, status: 'COMPLETED' } }),
+            prisma.transportRequest.count({ where: { assignedAgencyId: agencyId, status: 'PENDING' } }),
+            prisma.transportRequest.count({ where: { assignedAgencyId: agencyId, status: 'CANCELLED' } }),
+            prisma.transportRequest.findMany({ where: { assignedAgencyId: agencyId }, select: { acceptedTimestamp: true, requestTimestamp: true } }),
+            prisma.transportRequest.findMany({ where: { assignedAgencyId: agencyId }, select: { completionTimestamp: true, departureTimestamp: true } }),
+            prisma.transportRequest.groupBy({ by: ['transportLevel'], where: { assignedAgencyId: agencyId }, _count: { transportLevel: true } }),
+            prisma.transportRequest.groupBy({ by: ['priority'], where: { assignedAgencyId: agencyId }, _count: { priority: true } })
         ]);
         const tripsByLevel = { BLS: 0, ALS: 0, CCT: 0 };
         byLevel.forEach((g) => { tripsByLevel[g.transportLevel] = g._count.transportLevel; });
         const tripsByPriority = { LOW: 0, MEDIUM: 0, HIGH: 0, URGENT: 0, CRITICAL: 0 };
         byPriority.forEach((g) => { tripsByPriority[g.priority] = g._count.priority; });
         const averageResponseTime = responseTimes.length > 0
-            ? responseTimes.reduce((s, t) => s + (t.responseTimeMinutes || 0), 0) / responseTimes.length
+            ? responseTimes.reduce((s, t) => {
+                if (t.acceptedTimestamp && t.requestTimestamp) {
+                    const responseTime = (new Date(t.acceptedTimestamp).getTime() - new Date(t.requestTimestamp).getTime()) / (1000 * 60); // minutes
+                    return s + responseTime;
+                }
+                return s;
+            }, 0) / responseTimes.length
             : 0;
         const averageTripDuration = tripDurations.length > 0
-            ? tripDurations.reduce((s, t) => s + (t.actualTripTimeMinutes || 0), 0) / tripDurations.length
+            ? tripDurations.reduce((s, t) => {
+                if (t.completionTimestamp && t.departureTimestamp) {
+                    const duration = (new Date(t.completionTimestamp).getTime() - new Date(t.departureTimestamp).getTime()) / (1000 * 60); // minutes
+                    return s + duration;
+                }
+                return s;
+            }, 0) / tripDurations.length
             : 0;
         res.json({
             success: true,
@@ -197,8 +209,8 @@ router.get('/performance', async (req, res) => {
         const prisma = databaseManager_1.databaseManager.getCenterDB();
         // SIMPLIFIED: Only get basic trip counts, skip complex calculations
         const [totalTrips, completedTrips] = await Promise.all([
-            prisma.trip.count({ where: { assignedAgencyId: agencyId } }),
-            prisma.trip.count({ where: { assignedAgencyId: agencyId, status: 'COMPLETED' } })
+            prisma.transportRequest.count({ where: { assignedAgencyId: agencyId } }),
+            prisma.transportRequest.count({ where: { assignedAgencyId: agencyId, status: 'COMPLETED' } })
         ]);
         // SIMPLIFIED: Basic completion rate only
         const completionRate = totalTrips > 0 ? completedTrips / totalTrips : 0;

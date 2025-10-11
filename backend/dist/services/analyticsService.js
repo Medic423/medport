@@ -11,7 +11,7 @@ class AnalyticsService {
         const prisma = databaseManager_1.databaseManager.getCenterDB();
         try {
             const [totalTrips, totalHospitals, activeHospitals, totalAgencies, activeAgencies, totalUnits, activeUnits] = await Promise.all([
-                prisma.trip.count(),
+                prisma.transportRequest.count(),
                 prisma.hospital.count(),
                 prisma.hospital.count({ where: { isActive: true } }),
                 prisma.eMSAgency.count(),
@@ -50,18 +50,18 @@ class AnalyticsService {
         const prisma = databaseManager_1.databaseManager.getCenterDB();
         try {
             const [totalTrips, pendingTrips, acceptedTrips, completedTrips, cancelledTrips] = await Promise.all([
-                prisma.trip.count(),
-                prisma.trip.count({ where: { status: 'PENDING' } }),
-                prisma.trip.count({ where: { status: 'ACCEPTED' } }),
-                prisma.trip.count({ where: { status: 'COMPLETED' } }),
-                prisma.trip.count({ where: { status: 'CANCELLED' } })
+                prisma.transportRequest.count(),
+                prisma.transportRequest.count({ where: { status: 'PENDING' } }),
+                prisma.transportRequest.count({ where: { status: 'ACCEPTED' } }),
+                prisma.transportRequest.count({ where: { status: 'COMPLETED' } }),
+                prisma.transportRequest.count({ where: { status: 'CANCELLED' } })
             ]);
             // SIMPLIFIED: Basic grouping by transport level and priority
-            const tripsByLevel = await prisma.trip.groupBy({
+            const tripsByLevel = await prisma.transportRequest.groupBy({
                 by: ['transportLevel'],
                 _count: true
             });
-            const tripsByPriority = await prisma.trip.groupBy({
+            const tripsByPriority = await prisma.transportRequest.groupBy({
                 by: ['priority'],
                 _count: true
             });
@@ -110,8 +110,8 @@ class AnalyticsService {
             const performanceData = [];
             for (const agency of agencies) {
                 const [totalTrips, completedTrips] = await Promise.all([
-                    prisma.trip.count({ where: { assignedAgencyId: agency.id } }),
-                    prisma.trip.count({ where: { assignedAgencyId: agency.id, status: 'COMPLETED' } })
+                    prisma.transportRequest.count({ where: { assignedAgencyId: agency.id } }),
+                    prisma.transportRequest.count({ where: { assignedAgencyId: agency.id, status: 'COMPLETED' } })
                 ]);
                 const completionRate = totalTrips > 0 ? completedTrips / totalTrips : 0;
                 const activeUnits = agency.units.length;
