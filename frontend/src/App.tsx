@@ -50,9 +50,9 @@ function AppContent() {
   // Handle browser back button navigation
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
-      // If user is logged in and tries to go back to login pages, redirect to dashboard
-      if (user && (location.pathname === '/' || location.pathname.startsWith('/login') || location.pathname.startsWith('/register'))) {
-        navigate('/dashboard', { replace: true });
+      // If user is logged in and tries to go back to login pages, redirect to root
+      if (user && (location.pathname.startsWith('/login') || location.pathname.startsWith('/register'))) {
+        navigate('/', { replace: true });
       }
     };
 
@@ -72,8 +72,8 @@ function AppContent() {
     
     // Use React Router navigation instead of window.location
     if (userData.userType === 'ADMIN' || userData.userType === 'USER') {
-      console.log('TCC_DEBUG: Redirecting to dashboard for admin/user');
-      navigate('/dashboard', { replace: true });
+      console.log('TCC_DEBUG: Redirecting to root for admin/user');
+      navigate('/', { replace: true });
     } else {
       console.log('TCC_DEBUG: No redirect needed for healthcare/EMS - component should re-render');
     }
@@ -142,12 +142,16 @@ function AppContent() {
         <div className="min-h-screen bg-gray-50">
           <Routes>
             <Route
+              path="/"
+              element={<TCCDashboard user={user} onLogout={handleLogout} />}
+            />
+            <Route
               path="/dashboard/*"
               element={<TCCDashboard user={user} onLogout={handleLogout} />}
             />
             <Route
               path="*"
-              element={<Navigate to="/dashboard" replace />}
+              element={<Navigate to="/" replace />}
             />
           </Routes>
         </div>

@@ -40,14 +40,10 @@ const TCCOverview: React.FC<TCCOverviewProps> = ({ user, onClearSession }) => {
       icon: Building2,
       onClick: () => {
         console.log('TCC_DEBUG: Add Healthcare Facility button clicked');
-        // Clear session to access public registration page
-        if (onClearSession) {
-          onClearSession();
-          // Navigate to registration page after session is cleared
-          setTimeout(() => {
-            window.location.href = '/healthcare-register';
-          }, 100);
-        }
+        // Clear session and navigate immediately to avoid flash
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/healthcare-register';
       },
       color: 'bg-green-600 hover:bg-green-700',
       textColor: 'text-white'
@@ -58,23 +54,19 @@ const TCCOverview: React.FC<TCCOverviewProps> = ({ user, onClearSession }) => {
       icon: Truck,
       onClick: () => {
         console.log('TCC_DEBUG: Add EMS Agency button clicked');
-        // Clear session to access public registration page
-        if (onClearSession) {
-          onClearSession();
-          // Navigate to registration page after session is cleared
-          setTimeout(() => {
-            window.location.href = '/ems-register';
-          }, 100);
-        }
+        // Clear session and navigate immediately to avoid flash
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/ems-register';
       },
       color: 'bg-red-600 hover:bg-red-700',
       textColor: 'text-white'
     },
     {
-      title: 'Route Optimization',
-      description: 'Optimize transport routes',
+      title: 'Existing Trip Management',
+      description: 'Manage and optimize existing trips',
       icon: MapPin,
-      onClick: () => navigate('/dashboard/operations/route-optimization'),
+      onClick: () => navigate('/dashboard/operations/trips'),
       color: 'bg-purple-600 hover:bg-purple-700',
       textColor: 'text-white'
     }

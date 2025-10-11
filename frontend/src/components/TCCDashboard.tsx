@@ -30,7 +30,7 @@ const TCCDashboard: React.FC<TCCDashboardProps> = ({ user, onLogout }) => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Top Menu Bar */}
-      <TopMenuBar user={user} onLogout={onLogout} />
+      <TopMenuBar user={user} onLogout={onLogout} onClearSession={onLogout} />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

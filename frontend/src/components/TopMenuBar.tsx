@@ -9,7 +9,8 @@ import {
   User,
   LogOut,
   Menu,
-  X
+  X,
+  Home
 } from 'lucide-react';
 
 interface TopMenuBarProps {
@@ -20,9 +21,10 @@ interface TopMenuBarProps {
     userType: string;
   };
   onLogout: () => void;
+  onClearSession?: () => void;
 }
 
-const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout }) => {
+const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -34,9 +36,12 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout }) => {
   const menuItems = [
     {
       label: 'Actions',
-      path: '/dashboard',
       icon: BarChart3,
-      hasDropdown: false
+      hasDropdown: true,
+      items: [
+        { label: 'Trip Management', path: '/dashboard/operations/trips' },
+        { label: 'Route Optimization', path: '/dashboard/operations/route-optimization' },
+      ]
     },
     {
       label: 'Healthcare',
@@ -62,8 +67,6 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout }) => {
       icon: Settings,
       hasDropdown: true,
       items: [
-        { label: 'Trip Management', path: '/dashboard/operations/trips' },
-        { label: 'Route Optimization', path: '/dashboard/operations/route-optimization' },
         { label: 'Analytics & Financial', path: '/dashboard/operations/analytics' },
       ]
     }
@@ -74,9 +77,16 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout }) => {
     // Handle external registration pages (outside dashboard context)
     if (path === '/healthcare-register' || path === '/ems-register') {
       console.log('TCC_DEBUG: TopMenuBar navigating to external page:', path);
-      const targetUrl = window.location.origin + path;
-      console.log('TCC_DEBUG: TopMenuBar target URL:', targetUrl);
-      window.location.href = targetUrl;
+      // Clear session and navigate immediately to avoid flash
+      if (onClearSession) {
+        console.log('TCC_DEBUG: TopMenuBar clearing session and navigating immediately');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = path;
+      } else {
+        console.log('TCC_DEBUG: TopMenuBar onClearSession not available, using direct navigation');
+        window.location.href = path;
+      }
     } else {
       console.log('TCC_DEBUG: TopMenuBar navigating internally to:', path);
       navigate(path);
@@ -90,18 +100,16 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout }) => {
   };
 
   const isActivePath = (path: string) => {
-    if (path === '/dashboard') {
-      return location.pathname === '/dashboard';
-    }
     return location.pathname.startsWith(path);
   };
 
   const getActiveSection = () => {
     const path = location.pathname;
+    if (path === '/' || path === '/dashboard') return 'Actions';
+    if (path.startsWith('/dashboard/operations/trips')) return 'Actions';
     if (path.startsWith('/dashboard/healthcare')) return 'Healthcare';
     if (path.startsWith('/dashboard/ems')) return 'EMS';
     if (path.startsWith('/dashboard/operations')) return 'Operations';
-    if (path === '/dashboard') return 'Overview';
     return null;
   };
 
@@ -120,6 +128,15 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout }) => {
                 Transport Command
               </span>
             </div>
+            
+            {/* Home Button */}
+            <button
+              onClick={() => handleNavigation('/')}
+              className="ml-6 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              title="Home - Quick Actions"
+            >
+              <Home className="h-5 w-5 text-gray-600 hover:text-blue-600" />
+            </button>
           </div>
 
           {/* Desktop Navigation */}
@@ -152,6 +169,7 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout }) => {
                             type="button"
                             onClick={(e) => {
                               console.log(`TCC_DEBUG: TopMenuBar dropdown item clicked: ${subItem.label} -> ${subItem.path}`);
+                              console.log(`TCC_DEBUG: TopMenuBar current location:`, location.pathname);
                               e.preventDefault();
                               e.stopPropagation();
                               handleNavigation(subItem.path);
