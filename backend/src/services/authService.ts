@@ -180,11 +180,26 @@ export class AuthService {
       } else if (decoded.userType === 'EMS') {
         // For EMS users, decoded.id contains the agency ID, not the user ID
         // We need to find the user by email since that's what we have in the token
+        
+        // Check if email exists in token
+        if (!decoded.email) {
+          console.error('TCC_DEBUG: EMS token missing email field:', { 
+            id: decoded.id, 
+            userType: decoded.userType 
+          });
+          return null;
+        }
+        
         user = await db.eMSUser.findUnique({
           where: { email: decoded.email }
         });
 
         if (!user || !user.isActive) {
+          console.log('TCC_DEBUG: EMS user not found or inactive:', { 
+            email: decoded.email, 
+            found: !!user,
+            isActive: user?.isActive 
+          });
           return null;
         }
 
