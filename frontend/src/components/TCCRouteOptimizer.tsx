@@ -25,6 +25,13 @@ import {
 const TCCRouteOptimizer: React.FC = () => {
   // State management
   const [selectedUnit, setSelectedUnit] = useState<string>('');
+  const [unitLocation, setUnitLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [matchedFacility, setMatchedFacility] = useState<string | null>(null);
+  const [gettingLocation, setGettingLocation] = useState(false);
+  const [locationMode, setLocationMode] = useState<'gps' | 'manual'>('gps');
+  const [manualAddress, setManualAddress] = useState('');
+  const [facilities, setFacilities] = useState<any[]>([]);
+  const [filteredFacilities, setFilteredFacilities] = useState<any[]>([]);
   const [availableUnits, setAvailableUnits] = useState<Unit[]>([]);
   const [pendingRequests, setPendingRequests] = useState<TransportRequest[]>([]);
   const [selectedRequests, setSelectedRequests] = useState<string[]>([]);
@@ -67,7 +74,22 @@ const TCCRouteOptimizer: React.FC = () => {
   useEffect(() => {
     loadInitialData();
     loadSavedSettings();
+    loadFacilities();
   }, []);
+
+  // Filter facilities based on manual address input
+  useEffect(() => {
+    if (manualAddress.length >= 2) {
+      const filtered = facilities.filter(facility =>
+        facility.name.toLowerCase().includes(manualAddress.toLowerCase()) ||
+        facility.address?.toLowerCase().includes(manualAddress.toLowerCase()) ||
+        facility.city?.toLowerCase().includes(manualAddress.toLowerCase())
+      );
+      setFilteredFacilities(filtered);
+    } else {
+      setFilteredFacilities([]);
+    }
+  }, [manualAddress, facilities]);
 
   const loadSavedSettings = () => {
     try {
@@ -94,6 +116,138 @@ const TCCRouteOptimizer: React.FC = () => {
       return () => clearInterval(interval);
     }
   }, [optimizationSettings.autoOptimize, optimizationSettings.refreshInterval, selectedUnit, selectedRequests]);
+
+  // Load all facilities for location matching
+  const loadFacilities = async () => {
+    try {
+      const response = await api.get('/api/tcc/facilities');
+      if (response.data?.success) {
+        setFacilities(response.data.data || []);
+        console.log('TCC_DEBUG: Loaded facilities for location matching:', response.data.data?.length);
+      }
+    } catch (error) {
+      console.error('TCC_DEBUG: Error loading facilities:', error);
+    }
+  };
+
+  // Check if coordinates match any facility
+  const checkFacilityMatch = (lat: number, lng: number) => {
+    // Match within ~100 meters (roughly 0.001 degrees)
+    const threshold = 0.001;
+    
+    const matched = facilities.find(facility => {
+      const latMatch = Math.abs((facility.latitude || 0) - lat) < threshold;
+      const lngMatch = Math.abs((facility.longitude || 0) - lng) < threshold;
+      return latMatch && lngMatch;
+    });
+
+    if (matched) {
+      setMatchedFacility(`${matched.name} - ${matched.address || ''}`);
+      console.log('TCC_DEBUG: Location matches facility:', matched.name);
+    } else {
+      setMatchedFacility(null);
+    }
+  };
+
+  // Get current GPS location
+  const getCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setError('Geolocation is not supported by your browser');
+      return;
+    }
+
+    setGettingLocation(true);
+    setError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const location = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+        setUnitLocation(location);
+        checkFacilityMatch(location.lat, location.lng);
+        setGettingLocation(false);
+        console.log('TCC_DEBUG: Got current location:', location);
+      },
+      (error) => {
+        setGettingLocation(false);
+        let errorMessage = 'Unable to get your location';
+        
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = 'Location permission denied. Please enable location access in your browser.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Location information is unavailable.';
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'Location request timed out.';
+            break;
+        }
+        
+        setError(errorMessage);
+        console.error('TCC_DEBUG: Geolocation error:', error);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  };
+
+  // Set location from manual selection (facility or custom)
+  const setManualLocation = (facility: any) => {
+    if (facility.latitude && facility.longitude) {
+      setUnitLocation({
+        lat: facility.latitude,
+        lng: facility.longitude
+      });
+      setMatchedFacility(`${facility.name} - ${facility.address || ''}`);
+      setManualAddress('');
+      setFilteredFacilities([]);
+      console.log('TCC_DEBUG: Set manual location:', facility.name);
+    }
+  };
+
+  // Geocode address using a simple geocoding service
+  const geocodeAddress = async (address: string) => {
+    try {
+      setGettingLocation(true);
+      setError(null);
+      
+      // Use Nominatim (OpenStreetMap) for free geocoding
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
+        {
+          headers: {
+            'User-Agent': 'TCC-RouteOptimizer'
+          }
+        }
+      );
+      
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        const location = {
+          lat: parseFloat(data[0].lat),
+          lng: parseFloat(data[0].lon)
+        };
+        setUnitLocation(location);
+        checkFacilityMatch(location.lat, location.lng);
+        setManualAddress('');
+        console.log('TCC_DEBUG: Geocoded address:', address, 'to', location);
+      } else {
+        setError('Could not find address. Please try a different address or select from existing facilities.');
+      }
+    } catch (error) {
+      setError('Failed to geocode address. Please select from existing facilities.');
+      console.error('TCC_DEBUG: Geocoding error:', error);
+    } finally {
+      setGettingLocation(false);
+    }
+  };
 
   const loadInitialData = async () => {
     try {
@@ -226,14 +380,22 @@ const TCCRouteOptimizer: React.FC = () => {
       return;
     }
 
+    if (!unitLocation) {
+      setError('Please set the unit location using "Use My Current Location" button');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
+      console.log('TCC_DEBUG: Optimizing with location:', unitLocation);
+      
       const response = await optimizationApi.optimizeRoutes({
         unitId: selectedUnit,
         requestIds: selectedRequests,
-        constraints: optimizationSettings.constraints
+        constraints: optimizationSettings.constraints,
+        unitLocation: unitLocation // Pass GPS location to API
       });
 
       setOptimizationResults(response);
@@ -246,22 +408,38 @@ const TCCRouteOptimizer: React.FC = () => {
   };
 
   const handleBackhaulAnalysis = async () => {
+    console.log('TCC_DEBUG: handleBackhaulAnalysis called - selectedRequests:', selectedRequests);
+    console.log('TCC_DEBUG: selectedRequests.length:', selectedRequests.length);
+    console.log('TCC_DEBUG: unitLocation:', unitLocation);
+    
     if (selectedRequests.length < 2) {
-      setError('Please select at least 2 requests for backhaul analysis');
+      const errorMsg = `Please select at least 2 requests for backhaul analysis (currently ${selectedRequests.length} selected)`;
+      setError(errorMsg);
+      console.error('TCC_DEBUG: Backhaul analysis requires 2+ requests:', errorMsg);
+      // Clear error after 5 seconds
+      setTimeout(() => setError(null), 5000);
       return;
     }
 
     setLoading(true);
     setError(null);
+    setBackhaulAnalysis(null); // Clear previous results
 
     try {
       console.log('TCC_DEBUG: Starting backhaul analysis with selected requests:', selectedRequests);
       const response = await optimizationApi.analyzeBackhaul(selectedRequests);
       console.log('TCC_DEBUG: Backhaul analysis response:', response);
 
-      setBackhaulAnalysis(response);
+      if (response.success) {
+        setBackhaulAnalysis(response);
+        console.log('TCC_DEBUG: Backhaul analysis successful, pairs found:', response.data?.pairs?.length || 0);
+      } else {
+        setError(response.error || 'Failed to analyze backhaul opportunities');
+        console.error('TCC_DEBUG: Backhaul analysis failed:', response.error);
+      }
     } catch (err) {
-      setError('Failed to analyze backhaul opportunities');
+      const errorMsg = 'Failed to analyze backhaul opportunities';
+      setError(errorMsg);
       console.error('TCC_DEBUG: Backhaul analysis error:', err);
     } finally {
       setLoading(false);
@@ -269,8 +447,11 @@ const TCCRouteOptimizer: React.FC = () => {
   };
 
   const handleReturnTripAnalysis = async () => {
+    console.log('TCC_DEBUG: handleReturnTripAnalysis called');
+    
     setLoading(true);
     setError(null);
+    setBackhaulAnalysis(null); // Clear previous results
 
     try {
       console.log('TCC_DEBUG: Starting return trip analysis...');
@@ -281,13 +462,15 @@ const TCCRouteOptimizer: React.FC = () => {
       }
 
       const response = await api.get('/api/optimize/return-trips');
+      console.log('TCC_DEBUG: Return trips raw response:', response);
 
       if (!response.data?.success) {
         throw new Error(`Failed to fetch return trips: ${response.data?.message || 'Unknown error'}`);
       }
 
       const data = response.data;
-      console.log('TCC_DEBUG: Return trips response:', data);
+      console.log('TCC_DEBUG: Return trips response data:', data);
+      console.log('TCC_DEBUG: Return trips found:', data.data?.returnTrips?.length || 0);
       
       if (data.success) {
         // Convert return trips to backhaul analysis format for display
@@ -300,23 +483,35 @@ const TCCRouteOptimizer: React.FC = () => {
           }
         };
         setBackhaulAnalysis(backhaulResponse);
+        console.log('TCC_DEBUG: Return trip analysis successful, displaying results');
       } else {
         throw new Error(data.error || 'Failed to load return trips');
       }
     } catch (err) {
-      setError('Failed to analyze return trip opportunities');
+      const errorMsg = 'Failed to analyze return trip opportunities';
+      setError(errorMsg);
       console.error('TCC_DEBUG: Return trip analysis error:', err);
     } finally {
       setLoading(false);
+      console.log('TCC_DEBUG: handleReturnTripAnalysis completed');
     }
   };
 
   const handleRequestToggle = (requestId: string) => {
-    setSelectedRequests(prev => 
-      prev.includes(requestId) 
+    setSelectedRequests(prev => {
+      const newSelection = prev.includes(requestId) 
         ? prev.filter(id => id !== requestId)
-        : [...prev, requestId]
-    );
+        : [...prev, requestId];
+      
+      console.log('TCC_DEBUG: Request selection changed:', {
+        requestId,
+        action: prev.includes(requestId) ? 'removed' : 'added',
+        newSelectionCount: newSelection.length,
+        newSelection
+      });
+      
+      return newSelection;
+    });
   };
 
   return (
@@ -556,33 +751,210 @@ const TCCRouteOptimizer: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Unit Selection */}
         <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Select Unit</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Step 1: Select Unit</h3>
           {loadingUnits ? (
             <div className="flex items-center justify-center py-8">
               <RefreshCw className="h-6 w-6 animate-spin text-orange-600" />
               <span className="ml-2 text-gray-600">Loading units...</span>
             </div>
           ) : (
-            <select
-              value={selectedUnit}
-              onChange={(e) => setSelectedUnit(e.target.value)}
-              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-            >
-              <option value="">Select a unit...</option>
-              {availableUnits && availableUnits.length > 0 ? availableUnits.map((unit) => (
-                <option key={unit.id} value={unit.id}>
-                  {unit.unitNumber || 'Unknown'} ({unit.type || 'Unknown'}) - {unit.currentStatus || 'Unknown'}
-                </option>
-              )) : (
-                <option disabled>No units available</option>
+            <div className="space-y-4">
+              <select
+                value={selectedUnit}
+                onChange={(e) => {
+                  setSelectedUnit(e.target.value);
+                  // Reset location when unit changes
+                  setUnitLocation(null);
+                }}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+              >
+                <option value="">Select a unit...</option>
+                {availableUnits && availableUnits.length > 0 ? availableUnits.map((unit) => (
+                  <option key={unit.id} value={unit.id}>
+                    {unit.unitNumber || 'Unknown'} ({unit.type || 'Unknown'}) - {unit.currentStatus || 'Unknown'}
+                  </option>
+                )) : (
+                  <option disabled>No units available</option>
+                )}
+              </select>
+
+              {/* Location Selection - Only show when unit is selected */}
+              {selectedUnit && (
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h4 className="text-sm font-medium text-blue-900 mb-3 flex items-center">
+                    <MapPin className="h-4 w-4 mr-2" />
+                    Step 2: Set Current Location
+                  </h4>
+                  
+                  {!unitLocation ? (
+                    <div className="space-y-3">
+                      {/* Mode Toggle */}
+                      <div className="flex space-x-2 mb-3">
+                        <button
+                          onClick={() => setLocationMode('gps')}
+                          className={`flex-1 px-3 py-2 rounded-md text-sm font-medium ${
+                            locationMode === 'gps'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-white text-gray-700 border border-gray-300'
+                          }`}
+                        >
+                          <Target className="h-4 w-4 inline mr-1" />
+                          GPS (Field)
+                        </button>
+                        <button
+                          onClick={() => setLocationMode('manual')}
+                          className={`flex-1 px-3 py-2 rounded-md text-sm font-medium ${
+                            locationMode === 'manual'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-white text-gray-700 border border-gray-300'
+                          }`}
+                        >
+                          <MapPin className="h-4 w-4 inline mr-1" />
+                          Manual (Dispatch)
+                        </button>
+                      </div>
+
+                      {locationMode === 'gps' ? (
+                        /* GPS Mode */
+                        <div className="space-y-3">
+                          <p className="text-sm text-blue-700">
+                            Click the button below to use your current GPS location as the starting point for this unit.
+                          </p>
+                          <button
+                            onClick={getCurrentLocation}
+                            disabled={gettingLocation}
+                            className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {gettingLocation ? (
+                              <>
+                                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                Getting Location...
+                              </>
+                            ) : (
+                              <>
+                                <Target className="h-4 w-4 mr-2" />
+                                Use My Current Location
+                              </>
+                            )}
+                          </button>
+                          <p className="text-xs text-blue-600">
+                            💡 Your browser will ask for permission to access your location
+                          </p>
+                        </div>
+                      ) : (
+                        /* Manual Mode */
+                        <div className="space-y-3">
+                          <p className="text-sm text-blue-700">
+                            Search for a facility or enter an address to set the unit's location.
+                          </p>
+                          
+                          {/* Search Input */}
+                          <div className="relative">
+                            <input
+                              type="text"
+                              placeholder="Search facilities or enter address..."
+                              value={manualAddress}
+                              onChange={(e) => setManualAddress(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && manualAddress && filteredFacilities.length === 0) {
+                                  geocodeAddress(manualAddress);
+                                }
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                            />
+                            
+                            {/* Dropdown for filtered facilities */}
+                            {filteredFacilities.length > 0 && (
+                              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                                {filteredFacilities.map((facility) => (
+                                  <button
+                                    key={facility.id}
+                                    onClick={() => setManualLocation(facility)}
+                                    className="w-full text-left px-3 py-2 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
+                                  >
+                                    <div className="text-sm font-medium text-gray-900">{facility.name}</div>
+                                    <div className="text-xs text-gray-500">
+                                      {facility.address || ''} {facility.city ? `• ${facility.city}` : ''}
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Geocode button for custom addresses */}
+                          {manualAddress && filteredFacilities.length === 0 && (
+                            <button
+                              onClick={() => geocodeAddress(manualAddress)}
+                              disabled={gettingLocation}
+                              className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                            >
+                              {gettingLocation ? (
+                                <>
+                                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                  Finding Address...
+                                </>
+                              ) : (
+                                <>
+                                  <MapPin className="h-4 w-4 mr-2" />
+                                  Use This Address
+                                </>
+                              )}
+                            </button>
+                          )}
+                          
+                          <p className="text-xs text-blue-600">
+                            💡 Start typing to see matching facilities, or enter any address
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-green-800 flex items-center">
+                            <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
+                            Location Set
+                          </p>
+                          
+                          {matchedFacility ? (
+                            <div className="mt-1">
+                              <p className="text-sm font-medium text-blue-900">
+                                📍 {matchedFacility}
+                              </p>
+                              <p className="text-xs text-gray-600 mt-0.5">
+                                Lat: {unitLocation.lat.toFixed(6)}, Lng: {unitLocation.lng.toFixed(6)}
+                              </p>
+                            </div>
+                          ) : (
+                            <p className="text-xs text-gray-600 mt-1">
+                              Lat: {unitLocation.lat.toFixed(6)}, Lng: {unitLocation.lng.toFixed(6)}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => {
+                            setUnitLocation(null);
+                            setMatchedFacility(null);
+                            setManualAddress('');
+                          }}
+                          className="text-sm text-blue-600 hover:text-blue-800"
+                        >
+                          Change
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
-            </select>
+            </div>
           )}
         </div>
 
         {/* Request Selection */}
         <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Select Requests</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Step 3: Select Requests</h3>
           {loadingRequests ? (
             <div className="flex items-center justify-center py-8">
               <RefreshCw className="h-6 w-6 animate-spin text-orange-600" />
@@ -599,7 +971,7 @@ const TCCRouteOptimizer: React.FC = () => {
                     className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                   />
                   <span className="ml-2 text-sm text-gray-700">
-                    {request.patientId || 'Unknown'} - {request.originFacilityId || 'Unknown'} → {request.destinationFacilityId || 'Unknown'}
+                    {request.patientId || 'Unknown'} - {request.originFacilityName || request.originFacilityId || 'Unknown'} → {request.destinationFacilityName || request.destinationFacilityId || 'Unknown'}
                   </span>
                 </label>
               )) : (
@@ -611,37 +983,59 @@ const TCCRouteOptimizer: React.FC = () => {
       </div>
 
       {/* Action Buttons */}
-      <div className="flex space-x-4">
-        <button
-          onClick={handleOptimize}
-          disabled={loading || !selectedUnit || selectedRequests.length === 0}
-          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? (
-            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <Navigation className="h-4 w-4 mr-2" />
-          )}
-          Optimize Routes
-        </button>
+      <div className="space-y-4">
+        <div className="flex space-x-4">
+          <button
+            onClick={handleOptimize}
+            disabled={loading || !selectedUnit || !unitLocation || selectedRequests.length === 0}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            title={!selectedUnit ? 'Step 1: Select a unit' : !unitLocation ? 'Step 2: Set unit location using GPS' : selectedRequests.length === 0 ? 'Step 3: Select at least one request' : 'Optimize routes for selected unit and requests'}
+          >
+            {loading ? (
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Navigation className="h-4 w-4 mr-2" />
+            )}
+            Optimize Routes
+          </button>
 
-        <button
-          onClick={handleBackhaulAnalysis}
-          disabled={loading || selectedRequests.length < 2}
-          className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Target className="h-4 w-4 mr-2" />
-          Analyze Backhaul
-        </button>
+          <button
+            onClick={handleBackhaulAnalysis}
+            disabled={loading || !selectedUnit || !unitLocation || selectedRequests.length < 2}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            title={!selectedUnit ? 'Step 1: Select a unit' : !unitLocation ? 'Step 2: Set unit location using GPS' : selectedRequests.length < 2 ? `Step 3: Select at least 2 requests (currently ${selectedRequests.length} selected)` : 'Find backhaul opportunities between selected requests'}
+          >
+            <Target className="h-4 w-4 mr-2" />
+            Backhaul Analysis ({selectedRequests.length} selected)
+          </button>
 
-        <button
-          onClick={handleReturnTripAnalysis}
-          disabled={loading}
-          className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Navigation className="h-4 w-4 mr-2" />
-          Find Return Trips
-        </button>
+          <button
+            onClick={handleReturnTripAnalysis}
+            disabled={loading}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Find return trip opportunities (e.g., Pittsburgh → Altoona → Pittsburgh)"
+          >
+            {loading ? (
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Navigation className="h-4 w-4 mr-2" />
+            )}
+            Find Return Trips
+          </button>
+        </div>
+        
+        {/* Selection Status Indicator */}
+        {selectedRequests.length > 0 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+            <div className="flex items-center">
+              <CheckCircle className="h-5 w-5 text-blue-500 mr-2" />
+              <span className="text-sm text-blue-700">
+                {selectedRequests.length} request{selectedRequests.length !== 1 ? 's' : ''} selected
+                {selectedRequests.length === 1 && ' - Select at least 1 more for backhaul analysis'}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Error Display */}

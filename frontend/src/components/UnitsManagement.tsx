@@ -13,9 +13,11 @@ import {
   Search,
   RefreshCw,
   Eye,
-  MoreVertical
+  MoreVertical,
+  Navigation
 } from 'lucide-react';
 import api from '../services/api';
+import UnitLocationManager from './UnitLocationManager';
 import {
   Unit,
   UnitFormData,
@@ -51,6 +53,7 @@ const UnitsManagement: React.FC<UnitsManagementProps> = ({ user, acceptedTrips =
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<UnitStatus | 'ALL'>('ALL');
   const [typeFilter, setTypeFilter] = useState<UnitType | 'ALL'>('ALL');
+  const [activeTab, setActiveTab] = useState<'units' | 'locations'>('units');
 
   // Form state
   const [formData, setFormData] = useState<UnitFormData>({
@@ -300,18 +303,53 @@ const UnitsManagement: React.FC<UnitsManagementProps> = ({ user, acceptedTrips =
           <h2 className="text-2xl font-bold text-gray-900">Units Management</h2>
           <p className="text-gray-600">Manage your EMS units and track their status</p>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center space-x-2 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Add Unit</span>
-        </button>
+        {activeTab === 'units' && (
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center space-x-2 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Add Unit</span>
+          </button>
+        )}
+      </div>
+
+      {/* Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+          <button
+            onClick={() => setActiveTab('units')}
+            className={`${
+              activeTab === 'units'
+                ? 'border-orange-500 text-orange-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
+          >
+            <Truck className="h-5 w-5 mr-2" />
+            Units List
+          </button>
+          <button
+            onClick={() => setActiveTab('locations')}
+            className={`${
+              activeTab === 'locations'
+                ? 'border-orange-500 text-orange-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
+          >
+            <Navigation className="h-5 w-5 mr-2" />
+            Unit Locations
+          </button>
+        </nav>
       </div>
 
 
-      {/* Analytics Cards */}
-      {analytics && (
+      {/* Tab Content */}
+      {activeTab === 'locations' ? (
+        <UnitLocationManager />
+      ) : (
+        <>
+          {/* Analytics Cards */}
+          {analytics && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="bg-white p-6 rounded-lg shadow">
             <div className="flex items-center">
@@ -655,6 +693,8 @@ const UnitsManagement: React.FC<UnitsManagementProps> = ({ user, acceptedTrips =
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

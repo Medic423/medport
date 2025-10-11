@@ -24,6 +24,7 @@ import emsAnalyticsRoutes from './routes/emsAnalytics';
 import backupRoutes from './routes/backup';
 import maintenanceRoutes from './routes/maintenance';
 import healthcareLocationsRoutes from './routes/healthcareLocations';
+import unitLocationRoutes from './routes/unitLocation';
 
 // Load environment variables
 dotenv.config();
@@ -94,6 +95,7 @@ app.use('/api/agency-responses', agencyResponseRoutes);
 app.use('/api/notifications', notificationRoutes);
 // app.use('/api/admin/notifications', adminNotificationRoutes);
 app.use('/api/units', unitRoutes);
+app.use('/api/units', unitLocationRoutes); // Unit location management
 app.use('/api/tcc/hospitals', hospitalRoutes);
 app.use('/api/tcc/agencies', agencyRoutes);
 app.use('/api/tcc/facilities', facilityRoutes);

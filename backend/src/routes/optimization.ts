@@ -5,6 +5,7 @@ import { MultiUnitOptimizer } from '../services/multiUnitOptimizer';
 import { databaseManager } from '../services/databaseManager';
 import { authenticateAdmin, AuthenticatedRequest } from '../middleware/authenticateAdmin';
 import { authService } from '../services/authService';
+import { coordinateService } from '../services/coordinateService';
 
 const router = express.Router();
 
@@ -750,49 +751,69 @@ async function getAllPendingRequests(): Promise<any[]> {
   try {
     const prisma = databaseManager.getCenterDB();
     
-    const trips = await prisma.trip.findMany({
+    const trips = await prisma.transportRequest.findMany({
       where: {
         status: 'PENDING'
       },
       select: {
         id: true,
         patientId: true,
+        originFacilityId: true,
+        destinationFacilityId: true,
         fromLocation: true,
         toLocation: true,
         transportLevel: true,
         priority: true,
         scheduledTime: true,
         specialNeeds: true,
-        originLatitude: true,
-        originLongitude: true,
-        destinationLatitude: true,
-        destinationLongitude: true,
         createdAt: true
       }
     });
 
+    console.log('TCC_DEBUG: getAllPendingRequests - Found trips:', trips.length);
+
+    // Get unique facility IDs for coordinate lookup
+    const facilityIds = new Set<string>();
+    trips.forEach(trip => {
+      if (trip.originFacilityId) facilityIds.add(trip.originFacilityId);
+      if (trip.destinationFacilityId) facilityIds.add(trip.destinationFacilityId);
+    });
+
+    console.log('TCC_DEBUG: Looking up coordinates for pending requests facilities:', Array.from(facilityIds));
+    
+    // Get coordinates for all facilities
+    const facilityCoordinates = await coordinateService.getFacilitiesCoordinates(Array.from(facilityIds));
+    console.log('TCC_DEBUG: Retrieved facility coordinates for pending requests:', facilityCoordinates.size, 'facilities');
+
     // Convert to TransportRequest format
-    return trips.map(trip => ({
-      id: trip.id,
-      patientId: trip.patientId,
-      originFacilityId: trip.fromLocation,
-      destinationFacilityId: trip.toLocation,
-      transportLevel: trip.transportLevel,
-      priority: trip.priority,
-      status: 'PENDING',
-      specialRequirements: trip.specialNeeds || '',
-      requestTimestamp: new Date(trip.createdAt),
-      readyStart: new Date(trip.scheduledTime),
-      readyEnd: new Date(new Date(trip.scheduledTime).getTime() + 60 * 60 * 1000), // 1 hour window
-      originLocation: {
-        lat: trip.originLatitude || 40.7128,
-        lng: trip.originLongitude || -74.0060
-      },
-      destinationLocation: {
-        lat: trip.destinationLatitude || 40.7589,
-        lng: trip.destinationLongitude || -73.9851
-      }
-    }));
+    return trips.map(trip => {
+      const originFacilityId = trip.originFacilityId || trip.fromLocation || 'unknown';
+      const destinationFacilityId = trip.destinationFacilityId || trip.toLocation || 'unknown';
+      
+      // Get coordinates for origin and destination
+      const originCoords = facilityCoordinates.get(originFacilityId) || coordinateService.getDefaultCoordinates();
+      const destinationCoords = facilityCoordinates.get(destinationFacilityId) || coordinateService.getDefaultCoordinates();
+
+      return {
+        id: trip.id,
+        patientId: trip.patientId,
+        originFacilityId,
+        destinationFacilityId,
+        transportLevel: trip.transportLevel,
+        priority: trip.priority,
+        status: 'PENDING',
+        specialRequirements: trip.specialNeeds || '',
+        requestTimestamp: new Date(trip.createdAt),
+        readyStart: trip.scheduledTime ? new Date(trip.scheduledTime) : new Date(trip.createdAt),
+        readyEnd: trip.scheduledTime ? new Date(new Date(trip.scheduledTime).getTime() + 60 * 60 * 1000) : new Date(new Date(trip.createdAt).getTime() + 60 * 60 * 1000), // 1 hour window
+        // Use real facility coordinates
+        originLocation: { lat: originCoords.lat, lng: originCoords.lng },
+        destinationLocation: { lat: destinationCoords.lat, lng: destinationCoords.lng },
+        // Add facility names for debugging
+        originFacilityName: originCoords.name || originFacilityId,
+        destinationFacilityName: destinationCoords.name || destinationFacilityId
+      };
+    });
   } catch (error) {
     console.error('Error getting pending requests:', error);
     return [];
@@ -820,10 +841,10 @@ async function getUnitById(unitId: string): Promise<any> {
       type: unit.type,
       capabilities: unit.capabilities || [],
       currentStatus: unit.currentStatus,
-      currentLocation: unit.currentLocation && typeof unit.currentLocation === 'object' && 'lat' in unit.currentLocation ? {
-        lat: (unit.currentLocation as any).lat,
-        lng: (unit.currentLocation as any).lng
-      } : { lat: 0, lng: 0 },
+      currentLocation: unit.latitude && unit.longitude ? {
+        lat: unit.latitude,
+        lng: unit.longitude
+      } : { lat: 40.7128, lng: -74.0060 }, // Default to NYC if no location set
       shiftStart: (unit as any).shiftStart || new Date(),
       shiftEnd: (unit as any).shiftEnd || new Date(Date.now() + 8 * 60 * 60 * 1000), // 8 hours from now
       isActive: unit.isActive
@@ -854,10 +875,10 @@ async function getUnitsByIds(unitIds: string[]): Promise<any[]> {
       type: unit.type,
       capabilities: unit.capabilities || [],
       currentStatus: unit.currentStatus,
-      currentLocation: unit.currentLocation && typeof unit.currentLocation === 'object' && 'lat' in unit.currentLocation ? {
-        lat: (unit.currentLocation as any).lat,
-        lng: (unit.currentLocation as any).lng
-      } : { lat: 0, lng: 0 },
+      currentLocation: unit.latitude && unit.longitude ? {
+        lat: unit.latitude,
+        lng: unit.longitude
+      } : { lat: 40.7128, lng: -74.0060 }, // Default to NYC if no location set
       shiftStart: (unit as any).shiftStart || new Date(),
       shiftEnd: (unit as any).shiftEnd || new Date(Date.now() + 8 * 60 * 60 * 1000), // 8 hours from now
       isActive: unit.isActive
@@ -871,39 +892,58 @@ async function getUnitsByIds(unitIds: string[]): Promise<any[]> {
 async function getRequestsByIds(requestIds: string[]): Promise<any[]> {
   try {
     const prisma = databaseManager.getCenterDB();
-    const trips = await prisma.trip.findMany({
+    const trips = await prisma.transportRequest.findMany({
       where: { 
-        id: { in: requestIds },
-        status: 'PENDING'
+        id: { in: requestIds }
       }
     });
 
-    return trips.map(trip => ({
-      id: trip.id,
-      patientId: trip.patientId,
-      originFacilityId: trip.fromLocation,
-      destinationFacilityId: trip.toLocation,
-      transportLevel: trip.transportLevel,
-      priority: trip.priority,
-      status: trip.status,
-      specialRequirements: trip.specialNeeds || '',
-      requestTimestamp: trip.requestTimestamp || trip.createdAt,
-      readyStart: trip.scheduledTime,
-      readyEnd: new Date(trip.scheduledTime.getTime() + 30 * 60 * 1000), // 30 minutes window
-      originLocation: trip.originLatitude && trip.originLongitude ? {
-        lat: trip.originLatitude,
-        lng: trip.originLongitude
-      } : { lat: 0, lng: 0 },
-      destinationLocation: trip.destinationLatitude && trip.destinationLongitude ? {
-        lat: trip.destinationLatitude,
-        lng: trip.destinationLongitude
-      } : { lat: 0, lng: 0 },
-      // Revenue and distance data
-      tripCost: trip.tripCost,
-      distanceMiles: trip.distanceMiles,
-      insurancePayRate: trip.insurancePayRate,
-      perMileRate: trip.perMileRate
-    }));
+    console.log('TCC_DEBUG: getRequestsByIds - Found trips:', trips.length);
+    if (trips.length > 0) {
+      console.log('TCC_DEBUG: Sample trip:', trips[0]);
+    }
+
+    // Get unique facility IDs for coordinate lookup
+    const facilityIds = new Set<string>();
+    trips.forEach(trip => {
+      if (trip.originFacilityId) facilityIds.add(trip.originFacilityId);
+      if (trip.destinationFacilityId) facilityIds.add(trip.destinationFacilityId);
+    });
+
+    console.log('TCC_DEBUG: Looking up coordinates for facilities:', Array.from(facilityIds));
+    
+    // Get coordinates for all facilities
+    const facilityCoordinates = await coordinateService.getFacilitiesCoordinates(Array.from(facilityIds));
+    console.log('TCC_DEBUG: Retrieved facility coordinates:', facilityCoordinates.size, 'facilities');
+
+    return trips.map(trip => {
+      const originFacilityId = trip.originFacilityId || trip.fromLocation || 'unknown';
+      const destinationFacilityId = trip.destinationFacilityId || trip.toLocation || 'unknown';
+      
+      // Get coordinates for origin and destination
+      const originCoords = facilityCoordinates.get(originFacilityId) || coordinateService.getDefaultCoordinates();
+      const destinationCoords = facilityCoordinates.get(destinationFacilityId) || coordinateService.getDefaultCoordinates();
+
+      return {
+        id: trip.id,
+        patientId: trip.patientId,
+        originFacilityId,
+        destinationFacilityId,
+        transportLevel: trip.transportLevel,
+        priority: trip.priority,
+        status: trip.status,
+        specialRequirements: trip.specialNeeds || trip.specialRequirements || '',
+        requestTimestamp: trip.requestTimestamp || trip.createdAt,
+        readyStart: trip.scheduledTime || trip.createdAt,
+        readyEnd: new Date((trip.scheduledTime || trip.createdAt).getTime() + 30 * 60 * 1000), // 30 minutes window
+        // Use real facility coordinates
+        originLocation: { lat: originCoords.lat, lng: originCoords.lng },
+        destinationLocation: { lat: destinationCoords.lat, lng: destinationCoords.lng },
+        // Add facility names for debugging
+        originFacilityName: originCoords.name || originFacilityId,
+        destinationFacilityName: destinationCoords.name || destinationFacilityId
+      };
+    });
   } catch (error) {
     console.error('Error fetching requests by IDs:', error);
     return [];
@@ -927,25 +967,15 @@ async function getCompletedTripsInRange(startTime: Date, endTime: Date, agencyId
       whereClause.assignedAgencyId = agencyId;
     }
 
-    const trips = await prisma.trip.findMany({
+    const trips = await prisma.transportRequest.findMany({
       where: whereClause,
       select: {
         id: true,
         transportLevel: true,
         priority: true,
         completionTimestamp: true,
-        tripCost: true,
-        distanceMiles: true,
-        responseTimeMinutes: true,
-        actualTripTimeMinutes: true,
         assignedAgencyId: true,
-        // New analytics fields
-        loadedMiles: true,
-        customerSatisfaction: true,
-        efficiency: true,
-        performanceScore: true,
-        revenuePerHour: true,
-        backhaulOpportunity: true
+        createdAt: true
       }
     });
 
@@ -954,18 +984,12 @@ async function getCompletedTripsInRange(startTime: Date, endTime: Date, agencyId
       transportLevel: trip.transportLevel,
       priority: trip.priority,
       completedAt: trip.completionTimestamp,
-      revenue: trip.tripCost || 0,
-      miles: trip.distanceMiles || 0,
-      loadedMiles: trip.loadedMiles || trip.distanceMiles || 0, // Use stored loadedMiles if available
-      responseTimeMinutes: trip.responseTimeMinutes || 0,
-      actualTripTimeMinutes: trip.actualTripTimeMinutes || 0,
-      assignedAgencyId: trip.assignedAgencyId,
-      // New analytics fields
-      customerSatisfaction: trip.customerSatisfaction,
-      efficiency: trip.efficiency,
-      performanceScore: trip.performanceScore,
-      revenuePerHour: trip.revenuePerHour,
-      backhaulOpportunity: trip.backhaulOpportunity
+      revenue: 0, // TODO: Calculate from transportLevel
+      miles: 0, // TODO: Calculate from facilities
+      loadedMiles: 0,
+      responseTimeMinutes: 0,
+      actualTripTimeMinutes: 0,
+      assignedAgencyId: trip.assignedAgencyId
     }));
   } catch (error) {
     console.error('Error fetching completed trips in range:', error);
@@ -984,16 +1008,54 @@ function calculateTripRevenue(trip: any): number {
     return Number(trip.revenue);
   }
 
-  // Fallback to calculated revenue
-  const baseRates = { 'BLS': 150.0, 'ALS': 250.0, 'CCT': 400.0 };
+  // Calculate base rate by transport level
+  const baseRates = { 
+    'BLS': 150.0, 
+    'ALS': 250.0, 
+    'CCT': 400.0,
+    'CRITICAL_CARE': 400.0,
+    'NEONATAL': 500.0,
+    'BARIATRIC': 300.0
+  };
   const baseRate = baseRates[trip.transportLevel as keyof typeof baseRates] || 150.0;
-  const priorityMultipliers = { 'LOW': 1.0, 'MEDIUM': 1.1, 'HIGH': 1.25, 'URGENT': 1.5 };
-  const multiplier = priorityMultipliers[trip.priority as keyof typeof priorityMultipliers] || 1.0;
-  return baseRate * multiplier;
+  
+  // Apply priority multipliers
+  const priorityMultipliers = { 
+    'LOW': 1.0, 
+    'MEDIUM': 1.1, 
+    'HIGH': 1.25, 
+    'URGENT': 1.5,
+    'EMERGENCY': 1.5
+  };
+  const priorityMultiplier = priorityMultipliers[trip.priority as keyof typeof priorityMultipliers] || 1.0;
+  
+  // Calculate distance-based pricing if coordinates are available
+  let distanceMultiplier = 1.0;
+  if (trip.originLocation && trip.destinationLocation) {
+    const distance = coordinateService.calculateDistance(trip.originLocation, trip.destinationLocation);
+    // Add $2 per mile for distances over 10 miles
+    if (distance > 10) {
+      distanceMultiplier = 1 + ((distance - 10) * 2 / baseRate);
+    }
+  }
+  
+  const totalRevenue = baseRate * priorityMultiplier * distanceMultiplier;
+  return Math.round(totalRevenue * 100) / 100; // Round to 2 decimal places
 }
 
 function calculateTripMiles(trip: any): number {
-  return trip.distanceMiles || trip.miles || 0;
+  // Use stored distance if available
+  if (trip.distanceMiles && trip.distanceMiles > 0) {
+    return Number(trip.distanceMiles);
+  }
+  
+  // Calculate distance from coordinates if available
+  if (trip.originLocation && trip.destinationLocation) {
+    const distance = coordinateService.calculateDistance(trip.originLocation, trip.destinationLocation);
+    return distance;
+  }
+  
+  return 0;
 }
 
 function calculateLoadedMiles(trip: any): number {
@@ -1002,8 +1064,9 @@ function calculateLoadedMiles(trip: any): number {
     return Number(trip.loadedMiles);
   }
   
-  // Fallback to calculated loaded miles (same as total miles for now)
-  return trip.distanceMiles || trip.miles || 0;
+  // For now, assume all miles are loaded miles (no deadhead calculation)
+  // In the future, this could subtract deadhead miles from total miles
+  return calculateTripMiles(trip);
 }
 
 async function getPerformanceMetrics(startTime: Date, endTime: Date, unitId?: string): Promise<any> {
@@ -1023,13 +1086,10 @@ async function getPerformanceMetrics(startTime: Date, endTime: Date, unitId?: st
       whereClause.assignedUnitId = unitId;
     }
 
-    const trips = await prisma.trip.findMany({
+    const trips = await prisma.transportRequest.findMany({
       where: whereClause,
       select: {
         id: true,
-        tripCost: true,
-        responseTimeMinutes: true,
-        actualTripTimeMinutes: true,
         completionTimestamp: true,
         createdAt: true
       }
@@ -1038,21 +1098,10 @@ async function getPerformanceMetrics(startTime: Date, endTime: Date, unitId?: st
     const totalTrips = trips.length;
     const completedTrips = trips.filter(trip => trip.completionTimestamp).length;
     
-    const totalRevenue = trips.reduce((sum, trip) => sum + (Number(trip.tripCost) || 0), 0);
+    const totalRevenue = 0; // TODO: Calculate from trip data
     
-    const responseTimes = trips
-      .filter(trip => trip.responseTimeMinutes)
-      .map(trip => trip.responseTimeMinutes!);
-    const averageResponseTime = responseTimes.length > 0 
-      ? responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length 
-      : 0;
-
-    const tripTimes = trips
-      .filter(trip => trip.actualTripTimeMinutes)
-      .map(trip => trip.actualTripTimeMinutes!);
-    const averageTripTime = tripTimes.length > 0 
-      ? tripTimes.reduce((sum, time) => sum + time, 0) / tripTimes.length 
-      : 0;
+    const averageResponseTime = 0; // TODO: Calculate from timestamps
+    const averageTripTime = 0; // TODO: Calculate from timestamps
 
     const efficiency = totalTrips > 0 ? completedTrips / totalTrips : 0;
 
