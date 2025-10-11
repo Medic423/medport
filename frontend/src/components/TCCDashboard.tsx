@@ -15,6 +15,7 @@ import {
 import Notifications from './Notifications';
 import Overview from './Overview';
 import TripsView from './TripsView';
+import TCCCreateTrip from './TCCCreateTrip';
 import Hospitals from './Hospitals';
 import Agencies from './Agencies';
 import HealthcarePortal from './HealthcarePortal';
@@ -228,6 +229,7 @@ const TCCDashboard: React.FC<TCCDashboardProps> = ({ user, onLogout }) => {
               <Routes>
                 <Route path="/" element={<Overview />} />
                 <Route path="/trips" element={<TripsView user={user} />} />
+                <Route path="/trips/create" element={<TCCCreateTrip user={user} />} />
                 <Route path="/analytics" element={<Analytics />} />
                 <Route path="/units" element={<TCCUnitsManagement />} />
                 <Route path="/hospitals/*" element={<Hospitals />} />

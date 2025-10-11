@@ -52,6 +52,9 @@ export interface EnhancedCreateTripRequest {
     notes?: string;
     priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
     healthcareUserId?: string;
+    createdByTCCUserId?: string;
+    createdByTCCUserEmail?: string;
+    createdVia?: string;
 }
 export declare class TripService {
     /**

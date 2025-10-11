@@ -113,7 +113,9 @@ router.post('/enhanced', authenticateAdmin_1.authenticateAdmin, async (req, res)
     try {
         console.log('TCC_DEBUG: Create enhanced trip request received:', req.body);
         console.log('TCC_DEBUG: Authenticated user:', req.user);
-        const { patientId, patientWeight, specialNeeds, insuranceCompany, fromLocation, pickupLocationId, toLocation, scheduledTime, transportLevel, urgencyLevel, diagnosis, mobilityLevel, oxygenRequired, monitoringRequired, generateQRCode, selectedAgencies, notificationRadius, notes, priority } = req.body;
+        const { patientId, patientWeight, specialNeeds, insuranceCompany, fromLocation, fromLocationId, pickupLocationId, toLocation, scheduledTime, transportLevel, urgencyLevel, diagnosis, mobilityLevel, oxygenRequired, monitoringRequired, generateQRCode, selectedAgencies, notificationRadius, notes, priority, 
+        // TCC Command: Audit trail fields
+        createdByTCCUserId, createdByTCCUserEmail, createdVia } = req.body;
         // Validation
         if (!fromLocation || !toLocation || !transportLevel || !urgencyLevel) {
             return res.status(400).json({
@@ -141,6 +143,7 @@ router.post('/enhanced', authenticateAdmin_1.authenticateAdmin, async (req, res)
             specialNeeds,
             insuranceCompany,
             fromLocation,
+            fromLocationId,
             pickupLocationId,
             toLocation,
             scheduledTime: finalScheduledTime,
@@ -155,8 +158,22 @@ router.post('/enhanced', authenticateAdmin_1.authenticateAdmin, async (req, res)
             notificationRadius: notificationRadius || 100,
             notes,
             priority,
-            healthcareUserId: req.user?.userType === 'HEALTHCARE' ? req.user.id : undefined // ✅ CRITICAL: Set healthcare user ID
+            healthcareUserId: req.user?.userType === 'HEALTHCARE' ? req.user.id : undefined, // ✅ CRITICAL: Set healthcare user ID
+            // ✅ TCC Command: Audit trail
+            createdByTCCUserId,
+            createdByTCCUserEmail,
+            createdVia
         };
+        // Log TCC command audit trail if applicable
+        if (createdByTCCUserId) {
+            console.log('TCC_COMMAND: Trip being created by TCC staff:', {
+                tccUserId: createdByTCCUserId,
+                tccUserEmail: createdByTCCUserEmail,
+                facilityId: fromLocationId,
+                facility: fromLocation,
+                createdVia
+            });
+        }
         const result = await tripService_1.tripService.createEnhancedTrip(enhancedTripData);
         console.log('TCC_DEBUG: Enhanced trip created successfully:', result);
         res.status(201).json(result);

@@ -9,7 +9,9 @@ import {
   MapPin,
   User,
   Stethoscope,
-  Truck
+  Truck,
+  Building2,
+  RefreshCw
 } from 'lucide-react';
 import { tripsAPI } from '../services/api';
 import { dropdownOptionsAPI } from '../services/api';
@@ -151,6 +153,11 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
   const [loadingPickupLocations, setLoadingPickupLocations] = useState(false);
   // Phase A: Geographic filtering state
   const [showAllStates, setShowAllStates] = useState(false);
+  
+  // TCC Command: Facility selection for admin/user creating trips on behalf of facilities
+  const [selectedTCCFacilityId, setSelectedTCCFacilityId] = useState<string>('');
+  const [tccHealthcareFacilities, setTccHealthcareFacilities] = useState<HealthcareLocation[]>([]);
+  const [loadingTCCFacilities, setLoadingTCCFacilities] = useState(false);
 
   // Phase A: Function to reload facilities when geographic filter changes
   const reloadFacilities = async () => {
@@ -223,7 +230,48 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
     
     loadFormOptions();
     // Note: loadHealthcareLocations is now handled within loadFormOptions
+    
+    // TCC Command: Load all healthcare facilities for admin/user
+    if (user.userType === 'ADMIN' || user.userType === 'USER') {
+      loadTCCHealthcareFacilities();
+    }
   }, []);
+  
+  // TCC Command: Fetch all healthcare facilities for facility selection
+  const loadTCCHealthcareFacilities = async () => {
+    try {
+      setLoadingTCCFacilities(true);
+      console.log('TCC_COMMAND: Loading all healthcare facilities for command staff...');
+      
+      const response = await api.get('/api/healthcare/locations');
+      if (response.data?.success && Array.isArray(response.data.data)) {
+        const facilities = response.data.data.filter((f: HealthcareLocation) => f.isActive);
+        setTccHealthcareFacilities(facilities);
+        console.log('TCC_COMMAND: Loaded', facilities.length, 'active healthcare facilities');
+      }
+    } catch (error) {
+      console.error('TCC_COMMAND: Error loading healthcare facilities:', error);
+    } finally {
+      setLoadingTCCFacilities(false);
+    }
+  };
+  
+  // TCC Command: Handle facility selection
+  const handleTCCFacilitySelection = (facilityId: string) => {
+    console.log('TCC_COMMAND: Facility selected:', facilityId);
+    setSelectedTCCFacilityId(facilityId);
+    
+    const facility = tccHealthcareFacilities.find(f => f.id === facilityId);
+    if (facility) {
+      // Pre-fill form with selected facility information
+      setFormData(prev => ({
+        ...prev,
+        fromLocation: facility.locationName,
+        fromLocationId: facility.id
+      }));
+      console.log('TCC_COMMAND: Pre-filled fromLocation with:', facility.locationName);
+    }
+  };
 
   // Load pickup locations when fromLocation is set (including pre-selected facility)
   useEffect(() => {
@@ -698,9 +746,14 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
         bariatric: parseFloat(formData.patientWeight) > 300, // Consider bariatric if weight > 300 lbs
         pickupLocationId: formData.pickupLocationId,
         notes: formData.notes || '',
-        // ✅ NEW: Multi-location support
-        fromLocationId: user.manageMultipleLocations ? formData.fromLocationId : undefined,
-        healthcareUserId: user.manageMultipleLocations ? user.id : undefined
+        // ✅ Multi-location support for healthcare users
+        fromLocationId: user.manageMultipleLocations ? formData.fromLocationId : 
+                       (user.userType === 'ADMIN' || user.userType === 'USER') ? selectedTCCFacilityId : undefined,
+        healthcareUserId: user.manageMultipleLocations ? user.id : undefined,
+        // ✅ TCC Command: Audit trail for trips created by admin/user
+        createdByTCCUserId: (user.userType === 'ADMIN' || user.userType === 'USER') ? user.id : undefined,
+        createdByTCCUserEmail: (user.userType === 'ADMIN' || user.userType === 'USER') ? user.email : undefined,
+        createdVia: (user.userType === 'ADMIN' || user.userType === 'USER') ? 'TCC_ADMIN_PORTAL' : 'HEALTHCARE_PORTAL'
       };
 
       console.log('TCC_DEBUG: Submitting trip data:', tripData);
@@ -1368,6 +1421,71 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
 
   return (
     <div className="max-w-4xl mx-auto">
+      {/* TCC Command: Facility Context Selector */}
+      {(user.userType === 'ADMIN' || user.userType === 'USER') && (
+        <div className="mb-6 bg-blue-50 border-2 border-blue-300 rounded-lg p-5 shadow-sm">
+          <div className="flex items-center mb-3">
+            <div className="flex-shrink-0">
+              <div className="h-10 w-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                <Building2 className="h-6 w-6 text-white" />
+              </div>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-lg font-semibold text-gray-900">
+                TCC Command Center - Create Trip
+              </h3>
+              <p className="text-sm text-gray-600">
+                Select the healthcare facility you're creating this trip for
+              </p>
+            </div>
+          </div>
+          
+          {loadingTCCFacilities ? (
+            <div className="flex items-center justify-center py-4">
+              <RefreshCw className="h-5 w-5 animate-spin text-blue-600 mr-2" />
+              <span className="text-sm text-gray-600">Loading facilities...</span>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Healthcare Facility *
+              </label>
+              <select
+                value={selectedTCCFacilityId}
+                onChange={(e) => handleTCCFacilitySelection(e.target.value)}
+                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base"
+                required
+              >
+                <option value="">-- Select Healthcare Facility --</option>
+                {tccHealthcareFacilities.map(facility => (
+                  <option key={facility.id} value={facility.id}>
+                    {facility.locationName} - {facility.city}, {facility.state} {facility.zipCode}
+                  </option>
+                ))}
+              </select>
+              
+              {selectedTCCFacilityId && (
+                <div className="mt-2 flex items-start">
+                  <CheckCircle className="h-4 w-4 text-green-600 mr-1 mt-0.5" />
+                  <p className="text-sm text-green-700">
+                    Facility selected. Creating trip on behalf of{' '}
+                    <span className="font-semibold">
+                      {tccHealthcareFacilities.find(f => f.id === selectedTCCFacilityId)?.locationName}
+                    </span>
+                  </p>
+                </div>
+              )}
+              
+              {!selectedTCCFacilityId && (
+                <p className="mt-2 text-xs text-gray-500">
+                  As TCC command staff, you have visibility into all facilities. Select a facility to proceed.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+      
       {/* Progress Steps */}
       <div className="mb-8">
         <div className="flex items-center justify-between">

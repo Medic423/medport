@@ -62,6 +62,10 @@ export interface EnhancedCreateTripRequest {
   notes?: string;
   priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   healthcareUserId?: string; // ✅ NEW: For determining if multi-location facility
+  // ✅ TCC Command: Audit trail for trips created by TCC staff
+  createdByTCCUserId?: string; // TCC admin/user who created trip
+  createdByTCCUserEmail?: string; // Email of TCC staff member
+  createdVia?: string; // Source: 'TCC_ADMIN_PORTAL' or 'HEALTHCARE_PORTAL'
 }
 
 export class TripService {

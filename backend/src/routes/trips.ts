@@ -107,6 +107,7 @@ router.post('/enhanced', authenticateAdmin, async (req: AuthenticatedRequest, re
       specialNeeds,
       insuranceCompany,
       fromLocation,
+      fromLocationId,
       pickupLocationId,
       toLocation,
       scheduledTime,
@@ -120,7 +121,11 @@ router.post('/enhanced', authenticateAdmin, async (req: AuthenticatedRequest, re
       selectedAgencies,
       notificationRadius,
       notes,
-      priority
+      priority,
+      // TCC Command: Audit trail fields
+      createdByTCCUserId,
+      createdByTCCUserEmail,
+      createdVia
     } = req.body;
 
     // Validation
@@ -154,6 +159,7 @@ router.post('/enhanced', authenticateAdmin, async (req: AuthenticatedRequest, re
       specialNeeds,
       insuranceCompany,
       fromLocation,
+      fromLocationId,
       pickupLocationId,
       toLocation,
       scheduledTime: finalScheduledTime,
@@ -168,8 +174,23 @@ router.post('/enhanced', authenticateAdmin, async (req: AuthenticatedRequest, re
       notificationRadius: notificationRadius || 100,
       notes,
       priority,
-      healthcareUserId: req.user?.userType === 'HEALTHCARE' ? req.user.id : undefined // ✅ CRITICAL: Set healthcare user ID
+      healthcareUserId: req.user?.userType === 'HEALTHCARE' ? req.user.id : undefined, // ✅ CRITICAL: Set healthcare user ID
+      // ✅ TCC Command: Audit trail
+      createdByTCCUserId,
+      createdByTCCUserEmail,
+      createdVia
     };
+
+    // Log TCC command audit trail if applicable
+    if (createdByTCCUserId) {
+      console.log('TCC_COMMAND: Trip being created by TCC staff:', {
+        tccUserId: createdByTCCUserId,
+        tccUserEmail: createdByTCCUserEmail,
+        facilityId: fromLocationId,
+        facility: fromLocation,
+        createdVia
+      });
+    }
 
     const result = await tripService.createEnhancedTrip(enhancedTripData);
     
