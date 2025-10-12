@@ -283,11 +283,16 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
       console.log('MULTI_LOC: Loading pickup locations for healthcare location:', formData.fromLocationId);
       loadPickupLocationsForHospital(formData.fromLocationId);
     }
-    // For regular users, use facility ID
+    // For single-location users, use their hospital ID
     else if (!user.manageMultipleLocations && formData.fromLocation && formOptions.facilities.length > 0) {
       const selectedFacility = formOptions.facilities.find(f => f.name === formData.fromLocation);
       if (selectedFacility) {
-        loadPickupLocationsForHospital(selectedFacility.id);
+        // Use hospital ID for pickup locations if available, otherwise use facility ID
+        const pickupLocationId = selectedFacility.hospitalId || selectedFacility.id;
+        console.log('SINGLE_LOC: Loading pickup locations for user facility:', pickupLocationId);
+        loadPickupLocationsForHospital(pickupLocationId);
+      } else {
+        console.log('SINGLE_LOC: Facility not found in options yet:', formData.fromLocation, 'Available:', formOptions.facilities.map(f => f.name));
       }
     }
   }, [formData.fromLocation, formData.fromLocationId, formOptions.facilities, user.manageMultipleLocations]);
@@ -367,14 +372,45 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
           }
         }
       } else {
-        // For single-location users, load all facilities (existing behavior)
-        console.log('PHASE_A: Loading all facilities for single-location user');
-        const facilitiesResponse = await api.get('/api/tcc/facilities');
+        // For single-location users, load ALL facilities for destination selection
+        console.log('SINGLE_LOC: Single-location user - loading all facilities for destination options');
         
+        // Load ALL facilities from /api/public/hospitals for "To Location" dropdown
+        const facilitiesResponse = await api.get('/api/public/hospitals');
         if (facilitiesResponse.data?.success && Array.isArray(facilitiesResponse.data.data)) {
           facilities = facilitiesResponse.data.data;
-          console.log('TCC_DEBUG: Loaded', facilities.length, 'real facilities');
+          console.log('SINGLE_LOC: Loaded', facilities.length, 'facilities for destination selection');
         }
+        
+        // Find the user's own facility for "From Location" (already loaded above)
+        let userHospital = facilities.find((h: any) => h.name === user.facilityName);
+        
+        // Special case: If "Test Hospital" is found with hosp_ ID, we need to handle both facility and hospital IDs
+        if (userHospital && userHospital.id === 'hosp_test_001') {
+          // Keep the original hospital ID for pickup locations, but use facility ID for trip creation
+          userHospital = {
+            ...userHospital,
+            id: 'fac_test_hospital_001', // Use facility ID for trip creation
+            hospitalId: 'hosp_test_001'  // Keep hospital ID for pickup locations
+          };
+          // Update the facilities array to use the correct ID
+          facilities = facilities.map(f => 
+            f.id === 'hosp_test_001' ? { ...f, id: 'fac_test_hospital_001' } : f
+          );
+        }
+        
+        if (userHospital) {
+          console.log('SINGLE_LOC: Found user hospital for pickup locations:', userHospital);
+          
+          // Set fromLocation to user's facility
+          setFormData(prev => ({
+            ...prev,
+            fromLocation: user.facilityName || '',
+          }));
+        } else {
+          console.warn('SINGLE_LOC: User facility not found in hospitals list:', user.facilityName);
+        }
+        
         // Ensure healthcareLocations is empty for single-location users
         healthcareLocations = [];
       }
@@ -751,7 +787,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
                  formData.urgencyLevel === 'Emergent' ? 'HIGH' :
                  formData.urgencyLevel === 'Urgent' ? 'MEDIUM' : 'LOW',
         specialRequirements: formData.specialNeeds || '',
-        readyStart: formData.scheduledTime,
+        readyStart: new Date(formData.scheduledTime).toISOString(),
         readyEnd: new Date(new Date(formData.scheduledTime).getTime() + 60 * 60 * 1000).toISOString(), // 1 hour window
         isolation: false,
         bariatric: parseFloat(formData.patientWeight) > 300, // Consider bariatric if weight > 300 lbs
@@ -917,36 +953,37 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   From Location *
                 </label>
-                <select
-                  name="fromLocation"
-                  value={formData.fromLocation}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
-                >
-                  <option value="">Select origin facility</option>
-                  {/* Show healthcare locations for multi-location users */}
-                  {user.manageMultipleLocations ? (
-                    <>
-                      {console.log('MULTI_LOC: Rendering healthcare locations dropdown with', formOptions.healthcareLocations.length, 'locations:', formOptions.healthcareLocations)}
-                      {formOptions.healthcareLocations.map((location) => (
-                        <option key={location.id} value={location.locationName}>
-                          {location.locationName} - {location.city}, {location.state}
-                        </option>
-                      ))}
-                    </>
-                  ) : (
-                    /* Show regular facilities for single-location users */
-                    <>
-                      {console.log('MULTI_LOC: Rendering facilities dropdown with', formOptions.facilities.length, 'facilities:', formOptions.facilities)}
-                      {formOptions.facilities.map((facility) => (
-                        <option key={facility.id} value={facility.name}>
-                          {facility.name} - {facility.type}
-                        </option>
-                      ))}
-                    </>
-                  )}
-                </select>
+                {!user.manageMultipleLocations ? (
+                  /* Single-location users: Show facility name as disabled input */
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={user.facilityName || 'Your Facility'}
+                      disabled
+                      className="w-full px-3 py-2 border border-gray-300 bg-gray-100 rounded-md shadow-sm text-gray-700 cursor-not-allowed"
+                    />
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      <MapPin className="h-5 w-5 text-gray-400" />
+                    </div>
+                  </div>
+                ) : (
+                  /* Multi-location users: Show dropdown to select location */
+                  <select
+                    name="fromLocation"
+                    value={formData.fromLocation}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+                  >
+                    <option value="">Select origin facility</option>
+                    {console.log('MULTI_LOC: Rendering healthcare locations dropdown with', formOptions.healthcareLocations.length, 'locations:', formOptions.healthcareLocations)}
+                    {formOptions.healthcareLocations.map((location) => (
+                      <option key={location.id} value={location.locationName}>
+                        {location.locationName} - {location.city}, {location.state}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               <div>

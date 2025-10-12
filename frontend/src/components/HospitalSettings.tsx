@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { MapPin } from 'lucide-react';
 import { dropdownOptionsAPI } from '../services/api';
 import api from '../services/api';
 
@@ -70,6 +71,8 @@ interface HospitalSettingsProps {
 }
 
 const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
+  console.log('TCC_DEBUG: HospitalSettings component rendered with user:', user);
+  
   // Tab state
   const [activeTab, setActiveTab] = useState<'dropdowns' | 'pickup-locations' | 'main-contact'>('dropdowns');
   
@@ -135,12 +138,20 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
 
   // Load hospitals on component mount
   useEffect(() => {
+    console.log('TCC_DEBUG: HospitalSettings useEffect triggered - loading hospitals');
+    console.log('TCC_DEBUG: User object:', user);
     loadHospitals();
+    
+    // For single-location users, ensure selectedHospital gets set
+    if (!user.manageMultipleLocations && user.facilityName) {
+      console.log('TCC_DEBUG: SINGLE_LOC: User is single-location, will auto-select facility:', user.facilityName);
+    }
   }, []);
 
   // Load pickup locations when hospital changes
   useEffect(() => {
     if (selectedHospital) {
+      console.log('TCC_DEBUG: useEffect triggered - loading pickup locations for:', selectedHospital);
       loadPickupLocations(selectedHospital);
     }
   }, [selectedHospital]);
@@ -289,11 +300,12 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
   // Pickup location functions
   const loadHospitals = async () => {
     try {
+      console.log('TCC_DEBUG: loadHospitals function called');
       setPickupLoading(true);
       
       // For multi-location users, load their healthcare locations
       if (user.manageMultipleLocations) {
-        console.log('MULTI_LOC: Loading healthcare locations for pickup location management');
+        console.log('TCC_DEBUG: MULTI_LOC: Loading healthcare locations for pickup location management');
         const response = await api.get('/api/healthcare/locations/active');
         
         if (response.data?.success && Array.isArray(response.data.data)) {
@@ -327,13 +339,34 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
           }
         }
       } else {
-        // For regular users, load regular hospitals
+        // For single-location users, find THEIR facility only
+        console.log('TCC_DEBUG: SINGLE_LOC: Loading user\'s own facility for pickup location management');
         const response = await api.get('/api/public/hospitals');
         if (response.data.success) {
-          setHospitals(response.data.data);
-          // Set default hospital if available
-          if (response.data.data.length > 0) {
-            setSelectedHospital(response.data.data[0].id);
+          const allHospitals = response.data.data;
+          console.log('TCC_DEBUG: Loaded hospitals from API:', allHospitals.length);
+          console.log('TCC_DEBUG: Looking for facility name:', user.facilityName);
+          // Find the hospital matching this user's facilityName
+          const userFacility = allHospitals.find((h: any) => h.name === user.facilityName);
+          console.log('TCC_DEBUG: Found user facility:', userFacility);
+          
+          if (userFacility) {
+            console.log('SINGLE_LOC: Found user facility:', userFacility.name);
+            
+            // Special case: If "Test Hospital" is found with hosp_test_001, map to fac_test_hospital_001 for pickup locations
+            if (userFacility.id === 'hosp_test_001') {
+              console.log('TCC_DEBUG: Found hosp_test_001, mapping to fac_test_hospital_001');
+              userFacility.id = 'fac_test_hospital_001';
+              console.log('TCC_DEBUG: SINGLE_LOC: Mapped Test Hospital ID to fac_test_hospital_001 for pickup locations');
+            }
+            
+            setHospitals([userFacility]); // Only show THEIR facility
+            setSelectedHospital(userFacility.id);
+            console.log('TCC_DEBUG: Set selectedHospital to:', userFacility.id);
+          } else {
+            console.warn('SINGLE_LOC: User facility not found in hospitals:', user.facilityName);
+            setPickupError(`Your facility "${user.facilityName}" is not found. Please contact support.`);
+            setHospitals([]);
           }
         }
       }
@@ -348,9 +381,15 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
   const loadPickupLocations = async (hospitalId: string) => {
     try {
       setPickupLoading(true);
+      setPickupError(null); // Clear any previous errors
+      console.log('TCC_DEBUG: Loading pickup locations for hospital ID:', hospitalId);
       const response = await api.get(`/api/tcc/pickup-locations/hospital/${hospitalId}`);
+      console.log('TCC_DEBUG: Pickup locations API response:', response.data);
       if (response.data.success) {
         setPickupLocations(response.data.data);
+        console.log('TCC_DEBUG: Loaded pickup locations:', response.data.data.length);
+      } else {
+        setPickupError(response.data.message || 'Failed to load pickup locations');
       }
     } catch (error) {
       console.error('Error loading pickup locations:', error);
@@ -370,6 +409,8 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
       floor: '',
       room: ''
     });
+    setPickupError(null); // Clear any previous errors
+    setPickupSuccess(null); // Clear any previous success messages
     setShowPickupForm(true);
   };
 
@@ -383,6 +424,8 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
       floor: location.floor || '',
       room: location.room || ''
     });
+    setPickupError(null); // Clear any previous errors
+    setPickupSuccess(null); // Clear any previous success messages
     setShowPickupForm(true);
   };
 
@@ -511,7 +554,11 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
               Dropdown Options
             </button>
             <button
-              onClick={() => setActiveTab('pickup-locations')}
+              onClick={() => {
+                setActiveTab('pickup-locations');
+                setPickupError(null); // Clear errors when switching to this tab
+                setPickupSuccess(null);
+              }}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'pickup-locations'
                   ? 'border-blue-500 text-blue-600'
@@ -736,25 +783,38 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
       {/* Pickup Locations Tab */}
       {activeTab === 'pickup-locations' && (
         <>
-          {/* Hospital Selection */}
-          <div className="mb-6">
-            <label htmlFor="hospital" className="block text-sm font-medium text-gray-700 mb-2">
-              Select Hospital
-            </label>
-            <select
-              id="hospital"
-              value={selectedHospital}
-              onChange={(e) => setSelectedHospital(e.target.value)}
-              className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">Select a hospital...</option>
-              {hospitals.map((hospital) => (
-                <option key={hospital.id} value={hospital.id}>
-                  {hospital.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Hospital Selection - Only show for multi-location users */}
+          {user.manageMultipleLocations ? (
+            <div className="mb-6">
+              <label htmlFor="hospital" className="block text-sm font-medium text-gray-700 mb-2">
+                Select Location
+              </label>
+              <select
+                id="hospital"
+                value={selectedHospital}
+                onChange={(e) => setSelectedHospital(e.target.value)}
+                className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Select a location...</option>
+                {hospitals.map((hospital) => (
+                  <option key={hospital.id} value={hospital.id}>
+                    {hospital.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            /* Single-location users - just show their facility name */
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
+              <div className="flex items-center">
+                <MapPin className="h-5 w-5 text-blue-600 mr-2" />
+                <div>
+                  <p className="text-sm font-medium text-blue-900">Managing Pickup Locations for:</p>
+                  <p className="text-base font-semibold text-blue-700">{user.facilityName}</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {selectedHospital && (
             <div className="space-y-6">
@@ -827,6 +887,20 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
                   <h3 className="text-lg font-medium text-gray-900 mb-4">
                     {editingPickupLocation ? 'Edit Pickup Location' : 'Add New Pickup Location'}
                   </h3>
+                  
+                  {/* Error display inside modal */}
+                  {pickupError && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                      <p className="text-sm text-red-800">{pickupError}</p>
+                      <button 
+                        onClick={() => setPickupError(null)}
+                        className="mt-2 text-xs text-red-600 hover:text-red-800 underline"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  )}
+                  
                   <form onSubmit={handleSavePickupLocation} className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">

@@ -140,31 +140,54 @@ app.get('/api/public/categories', async (req, res) => {
 
 app.get('/api/public/hospitals', async (req, res) => {
   try {
-    const hospitalPrisma = databaseManager.getHospitalDB();
+    const prisma = databaseManager.getPrismaClient();
     
-    const hospitals = await hospitalPrisma.facility.findMany({
-      where: {
-        isActive: true
-      },
-      select: {
-        id: true,
-        name: true,
-        address: true,
-        city: true,
-        state: true,
-        zipCode: true,
-        phone: true,
-        email: true,
-        type: true
-      },
-      orderBy: {
-        name: 'asc'
-      }
-    });
+    // Load BOTH facilities and hospitals to support all user types
+    const [facilities, hospitals] = await Promise.all([
+      prisma.facility.findMany({
+        where: { isActive: true },
+        select: {
+          id: true,
+          name: true,
+          address: true,
+          city: true,
+          state: true,
+          zipCode: true,
+          phone: true,
+          email: true,
+          type: true
+        }
+      }),
+      prisma.hospital.findMany({
+        where: { isActive: true },
+        select: {
+          id: true,
+          name: true,
+          address: true,
+          city: true,
+          state: true,
+          zipCode: true,
+          phone: true,
+          email: true,
+          type: true
+        }
+      })
+    ]);
+
+    // Merge both arrays and remove duplicates by name
+    const allFacilities = [...facilities, ...hospitals];
+    const uniqueFacilities = allFacilities.filter((facility, index, self) =>
+      index === self.findIndex((f) => f.name === facility.name)
+    );
+    
+    // Sort by name
+    uniqueFacilities.sort((a, b) => a.name.localeCompare(b.name));
+
+    console.log('TCC_DEBUG: Public hospitals endpoint - Facilities:', facilities.length, 'Hospitals:', hospitals.length, 'Total unique:', uniqueFacilities.length);
 
     res.json({
       success: true,
-      data: hospitals,
+      data: uniqueFacilities,
       message: 'Hospitals retrieved successfully'
     });
   } catch (error) {
