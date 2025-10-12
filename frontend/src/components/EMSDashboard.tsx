@@ -11,7 +11,7 @@ import {
   Navigation,
   Settings,
   BarChart3,
-  DollarSign,
+  Calculator,
   Archive
 } from 'lucide-react';
 import api from '../services/api';
@@ -20,6 +20,7 @@ import UnitsManagement from './UnitsManagement';
 import AgencySettings from './AgencySettings';
 import UnitSelectionModal from './UnitSelectionModal';
 import TripStatusButtons from './TripStatusButtons';
+import EMSTripCalculator from './EMSTripCalculator';
 // import RevenueSettings from './RevenueSettings'; // Replaced by AgencySettings
 // import EMSAnalytics from './EMSAnalytics'; // Moved to backup - will move to Admin later
 
@@ -465,7 +466,7 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
               { id: 'completed', name: 'Completed Trips', icon: Archive },
               { id: 'units', name: 'Units', icon: Truck },
               { id: 'agency-info', name: 'Agency Info', icon: Settings },
-              { id: 'revenue', name: 'Revenue', icon: DollarSign }
+              { id: 'trip-calculator', name: 'Trip Calculator', icon: Calculator }
             ].map((tab) => {
               const Icon = tab.icon;
               return (
@@ -737,209 +738,8 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
           />
         )}
 
-        {activeTab === 'revenue' && (
-          <div className="space-y-6">
-            {/* Revenue Calculation Settings */}
-            <div className="bg-white rounded-lg shadow">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900">Revenue Calculation Settings</h3>
-                <p className="text-sm text-gray-500">Configure pricing rates and see real-time revenue projections</p>
-              </div>
-              <div className="p-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  {/* Base Rates */}
-                  <div>
-                    <h4 className="text-md font-medium text-gray-900 mb-4">Base Rates by Transport Level</h4>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">BLS Base Rate ($)</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={revenueSettings.baseRates.BLS}
-                          onChange={handleRevenueSettingsChange}
-                          name="baseRates.BLS"
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">ALS Base Rate ($)</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={revenueSettings.baseRates.ALS}
-                          onChange={handleRevenueSettingsChange}
-                          name="baseRates.ALS"
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">CCT Base Rate ($)</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={revenueSettings.baseRates.CCT}
-                          onChange={handleRevenueSettingsChange}
-                          name="baseRates.CCT"
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Per Mile Rates */}
-                  <div>
-                    <h4 className="text-md font-medium text-gray-900 mb-4">Per Mile Rates</h4>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">BLS Per Mile ($)</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={revenueSettings.perMileRates.BLS}
-                          onChange={handleRevenueSettingsChange}
-                          name="perMileRates.BLS"
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">ALS Per Mile ($)</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={revenueSettings.perMileRates.ALS}
-                          onChange={handleRevenueSettingsChange}
-                          name="perMileRates.ALS"
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">CCT Per Mile ($)</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={revenueSettings.perMileRates.CCT}
-                          onChange={handleRevenueSettingsChange}
-                          name="perMileRates.CCT"
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Priority Multipliers */}
-                  <div>
-                    <h4 className="text-md font-medium text-gray-900 mb-4">Priority Multipliers</h4>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Low Priority</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={revenueSettings.priorityMultipliers.LOW}
-                          onChange={handleRevenueSettingsChange}
-                          name="priorityMultipliers.LOW"
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Medium Priority</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={revenueSettings.priorityMultipliers.MEDIUM}
-                          onChange={handleRevenueSettingsChange}
-                          name="priorityMultipliers.MEDIUM"
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">High Priority</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={revenueSettings.priorityMultipliers.HIGH}
-                          onChange={handleRevenueSettingsChange}
-                          name="priorityMultipliers.HIGH"
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Urgent Priority</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={revenueSettings.priorityMultipliers.URGENT}
-                          onChange={handleRevenueSettingsChange}
-                          name="priorityMultipliers.URGENT"
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Special Surcharge */}
-                  <div>
-                    <h4 className="text-md font-medium text-gray-900 mb-4">Additional Fees</h4>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Special Requirements Surcharge ($)</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={revenueSettings.specialSurcharge}
-                          onChange={handleRevenueSettingsChange}
-                          name="specialSurcharge"
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Revenue Preview */}
-                {revenuePreview && (
-                  <div className="mt-8 p-6 bg-gray-50 rounded-lg">
-                    <h4 className="text-md font-medium text-gray-900 mb-4">Revenue Preview</h4>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Sample trip: {revenuePreview.sampleTrip.transportLevel} transport, {revenuePreview.sampleTrip.priority} priority, 
-                      {revenuePreview.sampleTrip.distanceMiles} miles, {revenuePreview.sampleTrip.insuranceCompany} insurance
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="bg-white p-4 rounded-md border">
-                        <h5 className="text-sm font-medium text-gray-700">Standard Rate</h5>
-                        <p className="text-2xl font-bold text-gray-900">${revenuePreview.standardRevenue}</p>
-                        <p className="text-xs text-gray-500">Base rate × priority</p>
-                      </div>
-                      <div className="bg-white p-4 rounded-md border">
-                        <h5 className="text-sm font-medium text-gray-700">Mileage Rate</h5>
-                        <p className="text-2xl font-bold text-gray-900">${revenuePreview.mileageRevenue}</p>
-                        <p className="text-xs text-gray-500">Base + (per mile × distance)</p>
-                      </div>
-                      <div className="bg-white p-4 rounded-md border">
-                        <h5 className="text-sm font-medium text-gray-700">Insurance Rate</h5>
-                        <p className="text-2xl font-bold text-gray-900">${revenuePreview.insuranceRevenue}</p>
-                        <p className="text-xs text-gray-500">Insurance rate + mileage</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="mt-6 flex justify-end">
-                  <button
-                    onClick={() => {
-                      // Save revenue settings to localStorage
-                      localStorage.setItem('ems_revenue_settings', JSON.stringify(revenueSettings));
-                      alert('Revenue settings saved!');
-                    }}
-                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
-                  >
-                    Save Revenue Settings
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+        {activeTab === 'trip-calculator' && (
+          <EMSTripCalculator user={user} />
         )}
 
         {activeTab === 'units' && (
