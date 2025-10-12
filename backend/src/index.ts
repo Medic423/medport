@@ -13,7 +13,7 @@ import facilityRoutes from './routes/facilities';
 import analyticsRoutes from './routes/analytics';
 import tripRoutes from './routes/trips';
 import agencyResponseRoutes from './routes/agencyResponses';
-import optimizationRoutes from './routes/optimization';
+// import optimizationRoutes from './routes/optimization'; // Temporarily disabled - depends on deleted coordinateService
 import notificationRoutes from './routes/notifications';
 // import adminNotificationRoutes from './routes/adminNotifications';
 import unitRoutes from './routes/units';
@@ -24,7 +24,6 @@ import emsAnalyticsRoutes from './routes/emsAnalytics';
 import backupRoutes from './routes/backup';
 import maintenanceRoutes from './routes/maintenance';
 import healthcareLocationsRoutes from './routes/healthcareLocations';
-import unitLocationRoutes from './routes/unitLocation';
 
 // Load environment variables
 dotenv.config();
@@ -95,7 +94,6 @@ app.use('/api/agency-responses', agencyResponseRoutes);
 app.use('/api/notifications', notificationRoutes);
 // app.use('/api/admin/notifications', adminNotificationRoutes);
 app.use('/api/units', unitRoutes);
-app.use('/api/units', unitLocationRoutes); // Unit location management
 app.use('/api/tcc/hospitals', hospitalRoutes);
 app.use('/api/tcc/agencies', agencyRoutes);
 app.use('/api/tcc/facilities', facilityRoutes);
@@ -104,7 +102,7 @@ app.use('/api/tcc/units', tccUnitRoutes);
 app.use('/api/dropdown-options', dropdownOptionsRoutes);
 app.use('/api/tcc/pickup-locations', pickupLocationRoutes);
 app.use('/api/ems/analytics', emsAnalyticsRoutes);
-app.use('/api/optimize', optimizationRoutes);
+// app.use('/api/optimize', optimizationRoutes); // Temporarily disabled
 app.use('/api/backup', backupRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/healthcare/locations', healthcareLocationsRoutes);

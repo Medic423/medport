@@ -9,7 +9,7 @@ import TCCHospitalSettings from './TCCHospitalSettings';
 import Agencies from './Agencies';
 import TCCUnitsManagement from './TCCUnitsManagement';
 import TCCRouteOptimizer from './TCCRouteOptimizer';
-import EnhancedRouteOptimizer from './EnhancedRouteOptimizer';
+// import EnhancedRouteOptimizer from './EnhancedRouteOptimizer'; // Temporarily disabled - file deleted during cleanup
 import Analytics from './Analytics';
 
 interface User {
@@ -51,7 +51,7 @@ const TCCDashboard: React.FC<TCCDashboardProps> = ({ user, onLogout }) => {
           <Route path="/operations/trips" element={<TripsView user={user} />} />
           <Route path="/operations/trips/create" element={<TCCCreateTrip user={user} />} />
           <Route path="/operations/route-optimization" element={<TCCRouteOptimizer />} />
-          <Route path="/operations/route-optimization-enhanced" element={<EnhancedRouteOptimizer />} />
+          {/* <Route path="/operations/route-optimization-enhanced" element={<EnhancedRouteOptimizer />} /> */}
           <Route path="/operations/analytics" element={<Analytics />} />
           
           {/* Legacy routes for backward compatibility */}

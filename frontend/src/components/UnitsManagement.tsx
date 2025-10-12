@@ -17,7 +17,7 @@ import {
   Navigation
 } from 'lucide-react';
 import api from '../services/api';
-import UnitLocationManager from './UnitLocationManager';
+// import UnitLocationManager from './UnitLocationManager'; // Temporarily disabled - file deleted during cleanup
 import {
   Unit,
   UnitFormData,
@@ -345,7 +345,10 @@ const UnitsManagement: React.FC<UnitsManagementProps> = ({ user, acceptedTrips =
 
       {/* Tab Content */}
       {activeTab === 'locations' ? (
-        <UnitLocationManager />
+        <div className="p-4 text-center text-gray-500">
+          <p>Unit location management feature is temporarily disabled.</p>
+          <p className="text-sm mt-2">This feature will be restored in a future update.</p>
+        </div>
       ) : (
         <>
           {/* Analytics Cards */}
