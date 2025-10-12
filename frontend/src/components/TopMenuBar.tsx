@@ -6,6 +6,7 @@ import {
   Truck, 
   Settings, 
   BarChart3,
+  Calculator,
   User,
   LogOut,
   Menu,
@@ -63,12 +64,10 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
       ]
     },
     {
-      label: 'Operations',
-      icon: Settings,
-      hasDropdown: true,
-      items: [
-        { label: 'Analytics & Financial', path: '/dashboard/operations/analytics' },
-      ]
+      label: 'Trip Calculator',
+      icon: Calculator,
+      hasDropdown: false,
+      path: '/dashboard/operations/analytics'
     }
   ];
 
@@ -109,7 +108,7 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
     if (path.startsWith('/dashboard/operations/trips')) return 'Actions';
     if (path.startsWith('/dashboard/healthcare')) return 'Healthcare';
     if (path.startsWith('/dashboard/ems')) return 'EMS';
-    if (path.startsWith('/dashboard/operations')) return 'Operations';
+    if (path.startsWith('/dashboard/operations')) return 'Trip Calculator';
     return null;
   };
 

@@ -153,7 +153,9 @@ app.get('/api/public/hospitals', async (req, res) => {
           zipCode: true,
           phone: true,
           email: true,
-          type: true
+          type: true,
+          latitude: true,
+          longitude: true
         }
       }),
       prisma.hospital.findMany({
@@ -167,7 +169,9 @@ app.get('/api/public/hospitals', async (req, res) => {
           zipCode: true,
           phone: true,
           email: true,
-          type: true
+          type: true,
+          latitude: true,
+          longitude: true
         }
       })
     ]);

@@ -1,104 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Calculator } from 'lucide-react';
 import api from '../services/api';
 
 const Analytics: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('settings');
-
-  const tabs = [
-    { id: 'settings', name: 'Revenue Settings', icon: Settings },
-    { id: 'calculator', name: 'Trip Calculator', icon: Calculator },
-  ];
-
-  return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Configure revenue settings and calculate trip revenue for route planning.
-        </p>
-      </div>
-
-      {/* Tab Navigation */}
-      <div className="border-b border-gray-200 mb-6">
-        <nav className="-mb-px flex space-x-8">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`${
-                  activeTab === tab.id
-                    ? 'border-primary-500 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2`}
-              >
-                <Icon className="h-4 w-4" />
-                <span>{tab.name}</span>
-              </button>
-            );
-          })}
-        </nav>
-      </div>
-
-      {/* Tab Content */}
-      {activeTab === 'settings' && <RevenueSettingsTab />}
-      {activeTab === 'calculator' && <TripCalculatorTab />}
-    </div>
-  );
-};
-
-const RevenueSettingsTab: React.FC = () => {
+  // Shared revenue settings state that both tabs use
   const [revenueSettings, setRevenueSettings] = useState({
-    baseRates: {
-      BLS: 150.0,
-      ALS: 250.0,
-      CCT: 400.0
-    },
-    perMileRates: {
-      BLS: 2.50,
-      ALS: 3.75,
-      CCT: 5.00
-    },
-    priorityMultipliers: {
-      LOW: 1.0,
-      MEDIUM: 1.1,
-      HIGH: 1.25,
-      URGENT: 1.5
-    },
+    baseRates: { BLS: 150.0, ALS: 250.0, CCT: 400.0 },
+    perMileRates: { BLS: 2.50, ALS: 3.75, CCT: 5.00 },
+    priorityMultipliers: { LOW: 1.0, MEDIUM: 1.1, HIGH: 1.25, URGENT: 1.5 },
     specialSurcharge: 50.0,
     insuranceRates: {
       medicare: { BLS: 120.0, ALS: 200.0, CCT: 350.0 },
       medicaid: { BLS: 100.0, ALS: 180.0, CCT: 300.0 },
       private: { BLS: 180.0, ALS: 300.0, CCT: 450.0 },
       selfPay: { BLS: 200.0, ALS: 350.0, CCT: 500.0 }
-    }
+    },
+    customInsuranceCompanies: [] as Array<{ name: string; rates: { BLS: number; ALS: number; CCT: number } }>
   });
+
   const [revenuePreview, setRevenuePreview] = useState<any>(null);
 
-  const handleRevenueSettingsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    const [category, subcategory] = name.split('.');
-    
-    if (subcategory) {
-      setRevenueSettings(prev => ({
-        ...prev,
-        [category]: {
-          ...prev[category as keyof typeof prev],
-          [subcategory]: parseFloat(value) || 0
-        }
-      }));
-    } else {
-      setRevenueSettings(prev => ({
-        ...prev,
-        [name]: parseFloat(value) || 0
-      }));
+  // Load revenue settings from localStorage on component mount
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('tcc_revenue_settings');
+    if (savedSettings) {
+      const parsed = JSON.parse(savedSettings);
+      setRevenueSettings(prev => ({ ...prev, ...parsed }));
     }
-    
-    calculateRevenuePreview();
-  };
+  }, []);
 
+  // Calculate revenue preview whenever settings change
   const calculateRevenuePreview = () => {
     const sampleTrip = {
       transportLevel: 'ALS',
@@ -130,6 +60,118 @@ const RevenueSettingsTab: React.FC = () => {
   useEffect(() => {
     calculateRevenuePreview();
   }, [revenueSettings]);
+
+  return (
+    <div className="space-y-8">
+      {/* Revenue Preview - At the top */}
+      {revenuePreview && (
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg shadow-md border border-blue-100">
+          <div className="px-6 py-4 border-b border-blue-200">
+            <h3 className="text-xl font-bold text-gray-900">Revenue Preview</h3>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white p-4 rounded-md border border-gray-200 shadow-sm">
+                <h5 className="text-sm font-medium text-gray-700">Standard Rate</h5>
+                <p className="text-2xl font-bold text-gray-900">${revenuePreview.standardRevenue}</p>
+                <p className="text-xs text-gray-500">Base rate × priority</p>
+              </div>
+              <div className="bg-white p-4 rounded-md border border-gray-200 shadow-sm">
+                <h5 className="text-sm font-medium text-gray-700">Mileage Rate</h5>
+                <p className="text-2xl font-bold text-gray-900">${revenuePreview.mileageRevenue}</p>
+                <p className="text-xs text-gray-500">Base + (per mile × distance)</p>
+              </div>
+              <div className="bg-white p-4 rounded-md border border-gray-200 shadow-sm">
+                <h5 className="text-sm font-medium text-gray-700">Insurance Rate</h5>
+                <p className="text-2xl font-bold text-gray-900">${revenuePreview.insuranceRevenue}</p>
+                <p className="text-xs text-gray-500">Insurance rate + mileage</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Trip Calculator */}
+      <TripCalculatorTab revenueSettings={revenueSettings} />
+      
+      {/* Revenue Settings */}
+      <RevenueSettingsTab revenueSettings={revenueSettings} setRevenueSettings={setRevenueSettings} />
+    </div>
+  );
+};
+
+interface RevenueSettingsTabProps {
+  revenueSettings: any;
+  setRevenueSettings: React.Dispatch<React.SetStateAction<any>>;
+}
+
+const RevenueSettingsTab: React.FC<RevenueSettingsTabProps> = ({ revenueSettings, setRevenueSettings }) => {
+  const [newInsuranceCompany, setNewInsuranceCompany] = useState({ name: '', rates: { BLS: '', ALS: '', CCT: '' } });
+  const [editingCompany, setEditingCompany] = useState<number | null>(null);
+  const [editCompanyData, setEditCompanyData] = useState({ name: '', rates: { BLS: '', ALS: '', CCT: '' } });
+
+  const handleEditCompany = (index: number) => {
+    const company = revenueSettings.customInsuranceCompanies[index];
+    setEditingCompany(index);
+    setEditCompanyData({ 
+      name: company.name,
+      rates: {
+        BLS: company.rates.BLS.toString(),
+        ALS: company.rates.ALS.toString(),
+        CCT: company.rates.CCT.toString()
+      }
+    });
+  };
+
+  const handleSaveEdit = () => {
+    if (!editCompanyData.name.trim()) {
+      alert('Please enter a company name');
+      return;
+    }
+    
+    setRevenueSettings(prev => ({
+      ...prev,
+      customInsuranceCompanies: prev.customInsuranceCompanies.map((company: any, index: number) =>
+        index === editingCompany ? { 
+          name: editCompanyData.name,
+          rates: {
+            BLS: parseFloat(editCompanyData.rates.BLS) || 0,
+            ALS: parseFloat(editCompanyData.rates.ALS) || 0,
+            CCT: parseFloat(editCompanyData.rates.CCT) || 0
+          }
+        } : company
+      )
+    }));
+    
+    setEditingCompany(null);
+    setEditCompanyData({ name: '', rates: { BLS: '', ALS: '', CCT: '' } });
+    alert(`Insurance company "${editCompanyData.name}" updated successfully!`);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCompany(null);
+    setEditCompanyData({ name: '', rates: { BLS: '', ALS: '', CCT: '' } });
+  };
+
+  const handleRevenueSettingsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const [category, subcategory] = name.split('.');
+    
+    if (subcategory) {
+      setRevenueSettings(prev => ({
+        ...prev,
+        [category]: {
+          ...prev[category as keyof typeof prev],
+          [subcategory]: parseFloat(value) || 0
+        }
+      }));
+    } else {
+      setRevenueSettings(prev => ({
+        ...prev,
+        [name]: parseFloat(value) || 0
+      }));
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -219,54 +261,341 @@ const RevenueSettingsTab: React.FC = () => {
                 </div>
               </div>
             </div>
+
           </div>
 
-          {/* Revenue Preview */}
-          {revenuePreview && (
-            <div className="mt-8 p-6 bg-gray-50 rounded-lg">
-              <h4 className="text-md font-medium text-gray-900 mb-4">Revenue Preview</h4>
-              <p className="text-sm text-gray-600 mb-4">
-                Sample trip: {revenuePreview.sampleTrip.transportLevel} transport, {revenuePreview.sampleTrip.priority} priority, 
-                {revenuePreview.sampleTrip.distanceMiles} miles, {revenuePreview.sampleTrip.insuranceCompany} insurance
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white p-4 rounded-md border">
-                  <h5 className="text-sm font-medium text-gray-700">Standard Rate</h5>
-                  <p className="text-2xl font-bold text-gray-900">${revenuePreview.standardRevenue}</p>
-                  <p className="text-xs text-gray-500">Base rate × priority</p>
+          {/* Surcharges Section */}
+          <div className="mt-8 bg-white rounded-lg shadow">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">Surcharges</h3>
+              <p className="text-sm text-gray-500">Configure priority level and special requirement surcharges</p>
+            </div>
+            <div className="p-6 space-y-6">
+              {/* Priority Level Surcharges */}
+              <div>
+                <h4 className="text-md font-medium text-gray-900 mb-2">Priority Level Surcharges</h4>
+                <p className="text-sm text-gray-500 mb-4">Set percentage surcharge for each priority level (0% = no surcharge, 10% = adds 10% to base rate)</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Low Priority (%)</label>
+                    <input
+                      type="number"
+                      step="1"
+                      value={revenueSettings.priorityMultipliers.LOW === 1.0 ? 0 : ((revenueSettings.priorityMultipliers.LOW - 1) * 100).toFixed(0)}
+                      onChange={(e) => {
+                        const percent = parseFloat(e.target.value) || 0;
+                        const multiplier = 1 + (percent / 100);
+                        setRevenueSettings(prev => ({
+                          ...prev,
+                          priorityMultipliers: { ...prev.priorityMultipliers, LOW: multiplier }
+                        }));
+                      }}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Medium Priority (%)</label>
+                    <input
+                      type="number"
+                      step="1"
+                      value={revenueSettings.priorityMultipliers.MEDIUM === 1.0 ? 0 : ((revenueSettings.priorityMultipliers.MEDIUM - 1) * 100).toFixed(0)}
+                      onChange={(e) => {
+                        const percent = parseFloat(e.target.value) || 0;
+                        const multiplier = 1 + (percent / 100);
+                        setRevenueSettings(prev => ({
+                          ...prev,
+                          priorityMultipliers: { ...prev.priorityMultipliers, MEDIUM: multiplier }
+                        }));
+                      }}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">High Priority (%)</label>
+                    <input
+                      type="number"
+                      step="1"
+                      value={revenueSettings.priorityMultipliers.HIGH === 1.0 ? 0 : ((revenueSettings.priorityMultipliers.HIGH - 1) * 100).toFixed(0)}
+                      onChange={(e) => {
+                        const percent = parseFloat(e.target.value) || 0;
+                        const multiplier = 1 + (percent / 100);
+                        setRevenueSettings(prev => ({
+                          ...prev,
+                          priorityMultipliers: { ...prev.priorityMultipliers, HIGH: multiplier }
+                        }));
+                      }}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Urgent Priority (%)</label>
+                    <input
+                      type="number"
+                      step="1"
+                      value={revenueSettings.priorityMultipliers.URGENT === 1.0 ? 0 : ((revenueSettings.priorityMultipliers.URGENT - 1) * 100).toFixed(0)}
+                      onChange={(e) => {
+                        const percent = parseFloat(e.target.value) || 0;
+                        const multiplier = 1 + (percent / 100);
+                        setRevenueSettings(prev => ({
+                          ...prev,
+                          priorityMultipliers: { ...prev.priorityMultipliers, URGENT: multiplier }
+                        }));
+                      }}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
                 </div>
-                <div className="bg-white p-4 rounded-md border">
-                  <h5 className="text-sm font-medium text-gray-700">Mileage Rate</h5>
-                  <p className="text-2xl font-bold text-gray-900">${revenuePreview.mileageRevenue}</p>
-                  <p className="text-xs text-gray-500">Base + (per mile × distance)</p>
-                </div>
-                <div className="bg-white p-4 rounded-md border">
-                  <h5 className="text-sm font-medium text-gray-700">Insurance Rate</h5>
-                  <p className="text-2xl font-bold text-gray-900">${revenuePreview.insuranceRevenue}</p>
-                  <p className="text-xs text-gray-500">Insurance rate + mileage</p>
+              </div>
+
+              {/* Special Requirements Surcharge */}
+              <div className="pt-6 border-t border-gray-200">
+                <h4 className="text-md font-medium text-gray-900 mb-2">Special Requirements Surcharge</h4>
+                <p className="text-sm text-gray-500 mb-4">Fixed dollar amount added for trips with special requirements</p>
+                <div className="max-w-xs">
+                  <label className="block text-sm font-medium text-gray-700">Special Surcharge ($)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={revenueSettings.specialSurcharge}
+                    onChange={(e) => {
+                      setRevenueSettings(prev => ({
+                        ...prev,
+                        specialSurcharge: parseFloat(e.target.value) || 0
+                      }));
+                    }}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  />
                 </div>
               </div>
             </div>
-          )}
-
-          <div className="mt-6 flex justify-end">
-            <button
-              onClick={() => {
-                localStorage.setItem('tcc_revenue_settings', JSON.stringify(revenueSettings));
-                alert('Revenue settings saved!');
-              }}
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              Save Revenue Settings
-            </button>
           </div>
+
+                <div className="mt-6 flex justify-end">
+                  <button
+                    onClick={() => {
+                      localStorage.setItem('tcc_revenue_settings', JSON.stringify(revenueSettings));
+                      alert('Revenue settings saved!');
+                    }}
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    Save Revenue Settings
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Insurance Company Management */}
+            <div className="mt-8 bg-white rounded-lg shadow">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900">Insurance Company Management</h3>
+                <p className="text-sm text-gray-500">Add custom insurance companies with their specific rates</p>
+              </div>
+              <div className="p-6">
+                {/* Add New Insurance Company */}
+                <div className="mb-6 p-4 border border-gray-200 rounded-lg">
+                  <h4 className="text-md font-medium text-gray-900 mb-4">Add New Insurance Company</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Company Name</label>
+                      <input
+                        type="text"
+                        value={newInsuranceCompany.name}
+                        onChange={(e) => setNewInsuranceCompany(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="e.g., Blue Cross Blue Shield"
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">BLS Rate ($)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={newInsuranceCompany.rates.BLS}
+                        onChange={(e) => setNewInsuranceCompany(prev => ({ 
+                          ...prev, 
+                          rates: { ...prev.rates, BLS: e.target.value }
+                        }))}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">ALS Rate ($)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={newInsuranceCompany.rates.ALS}
+                        onChange={(e) => setNewInsuranceCompany(prev => ({ 
+                          ...prev, 
+                          rates: { ...prev.rates, ALS: e.target.value }
+                        }))}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">CCT Rate ($)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={newInsuranceCompany.rates.CCT}
+                        onChange={(e) => setNewInsuranceCompany(prev => ({ 
+                          ...prev, 
+                          rates: { ...prev.rates, CCT: e.target.value }
+                        }))}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <button
+                      onClick={() => {
+                        if (!newInsuranceCompany.name.trim()) {
+                          alert('Please enter a company name');
+                          return;
+                        }
+                        setRevenueSettings(prev => ({
+                          ...prev,
+                          customInsuranceCompanies: [...prev.customInsuranceCompanies, { 
+                            name: newInsuranceCompany.name,
+                            rates: {
+                              BLS: parseFloat(newInsuranceCompany.rates.BLS) || 0,
+                              ALS: parseFloat(newInsuranceCompany.rates.ALS) || 0,
+                              CCT: parseFloat(newInsuranceCompany.rates.CCT) || 0
+                            }
+                          }]
+                        }));
+                        setNewInsuranceCompany({ name: '', rates: { BLS: '', ALS: '', CCT: '' } });
+                        alert(`Insurance company "${newInsuranceCompany.name}" added successfully!`);
+                      }}
+                      className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                    >
+                      Add Insurance Company
+                    </button>
+                  </div>
+                </div>
+
+                {/* List of Custom Insurance Companies */}
+                {revenueSettings.customInsuranceCompanies.length > 0 && (
+                  <div>
+                    <h4 className="text-md font-medium text-gray-900 mb-4">Custom Insurance Companies</h4>
+                    <div className="space-y-3">
+                      {revenueSettings.customInsuranceCompanies.map((company: any, index: number) => (
+                        <div key={index} className="p-4 border border-gray-200 rounded-lg">
+                          {editingCompany === index ? (
+                            // Edit Mode
+                            <div className="space-y-4">
+                              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700">Company Name</label>
+                                  <input
+                                    type="text"
+                                    value={editCompanyData.name}
+                                    onChange={(e) => setEditCompanyData(prev => ({ ...prev, name: e.target.value }))}
+                                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700">BLS Rate ($)</label>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    value={editCompanyData.rates.BLS}
+                                    onChange={(e) => setEditCompanyData(prev => ({ 
+                                      ...prev, 
+                                      rates: { ...prev.rates, BLS: e.target.value }
+                                    }))}
+                                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700">ALS Rate ($)</label>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    value={editCompanyData.rates.ALS}
+                                    onChange={(e) => setEditCompanyData(prev => ({ 
+                                      ...prev, 
+                                      rates: { ...prev.rates, ALS: e.target.value }
+                                    }))}
+                                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700">CCT Rate ($)</label>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    value={editCompanyData.rates.CCT}
+                                    onChange={(e) => setEditCompanyData(prev => ({ 
+                                      ...prev, 
+                                      rates: { ...prev.rates, CCT: e.target.value }
+                                    }))}
+                                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={handleSaveEdit}
+                                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                                >
+                                  Save Changes
+                                </button>
+                                <button
+                                  onClick={handleCancelEdit}
+                                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            // Display Mode
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <h5 className="font-medium text-gray-900">{company.name}</h5>
+                                <p className="text-sm text-gray-500">
+                                  BLS: ${company.rates.BLS} | ALS: ${company.rates.ALS} | CCT: ${company.rates.CCT}
+                                </p>
+                              </div>
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={() => handleEditCompany(index)}
+                                  className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (confirm(`Delete insurance company "${company.name}"?`)) {
+                                      setRevenueSettings(prev => ({
+                                        ...prev,
+                                        customInsuranceCompanies: prev.customInsuranceCompanies.filter((_: any, i: number) => i !== index)
+                                      }));
+                                    }
+                                  }}
+                                  className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
         </div>
       </div>
     </div>
   );
 };
 
-const TripCalculatorTab: React.FC = () => {
+interface TripCalculatorTabProps {
+  revenueSettings: any;
+}
+
+const TripCalculatorTab: React.FC<TripCalculatorTabProps> = ({ revenueSettings }) => {
   const [tripData, setTripData] = useState({
     origin: '',
     destination: '',
@@ -283,29 +612,9 @@ const TripCalculatorTab: React.FC = () => {
   const [loadingFacilities, setLoadingFacilities] = useState(false);
   const [manualOrigin, setManualOrigin] = useState('');
   const [manualDestination, setManualDestination] = useState('');
-  
-  const [revenueSettings, setRevenueSettings] = useState({
-    baseRates: { BLS: 150.0, ALS: 250.0, CCT: 400.0 },
-    perMileRates: { BLS: 2.50, ALS: 3.75, CCT: 5.00 },
-    priorityMultipliers: { LOW: 1.0, MEDIUM: 1.1, HIGH: 1.25, URGENT: 1.5 },
-    specialSurcharge: 50.0,
-    insuranceRates: {
-      medicare: { BLS: 120.0, ALS: 200.0, CCT: 350.0 },
-      medicaid: { BLS: 100.0, ALS: 180.0, CCT: 300.0 },
-      private: { BLS: 180.0, ALS: 300.0, CCT: 450.0 },
-      selfPay: { BLS: 200.0, ALS: 350.0, CCT: 500.0 }
-    }
-  });
 
   const [calculatedRevenue, setCalculatedRevenue] = useState<any>(null);
 
-  // Load revenue settings from localStorage
-  useEffect(() => {
-    const savedSettings = localStorage.getItem('tcc_revenue_settings');
-    if (savedSettings) {
-      setRevenueSettings(JSON.parse(savedSettings));
-    }
-  }, []);
 
   // Load facilities on component mount
   useEffect(() => {
@@ -317,8 +626,11 @@ const TripCalculatorTab: React.FC = () => {
       setLoadingFacilities(true);
       const response = await api.get('/api/public/hospitals');
       if (response.data?.success) {
-        setFacilities(response.data.data || []);
-        console.log('TCC_DEBUG: Loaded facilities for trip calculator:', response.data.data?.length);
+        const facilitiesData = response.data.data || [];
+        setFacilities(facilitiesData);
+        console.log('TCC_DEBUG: Loaded facilities for trip calculator:', facilitiesData.length);
+        console.log('TCC_DEBUG: First facility with coords:', facilitiesData.find(f => f.latitude && f.longitude));
+        console.log('TCC_DEBUG: Facilities without coords:', facilitiesData.filter(f => !f.latitude || !f.longitude).map(f => f.name));
       }
     } catch (error) {
       console.error('Error loading facilities:', error);
@@ -360,31 +672,44 @@ const TripCalculatorTab: React.FC = () => {
   const handleFacilitySelection = (field: 'origin' | 'destination', facilityId: string) => {
     const facility = facilities.find(f => f.id === facilityId);
     if (facility) {
-      setTripData(prev => ({
-        ...prev,
-        [field]: facility.name,
-        [`${field}Coordinates`]: facility.latitude && facility.longitude ? 
-          { lat: parseFloat(facility.latitude), lng: parseFloat(facility.longitude) } : null
-      }));
+      console.log('TCC_DEBUG: Selected facility:', facility.name, 'Lat:', facility.latitude, 'Lng:', facility.longitude);
+      
+      const newCoordinates = facility.latitude && facility.longitude ? 
+        { lat: parseFloat(facility.latitude), lng: parseFloat(facility.longitude) } : null;
+      
+      console.log('TCC_DEBUG: New coordinates for', field, ':', newCoordinates);
+      
+      // Update trip data with new coordinates
+      setTripData(prev => {
+        const updated = {
+          ...prev,
+          [field]: facility.name,
+          [`${field}Coordinates`]: newCoordinates
+        };
+        
+        // Auto-calculate distance if both coordinates are now available
+        if (field === 'destination' && prev.originCoordinates && newCoordinates) {
+          const distance = calculateDistance(
+            prev.originCoordinates.lat, prev.originCoordinates.lng,
+            newCoordinates.lat, newCoordinates.lng
+          );
+          console.log('TCC_DEBUG: Calculated distance (destination selected):', distance);
+          updated.distanceMiles = Math.round(distance * 10) / 10;
+        } else if (field === 'origin' && prev.destinationCoordinates && newCoordinates) {
+          const distance = calculateDistance(
+            newCoordinates.lat, newCoordinates.lng,
+            prev.destinationCoordinates.lat, prev.destinationCoordinates.lng
+          );
+          console.log('TCC_DEBUG: Calculated distance (origin selected):', distance);
+          updated.distanceMiles = Math.round(distance * 10) / 10;
+        }
+        
+        return updated;
+      });
       
       // Clear manual entry for this field
       if (field === 'origin') setManualOrigin('');
       if (field === 'destination') setManualDestination('');
-      
-      // Auto-calculate distance if both coordinates are available
-      if (field === 'destination' && tripData.originCoordinates) {
-        const distance = calculateDistance(
-          tripData.originCoordinates.lat, tripData.originCoordinates.lng,
-          parseFloat(facility.latitude), parseFloat(facility.longitude)
-        );
-        setTripData(prev => ({ ...prev, distanceMiles: Math.round(distance * 10) / 10 }));
-      } else if (field === 'origin' && tripData.destinationCoordinates) {
-        const distance = calculateDistance(
-          parseFloat(facility.latitude), parseFloat(facility.longitude),
-          tripData.destinationCoordinates.lat, tripData.destinationCoordinates.lng
-        );
-        setTripData(prev => ({ ...prev, distanceMiles: Math.round(distance * 10) / 10 }));
-      }
     }
   };
 
@@ -431,7 +756,18 @@ const TripCalculatorTab: React.FC = () => {
     const baseRate = revenueSettings.baseRates[tripData.transportLevel as keyof typeof revenueSettings.baseRates];
     const perMileRate = revenueSettings.perMileRates[tripData.transportLevel as keyof typeof revenueSettings.perMileRates];
     const priorityMultiplier = revenueSettings.priorityMultipliers[tripData.priority as keyof typeof revenueSettings.priorityMultipliers];
-    const insuranceRate = revenueSettings.insuranceRates[tripData.insuranceCompany as keyof typeof revenueSettings.insuranceRates][tripData.transportLevel as keyof typeof revenueSettings.insuranceRates.medicare];
+    
+    // Handle insurance rate calculation for both standard and custom companies
+    let insuranceRate;
+    if (tripData.insuranceCompany.startsWith('custom-')) {
+      // Custom insurance company
+      const customIndex = parseInt(tripData.insuranceCompany.replace('custom-', ''));
+      const customCompany = revenueSettings.customInsuranceCompanies[customIndex];
+      insuranceRate = customCompany.rates[tripData.transportLevel as keyof typeof customCompany.rates];
+    } else {
+      // Standard insurance company
+      insuranceRate = revenueSettings.insuranceRates[tripData.insuranceCompany as keyof typeof revenueSettings.insuranceRates][tripData.transportLevel as keyof typeof revenueSettings.insuranceRates.medicare];
+    }
     
     const specialSurcharge = tripData.specialRequirements ? revenueSettings.specialSurcharge : 0;
     
@@ -445,6 +781,23 @@ const TripCalculatorTab: React.FC = () => {
       insuranceRevenue: Math.round(insuranceRevenue * 100) / 100,
       tripDetails: { ...tripData }
     });
+  };
+
+  const resetCalculator = () => {
+    setTripData({
+      origin: '',
+      destination: '',
+      originCoordinates: null,
+      destinationCoordinates: null,
+      transportLevel: 'ALS',
+      priority: 'MEDIUM',
+      distanceMiles: 0,
+      specialRequirements: false,
+      insuranceCompany: 'medicare'
+    });
+    setManualOrigin('');
+    setManualDestination('');
+    setCalculatedRevenue(null);
   };
 
   const saveRoute = () => {
@@ -464,6 +817,7 @@ const TripCalculatorTab: React.FC = () => {
         );
         localStorage.setItem('tcc_saved_routes', JSON.stringify(updatedRoutes));
         alert(`Route "${routeName}" updated successfully!`);
+        refreshSavedRoutes(); // Auto-refresh the list
       }
     } else {
       const newRoute = {
@@ -475,6 +829,7 @@ const TripCalculatorTab: React.FC = () => {
       savedRoutes.push(newRoute);
       localStorage.setItem('tcc_saved_routes', JSON.stringify(savedRoutes));
       alert(`Route "${routeName}" saved successfully!`);
+      refreshSavedRoutes(); // Auto-refresh the list
     }
   };
 
@@ -494,27 +849,46 @@ const TripCalculatorTab: React.FC = () => {
       const updatedRoutes = savedRoutes.filter((route: any) => route.name !== routeName);
       localStorage.setItem('tcc_saved_routes', JSON.stringify(updatedRoutes));
       alert(`Route "${routeName}" deleted successfully!`);
+      // Force re-render by updating state
+      setCalculatedRevenue(null);
+      setTripData({ ...tripData });
     }
+  };
+
+  const [savedRoutesKey, setSavedRoutesKey] = React.useState(0);
+  
+  const refreshSavedRoutes = () => {
+    setSavedRoutesKey(prev => prev + 1);
   };
 
   return (
     <div className="space-y-6">
       {/* Saved Routes */}
       <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">Saved Routes</h3>
-          <p className="text-sm text-gray-500">Load previously saved routes for quick calculations</p>
+        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+          <div>
+            <h3 className="text-lg font-medium text-gray-900">Saved Routes</h3>
+            <p className="text-sm text-gray-500">Load previously saved routes for quick calculations</p>
+          </div>
+          <button
+            onClick={refreshSavedRoutes}
+            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Refresh
+          </button>
         </div>
         <div className="p-6">
           {loadSavedRoutes().length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div key={savedRoutesKey} className="space-y-2">
               {loadSavedRoutes().map((route: any, index: number) => (
-                <div key={index} className="border rounded-lg p-4 hover:bg-gray-50">
-                  <h4 className="font-medium text-gray-900">{route.name}</h4>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {route.tripData.transportLevel} • {route.tripData.priority} • {route.tripData.distanceMiles} miles
-                  </p>
-                  <div className="mt-3 flex space-x-2">
+                <div key={index} className="flex items-center justify-between p-3 border border-gray-200 rounded-md hover:bg-gray-50">
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900">{route.name}</h4>
+                    <p className="text-xs text-gray-500">
+                      {route.tripData.origin} → {route.tripData.destination} • {route.tripData.transportLevel} • {route.tripData.priority} • {route.tripData.distanceMiles} miles
+                    </p>
+                  </div>
+                  <div className="flex space-x-2 ml-4">
                     <button
                       onClick={() => loadRoute(route)}
                       className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
@@ -573,9 +947,11 @@ const TripCalculatorTab: React.FC = () => {
                   />
                 </div>
                 {tripData.originCoordinates && (
-                  <p className="text-xs text-green-600 mt-1">
-                    ✓ GPS coordinates available ({tripData.originCoordinates.lat.toFixed(4)}, {tripData.originCoordinates.lng.toFixed(4)})
-                  </p>
+                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-md">
+                    <p className="text-xs font-medium text-green-800">
+                      ✓ GPS Coordinates: {tripData.originCoordinates.lat.toFixed(4)}, {tripData.originCoordinates.lng.toFixed(4)}
+                    </p>
+                  </div>
                 )}
               </div>
               
@@ -605,28 +981,35 @@ const TripCalculatorTab: React.FC = () => {
                   />
                 </div>
                 {tripData.destinationCoordinates && (
-                  <p className="text-xs text-green-600 mt-1">
-                    ✓ GPS coordinates available ({tripData.destinationCoordinates.lat.toFixed(4)}, {tripData.destinationCoordinates.lng.toFixed(4)})
-                  </p>
+                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-md">
+                    <p className="text-xs font-medium text-green-800">
+                      ✓ GPS Coordinates: {tripData.destinationCoordinates.lat.toFixed(4)}, {tripData.destinationCoordinates.lng.toFixed(4)}
+                    </p>
+                  </div>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Distance (miles) *</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Distance (miles) *
+                  {tripData.originCoordinates && tripData.destinationCoordinates && (
+                    <span className="ml-2 text-xs text-green-600 font-normal">✓ Auto-calculated</span>
+                  )}
+                </label>
                 <input
                   type="number"
                   step="0.1"
                   name="distanceMiles"
-                  value={tripData.distanceMiles}
+                  value={tripData.distanceMiles || ''}
                   onChange={handleTripDataChange}
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  disabled={!!(tripData.originCoordinates && tripData.destinationCoordinates)}
+                  className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${
+                    tripData.originCoordinates && tripData.destinationCoordinates 
+                      ? 'bg-gray-100 cursor-not-allowed' 
+                      : ''
+                  }`}
+                  placeholder={tripData.originCoordinates && tripData.destinationCoordinates ? '' : 'Select facilities with GPS coordinates'}
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  {tripData.originCoordinates && tripData.destinationCoordinates ? 
-                    '✓ Distance auto-calculated from GPS coordinates' : 
-                    'Enter distance manually or select facilities with GPS coordinates for auto-calculation'
-                  }
-                </p>
               </div>
 
               <div>
@@ -673,6 +1056,11 @@ const TripCalculatorTab: React.FC = () => {
                   <option value="medicaid">Medicaid</option>
                   <option value="private">Private Insurance</option>
                   <option value="selfPay">Self Pay</option>
+                  {revenueSettings.customInsuranceCompanies.map((company: any, index: number) => (
+                    <option key={`custom-${index}`} value={`custom-${index}`}>
+                      {company.name} (Custom)
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -689,22 +1077,28 @@ const TripCalculatorTab: React.FC = () => {
                 </label>
               </div>
 
-              <div className="pt-4">
+              <div className="pt-4 space-y-3">
                 <button
                   onClick={calculateRevenue}
                   className="w-full px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   Calculate Revenue
                 </button>
-              </div>
-
-              <div>
-                <button
-                  onClick={saveRoute}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Save This Route
-                </button>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={saveRoute}
+                    className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    Save Route
+                  </button>
+                  <button
+                    onClick={resetCalculator}
+                    className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  >
+                    Reset
+                  </button>
+                </div>
               </div>
             </div>
           </div>
