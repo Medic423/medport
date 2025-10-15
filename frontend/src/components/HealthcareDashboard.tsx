@@ -304,18 +304,43 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
     
     setUpdating(true);
     try {
-      const response = await api.put(`/trips/${editingTrip.id}/status`, {
-        status: editFormData.status,
-        urgencyLevel: editFormData.urgencyLevel,
-        transportLevel: editFormData.transportLevel,
-        diagnosis: editFormData.diagnosis,
-        mobilityLevel: editFormData.mobilityLevel,
-        insuranceCompany: editFormData.insuranceCompany,
-          specialNeeds: editFormData.specialNeeds,
-          oxygenRequired: editFormData.oxygenRequired,
-          monitoringRequired: editFormData.monitoringRequired,
-          ...(editFormData.status === 'COMPLETED' && { completionTimestamp: new Date().toISOString() })
-        });
+      // TCC_EDIT_DEBUG: Build payload and sanitize empty strings
+      const payload: any = {
+        status: editFormData.status
+      };
+
+      // Only include non-empty fields
+      if (editFormData.urgencyLevel && editFormData.urgencyLevel.trim() !== '') {
+        payload.urgencyLevel = editFormData.urgencyLevel;
+      }
+      if (editFormData.transportLevel && editFormData.transportLevel.trim() !== '') {
+        payload.transportLevel = editFormData.transportLevel;
+      }
+      if (editFormData.diagnosis && editFormData.diagnosis.trim() !== '') {
+        payload.diagnosis = editFormData.diagnosis;
+      }
+      if (editFormData.mobilityLevel && editFormData.mobilityLevel.trim() !== '') {
+        payload.mobilityLevel = editFormData.mobilityLevel;
+      }
+      if (editFormData.insuranceCompany && editFormData.insuranceCompany.trim() !== '') {
+        payload.insuranceCompany = editFormData.insuranceCompany;
+      }
+      if (editFormData.specialNeeds && editFormData.specialNeeds.trim() !== '') {
+        payload.specialNeeds = editFormData.specialNeeds;
+      }
+      
+      // Always include booleans
+      payload.oxygenRequired = !!editFormData.oxygenRequired;
+      payload.monitoringRequired = !!editFormData.monitoringRequired;
+      
+      // Add completion timestamp if marking as completed
+      if (editFormData.status === 'COMPLETED') {
+        payload.completionTimestamp = new Date().toISOString();
+      }
+
+      console.log('TCC_EDIT_DEBUG: Sanitized payload for edit-save:', payload);
+
+      const response = await tripsAPI.updateStatus(editingTrip.id, payload);
 
       if (!response.data.success) {
         throw new Error(response.data.error || 'Failed to update trip');
@@ -326,8 +351,9 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
       setEditingTrip(null);
       setEditFormData({});
     } catch (error: any) {
-      console.error('Error updating trip:', error);
-      alert(error.message || 'Failed to update trip');
+      console.error('TCC_EDIT_DEBUG: Error updating trip:', error);
+      console.error('TCC_EDIT_DEBUG: Error response:', error?.response?.data);
+      alert(error?.response?.data?.error || error.message || 'Failed to update trip');
     } finally {
       setUpdating(false);
     }
@@ -338,7 +364,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
     
     setUpdating(true);
     try {
-      const response = await api.put(`/trips/${tripId}/status`, {
+      const response = await tripsAPI.updateStatus(tripId, {
         status: 'COMPLETED',
         completionTimestamp: new Date().toISOString()
       });
@@ -362,7 +388,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
     if (!confirmed) return;
     try {
       // Use status update as a soft-delete (CANCELLED), since DELETE endpoint may not exist
-      const response = await api.put(`/trips/${tripId}/status`, { status: 'CANCELLED' });
+      const response = await tripsAPI.updateStatus(tripId, { status: 'CANCELLED' });
       if (!response.data.success) {
         throw new Error(response.data.error || 'Failed to cancel trip');
       }

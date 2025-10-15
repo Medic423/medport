@@ -169,12 +169,16 @@ export class TripService {
       
       // ✅ NEW: Filter by all locations for a healthcare user
       if (filters?.healthcareUserId && !filters?.fromLocationId) {
+        console.log('TCC_FILTER_DEBUG: Filtering trips for healthcareUserId:', filters.healthcareUserId);
+        
         // Get all location IDs for this user
         const locations = await prisma.healthcareLocation.findMany({
           where: { healthcareUserId: filters.healthcareUserId },
           select: { id: true }
         });
         const locationIds = locations.map(loc => loc.id);
+        
+        console.log('TCC_FILTER_DEBUG: Found', locationIds.length, 'locations for user');
         
         if (locationIds.length > 0) {
           // Multi-location user: filter by their locations OR trips they created
@@ -183,10 +187,12 @@ export class TripService {
             { healthcareCreatedById: filters.healthcareUserId }
           ];
           console.log('MULTI_LOC: Filtering by user locations OR created trips:', locationIds.length, 'locations');
+          console.log('TCC_FILTER_DEBUG: OR filter applied:', JSON.stringify(where.OR, null, 2));
         } else {
           // Single-facility user: filter by trips they created
           where.healthcareCreatedById = filters.healthcareUserId;
           console.log('SINGLE_LOC: Filtering by created user ID:', filters.healthcareUserId);
+          console.log('TCC_FILTER_DEBUG: Filter applied - healthcareCreatedById:', filters.healthcareUserId);
         }
       }
       if (filters?.transportLevel) {
@@ -258,6 +264,12 @@ export class TripService {
             status: (t as any).status,
             assignedUnitId: (t as any).assignedUnitId,
             assignedUnit: t.assignedUnit ? { id: t.assignedUnit.id, unitNumber: t.assignedUnit.unitNumber, type: t.assignedUnit.type } : null
+          }))
+        );
+        console.log('TCC_FILTER_DEBUG: Trips healthcareCreatedById sample →',
+          trips.slice(0, 3).map(t => ({
+            id: t.id,
+            healthcareCreatedById: (t as any).healthcareCreatedById
           }))
         );
       } catch {}
@@ -348,15 +360,71 @@ export class TripService {
         updatedAt: new Date()
       };
 
-      // Update optional fields if provided
-      if (data.urgencyLevel !== undefined) updateData.urgencyLevel = data.urgencyLevel;
-      if (data.transportLevel !== undefined) updateData.transportLevel = data.transportLevel;
-      if (data.diagnosis !== undefined) updateData.diagnosis = data.diagnosis;
-      if (data.mobilityLevel !== undefined) updateData.mobilityLevel = data.mobilityLevel;
-      if (data.insuranceCompany !== undefined) updateData.insuranceCompany = data.insuranceCompany;
-      if (data.specialNeeds !== undefined) updateData.specialNeeds = data.specialNeeds;
-      if (data.oxygenRequired !== undefined) updateData.oxygenRequired = data.oxygenRequired;
-      if (data.monitoringRequired !== undefined) updateData.monitoringRequired = data.monitoringRequired;
+      // TCC_EDIT_DEBUG: Log incoming payload for validation
+      console.log('TCC_EDIT_DEBUG: Incoming update payload:', {
+        urgencyLevel: data.urgencyLevel,
+        transportLevel: data.transportLevel,
+        diagnosis: data.diagnosis,
+        mobilityLevel: data.mobilityLevel,
+        insuranceCompany: data.insuranceCompany,
+        specialNeeds: data.specialNeeds,
+        oxygenRequired: data.oxygenRequired,
+        monitoringRequired: data.monitoringRequired
+      });
+
+      // Update optional fields if provided (only non-empty strings)
+      // TypeScript-safe: check for undefined and truthy (non-empty) values
+      if (data.urgencyLevel !== undefined && data.urgencyLevel) {
+        updateData.urgencyLevel = data.urgencyLevel;
+        console.log('TCC_EDIT_DEBUG: Setting urgencyLevel:', data.urgencyLevel);
+      } else if (data.urgencyLevel !== undefined && !data.urgencyLevel) {
+        console.log('TCC_EDIT_DEBUG: Skipping empty urgencyLevel');
+      }
+      
+      if (data.transportLevel !== undefined && data.transportLevel) {
+        updateData.transportLevel = data.transportLevel;
+        console.log('TCC_EDIT_DEBUG: Setting transportLevel:', data.transportLevel);
+      } else if (data.transportLevel !== undefined && !data.transportLevel) {
+        console.log('TCC_EDIT_DEBUG: Skipping empty transportLevel');
+      }
+      
+      if (data.diagnosis !== undefined && data.diagnosis) {
+        updateData.diagnosis = data.diagnosis;
+        console.log('TCC_EDIT_DEBUG: Setting diagnosis:', data.diagnosis);
+      } else if (data.diagnosis !== undefined && !data.diagnosis) {
+        console.log('TCC_EDIT_DEBUG: Skipping empty diagnosis');
+      }
+      
+      if (data.mobilityLevel !== undefined && data.mobilityLevel) {
+        updateData.mobilityLevel = data.mobilityLevel;
+        console.log('TCC_EDIT_DEBUG: Setting mobilityLevel:', data.mobilityLevel);
+      } else if (data.mobilityLevel !== undefined && !data.mobilityLevel) {
+        console.log('TCC_EDIT_DEBUG: Skipping empty mobilityLevel');
+      }
+      
+      if (data.insuranceCompany !== undefined && data.insuranceCompany) {
+        updateData.insuranceCompany = data.insuranceCompany;
+        console.log('TCC_EDIT_DEBUG: Setting insuranceCompany:', data.insuranceCompany);
+      } else if (data.insuranceCompany !== undefined && !data.insuranceCompany) {
+        console.log('TCC_EDIT_DEBUG: Skipping empty insuranceCompany');
+      }
+      
+      if (data.specialNeeds !== undefined && data.specialNeeds) {
+        updateData.specialNeeds = data.specialNeeds;
+        console.log('TCC_EDIT_DEBUG: Setting specialNeeds:', data.specialNeeds);
+      } else if (data.specialNeeds !== undefined && !data.specialNeeds) {
+        console.log('TCC_EDIT_DEBUG: Skipping empty specialNeeds');
+      }
+      
+      if (data.oxygenRequired !== undefined) {
+        updateData.oxygenRequired = data.oxygenRequired;
+        console.log('TCC_EDIT_DEBUG: Setting oxygenRequired:', data.oxygenRequired);
+      }
+      
+      if (data.monitoringRequired !== undefined) {
+        updateData.monitoringRequired = data.monitoringRequired;
+        console.log('TCC_EDIT_DEBUG: Setting monitoringRequired:', data.monitoringRequired);
+      }
 
       // Handle unit assignment
       if (data.assignedUnitId) {
@@ -393,6 +461,9 @@ export class TripService {
         await this.updateUnitStatus(data.assignedUnitId, 'AVAILABLE');
       }
 
+      // TCC_EDIT_DEBUG: Log final update data before Prisma call
+      console.log('TCC_EDIT_DEBUG: Final updateData to be sent to Prisma:', JSON.stringify(updateData, null, 2));
+
       const trip = await prisma.transportRequest.update({
         where: { id },
         data: updateData,
@@ -406,9 +477,12 @@ export class TripService {
 
       console.log('TCC_DEBUG: Trip status updated successfully:', trip.id);
       return { success: true, data: trip };
-    } catch (error) {
-      console.error('TCC_DEBUG: Error updating trip status:', error);
-      return { success: false, error: 'Failed to update transport request status' };
+    } catch (error: any) {
+      console.error('TCC_EDIT_DEBUG: Error updating trip status:', error);
+      console.error('TCC_EDIT_DEBUG: Error message:', error?.message);
+      console.error('TCC_EDIT_DEBUG: Error code:', error?.code);
+      console.error('TCC_EDIT_DEBUG: Error meta:', error?.meta);
+      return { success: false, error: error?.message || 'Failed to update transport request status' };
     }
   }
 
@@ -449,6 +523,7 @@ export class TripService {
   async createEnhancedTrip(data: EnhancedCreateTripRequest) {
     console.log('TCC_DEBUG: Creating enhanced trip with data:', data);
     console.log('MULTI_LOC: fromLocationId:', data.fromLocationId, 'healthcareUserId:', data.healthcareUserId);
+    console.log('TCC_CREATE_DEBUG: healthcareUserId will be used for healthcareCreatedById:', data.healthcareUserId);
     
     try {
       const tripNumber = `TRP-${Date.now()}`;
@@ -494,6 +569,8 @@ export class TripService {
         bariatric: false,
         healthcareCreatedById: data.healthcareUserId || null,
       };
+      
+      console.log('TCC_CREATE_DEBUG: Trip data healthcareCreatedById before create:', tripData.healthcareCreatedById);
 
       // Connect pickup location relation if provided
       if (data.pickupLocationId) {
@@ -522,6 +599,7 @@ export class TripService {
 
       console.log('TCC_DEBUG: Enhanced trip created successfully:', trip.id);
       console.log('MULTI_LOC: Trip created with location:', trip.healthcareLocation?.locationName || 'N/A');
+      console.log('TCC_CREATE_DEBUG: Created trip healthcareCreatedById:', (trip as any).healthcareCreatedById);
       return { success: true, data: trip };
     } catch (error) {
       console.error('TCC_DEBUG: Error creating enhanced trip:', error);
