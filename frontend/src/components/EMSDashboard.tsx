@@ -114,8 +114,8 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
                const transformedAvailable = availableData.data.map((trip: any) => ({
                  id: trip.id,
                  patientId: trip.patientId,
-                 origin: trip.originFacility?.name || 'Unknown Origin',
-                 destination: trip.destinationFacility?.name || 'Unknown Destination',
+                 origin: trip.fromLocation || 'Unknown Origin',
+                 destination: trip.toLocation || 'Unknown Destination',
                  pickupLocation: trip.pickupLocation ? {
                    name: trip.pickupLocation.name,
                    floor: trip.pickupLocation.floor,
@@ -141,8 +141,8 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
                const transformedAccepted = acceptedData.data.map((trip: any) => ({
                  id: trip.id,
                  patientId: trip.patientId,
-                 origin: trip.originFacility?.name || 'Unknown Origin',
-                 destination: trip.destinationFacility?.name || 'Unknown Destination',
+                 origin: trip.fromLocation || 'Unknown Origin',
+                 destination: trip.toLocation || 'Unknown Destination',
                  transportLevel: trip.transportLevel || 'BLS',
                  urgencyLevel: trip.urgencyLevel || 'Routine',
                  status: trip.status,
@@ -168,8 +168,8 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
           const transformedCompleted = completedData.data.map((trip: any) => ({
             id: trip.id,
             patientId: trip.patientId,
-            origin: trip.originFacility?.name || 'Unknown Origin',
-            destination: trip.destinationFacility?.name || 'Unknown Destination',
+            origin: trip.fromLocation || 'Unknown Origin',
+            destination: trip.toLocation || 'Unknown Destination',
             transportLevel: trip.transportLevel || 'BLS',
             urgencyLevel: trip.urgencyLevel || 'Routine',
             status: trip.status,
