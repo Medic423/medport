@@ -17,7 +17,7 @@ const facilities_1 = __importDefault(require("./routes/facilities"));
 const analytics_1 = __importDefault(require("./routes/analytics"));
 const trips_1 = __importDefault(require("./routes/trips"));
 const agencyResponses_1 = __importDefault(require("./routes/agencyResponses"));
-const optimization_1 = __importDefault(require("./routes/optimization"));
+// import optimizationRoutes from './routes/optimization'; // Temporarily disabled - depends on deleted coordinateService
 const notifications_1 = __importDefault(require("./routes/notifications"));
 // import adminNotificationRoutes from './routes/adminNotifications';
 const units_1 = __importDefault(require("./routes/units"));
@@ -28,7 +28,6 @@ const emsAnalytics_1 = __importDefault(require("./routes/emsAnalytics"));
 const backup_1 = __importDefault(require("./routes/backup"));
 const maintenance_1 = __importDefault(require("./routes/maintenance"));
 const healthcareLocations_1 = __importDefault(require("./routes/healthcareLocations"));
-const unitLocation_1 = __importDefault(require("./routes/unitLocation"));
 // Load environment variables
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -92,7 +91,6 @@ app.use('/api/agency-responses', agencyResponses_1.default);
 app.use('/api/notifications', notifications_1.default);
 // app.use('/api/admin/notifications', adminNotificationRoutes);
 app.use('/api/units', units_1.default);
-app.use('/api/units', unitLocation_1.default); // Unit location management
 app.use('/api/tcc/hospitals', hospitals_1.default);
 app.use('/api/tcc/agencies', agencies_1.default);
 app.use('/api/tcc/facilities', facilities_1.default);
@@ -101,7 +99,7 @@ app.use('/api/tcc/units', tccUnits_1.default);
 app.use('/api/dropdown-options', dropdownOptions_1.default);
 app.use('/api/tcc/pickup-locations', pickupLocations_1.default);
 app.use('/api/ems/analytics', emsAnalytics_1.default);
-app.use('/api/optimize', optimization_1.default);
+// app.use('/api/optimize', optimizationRoutes); // Temporarily disabled
 app.use('/api/backup', backup_1.default);
 app.use('/api/maintenance', maintenance_1.default);
 app.use('/api/healthcare/locations', healthcareLocations_1.default);
@@ -134,29 +132,51 @@ app.get('/api/public/categories', async (req, res) => {
 });
 app.get('/api/public/hospitals', async (req, res) => {
     try {
-        const hospitalPrisma = databaseManager_1.databaseManager.getHospitalDB();
-        const hospitals = await hospitalPrisma.facility.findMany({
-            where: {
-                isActive: true
-            },
-            select: {
-                id: true,
-                name: true,
-                address: true,
-                city: true,
-                state: true,
-                zipCode: true,
-                phone: true,
-                email: true,
-                type: true
-            },
-            orderBy: {
-                name: 'asc'
-            }
-        });
+        const prisma = databaseManager_1.databaseManager.getPrismaClient();
+        // Load BOTH facilities and hospitals to support all user types
+        const [facilities, hospitals] = await Promise.all([
+            prisma.facility.findMany({
+                where: { isActive: true },
+                select: {
+                    id: true,
+                    name: true,
+                    address: true,
+                    city: true,
+                    state: true,
+                    zipCode: true,
+                    phone: true,
+                    email: true,
+                    type: true,
+                    latitude: true,
+                    longitude: true
+                }
+            }),
+            prisma.hospital.findMany({
+                where: { isActive: true },
+                select: {
+                    id: true,
+                    name: true,
+                    address: true,
+                    city: true,
+                    state: true,
+                    zipCode: true,
+                    phone: true,
+                    email: true,
+                    type: true,
+                    latitude: true,
+                    longitude: true
+                }
+            })
+        ]);
+        // Merge both arrays and remove duplicates by name
+        const allFacilities = [...facilities, ...hospitals];
+        const uniqueFacilities = allFacilities.filter((facility, index, self) => index === self.findIndex((f) => f.name === facility.name));
+        // Sort by name
+        uniqueFacilities.sort((a, b) => a.name.localeCompare(b.name));
+        console.log('TCC_DEBUG: Public hospitals endpoint - Facilities:', facilities.length, 'Hospitals:', hospitals.length, 'Total unique:', uniqueFacilities.length);
         res.json({
             success: true,
-            data: hospitals,
+            data: uniqueFacilities,
             message: 'Hospitals retrieved successfully'
         });
     }

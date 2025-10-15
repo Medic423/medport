@@ -746,9 +746,10 @@ router.get('/options/insurance', async (req, res) => {
  * POST /api/trips/with-responses
  * Create a new trip with response handling capabilities
  */
-router.post('/with-responses', async (req, res) => {
+router.post('/with-responses', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     console.log('TCC_DEBUG: Create trip with responses request received:', req.body);
+    console.log('TCC_DEBUG: Authenticated user (with-responses):', req.user);
     
     const {
       patientId,
@@ -826,7 +827,9 @@ router.post('/with-responses', async (req, res) => {
       priority,
       responseDeadline,
       maxResponses: maxResponses || 5,
-      selectionMode: selectionMode || 'SPECIFIC_AGENCIES'
+      selectionMode: selectionMode || 'SPECIFIC_AGENCIES',
+      // ✅ Ensure healthcareCreatedById is set by passing healthcareUserId into service
+      healthcareUserId: req.user?.userType === 'HEALTHCARE' ? req.user.id : undefined
     };
 
     const result = await tripService.createTripWithResponses(tripData);

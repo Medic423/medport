@@ -1,13 +1,14 @@
 export interface LocationData {
     lat: number;
     lng: number;
-    name?: string;
-    address?: string;
+    name: string;
+    address: string;
 }
 export declare class CoordinateService {
     private coordinateCache;
     private cacheExpiry;
     private cacheTimestamps;
+    constructor();
     /**
      * Get coordinates for a facility by ID
      */

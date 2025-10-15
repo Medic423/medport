@@ -805,8 +805,32 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
 
       console.log('TCC_DEBUG: Submitting trip data:', tripData);
 
-      // Submit trip to API
-      const response = await tripsAPI.create(tripData);
+      // Submit trip to API (healthcare users use enhanced endpoint so trip shows in list)
+      const response = user.userType === 'HEALTHCARE'
+        ? await tripsAPI.createEnhanced({
+            patientId: tripData.patientId,
+            patientWeight: formData.patientWeight,
+            specialNeeds: formData.specialNeeds,
+            insuranceCompany: formData.insuranceCompany,
+            fromLocation: formData.fromLocation,
+            fromLocationId: formData.fromLocationId || undefined,
+            pickupLocationId: formData.pickupLocationId,
+            toLocation: formData.toLocation,
+            scheduledTime: new Date(formData.scheduledTime).toISOString(),
+            transportLevel: formData.transportLevel as any,
+            urgencyLevel: formData.urgencyLevel as any,
+            diagnosis: formData.diagnosis || undefined,
+            mobilityLevel: formData.mobilityLevel as any,
+            oxygenRequired: !!formData.oxygenRequired,
+            monitoringRequired: !!formData.monitoringRequired,
+            generateQRCode: false,
+            selectedAgencies: formData.selectedAgencies,
+            notificationRadius: formData.notificationRadius,
+            notes: formData.notes,
+            priority: (tripData as any).priority,
+            createdVia: 'HEALTHCARE_PORTAL'
+          })
+        : await tripsAPI.create(tripData);
       
       if (response.data.success) {
         console.log('TCC_DEBUG: Trip created successfully:', response.data.data);

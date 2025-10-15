@@ -118,6 +118,9 @@ export interface CreateTripWithResponsesRequest {
   responseDeadline?: string; // ISO string
   maxResponses?: number;
   selectionMode?: 'BROADCAST' | 'SPECIFIC_AGENCIES';
+  
+  // Visibility linkage for healthcare users (ensures immediate list visibility)
+  healthcareUserId?: string;
 }
 
 export interface UpdateTripResponseFieldsRequest {

@@ -378,10 +378,7 @@ class TripService {
                 patientId: data.patientId || 'PAT-UNKNOWN',
                 patientWeight: data.patientWeight || null,
                 specialNeeds: data.specialNeeds || null,
-                originFacilityId: null, // Not used in enhanced version
-                destinationFacilityId: null, // Not used in enhanced version
                 fromLocation: data.fromLocation,
-                fromLocationId: data.fromLocationId || null, // ✅ NEW: Healthcare location reference
                 isMultiLocationFacility, // ✅ NEW: Analytics flag
                 toLocation: data.toLocation,
                 scheduledTime: new Date(data.scheduledTime),
@@ -409,6 +406,10 @@ class TripService {
             // Connect pickup location relation if provided
             if (data.pickupLocationId) {
                 tripData.pickupLocation = { connect: { id: data.pickupLocationId } };
+            }
+            // Connect healthcare location relation if provided
+            if (data.fromLocationId) {
+                tripData.healthcareLocation = { connect: { id: data.fromLocationId } };
             }
             const trip = await prisma.transportRequest.create({
                 data: tripData,
