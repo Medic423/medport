@@ -345,14 +345,23 @@ export class TripService {
    */
   async updateTripStatus(id: string, data: UpdateTripStatusRequest) {
     console.log('TCC_DEBUG: Updating trip status:', { id, data });
+    console.log('EMS_UNIT_ASSIGN: updateTripStatus called with:', {
+      tripId: id,
+      status: data.status,
+      assignedUnitId: data.assignedUnitId,
+      assignedAgencyId: data.assignedAgencyId
+    });
     
     try {
       // Validate unit assignment if provided
       if (data.assignedUnitId) {
+        console.log('EMS_UNIT_ASSIGN: Starting unit validation...');
         const unit = await this.validateUnitAssignment(data.assignedUnitId, data.assignedAgencyId);
         if (!unit) {
+          console.log('EMS_UNIT_ASSIGN: Unit validation FAILED - returning error');
           return { success: false, error: 'Invalid unit assignment or unit not available' };
         }
+        console.log('EMS_UNIT_ASSIGN: Unit validation PASSED');
       }
 
       const updateData: any = {
@@ -945,7 +954,7 @@ export class TripService {
    */
   private async validateUnitAssignment(unitId: string, agencyId?: string): Promise<any> {
     try {
-      console.log('TCC_DEBUG: Validating unit assignment:', { unitId, agencyId });
+      console.log('EMS_UNIT_ASSIGN: Validating unit assignment:', { unitId, agencyId });
       
       const emsDB = databaseManager.getEMSDB();
       const unit = await emsDB.unit.findUnique({
@@ -953,31 +962,40 @@ export class TripService {
         include: { agency: true }
       });
 
+      console.log('EMS_UNIT_ASSIGN: Unit lookup result:', unit ? {
+        id: unit.id,
+        unitNumber: unit.unitNumber,
+        status: unit.status,
+        isActive: unit.isActive,
+        agencyId: unit.agencyId,
+        agencyName: unit.agency?.name
+      } : 'NOT FOUND');
+
       if (!unit) {
-        console.log('TCC_DEBUG: Unit not found:', unitId);
+        console.log('EMS_UNIT_ASSIGN: FAILED - Unit not found:', unitId);
         return null;
       }
 
       if (!unit.isActive) {
-        console.log('TCC_DEBUG: Unit is not active:', unitId);
+        console.log('EMS_UNIT_ASSIGN: FAILED - Unit is not active:', unitId);
         return null;
       }
 
       if (unit.status !== 'AVAILABLE') {
-        console.log('TCC_DEBUG: Unit is not available:', unitId, 'status:', unit.status);
+        console.log('EMS_UNIT_ASSIGN: FAILED - Unit is not available. Unit status:', unit.status, 'Expected: AVAILABLE');
         return null;
       }
 
       // If agencyId is provided, validate unit belongs to that agency
       if (agencyId && unit.agencyId !== agencyId) {
-        console.log('TCC_DEBUG: Unit does not belong to agency:', unitId, 'agencyId:', agencyId);
+        console.log('EMS_UNIT_ASSIGN: FAILED - Unit does not belong to agency. Unit agencyId:', unit.agencyId, 'Requested agencyId:', agencyId);
         return null;
       }
 
-      console.log('TCC_DEBUG: Unit assignment validated successfully:', unitId);
+      console.log('EMS_UNIT_ASSIGN: SUCCESS - Unit assignment validated:', unitId);
       return unit;
     } catch (error) {
-      console.error('TCC_DEBUG: Error validating unit assignment:', error);
+      console.error('EMS_UNIT_ASSIGN: ERROR - Exception during validation:', error);
       return null;
     }
   }

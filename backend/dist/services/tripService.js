@@ -90,12 +90,14 @@ class TripService {
             }
             // ✅ NEW: Filter by all locations for a healthcare user
             if (filters?.healthcareUserId && !filters?.fromLocationId) {
+                console.log('TCC_FILTER_DEBUG: Filtering trips for healthcareUserId:', filters.healthcareUserId);
                 // Get all location IDs for this user
                 const locations = await prisma.healthcareLocation.findMany({
                     where: { healthcareUserId: filters.healthcareUserId },
                     select: { id: true }
                 });
                 const locationIds = locations.map(loc => loc.id);
+                console.log('TCC_FILTER_DEBUG: Found', locationIds.length, 'locations for user');
                 if (locationIds.length > 0) {
                     // Multi-location user: filter by their locations OR trips they created
                     where.OR = [
@@ -103,11 +105,13 @@ class TripService {
                         { healthcareCreatedById: filters.healthcareUserId }
                     ];
                     console.log('MULTI_LOC: Filtering by user locations OR created trips:', locationIds.length, 'locations');
+                    console.log('TCC_FILTER_DEBUG: OR filter applied:', JSON.stringify(where.OR, null, 2));
                 }
                 else {
                     // Single-facility user: filter by trips they created
                     where.healthcareCreatedById = filters.healthcareUserId;
                     console.log('SINGLE_LOC: Filtering by created user ID:', filters.healthcareUserId);
+                    console.log('TCC_FILTER_DEBUG: Filter applied - healthcareCreatedById:', filters.healthcareUserId);
                 }
             }
             if (filters?.transportLevel) {
@@ -176,6 +180,10 @@ class TripService {
                     status: t.status,
                     assignedUnitId: t.assignedUnitId,
                     assignedUnit: t.assignedUnit ? { id: t.assignedUnit.id, unitNumber: t.assignedUnit.unitNumber, type: t.assignedUnit.type } : null
+                })));
+                console.log('TCC_FILTER_DEBUG: Trips healthcareCreatedById sample →', trips.slice(0, 3).map(t => ({
+                    id: t.id,
+                    healthcareCreatedById: t.healthcareCreatedById
                 })));
             }
             catch { }
@@ -248,35 +256,90 @@ class TripService {
      */
     async updateTripStatus(id, data) {
         console.log('TCC_DEBUG: Updating trip status:', { id, data });
+        console.log('EMS_UNIT_ASSIGN: updateTripStatus called with:', {
+            tripId: id,
+            status: data.status,
+            assignedUnitId: data.assignedUnitId,
+            assignedAgencyId: data.assignedAgencyId
+        });
         try {
             // Validate unit assignment if provided
             if (data.assignedUnitId) {
+                console.log('EMS_UNIT_ASSIGN: Starting unit validation...');
                 const unit = await this.validateUnitAssignment(data.assignedUnitId, data.assignedAgencyId);
                 if (!unit) {
+                    console.log('EMS_UNIT_ASSIGN: Unit validation FAILED - returning error');
                     return { success: false, error: 'Invalid unit assignment or unit not available' };
                 }
+                console.log('EMS_UNIT_ASSIGN: Unit validation PASSED');
             }
             const updateData = {
                 status: data.status,
                 updatedAt: new Date()
             };
-            // Update optional fields if provided
-            if (data.urgencyLevel !== undefined)
+            // TCC_EDIT_DEBUG: Log incoming payload for validation
+            console.log('TCC_EDIT_DEBUG: Incoming update payload:', {
+                urgencyLevel: data.urgencyLevel,
+                transportLevel: data.transportLevel,
+                diagnosis: data.diagnosis,
+                mobilityLevel: data.mobilityLevel,
+                insuranceCompany: data.insuranceCompany,
+                specialNeeds: data.specialNeeds,
+                oxygenRequired: data.oxygenRequired,
+                monitoringRequired: data.monitoringRequired
+            });
+            // Update optional fields if provided (only non-empty strings)
+            // TypeScript-safe: check for undefined and truthy (non-empty) values
+            if (data.urgencyLevel !== undefined && data.urgencyLevel) {
                 updateData.urgencyLevel = data.urgencyLevel;
-            if (data.transportLevel !== undefined)
+                console.log('TCC_EDIT_DEBUG: Setting urgencyLevel:', data.urgencyLevel);
+            }
+            else if (data.urgencyLevel !== undefined && !data.urgencyLevel) {
+                console.log('TCC_EDIT_DEBUG: Skipping empty urgencyLevel');
+            }
+            if (data.transportLevel !== undefined && data.transportLevel) {
                 updateData.transportLevel = data.transportLevel;
-            if (data.diagnosis !== undefined)
+                console.log('TCC_EDIT_DEBUG: Setting transportLevel:', data.transportLevel);
+            }
+            else if (data.transportLevel !== undefined && !data.transportLevel) {
+                console.log('TCC_EDIT_DEBUG: Skipping empty transportLevel');
+            }
+            if (data.diagnosis !== undefined && data.diagnosis) {
                 updateData.diagnosis = data.diagnosis;
-            if (data.mobilityLevel !== undefined)
+                console.log('TCC_EDIT_DEBUG: Setting diagnosis:', data.diagnosis);
+            }
+            else if (data.diagnosis !== undefined && !data.diagnosis) {
+                console.log('TCC_EDIT_DEBUG: Skipping empty diagnosis');
+            }
+            if (data.mobilityLevel !== undefined && data.mobilityLevel) {
                 updateData.mobilityLevel = data.mobilityLevel;
-            if (data.insuranceCompany !== undefined)
+                console.log('TCC_EDIT_DEBUG: Setting mobilityLevel:', data.mobilityLevel);
+            }
+            else if (data.mobilityLevel !== undefined && !data.mobilityLevel) {
+                console.log('TCC_EDIT_DEBUG: Skipping empty mobilityLevel');
+            }
+            if (data.insuranceCompany !== undefined && data.insuranceCompany) {
                 updateData.insuranceCompany = data.insuranceCompany;
-            if (data.specialNeeds !== undefined)
+                console.log('TCC_EDIT_DEBUG: Setting insuranceCompany:', data.insuranceCompany);
+            }
+            else if (data.insuranceCompany !== undefined && !data.insuranceCompany) {
+                console.log('TCC_EDIT_DEBUG: Skipping empty insuranceCompany');
+            }
+            if (data.specialNeeds !== undefined && data.specialNeeds) {
                 updateData.specialNeeds = data.specialNeeds;
-            if (data.oxygenRequired !== undefined)
+                console.log('TCC_EDIT_DEBUG: Setting specialNeeds:', data.specialNeeds);
+            }
+            else if (data.specialNeeds !== undefined && !data.specialNeeds) {
+                console.log('TCC_EDIT_DEBUG: Skipping empty specialNeeds');
+            }
+            if (data.oxygenRequired !== undefined) {
                 updateData.oxygenRequired = data.oxygenRequired;
-            if (data.monitoringRequired !== undefined)
+                console.log('TCC_EDIT_DEBUG: Setting oxygenRequired:', data.oxygenRequired);
+            }
+            if (data.monitoringRequired !== undefined) {
                 updateData.monitoringRequired = data.monitoringRequired;
+                console.log('TCC_EDIT_DEBUG: Setting monitoringRequired:', data.monitoringRequired);
+            }
             // Handle unit assignment
             if (data.assignedUnitId) {
                 updateData.assignedUnitId = data.assignedUnitId;
@@ -308,6 +371,8 @@ class TripService {
             if (data.assignedUnitId && (data.status === 'COMPLETED' || data.status === 'CANCELLED')) {
                 await this.updateUnitStatus(data.assignedUnitId, 'AVAILABLE');
             }
+            // TCC_EDIT_DEBUG: Log final update data before Prisma call
+            console.log('TCC_EDIT_DEBUG: Final updateData to be sent to Prisma:', JSON.stringify(updateData, null, 2));
             const trip = await prisma.transportRequest.update({
                 where: { id },
                 data: updateData,
@@ -322,8 +387,11 @@ class TripService {
             return { success: true, data: trip };
         }
         catch (error) {
-            console.error('TCC_DEBUG: Error updating trip status:', error);
-            return { success: false, error: 'Failed to update transport request status' };
+            console.error('TCC_EDIT_DEBUG: Error updating trip status:', error);
+            console.error('TCC_EDIT_DEBUG: Error message:', error?.message);
+            console.error('TCC_EDIT_DEBUG: Error code:', error?.code);
+            console.error('TCC_EDIT_DEBUG: Error meta:', error?.meta);
+            return { success: false, error: error?.message || 'Failed to update transport request status' };
         }
     }
     /**
@@ -361,6 +429,7 @@ class TripService {
     async createEnhancedTrip(data) {
         console.log('TCC_DEBUG: Creating enhanced trip with data:', data);
         console.log('MULTI_LOC: fromLocationId:', data.fromLocationId, 'healthcareUserId:', data.healthcareUserId);
+        console.log('TCC_CREATE_DEBUG: healthcareUserId will be used for healthcareCreatedById:', data.healthcareUserId);
         try {
             const tripNumber = `TRP-${Date.now()}`;
             // ✅ Determine if this is from a multi-location facility
@@ -403,6 +472,7 @@ class TripService {
                 bariatric: false,
                 healthcareCreatedById: data.healthcareUserId || null,
             };
+            console.log('TCC_CREATE_DEBUG: Trip data healthcareCreatedById before create:', tripData.healthcareCreatedById);
             // Connect pickup location relation if provided
             if (data.pickupLocationId) {
                 tripData.pickupLocation = { connect: { id: data.pickupLocationId } };
@@ -427,6 +497,7 @@ class TripService {
             });
             console.log('TCC_DEBUG: Enhanced trip created successfully:', trip.id);
             console.log('MULTI_LOC: Trip created with location:', trip.healthcareLocation?.locationName || 'N/A');
+            console.log('TCC_CREATE_DEBUG: Created trip healthcareCreatedById:', trip.healthcareCreatedById);
             return { success: true, data: trip };
         }
         catch (error) {
@@ -720,34 +791,42 @@ class TripService {
      */
     async validateUnitAssignment(unitId, agencyId) {
         try {
-            console.log('TCC_DEBUG: Validating unit assignment:', { unitId, agencyId });
+            console.log('EMS_UNIT_ASSIGN: Validating unit assignment:', { unitId, agencyId });
             const emsDB = databaseManager_1.databaseManager.getEMSDB();
             const unit = await emsDB.unit.findUnique({
                 where: { id: unitId },
                 include: { agency: true }
             });
+            console.log('EMS_UNIT_ASSIGN: Unit lookup result:', unit ? {
+                id: unit.id,
+                unitNumber: unit.unitNumber,
+                status: unit.status,
+                isActive: unit.isActive,
+                agencyId: unit.agencyId,
+                agencyName: unit.agency?.name
+            } : 'NOT FOUND');
             if (!unit) {
-                console.log('TCC_DEBUG: Unit not found:', unitId);
+                console.log('EMS_UNIT_ASSIGN: FAILED - Unit not found:', unitId);
                 return null;
             }
             if (!unit.isActive) {
-                console.log('TCC_DEBUG: Unit is not active:', unitId);
+                console.log('EMS_UNIT_ASSIGN: FAILED - Unit is not active:', unitId);
                 return null;
             }
             if (unit.status !== 'AVAILABLE') {
-                console.log('TCC_DEBUG: Unit is not available:', unitId, 'status:', unit.status);
+                console.log('EMS_UNIT_ASSIGN: FAILED - Unit is not available. Unit status:', unit.status, 'Expected: AVAILABLE');
                 return null;
             }
             // If agencyId is provided, validate unit belongs to that agency
             if (agencyId && unit.agencyId !== agencyId) {
-                console.log('TCC_DEBUG: Unit does not belong to agency:', unitId, 'agencyId:', agencyId);
+                console.log('EMS_UNIT_ASSIGN: FAILED - Unit does not belong to agency. Unit agencyId:', unit.agencyId, 'Requested agencyId:', agencyId);
                 return null;
             }
-            console.log('TCC_DEBUG: Unit assignment validated successfully:', unitId);
+            console.log('EMS_UNIT_ASSIGN: SUCCESS - Unit assignment validated:', unitId);
             return unit;
         }
         catch (error) {
-            console.error('TCC_DEBUG: Error validating unit assignment:', error);
+            console.error('EMS_UNIT_ASSIGN: ERROR - Exception during validation:', error);
             return null;
         }
     }

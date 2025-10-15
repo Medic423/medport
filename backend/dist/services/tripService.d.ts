@@ -290,10 +290,6 @@ export declare class TripService {
      */
     updateTripStatus(id: string, data: UpdateTripStatusRequest): Promise<{
         success: boolean;
-        error: string;
-        data?: undefined;
-    } | {
-        success: boolean;
         data: {
             originFacility: {
                 email: string | null;
@@ -418,6 +414,10 @@ export declare class TripService {
             notes: string | null;
         };
         error?: undefined;
+    } | {
+        success: boolean;
+        error: any;
+        data?: undefined;
     }>;
     /**
      * Get agencies for a specific hospital (simplified version)

@@ -106,6 +106,7 @@ export interface CreateTripWithResponsesRequest {
     responseDeadline?: string;
     maxResponses?: number;
     selectionMode?: 'BROADCAST' | 'SPECIFIC_AGENCIES';
+    healthcareUserId?: string;
 }
 export interface UpdateTripResponseFieldsRequest {
     responseDeadline?: string;

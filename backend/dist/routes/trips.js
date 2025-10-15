@@ -655,9 +655,10 @@ router.get('/options/insurance', async (req, res) => {
  * POST /api/trips/with-responses
  * Create a new trip with response handling capabilities
  */
-router.post('/with-responses', async (req, res) => {
+router.post('/with-responses', authenticateAdmin_1.authenticateAdmin, async (req, res) => {
     try {
         console.log('TCC_DEBUG: Create trip with responses request received:', req.body);
+        console.log('TCC_DEBUG: Authenticated user (with-responses):', req.user);
         const { patientId, patientWeight, specialNeeds, insuranceCompany, fromLocation, pickupLocationId, toLocation, scheduledTime, transportLevel, urgencyLevel, diagnosis, mobilityLevel, oxygenRequired, monitoringRequired, generateQRCode, selectedAgencies, notificationRadius, notes, priority, responseDeadline, maxResponses, selectionMode } = req.body;
         // Validation
         if (!fromLocation || !toLocation || !transportLevel || !urgencyLevel) {
@@ -706,7 +707,9 @@ router.post('/with-responses', async (req, res) => {
             priority,
             responseDeadline,
             maxResponses: maxResponses || 5,
-            selectionMode: selectionMode || 'SPECIFIC_AGENCIES'
+            selectionMode: selectionMode || 'SPECIFIC_AGENCIES',
+            // ✅ Ensure healthcareCreatedById is set by passing healthcareUserId into service
+            healthcareUserId: req.user?.userType === 'HEALTHCARE' ? req.user.id : undefined
         };
         const result = await tripService_1.tripService.createTripWithResponses(tripData);
         console.log('TCC_DEBUG: Trip with responses created successfully:', result);
