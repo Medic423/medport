@@ -120,8 +120,8 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
           const transformedTrips = data.data.map((trip: any) => ({
             id: trip.id,
             patientId: trip.patientId,
-            origin: trip.originFacility?.name || trip.origin?.name || trip.originName || 'Unknown Origin',
-            destination: trip.destinationFacility?.name || trip.destination?.name || trip.destinationName || 'Unknown Destination',
+            origin: trip.fromLocation || 'Unknown Origin',
+            destination: trip.toLocation || 'Unknown Destination',
             pickupLocation: trip.pickupLocation ? {
               name: trip.pickupLocation.name,
               floor: trip.pickupLocation.floor,
