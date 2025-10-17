@@ -75,9 +75,12 @@ if ! pg_isready -q; then
     sleep 5
 fi
 
-# Create the single consolidated database if it doesn't exist
-echo "📊 Creating consolidated TCC database..."
-createdb -h localhost -U scooper medport_ems 2>/dev/null || true
+# Drop and recreate the consolidated database for clean restore
+echo "📊 Dropping existing medport_ems database (if exists)..."
+dropdb -h localhost -U scooper medport_ems 2>/dev/null || true
+
+echo "📊 Creating fresh medport_ems database..."
+createdb -h localhost -U scooper medport_ems
 
 # Restore the consolidated database
 echo "📊 Restoring medport_ems database (consolidated TCC database)..."
