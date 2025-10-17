@@ -58,6 +58,25 @@ mkdir -p "$BACKUP_DIR/$BACKUP_NAME/databases"
 echo "📊 Backing up medport_ems database (consolidated TCC database)..."
 pg_dump -h localhost -U scooper -d medport_ems > "$BACKUP_DIR/$BACKUP_NAME/databases/medport_ems.sql"
 
+# Verify database backup integrity
+echo "🔍 Verifying database backup..."
+DB_SIZE=$(wc -l < "$BACKUP_DIR/$BACKUP_NAME/databases/medport_ems.sql")
+TRIP_COUNT=$(grep -A 1000 "COPY public.transport_requests" "$BACKUP_DIR/$BACKUP_NAME/databases/medport_ems.sql" | grep -c "^cmg" || echo "0")
+
+if [ "$DB_SIZE" -lt 100 ]; then
+    echo "❌ WARNING: Database backup appears too small ($DB_SIZE lines)"
+    echo "   This may indicate a backup failure!"
+    exit 1
+fi
+
+if [ "$TRIP_COUNT" -eq 0 ]; then
+    echo "❌ WARNING: No transport requests found in backup!"
+    echo "   This may indicate an empty or corrupted backup!"
+    exit 1
+fi
+
+echo "✅ Database backup verified: $DB_SIZE lines, $TRIP_COUNT trips"
+
 # 6. Create database restore script
 echo "📝 Creating database restore script..."
 cat > "$BACKUP_DIR/$BACKUP_NAME/restore-databases.sh" << 'EOF'
@@ -91,7 +110,70 @@ EOF
 
 chmod +x "$BACKUP_DIR/$BACKUP_NAME/restore-databases.sh"
 
-# 7. Create comprehensive restore script
+# 7. Create backup verification script
+echo "📝 Creating backup verification script..."
+cat > "$BACKUP_DIR/$BACKUP_NAME/verify-backup-data.sh" << 'VERIFYEOF'
+#!/bin/bash
+
+# TCC Backup Data Verification Script
+# Run this to verify the backup contains the expected data
+
+echo "🔍 TCC Backup Data Verification"
+echo "================================"
+echo ""
+
+if [ ! -f "databases/medport_ems.sql" ]; then
+    echo "❌ Database file not found!"
+    echo "   Expected: databases/medport_ems.sql"
+    exit 1
+fi
+
+echo "📊 Database File: databases/medport_ems.sql"
+echo "   Size: $(ls -lh databases/medport_ems.sql | awk '{print $5}')"
+echo "   Lines: $(wc -l < databases/medport_ems.sql)"
+echo ""
+
+echo "📋 Transport Requests:"
+TRIP_COUNT=$(grep -A 1000 "COPY public.transport_requests" databases/medport_ems.sql | grep -c "^cmg" || echo "0")
+echo "   Total trips: $TRIP_COUNT"
+echo ""
+
+echo "📅 Data Date Range:"
+EARLIEST=$(grep "2025-" databases/medport_ems.sql | head -1 | grep -o "2025-[0-9][0-9]-[0-9][0-9]" | head -1 || echo "Unknown")
+LATEST=$(grep "2025-" databases/medport_ems.sql | tail -10 | grep -o "2025-[0-9][0-9]-[0-9][0-9]" | tail -1 || echo "Unknown")
+echo "   Earliest: $EARLIEST"
+echo "   Latest: $LATEST"
+echo ""
+
+echo "🔑 Test Users:"
+HC_USERS=$(grep -c "COPY public.healthcare_users" databases/medport_ems.sql || echo "0")
+EMS_USERS=$(grep -c "test@ems.com" databases/medport_ems.sql || echo "0")
+EMS_HAS_AGENCY=$(grep "test@ems.com" databases/medport_ems.sql | grep -c "cmftypzwx0000p4vf9tdqdwql" || echo "0")
+echo "   Healthcare users found: $HC_USERS"
+echo "   EMS users found: $EMS_USERS"
+echo "   EMS user has agency: $EMS_HAS_AGENCY"
+echo ""
+
+if [ "$TRIP_COUNT" -eq 0 ]; then
+    echo "❌ VERIFICATION FAILED: No trips found in backup!"
+    exit 1
+elif [ "$DB_SIZE" -lt 100 ]; then
+    echo "❌ VERIFICATION FAILED: Database too small!"
+    exit 1
+else
+    echo "✅ Verification PASSED!"
+    echo ""
+    echo "📋 Summary:"
+    echo "   - Database is properly formatted"
+    echo "   - Contains $TRIP_COUNT transport requests"
+    echo "   - Date range: $EARLIEST to $LATEST"
+    echo "   - EMS user agency linkage: $([ "$EMS_HAS_AGENCY" -gt 0 ] && echo 'YES ✅' || echo 'NO ⚠️')"
+fi
+VERIFYEOF
+
+chmod +x "$BACKUP_DIR/$BACKUP_NAME/verify-backup-data.sh"
+
+# 8. Create comprehensive restore script
 echo "📝 Creating comprehensive restore script..."
 cat > "$BACKUP_DIR/$BACKUP_NAME/restore-complete.sh" << 'EOF'
 #!/bin/bash
