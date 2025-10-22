@@ -116,32 +116,59 @@ const UnitsManagement: React.FC<UnitsManagementProps> = ({ user, acceptedTrips =
     setFormError(null);
 
     try {
-      console.log('TCC_DEBUG: Creating unit with data:', formData);
+      let response;
       
-      // Use the real API endpoint
-      const response = await api.post('/api/units', formData);
-      
-      if (response.data.success) {
-        const newUnit = response.data.data;
+      if (selectedUnit) {
+        // Update existing unit
+        console.log('TCC_DEBUG: Updating unit with data:', formData);
+        response = await api.put(`/api/units/${selectedUnit.id}`, formData);
         
-        // Add to local state
-        setUnits(prev => [...prev, newUnit]);
-        
-        // Close modals and reset form
-        setShowCreateModal(false);
-        setShowEditModal(false);
-        setSelectedUnit(null);
-        resetForm();
-        
-        // Show success message
-        console.log('TCC_DEBUG: Unit created successfully:', newUnit);
+        if (response.data.success) {
+          const updatedUnit = response.data.data;
+          
+          // Update the unit in local state
+          setUnits(prev => prev.map(unit => 
+            unit.id === selectedUnit.id ? updatedUnit : unit
+          ));
+          
+          // Close modals and reset form
+          setShowCreateModal(false);
+          setShowEditModal(false);
+          setSelectedUnit(null);
+          resetForm();
+          
+          // Show success message
+          console.log('TCC_DEBUG: Unit updated successfully:', updatedUnit);
+        } else {
+          throw new Error(response.data.error || 'Failed to update unit');
+        }
       } else {
-        throw new Error(response.data.error || 'Failed to create unit');
+        // Create new unit
+        console.log('TCC_DEBUG: Creating unit with data:', formData);
+        response = await api.post('/api/units', formData);
+        
+        if (response.data.success) {
+          const newUnit = response.data.data;
+          
+          // Add to local state
+          setUnits(prev => [...prev, newUnit]);
+          
+          // Close modals and reset form
+          setShowCreateModal(false);
+          setShowEditModal(false);
+          setSelectedUnit(null);
+          resetForm();
+          
+          // Show success message
+          console.log('TCC_DEBUG: Unit created successfully:', newUnit);
+        } else {
+          throw new Error(response.data.error || 'Failed to create unit');
+        }
       }
       
     } catch (error: any) {
       console.error('Error saving unit:', error);
-      setFormError(error.response?.data?.error || error.message || 'Failed to create unit');
+      setFormError(error.response?.data?.error || error.message || 'Failed to save unit');
     } finally {
       setFormLoading(false);
     }
@@ -275,6 +302,17 @@ const UnitsManagement: React.FC<UnitsManagementProps> = ({ user, acceptedTrips =
         {UNIT_STATUS_LABELS[status]}
       </span>
     );
+  };
+
+  // Get type color
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'AMBULANCE': return 'bg-red-100 text-red-800';
+      case 'HELICOPTER': return 'bg-blue-100 text-blue-800';
+      case 'FIRE_TRUCK': return 'bg-orange-100 text-orange-800';
+      case 'RESCUE_VEHICLE': return 'bg-purple-100 text-purple-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
   };
 
   // Get capability badges
@@ -505,7 +543,7 @@ const UnitsManagement: React.FC<UnitsManagementProps> = ({ user, acceptedTrips =
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Performance
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -514,19 +552,14 @@ const UnitsManagement: React.FC<UnitsManagementProps> = ({ user, acceptedTrips =
                   {filteredUnits.map((unit) => (
                     <tr key={unit.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {unit.unitNumber}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {unit.isActive ? 'Active' : 'Inactive'}
-                          </div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {unit.unitNumber}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {UNIT_TYPE_LABELS[unit.type]}
-                        </div>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getTypeColor(unit.type)}`}>
+                          {unit.type.replace('_', ' ')}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {getStatusBadge(unit.currentStatus)}
@@ -544,9 +577,16 @@ const UnitsManagement: React.FC<UnitsManagementProps> = ({ user, acceptedTrips =
                           </span>
                         </label>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-wrap">
-                          {getCapabilityBadges(unit.capabilities)}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-wrap gap-1">
+                          {unit.capabilities.map((capability, index) => (
+                            <span
+                              key={index}
+                              className="inline-flex px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded"
+                            >
+                              {capability}
+                            </span>
+                          ))}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

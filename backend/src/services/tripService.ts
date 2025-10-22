@@ -1022,6 +1022,104 @@ export class TripService {
       // Don't throw error as this is not critical to trip update
     }
   }
+
+  /**
+   * Calculate distance and estimated time for a trip
+   */
+  async calculateTripDistanceAndTime(data: {
+    fromLocation?: string;
+    toLocation?: string;
+    fromLocationId?: string;
+    destinationFacilityId?: string;
+  }) {
+    console.log('TCC_DEBUG: Calculating trip distance and time:', data);
+    
+    try {
+      let fromCoords: { latitude: number; longitude: number } | null = null;
+      let toCoords: { latitude: number; longitude: number } | null = null;
+
+      // Get origin coordinates
+      if (data.fromLocationId) {
+        const healthcareLocation = await prisma.healthcareLocation.findUnique({
+          where: { id: data.fromLocationId },
+          select: { latitude: true, longitude: true, locationName: true }
+        });
+        
+        if (healthcareLocation?.latitude && healthcareLocation?.longitude) {
+          fromCoords = {
+            latitude: healthcareLocation.latitude,
+            longitude: healthcareLocation.longitude
+          };
+          console.log('TCC_DEBUG: Found origin coordinates from healthcare location:', fromCoords);
+        }
+      }
+
+      // Get destination coordinates
+      if (data.destinationFacilityId) {
+        const facility = await prisma.facility.findUnique({
+          where: { id: data.destinationFacilityId },
+          select: { latitude: true, longitude: true, name: true }
+        });
+        
+        if (facility?.latitude && facility?.longitude) {
+          toCoords = {
+            latitude: facility.latitude,
+            longitude: facility.longitude
+          };
+          console.log('TCC_DEBUG: Found destination coordinates from facility:', toCoords);
+        }
+      }
+
+      // If we don't have coordinates, try to geocode the text addresses
+      if (!fromCoords && data.fromLocation) {
+        // For now, return mock data for text addresses
+        // In a real implementation, you would use a geocoding service
+        console.log('TCC_DEBUG: Using mock coordinates for fromLocation:', data.fromLocation);
+        fromCoords = { latitude: 40.2031, longitude: -79.9262 }; // Mock coordinates
+      }
+
+      if (!toCoords && data.toLocation) {
+        // For now, return mock data for text addresses
+        // In a real implementation, you would use a geocoding service
+        console.log('TCC_DEBUG: Using mock coordinates for toLocation:', data.toLocation);
+        toCoords = { latitude: 41.5025, longitude: -81.6214 }; // Mock coordinates
+      }
+
+      if (!fromCoords || !toCoords) {
+        return {
+          success: false,
+          error: 'Unable to determine coordinates for trip locations'
+        };
+      }
+
+      // Calculate distance using DistanceService
+      const distance = DistanceService.calculateDistance(
+        { latitude: fromCoords.latitude, longitude: fromCoords.longitude },
+        { latitude: toCoords.latitude, longitude: toCoords.longitude }
+      );
+
+      // Estimate time based on distance (assuming average speed of 30 mph in urban areas)
+      const estimatedTimeMinutes = Math.round((distance / 30) * 60);
+
+      console.log('TCC_DEBUG: Calculated distance:', distance, 'miles, estimated time:', estimatedTimeMinutes, 'minutes');
+
+      return {
+        success: true,
+        data: {
+          distance: Math.round(distance * 10) / 10, // Round to 1 decimal place
+          estimatedTimeMinutes,
+          estimatedTimeFormatted: `${estimatedTimeMinutes} minutes`,
+          distanceFormatted: `${Math.round(distance * 10) / 10} miles`
+        }
+      };
+    } catch (error) {
+      console.error('TCC_DEBUG: Error calculating trip distance and time:', error);
+      return {
+        success: false,
+        error: 'Failed to calculate trip distance and time'
+      };
+    }
+  }
 }
 
 export const tripService = new TripService();

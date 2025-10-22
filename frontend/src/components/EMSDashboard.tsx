@@ -39,6 +39,23 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
   const [activeTab, setActiveTab] = useState('available'); // Default to Available Trips (new landing page)
   const [completedTrips, setCompletedTrips] = useState<any[]>([]);
   
+  // Format time from minutes to hours and minutes
+  const formatTime = (minutes: number | string): string => {
+    const totalMinutes = typeof minutes === 'string' ? parseInt(minutes) : minutes;
+    if (isNaN(totalMinutes)) return 'Unknown';
+    
+    const hours = Math.floor(totalMinutes / 60);
+    const mins = totalMinutes % 60;
+    
+    if (hours === 0) {
+      return `${mins} min`;
+    } else if (mins === 0) {
+      return `${hours}h`;
+    } else {
+      return `${hours}h ${mins}m`;
+    }
+  };
+  
   // Settings state
   const [settingsData, setSettingsData] = useState({
     agencyName: user.agencyName || '',
@@ -111,23 +128,49 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
       if (availableResponse.data) {
         const availableData = availableResponse.data;
         if (availableData.success && availableData.data) {
-               const transformedAvailable = availableData.data.map((trip: any) => ({
-                 id: trip.id,
-                 patientId: trip.patientId,
-                 origin: trip.fromLocation || 'Unknown Origin',
-                 destination: trip.toLocation || 'Unknown Destination',
-                 pickupLocation: trip.pickupLocation ? {
-                   name: trip.pickupLocation.name,
-                   floor: trip.pickupLocation.floor,
-                   room: trip.pickupLocation.room,
-                 } : null,
-                 transportLevel: trip.transportLevel || 'BLS',
-                 urgencyLevel: trip.urgencyLevel || 'Routine',
-                 distance: '12.5 miles', // Mock data
-                 estimatedTime: '25 minutes', // Mock data
-                 requestTime: new Date(trip.createdAt).toLocaleString(),
-                 scheduledTime: trip.scheduledTime
-               }));
+          // Calculate distance and time for each trip
+          const transformedAvailable = await Promise.all(availableData.data.map(async (trip: any) => {
+            let distance = 'N/A';
+            let estimatedTime = 'N/A';
+            
+            // Try to calculate real distance and time
+            try {
+              const distanceResponse = await api.post('/api/trips/calculate-distance', {
+                fromLocationId: trip.fromLocationId,
+                destinationFacilityId: trip.destinationFacilityId,
+                fromLocation: trip.fromLocation,
+                toLocation: trip.toLocation
+              });
+              
+              if (distanceResponse.data.success) {
+                distance = distanceResponse.data.data.distanceFormatted;
+                estimatedTime = distanceResponse.data.data.estimatedTimeFormatted;
+              }
+            } catch (error) {
+              console.log('TCC_DEBUG: Could not calculate distance for trip:', trip.id, error);
+              // Fallback to mock data if calculation fails
+              distance = '12.5 miles';
+              estimatedTime = '25 minutes';
+            }
+            
+            return {
+              id: trip.id,
+              patientId: trip.patientId,
+              origin: trip.fromLocation || 'Unknown Origin',
+              destination: trip.toLocation || 'Unknown Destination',
+              pickupLocation: trip.pickupLocation ? {
+                name: trip.pickupLocation.name,
+                floor: trip.pickupLocation.floor,
+                room: trip.pickupLocation.room,
+              } : null,
+              transportLevel: trip.transportLevel || 'BLS',
+              urgencyLevel: trip.urgencyLevel || 'Routine',
+              distance: distance,
+              estimatedTime: estimatedTime,
+              requestTime: new Date(trip.createdAt).toLocaleString(),
+              scheduledTime: trip.scheduledTime
+            };
+          }));
           setAvailableTrips(transformedAvailable);
         }
       }
@@ -138,23 +181,51 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
       if (acceptedResponse.data) {
         const acceptedData = acceptedResponse.data;
         if (acceptedData.success && acceptedData.data) {
-               const transformedAccepted = acceptedData.data.map((trip: any) => ({
-                 id: trip.id,
-                 patientId: trip.patientId,
-                 origin: trip.fromLocation || 'Unknown Origin',
-                 destination: trip.toLocation || 'Unknown Destination',
-                 transportLevel: trip.transportLevel || 'BLS',
-                 urgencyLevel: trip.urgencyLevel || 'Routine',
-                 status: trip.status,
-                 assignedUnit: trip.assignedUnit ? {
-                   id: trip.assignedUnit.id,
-                   unitNumber: trip.assignedUnit.unitNumber,
-                   type: trip.assignedUnit.type,
-                   currentStatus: trip.assignedUnit.currentStatus
-                 } : null,
-                 pickupTime: trip.actualStartTime ? new Date(trip.actualStartTime).toLocaleString() : 'Not started',
-                 scheduledTime: trip.scheduledTime
-               }));
+          // Calculate distance and time for each accepted trip
+          const transformedAccepted = await Promise.all(acceptedData.data.map(async (trip: any) => {
+            let distance = 'N/A';
+            let estimatedTime = 'N/A';
+            
+            // Try to calculate real distance and time
+            try {
+              const distanceResponse = await api.post('/api/trips/calculate-distance', {
+                fromLocationId: trip.fromLocationId,
+                destinationFacilityId: trip.destinationFacilityId,
+                fromLocation: trip.fromLocation,
+                toLocation: trip.toLocation
+              });
+              
+              if (distanceResponse.data.success) {
+                distance = distanceResponse.data.data.distanceFormatted;
+                estimatedTime = distanceResponse.data.data.estimatedTimeFormatted;
+              }
+            } catch (error) {
+              console.log('TCC_DEBUG: Could not calculate distance for accepted trip:', trip.id, error);
+              // Fallback to mock data if calculation fails
+              distance = '12.5 miles';
+              estimatedTime = '25 minutes';
+            }
+            
+            return {
+              id: trip.id,
+              patientId: trip.patientId,
+              origin: trip.fromLocation || 'Unknown Origin',
+              destination: trip.toLocation || 'Unknown Destination',
+              transportLevel: trip.transportLevel || 'BLS',
+              urgencyLevel: trip.urgencyLevel || 'Routine',
+              status: trip.status,
+              distance: distance,
+              estimatedTime: estimatedTime,
+              assignedUnit: trip.assignedUnit ? {
+                id: trip.assignedUnit.id,
+                unitNumber: trip.assignedUnit.unitNumber,
+                type: trip.assignedUnit.type,
+                currentStatus: trip.assignedUnit.currentStatus
+              } : null,
+              pickupTime: trip.actualStartTime ? new Date(trip.actualStartTime).toLocaleString() : 'Not started',
+              scheduledTime: trip.scheduledTime
+            };
+          }));
           setAcceptedTrips(transformedAccepted);
         }
       }
@@ -567,7 +638,7 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
                             <span className="font-medium">Distance:</span> {trip.distance}
                           </div>
                           <div>
-                            <span className="font-medium">Time:</span> {trip.estimatedTime}
+                            <span className="font-medium">Time:</span> {formatTime(trip.estimatedTime)}
                           </div>
                           <div>
                             <span className="font-medium">Priority:</span> {trip.urgencyLevel}
@@ -627,8 +698,19 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
                       <p className="text-sm text-gray-500 mt-1">
                         {trip.origin} → {trip.destination}
                       </p>
-                      <div className="mt-2 text-sm text-gray-600">
-                        <span className="font-medium">Pickup Time:</span> {trip.pickupTime}
+                      <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
+                        <div>
+                          <span className="font-medium">Distance:</span> {trip.distance}
+                        </div>
+                        <div>
+                          <span className="font-medium">Time:</span> {formatTime(trip.estimatedTime)}
+                        </div>
+                        <div>
+                          <span className="font-medium">Pickup Time:</span> {trip.pickupTime}
+                        </div>
+                        <div>
+                          <span className="font-medium">Level:</span> {trip.transportLevel}
+                        </div>
                       </div>
                     </div>
                     <div className="ml-4 flex space-x-2">
