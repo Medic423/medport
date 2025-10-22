@@ -1,0 +1,707 @@
+{
+  "timestamp": "2025-10-22T19:43:52.836Z",
+  "dryRun": true,
+  "totalTrips": 56,
+  "fixPlan": {
+    "criticalFixes": [
+      {
+        "tripId": "cmgjc3y2b0000fm2mpjhlwwap",
+        "tripNumber": "TRP-1760009324338",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgjc3y2b0000fm2mpjhlwwap",
+        "tripNumber": "TRP-1760009324338",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgjc51il0001fm2mp6arf45q",
+        "tripNumber": "TRP-1760009375469",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgjc51il0001fm2mp6arf45q",
+        "tripNumber": "TRP-1760009375469",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgntrmfx0001iuqd5wswq3x0",
+        "tripNumber": "TRP-1760280847195",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgntrmfx0001iuqd5wswq3x0",
+        "tripNumber": "TRP-1760280847195",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgnvjl2h0000240d6f8b1nr8",
+        "tripNumber": "TRP-1760283831401",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgnvjl2h0000240d6f8b1nr8",
+        "tripNumber": "TRP-1760283831401",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgp5zqfx0000ruad1hzk998g",
+        "tripNumber": "TRP-1760361847194",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgp5zqfx0000ruad1hzk998g",
+        "tripNumber": "TRP-1760361847194",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgpfy3nt0001ruadryxtugog",
+        "tripNumber": "TRP-1760378567174",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgpfy3nt0001ruadryxtugog",
+        "tripNumber": "TRP-1760378567174",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgpheeog0000wx2hrfj56bpu",
+        "tripNumber": "TRP-1760381007567",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgpheeog0000wx2hrfj56bpu",
+        "tripNumber": "TRP-1760381007567",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgl9x7ul0000hmhx7701li1y",
+        "tripNumber": "TRP-1760126583547",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgl9x7ul0000hmhx7701li1y",
+        "tripNumber": "TRP-1760126583547",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgla0tgt0001hmhxxketxx1u",
+        "tripNumber": "TRP-1760126751532",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgla0tgt0001hmhxxketxx1u",
+        "tripNumber": "TRP-1760126751532",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmglailep0002hmhxcxo7bcmx",
+        "tripNumber": "TRP-1760127580896",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmglailep0002hmhxcxo7bcmx",
+        "tripNumber": "TRP-1760127580896",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmglf8f5g0000lomo9i46lr2v",
+        "tripNumber": "TRP-1760135504307",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmglf8f5g0000lomo9i46lr2v",
+        "tripNumber": "TRP-1760135504307",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmglfskvt0001lomoe3rifnyv",
+        "tripNumber": "TRP-1760136444856",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmglfskvt0001lomoe3rifnyv",
+        "tripNumber": "TRP-1760136444856",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgmcaq5100003zlbs65uqpqg",
+        "tripNumber": "TRP-1760191039188",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgmcaq5100003zlbs65uqpqg",
+        "tripNumber": "TRP-1760191039188",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgnpomt30002n9zsdzb3isk8",
+        "tripNumber": "TRP-1760273989238",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgnpomt30002n9zsdzb3isk8",
+        "tripNumber": "TRP-1760273989238",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgnt1myh00024b7967c0lgep",
+        "tripNumber": "TRP-1760279634808",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgnt1myh00024b7967c0lgep",
+        "tripNumber": "TRP-1760279634808",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgntnv0t0000iuqdq41v9gck",
+        "tripNumber": "TRP-1760280671692",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgntnv0t0000iuqdq41v9gck",
+        "tripNumber": "TRP-1760280671692",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgphfpdx0001wx2h49g1zqx2",
+        "tripNumber": "TRP-1760381068100",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgphfpdx0001wx2h49g1zqx2",
+        "tripNumber": "TRP-1760381068100",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgphuwda0000yerrbtfkj334",
+        "tripNumber": "TRP-1760381776990",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgphuwda0000yerrbtfkj334",
+        "tripNumber": "TRP-1760381776990",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgpi40j30001yerro2w1me1s",
+        "tripNumber": "TRP-1760382202286",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgpi40j30001yerro2w1me1s",
+        "tripNumber": "TRP-1760382202286",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgpict1200001i31avlizmkr",
+        "tripNumber": "TRP-1760382612469",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgpict1200001i31avlizmkr",
+        "tripNumber": "TRP-1760382612469",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgpiqyk70000urnfln4j2ssj",
+        "tripNumber": "TRP-1760383272821",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgpiqyk70000urnfln4j2ssj",
+        "tripNumber": "TRP-1760383272821",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgpj3j4500003ldpmqivrepn",
+        "tripNumber": "TRP-1760383859332",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgpj3j4500003ldpmqivrepn",
+        "tripNumber": "TRP-1760383859332",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgjf6q1d0008fm2mrj45w15z",
+        "tripNumber": "TRP-1760014492752",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgjf6q1d0008fm2mrj45w15z",
+        "tripNumber": "TRP-1760014492752",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgpmlgfv0000yd5ygl006ds7",
+        "tripNumber": "TRP-1760389734521",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgpmlgfv0000yd5ygl006ds7",
+        "tripNumber": "TRP-1760389734521",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgs833hl0000tbthwhxadtw9",
+        "tripNumber": "TRP-1760546761832",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgs833hl0000tbthwhxadtw9",
+        "tripNumber": "TRP-1760546761832",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgs84pcq0001tbthxxlihmmd",
+        "tripNumber": "TRP-1760546836825",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgs84pcq0001tbthxxlihmmd",
+        "tripNumber": "TRP-1760546836825",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgsa9x670004tbth91o1iqla",
+        "tripNumber": "TRP-1760550439470",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgsa9x670004tbth91o1iqla",
+        "tripNumber": "TRP-1760550439470",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgsba1xo0006tbthnn5y0042",
+        "tripNumber": "TRP-1760552125259",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgsba1xo0006tbthnn5y0042",
+        "tripNumber": "TRP-1760552125259",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgsbc45t0007tbth2bb6z5sj",
+        "tripNumber": "TRP-1760552221455",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgsbc45t0007tbth2bb6z5sj",
+        "tripNumber": "TRP-1760552221455",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgsbxscx000atbth181lzl73",
+        "tripNumber": "TRP-1760553232592",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgsbxscx000atbth181lzl73",
+        "tripNumber": "TRP-1760553232592",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgpoy87q0001yd5ysj7q8rxo",
+        "tripNumber": "TRP-1760393689621",
+        "field": "fromLocation",
+        "currentValue": null,
+        "newValue": "Unknown Origin",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      },
+      {
+        "tripId": "cmgpoy87q0001yd5ysj7q8rxo",
+        "tripNumber": "TRP-1760393689621",
+        "field": "toLocation",
+        "currentValue": null,
+        "newValue": "Unknown Destination",
+        "reason": "Missing required field - using placeholder",
+        "severity": "CRITICAL"
+      }
+    ],
+    "moderateFixes": [
+      {
+        "tripId": "cmgidkfma0000vgv60n9jg1p5",
+        "tripNumber": "TRP-1759951307022",
+        "field": "healthcareCreatedById",
+        "currentValue": null,
+        "newValue": "loc_001",
+        "reason": "Missing foreign key - using healthcare location ID",
+        "severity": "MODERATE"
+      }
+    ],
+    "minorFixes": [],
+    "skipped": [
+      {
+        "tripId": "cmgl8l7oc0000st96heal04rl",
+        "tripNumber": "TEST-1760124343834-001",
+        "reason": "No issues found"
+      },
+      {
+        "tripId": "cmgl8l7ok0001st9615p33cwk",
+        "tripNumber": "TEST-1760124343843-002",
+        "reason": "No issues found"
+      },
+      {
+        "tripId": "cmgl8qokg00018tarmpijhgxb",
+        "tripNumber": "TEST-1760124599008-002",
+        "reason": "No issues found"
+      },
+      {
+        "tripId": "cmgl8qokb00008tar8sx20j6q",
+        "tripNumber": "TEST-1760124599002-001",
+        "reason": "No issues found"
+      },
+      {
+        "tripId": "cmglg0w560001pkdcwfa3iskl",
+        "tripNumber": "TRP-1760136832697",
+        "reason": "No issues found"
+      },
+      {
+        "tripId": "cmgpjp1fk00043ldpemhfnvx0",
+        "tripNumber": "TRP-1760384862847",
+        "reason": "No issues found"
+      },
+      {
+        "tripId": "cmgpjwkho0001rcbc6bkviapn",
+        "tripNumber": "TRP-1760385214139",
+        "reason": "No issues found"
+      },
+      {
+        "tripId": "cmgsd38gk000047le42jil327",
+        "tripNumber": "TRP-1760555166354",
+        "reason": "No issues found"
+      },
+      {
+        "tripId": "cmglg216z0003pkdcjhhwvfr2",
+        "tripNumber": "TRP-1760136885898",
+        "reason": "No issues found"
+      },
+      {
+        "tripId": "cmgs93sym0002tbth411t16g9",
+        "tripNumber": "TRP-1760548474460",
+        "reason": "No issues found"
+      },
+      {
+        "tripId": "cmgsa5iwc0003tbth08huzl5m",
+        "tripNumber": "TRP-1760550234346",
+        "reason": "No issues found"
+      },
+      {
+        "tripId": "cmgsanqxl0005tbth842uy8pq",
+        "tripNumber": "TRP-1760551084568",
+        "reason": "No issues found"
+      },
+      {
+        "tripId": "cmgsbk8s90008tbthv4ww8on3",
+        "tripNumber": "TRP-1760552600697",
+        "reason": "No issues found"
+      },
+      {
+        "tripId": "cmgsbs4ae0009tbth6bh84pvs",
+        "tripNumber": "TRP-1760552968114",
+        "reason": "No issues found"
+      },
+      {
+        "tripId": "cmgsc552b000btbthrkbb1ikr",
+        "tripNumber": "TRP-1760553575650",
+        "reason": "No issues found"
+      },
+      {
+        "tripId": "cmgscqstf0000d1eve396y6af",
+        "tripNumber": "TRP-1760554586210",
+        "reason": "No issues found"
+      },
+      {
+        "tripId": "cmgsd65pf000147leokbfwg2p",
+        "tripNumber": "TRP-1760555302751",
+        "reason": "No issues found"
+      },
+      {
+        "tripId": "cmgsecykv0001uvaujzycfua7",
+        "tripNumber": "TRP-1760557299724",
+        "reason": "No issues found"
+      },
+      {
+        "tripId": "cmgpmaldd0000onbg6x7x0elb",
+        "tripNumber": "TRP-1760389227695",
+        "reason": "No issues found"
+      },
+      {
+        "tripId": "cmgseb2ok0000uvaukbgqu6w1",
+        "tripNumber": "TRP-1760557211730",
+        "reason": "No issues found"
+      },
+      {
+        "tripId": "cmgtx0nzw0001pgnv5skvjb8p",
+        "tripNumber": "TRP-1760649105017",
+        "reason": "No issues found"
+      },
+      {
+        "tripId": "cmgtwzjpa0000pgnvjac685md",
+        "tripNumber": "TRP-1760649052797",
+        "reason": "No issues found"
+      },
+      {
+        "tripId": "cmgzdbsrs0004pgnvq514x38d",
+        "tripNumber": "TRP-1760978829158",
+        "reason": "No issues found"
+      },
+      {
+        "tripId": "cmh0npdd60008pgnv7a4wdx5j",
+        "tripNumber": "TRP-1761056724713",
+        "reason": "No issues found"
+      }
+    ]
+  },
+  "summary": {
+    "criticalFixes": 62,
+    "moderateFixes": 1,
+    "minorFixes": 0,
+    "skipped": 24
+  }
+}

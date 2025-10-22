@@ -369,6 +369,7 @@ export declare class TripService {
                 location: import("@prisma/client/runtime/library").JsonValue | null;
                 lastMaintenance: Date | null;
                 nextMaintenance: Date | null;
+                lastStatusUpdate: Date;
             } | null;
         } & {
             id: string;
@@ -932,6 +933,28 @@ export declare class TripService {
      * Update unit status
      */
     private updateUnitStatus;
+    /**
+     * Calculate distance and estimated time for a trip
+     */
+    calculateTripDistanceAndTime(data: {
+        fromLocation?: string;
+        toLocation?: string;
+        fromLocationId?: string;
+        destinationFacilityId?: string;
+    }): Promise<{
+        success: boolean;
+        error: string;
+        data?: undefined;
+    } | {
+        success: boolean;
+        data: {
+            distance: number;
+            estimatedTimeMinutes: number;
+            estimatedTimeFormatted: string;
+            distanceFormatted: string;
+        };
+        error?: undefined;
+    }>;
 }
 export declare const tripService: TripService;
 //# sourceMappingURL=tripService.d.ts.map

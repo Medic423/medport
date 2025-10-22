@@ -41,6 +41,7 @@ class UnitService {
                 averageResponseTime: unit.analytics?.averageResponseTime?.toNumber() || 0,
                 lastMaintenanceDate: unit.lastMaintenance || new Date(),
                 nextMaintenanceDate: unit.nextMaintenance || new Date(),
+                lastStatusUpdate: unit.lastStatusUpdate || new Date(),
                 createdAt: unit.createdAt,
                 updatedAt: unit.updatedAt
             }));
@@ -86,6 +87,7 @@ class UnitService {
                 averageResponseTime: unit.analytics?.averageResponseTime?.toNumber() || 0,
                 lastMaintenanceDate: unit.lastMaintenance || new Date(),
                 nextMaintenanceDate: unit.nextMaintenance || new Date(),
+                lastStatusUpdate: unit.lastStatusUpdate || new Date(),
                 createdAt: unit.createdAt,
                 updatedAt: unit.updatedAt
             }));
@@ -119,6 +121,7 @@ class UnitService {
                 averageResponseTime: 0,
                 lastMaintenanceDate: new Date(),
                 nextMaintenanceDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+                lastStatusUpdate: new Date(),
                 createdAt: new Date(),
                 updatedAt: new Date()
             };
@@ -180,6 +183,7 @@ class UnitService {
                 averageResponseTime: 0,
                 lastMaintenanceDate: newUnit.lastMaintenance || new Date(),
                 nextMaintenanceDate: newUnit.nextMaintenance || new Date(),
+                lastStatusUpdate: newUnit.lastStatusUpdate || new Date(),
                 createdAt: newUnit.createdAt,
                 updatedAt: newUnit.updatedAt
             };
@@ -208,6 +212,7 @@ class UnitService {
                     status: unitData.currentStatus || 'AVAILABLE',
                     currentStatus: unitData.currentStatus || 'AVAILABLE',
                     isActive: unitData.isActive,
+                    lastStatusUpdate: new Date(),
                     updatedAt: new Date()
                 },
                 include: {
@@ -230,6 +235,7 @@ class UnitService {
                 averageResponseTime: updatedUnit.analytics?.averageResponseTime?.toNumber() || 0,
                 lastMaintenanceDate: updatedUnit.lastMaintenance || new Date(),
                 nextMaintenanceDate: updatedUnit.nextMaintenance || new Date(),
+                lastStatusUpdate: updatedUnit.lastStatusUpdate || new Date(),
                 createdAt: updatedUnit.createdAt,
                 updatedAt: updatedUnit.updatedAt
             };
@@ -284,6 +290,7 @@ class UnitService {
                 averageResponseTime: 0,
                 lastMaintenanceDate: new Date(),
                 nextMaintenanceDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+                lastStatusUpdate: new Date(),
                 createdAt: new Date(),
                 updatedAt: new Date()
             };
@@ -316,6 +323,7 @@ class UnitService {
                     averageResponseTime: 0,
                     lastMaintenanceDate: new Date(),
                     nextMaintenanceDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+                    lastStatusUpdate: new Date(),
                     createdAt: new Date(),
                     updatedAt: new Date()
                 }
@@ -363,6 +371,7 @@ class UnitService {
                 averageResponseTime: unit.analytics?.averageResponseTime?.toNumber() || 0,
                 lastMaintenanceDate: unit.lastMaintenance || new Date(),
                 nextMaintenanceDate: unit.nextMaintenance || new Date(),
+                lastStatusUpdate: unit.lastStatusUpdate || new Date(),
                 createdAt: unit.createdAt,
                 updatedAt: unit.updatedAt
             }));
@@ -461,6 +470,7 @@ class UnitService {
                 averageResponseTime: updatedUnit.analytics?.averageResponseTime?.toNumber() || 0,
                 lastMaintenanceDate: updatedUnit.lastMaintenance || new Date(),
                 nextMaintenanceDate: updatedUnit.nextMaintenance || new Date(),
+                lastStatusUpdate: updatedUnit.lastStatusUpdate || new Date(),
                 createdAt: updatedUnit.createdAt,
                 updatedAt: updatedUnit.updatedAt
             };
@@ -490,6 +500,7 @@ class UnitService {
             averageResponseTime: unit.averageResponseTime || 0,
             lastMaintenanceDate: unit.lastMaintenanceDate ? new Date(unit.lastMaintenanceDate) : new Date(),
             nextMaintenanceDate: unit.nextMaintenanceDate ? new Date(unit.nextMaintenanceDate) : new Date(),
+            lastStatusUpdate: unit.lastStatusUpdate ? new Date(unit.lastStatusUpdate) : new Date(),
             createdAt: unit.createdAt ? new Date(unit.createdAt) : new Date(),
             updatedAt: unit.updatedAt ? new Date(unit.updatedAt) : new Date()
         };

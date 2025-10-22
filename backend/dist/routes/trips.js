@@ -827,5 +827,50 @@ router.get('/:id/response-summary', async (req, res) => {
         });
     }
 });
+/**
+ * POST /api/trips/calculate-distance
+ * Calculate distance and estimated time for a trip
+ */
+router.post('/calculate-distance', async (req, res) => {
+    try {
+        console.log('TCC_DEBUG: Calculate distance request:', req.body);
+        const { fromLocation, toLocation, fromLocationId, destinationFacilityId } = req.body;
+        if (!fromLocation && !fromLocationId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Either fromLocation or fromLocationId is required'
+            });
+        }
+        if (!toLocation && !destinationFacilityId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Either toLocation or destinationFacilityId is required'
+            });
+        }
+        const result = await tripService_1.tripService.calculateTripDistanceAndTime({
+            fromLocation,
+            toLocation,
+            fromLocationId,
+            destinationFacilityId
+        });
+        if (!result.success) {
+            return res.status(400).json({
+                success: false,
+                error: result.error
+            });
+        }
+        res.json({
+            success: true,
+            data: result.data
+        });
+    }
+    catch (error) {
+        console.error('TCC_DEBUG: Calculate distance error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Internal server error'
+        });
+    }
+});
 exports.default = router;
 //# sourceMappingURL=trips.js.map

@@ -12,6 +12,7 @@ export interface Unit {
     averageResponseTime: number;
     lastMaintenanceDate: Date;
     nextMaintenanceDate: Date;
+    lastStatusUpdate: Date;
     createdAt: Date;
     updatedAt: Date;
 }
