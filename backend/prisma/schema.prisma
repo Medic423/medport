@@ -385,27 +385,28 @@ model route_optimization_settings {
 }
 
 model Unit {
-  id              String             @id @default(cuid())
-  agencyId        String
-  unitNumber      String
-  type            String
-  status          String             @default("AVAILABLE")
-  currentStatus   String             @default("AVAILABLE")
-  currentLocation String?
-  capabilities    String[]
-  crewSize        Int                @default(2)
-  equipment       String[]
-  location        Json?
-  latitude        Float?
-  longitude       Float?
-  lastMaintenance DateTime?
-  nextMaintenance DateTime?
-  isActive        Boolean            @default(true)
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
-  analytics       unit_analytics?
-  agency          EMSAgency          @relation(fields: [agencyId], references: [id], onDelete: Cascade)
-  assignedTrips   TransportRequest[]
+  id                String             @id @default(cuid())
+  agencyId          String
+  unitNumber        String
+  type              String
+  status            String             @default("AVAILABLE")
+  currentStatus     String             @default("AVAILABLE")
+  currentLocation   String?
+  capabilities      String[]
+  crewSize          Int                @default(2)
+  equipment         String[]
+  location          Json?
+  latitude          Float?
+  longitude         Float?
+  lastMaintenance   DateTime?
+  nextMaintenance   DateTime?
+  lastStatusUpdate  DateTime           @default(now())
+  isActive          Boolean            @default(true)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  analytics         unit_analytics?
+  agency            EMSAgency          @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  assignedTrips     TransportRequest[]
 
   @@unique([agencyId, unitNumber])
   @@map("units")
