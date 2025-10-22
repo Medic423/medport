@@ -78,19 +78,19 @@ const Agencies: React.FC = () => {
         // Transform the data to match the expected structure
         const transformedAgencies = response.data.data.map((agency: any) => ({
           ...agency,
-          // Extract contact info from JSON if it exists
-          contactName: agency.contactInfo?.contactName || 'N/A',
-          phone: agency.contactInfo?.phone || 'N/A',
-          email: agency.contactInfo?.email || 'N/A',
-          address: agency.contactInfo?.address || 'N/A',
-          city: agency.contactInfo?.city || 'N/A',
-          state: agency.contactInfo?.state || 'N/A',
-          zipCode: agency.contactInfo?.zipCode || 'N/A',
-          capabilities: agency.contactInfo?.capabilities || [],
-          serviceArea: agency.contactInfo?.serviceArea || [],
-          operatingHours: agency.contactInfo?.operatingHours || null,
-          pricingStructure: agency.contactInfo?.pricingStructure || null,
-          status: agency.contactInfo?.status || 'ACTIVE',
+          // Data comes directly from the database, not nested under contactInfo
+          contactName: agency.contactName || 'N/A',
+          phone: agency.phone || 'N/A',
+          email: agency.email || 'N/A',
+          address: agency.address || 'N/A',
+          city: agency.city || 'N/A',
+          state: agency.state || 'N/A',
+          zipCode: agency.zipCode || 'N/A',
+          capabilities: agency.capabilities || [],
+          serviceArea: agency.serviceArea || [],
+          operatingHours: agency.operatingHours || null,
+          pricingStructure: agency.pricingStructure || null,
+          status: agency.status || 'ACTIVE',
         }));
         console.log('TCC_DEBUG: Agencies.loadAgencies(): transformed count', transformedAgencies.length);
         setAgencies(transformedAgencies);
