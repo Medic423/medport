@@ -479,7 +479,6 @@ const TCCUnitsManagement: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{getAgencyName(unit.agencyId)}</div>
-                        <div className="text-sm text-gray-500">{unit.agencyId}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getTypeColor(unit.type)}`}>
