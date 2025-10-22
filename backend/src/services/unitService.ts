@@ -25,6 +25,7 @@ export interface UnitFormData {
   type: 'AMBULANCE' | 'HELICOPTER' | 'FIRE_TRUCK' | 'RESCUE_VEHICLE';
   capabilities: string[];
   customCapabilities: string[];
+  currentStatus?: 'AVAILABLE' | 'COMMITTED' | 'OUT_OF_SERVICE' | 'MAINTENANCE' | 'OFF_DUTY' | 'ON_CALL';
   isActive: boolean;
 }
 
