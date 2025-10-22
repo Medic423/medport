@@ -473,22 +473,8 @@ const TCCUnitsManagement: React.FC = () => {
                   {filteredUnits.map((unit) => (
                     <tr key={unit.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
-                            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                              <span className="text-sm font-medium text-blue-600">
-                                {unit.unitNumber}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
-                              {unit.unitNumber}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {unit.isActive ? 'Active' : 'Inactive'}
-                            </div>
-                          </div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {unit.unitNumber}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
