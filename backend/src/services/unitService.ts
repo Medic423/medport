@@ -255,28 +255,49 @@ class UnitService {
    */
   async updateUnit(unitId: string, unitData: UnitFormData): Promise<Unit> {
     try {
-      // TODO: Implement proper Unit model in Prisma schema
       console.log('TCC_DEBUG: updateUnit called with unitId:', unitId, 'data:', unitData);
       
-      const mockUnit: Unit = {
-        id: unitId,
-        agencyId: 'mock-agency',
-        unitNumber: unitData.unitNumber,
-        type: unitData.type,
-        capabilities: unitData.capabilities,
-        currentStatus: 'AVAILABLE',
-        currentLocation: 'Station 1',
-        crew: [],
-        isActive: unitData.isActive,
-        totalTripsCompleted: 0,
-        averageResponseTime: 0,
-        lastMaintenanceDate: new Date(),
-        nextMaintenanceDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        createdAt: new Date(),
-        updatedAt: new Date()
+      const prisma = databaseManager.getEMSDB();
+      
+      // Update the unit in the database
+      const updatedUnit = await prisma.unit.update({
+        where: { id: unitId },
+        data: {
+          unitNumber: unitData.unitNumber,
+          type: unitData.type,
+          capabilities: unitData.capabilities,
+          status: unitData.currentStatus || 'AVAILABLE',
+          currentStatus: unitData.currentStatus || 'AVAILABLE',
+          isActive: unitData.isActive,
+          updatedAt: new Date()
+        },
+        include: {
+          analytics: true,
+          agency: true
+        }
+      });
+
+      // Transform to our Unit interface
+      const transformedUnit: Unit = {
+        id: updatedUnit.id,
+        agencyId: updatedUnit.agencyId,
+        unitNumber: updatedUnit.unitNumber,
+        type: updatedUnit.type as any,
+        capabilities: updatedUnit.capabilities,
+        currentStatus: updatedUnit.currentStatus as any,
+        currentLocation: updatedUnit.location ? JSON.stringify(updatedUnit.location) : 'Unknown',
+        crew: [], // Will be populated from separate crew management
+        isActive: updatedUnit.isActive,
+        totalTripsCompleted: updatedUnit.analytics?.totalTripsCompleted || 0,
+        averageResponseTime: updatedUnit.analytics?.averageResponseTime?.toNumber() || 0,
+        lastMaintenanceDate: updatedUnit.lastMaintenance || new Date(),
+        nextMaintenanceDate: updatedUnit.nextMaintenance || new Date(),
+        createdAt: updatedUnit.createdAt,
+        updatedAt: updatedUnit.updatedAt
       };
 
-      return mockUnit;
+      console.log('TCC_DEBUG: Unit updated successfully:', transformedUnit.unitNumber);
+      return transformedUnit;
     } catch (error) {
       console.error('Error updating unit:', error);
       throw new Error('Failed to update unit');
@@ -288,8 +309,21 @@ class UnitService {
    */
   async deleteUnit(unitId: string): Promise<void> {
     try {
-      // TODO: Implement proper Unit model in Prisma schema
       console.log('TCC_DEBUG: deleteUnit called with unitId:', unitId);
+      
+      const prisma = databaseManager.getEMSDB();
+      
+      // First delete the analytics record if it exists
+      await prisma.unit_analytics.deleteMany({
+        where: { unitId: unitId }
+      });
+      
+      // Then delete the unit
+      await prisma.unit.delete({
+        where: { id: unitId }
+      });
+      
+      console.log('TCC_DEBUG: Unit deleted successfully:', unitId);
     } catch (error) {
       console.error('Error deleting unit:', error);
       throw new Error('Failed to delete unit');
