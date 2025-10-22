@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Edit, Trash2, AlertTriangle } from 'lucide-react';
 import api from '../services/api';
+import {
+  UNIT_TYPE_LABELS,
+  UNIT_CAPABILITY_LABELS
+} from '../types/units';
 
 interface Unit {
   id: string;
@@ -166,12 +170,6 @@ const TCCUnitsManagement: React.FC = () => {
       setEditFormData(prev => ({
         ...prev,
         [name]: checked
-      }));
-    } else if (name === 'capabilities') {
-      const capabilities = value.split(',').map(cap => cap.trim()).filter(cap => cap);
-      setEditFormData(prev => ({
-        ...prev,
-        capabilities
       }));
     } else {
       setEditFormData(prev => ({
@@ -552,7 +550,7 @@ const TCCUnitsManagement: React.FC = () => {
               
               <form onSubmit={handleEditSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700">
                     Unit Number
                   </label>
                   <input
@@ -560,50 +558,68 @@ const TCCUnitsManagement: React.FC = () => {
                     name="unitNumber"
                     value={editFormData.unitNumber}
                     onChange={handleEditInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    placeholder="e.g., A-101"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Type
+                  <label className="block text-sm font-medium text-gray-700">
+                    Unit Type
                   </label>
                   <select
                     name="type"
                     value={editFormData.type}
                     onChange={handleEditInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
                   >
-                    <option value="AMBULANCE">Ambulance</option>
-                    <option value="WHEELCHAIR_VAN">Wheelchair Van</option>
-                    <option value="CRITICAL_CARE">Critical Care</option>
+                    {Object.entries(UNIT_TYPE_LABELS).map(([value, label]) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Capabilities (comma-separated)
+                  <label className="block text-sm font-medium text-gray-700">
+                    Capabilities
                   </label>
-                  <input
-                    type="text"
-                    name="capabilities"
-                    value={editFormData.capabilities.join(', ')}
-                    onChange={handleEditInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="BLS, ALS, CCT"
-                  />
+                  <div className="mt-2 space-y-2">
+                    {Object.entries(UNIT_CAPABILITY_LABELS).map(([value, label]) => (
+                      <label key={value} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={editFormData.capabilities.includes(value)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setEditFormData({
+                                ...editFormData,
+                                capabilities: [...editFormData.capabilities, value]
+                              });
+                            } else {
+                              setEditFormData({
+                                ...editFormData,
+                                capabilities: editFormData.capabilities.filter(c => c !== value)
+                              });
+                            }
+                          }}
+                          className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">{label}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700">
                     Status
                   </label>
                   <select
                     name="currentStatus"
                     value={editFormData.currentStatus}
                     onChange={handleEditInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
                   >
                     <option value="AVAILABLE">Available</option>
                     <option value="COMMITTED">Committed</option>
@@ -618,29 +634,30 @@ const TCCUnitsManagement: React.FC = () => {
                     name="isActive"
                     checked={editFormData.isActive}
                     onChange={handleEditInputChange}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                   />
-                  <label className="ml-2 block text-sm text-gray-900">
-                    Active
-                  </label>
+                  <label className="ml-2 text-sm text-gray-700">On Duty</label>
+                  <p className="ml-2 text-xs text-gray-500">Check if unit is currently on duty</p>
                 </div>
 
                 {editError && (
-                  <div className="text-red-600 text-sm">{editError}</div>
+                  <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                    <p className="text-sm text-red-700">{editError}</p>
+                  </div>
                 )}
 
                 <div className="flex justify-end space-x-3 pt-4">
                   <button
                     type="button"
                     onClick={handleEditCancel}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={editLoading}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md disabled:opacity-50"
+                    className="px-4 py-2 bg-orange-600 text-white rounded-md text-sm font-medium hover:bg-orange-700 disabled:opacity-50"
                   >
                     {editLoading ? 'Updating...' : 'Update Unit'}
                   </button>
