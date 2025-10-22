@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Edit, Trash2, AlertTriangle } from 'lucide-react';
 import api from '../services/api';
 
 interface Unit {
@@ -54,6 +55,20 @@ const TCCUnitsManagement: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedAgency, setSelectedAgency] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  
+  // Edit and delete state
+  const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    unitNumber: '',
+    type: 'AMBULANCE',
+    capabilities: [] as string[],
+    currentStatus: 'AVAILABLE',
+    isActive: true
+  });
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
 
   useEffect(() => {
@@ -129,6 +144,118 @@ const TCCUnitsManagement: React.FC = () => {
       case 'CRITICAL_CARE': return 'bg-purple-100 text-purple-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  // Edit functions
+  const handleEdit = (unit: Unit) => {
+    setEditingUnit(unit);
+    setEditFormData({
+      unitNumber: unit.unitNumber,
+      type: unit.type,
+      capabilities: unit.capabilities,
+      currentStatus: unit.currentStatus,
+      isActive: unit.isActive
+    });
+    setEditError(null);
+  };
+
+  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    if (type === 'checkbox') {
+      const checked = (e.target as HTMLInputElement).checked;
+      setEditFormData(prev => ({
+        ...prev,
+        [name]: checked
+      }));
+    } else if (name === 'capabilities') {
+      const capabilities = value.split(',').map(cap => cap.trim()).filter(cap => cap);
+      setEditFormData(prev => ({
+        ...prev,
+        capabilities
+      }));
+    } else {
+      setEditFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUnit) return;
+
+    setEditLoading(true);
+    setEditError(null);
+
+    try {
+      const response = await api.put(`/api/tcc/units/${editingUnit.id}`, editFormData);
+      
+      if (response.data.success) {
+        // Update the unit in the local state
+        setUnits(prev => prev.map(unit => 
+          unit.id === editingUnit.id ? { ...unit, ...editFormData } : unit
+        ));
+        setEditingUnit(null);
+        setEditFormData({
+          unitNumber: '',
+          type: 'AMBULANCE',
+          capabilities: [],
+          currentStatus: 'AVAILABLE',
+          isActive: true
+        });
+      } else {
+        setEditError(response.data.error || 'Failed to update unit');
+      }
+    } catch (error: any) {
+      console.error('Error updating unit:', error);
+      setEditError(error.response?.data?.error || 'Failed to update unit');
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleEditCancel = () => {
+    setEditingUnit(null);
+    setEditFormData({
+      unitNumber: '',
+      type: 'AMBULANCE',
+      capabilities: [],
+      currentStatus: 'AVAILABLE',
+      isActive: true
+    });
+    setEditError(null);
+  };
+
+  // Delete functions
+  const handleDelete = (unitId: string) => {
+    setDeleteConfirm(unitId);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm) return;
+
+    setDeleteLoading(true);
+    try {
+      const response = await api.delete(`/api/tcc/units/${deleteConfirm}`);
+      
+      if (response.data.success) {
+        // Remove the unit from the local state
+        setUnits(prev => prev.filter(unit => unit.id !== deleteConfirm));
+        setDeleteConfirm(null);
+      } else {
+        setError(response.data.error || 'Failed to delete unit');
+      }
+    } catch (error: any) {
+      console.error('Error deleting unit:', error);
+      setError(error.response?.data?.error || 'Failed to delete unit');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirm(null);
   };
 
   const filteredUnits = units.filter(unit => {
@@ -337,6 +464,9 @@ const TCCUnitsManagement: React.FC = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Last Update
                     </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -393,6 +523,24 @@ const TCCUnitsManagement: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(unit.lastStatusUpdate).toLocaleString()}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex justify-end space-x-2">
+                          <button
+                            onClick={() => handleEdit(unit)}
+                            className="text-blue-600 hover:text-blue-900 p-1 rounded"
+                            title="Edit unit"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(unit.id)}
+                            className="text-red-600 hover:text-red-900 p-1 rounded"
+                            title="Delete unit"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -401,6 +549,162 @@ const TCCUnitsManagement: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Edit Unit Modal */}
+      {editingUnit && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Edit Unit</h3>
+                <button
+                  onClick={handleEditCancel}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Unit Number
+                  </label>
+                  <input
+                    type="text"
+                    name="unitNumber"
+                    value={editFormData.unitNumber}
+                    onChange={handleEditInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Type
+                  </label>
+                  <select
+                    name="type"
+                    value={editFormData.type}
+                    onChange={handleEditInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="AMBULANCE">Ambulance</option>
+                    <option value="WHEELCHAIR_VAN">Wheelchair Van</option>
+                    <option value="CRITICAL_CARE">Critical Care</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Capabilities (comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    name="capabilities"
+                    value={editFormData.capabilities.join(', ')}
+                    onChange={handleEditInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="BLS, ALS, CCT"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    name="currentStatus"
+                    value={editFormData.currentStatus}
+                    onChange={handleEditInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="AVAILABLE">Available</option>
+                    <option value="COMMITTED">Committed</option>
+                    <option value="OUT_OF_SERVICE">Out of Service</option>
+                    <option value="MAINTENANCE">Maintenance</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="isActive"
+                    checked={editFormData.isActive}
+                    onChange={handleEditInputChange}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label className="ml-2 block text-sm text-gray-900">
+                    Active
+                  </label>
+                </div>
+
+                {editError && (
+                  <div className="text-red-600 text-sm">{editError}</div>
+                )}
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={handleEditCancel}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={editLoading}
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md disabled:opacity-50"
+                  >
+                    {editLoading ? 'Updating...' : 'Update Unit'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center mb-4">
+                <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                  <AlertTriangle className="h-6 w-6 text-red-600" />
+                </div>
+              </div>
+              
+              <div className="text-center">
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Delete Unit
+                </h3>
+                <p className="text-sm text-gray-500 mb-4">
+                  Are you sure you want to delete this unit? This action cannot be undone.
+                </p>
+                
+                <div className="flex justify-center space-x-3">
+                  <button
+                    onClick={handleDeleteCancel}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteConfirm}
+                    disabled={deleteLoading}
+                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md disabled:opacity-50"
+                  >
+                    {deleteLoading ? 'Deleting...' : 'Delete Unit'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
