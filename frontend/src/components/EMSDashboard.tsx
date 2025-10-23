@@ -135,12 +135,17 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
             
             // Try to calculate real distance and time
             try {
-              const distanceResponse = await api.post('/api/trips/calculate-distance', {
-                fromLocationId: trip.fromLocationId,
-                destinationFacilityId: trip.destinationFacilityId,
-                fromLocation: trip.fromLocation,
-                toLocation: trip.toLocation
-              });
+              // Only send location IDs if they exist, otherwise use location strings
+              const requestData: any = {};
+              if (trip.fromLocationId && trip.destinationFacilityId) {
+                requestData.fromLocationId = trip.fromLocationId;
+                requestData.destinationFacilityId = trip.destinationFacilityId;
+              } else {
+                requestData.fromLocation = trip.fromLocation;
+                requestData.toLocation = trip.toLocation;
+              }
+              
+              const distanceResponse = await api.post('/api/trips/calculate-distance', requestData);
               
               if (distanceResponse.data.success) {
                 distance = distanceResponse.data.data.distanceFormatted;
@@ -148,9 +153,10 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
               }
             } catch (error) {
               console.log('TCC_DEBUG: Could not calculate distance for trip:', trip.id, error);
-              // Fallback to mock data if calculation fails
-              distance = '12.5 miles';
-              estimatedTime = '25 minutes';
+              console.log('TCC_DEBUG: Trip data:', { fromLocation: trip.fromLocation, toLocation: trip.toLocation, fromLocationId: trip.fromLocationId, destinationFacilityId: trip.destinationFacilityId });
+              // Keep as N/A if calculation fails rather than showing misleading hardcoded values
+              distance = 'N/A';
+              estimatedTime = 'N/A';
             }
             
             return {
@@ -188,12 +194,17 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
             
             // Try to calculate real distance and time
             try {
-              const distanceResponse = await api.post('/api/trips/calculate-distance', {
-                fromLocationId: trip.fromLocationId,
-                destinationFacilityId: trip.destinationFacilityId,
-                fromLocation: trip.fromLocation,
-                toLocation: trip.toLocation
-              });
+              // Only send location IDs if they exist, otherwise use location strings
+              const requestData: any = {};
+              if (trip.fromLocationId && trip.destinationFacilityId) {
+                requestData.fromLocationId = trip.fromLocationId;
+                requestData.destinationFacilityId = trip.destinationFacilityId;
+              } else {
+                requestData.fromLocation = trip.fromLocation;
+                requestData.toLocation = trip.toLocation;
+              }
+              
+              const distanceResponse = await api.post('/api/trips/calculate-distance', requestData);
               
               if (distanceResponse.data.success) {
                 distance = distanceResponse.data.data.distanceFormatted;
@@ -201,9 +212,10 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
               }
             } catch (error) {
               console.log('TCC_DEBUG: Could not calculate distance for accepted trip:', trip.id, error);
-              // Fallback to mock data if calculation fails
-              distance = '12.5 miles';
-              estimatedTime = '25 minutes';
+              console.log('TCC_DEBUG: Trip data:', { fromLocation: trip.fromLocation, toLocation: trip.toLocation, fromLocationId: trip.fromLocationId, destinationFacilityId: trip.destinationFacilityId });
+              // Keep as N/A if calculation fails rather than showing misleading hardcoded values
+              distance = 'N/A';
+              estimatedTime = 'N/A';
             }
             
             return {
