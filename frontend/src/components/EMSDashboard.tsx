@@ -168,6 +168,8 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
                 name: trip.pickupLocation.name,
                 floor: trip.pickupLocation.floor,
                 room: trip.pickupLocation.room,
+                contactPhone: trip.pickupLocation.contactPhone,
+                contactEmail: trip.pickupLocation.contactEmail,
               } : null,
               transportLevel: trip.transportLevel || 'BLS',
               urgencyLevel: trip.urgencyLevel || 'Routine',
@@ -619,33 +621,21 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
                   {loading ? 'Loading...' : 'Refresh'}
                 </button>
               </div>
-              <div className="divide-y divide-gray-200">
+              <div className="space-y-4">
                 {availableTrips.map((trip) => (
-                  <div key={trip.id} className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-4">
-                          <div>
-                            <h4 className="text-lg font-medium text-gray-900">Patient {trip.patientId}</h4>
-                            <p className="text-sm text-gray-500">
-                              {trip.origin} → {trip.destination}
-                            </p>
-                          </div>
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor('PENDING')}`}>
-                            PENDING
-                          </span>
-                        </div>
-                        <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
-                          <div>
-                            <span className="font-medium">Level:</span> {trip.transportLevel}
-                          </div>
-                          {trip.pickupLocation && (
-                            <div>
-                              <span className="font-medium">Pickup:</span> {trip.pickupLocation.name}
-                              {trip.pickupLocation.floor && ` (Floor ${trip.pickupLocation.floor})`}
-                              {trip.pickupLocation.room && ` - Room ${trip.pickupLocation.room}`}
-                            </div>
-                          )}
+                  <div key={trip.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      <div>
+                        <h4 className="text-lg font-medium text-gray-900">Patient {trip.patientId} - {trip.transportLevel} - Request Time: {trip.requestTime}</h4>
+                        <p className="text-base text-gray-600">
+                          {trip.origin} → {trip.destination}
+                        </p>
+                        {trip.pickupLocation && (
+                          <p className="text-xs text-blue-600">
+                            Pickup: {trip.pickupLocation.name}: {trip.pickupLocation.floor && `${trip.pickupLocation.floor}`}{trip.pickupLocation.room && ` ${trip.pickupLocation.room}`}{trip.pickupLocation.contactPhone && ` Phone: ${trip.pickupLocation.contactPhone}`}{trip.pickupLocation.contactEmail && ` Email: ${trip.pickupLocation.contactEmail}`}
+                          </p>
+                        )}
+                        <div className="flex items-center space-x-4 text-sm text-gray-500 mt-1">
                           <div>
                             <span className="font-medium">Distance:</span> {trip.distance}
                           </div>
@@ -657,6 +647,11 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
                           </div>
                         </div>
                       </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor('PENDING')}`}>
+                        PENDING
+                      </span>
                       <div className="flex space-x-2 ml-4">
                         <button
                           onClick={() => handleAcceptTrip(trip.id)}

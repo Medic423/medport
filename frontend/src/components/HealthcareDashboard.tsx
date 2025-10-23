@@ -126,6 +126,8 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
               name: trip.pickupLocation.name,
               floor: trip.pickupLocation.floor,
               room: trip.pickupLocation.room,
+              contactPhone: trip.pickupLocation.contactPhone,
+              contactEmail: trip.pickupLocation.contactEmail,
             } : null,
             transportLevel: trip.transportLevel || 'BLS',
             status: trip.status,
@@ -296,7 +298,13 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
       insuranceCompany: trip.insuranceCompany || '',
       specialNeeds: trip.specialNeeds || '',
       oxygenRequired: trip.oxygenRequired || false,
-      monitoringRequired: trip.monitoringRequired || false
+      monitoringRequired: trip.monitoringRequired || false,
+      // Pickup location fields
+      pickupLocationName: trip.pickupLocation?.name || '',
+      pickupLocationFloor: trip.pickupLocation?.floor || '',
+      pickupLocationRoom: trip.pickupLocation?.room || '',
+      pickupLocationPhone: trip.pickupLocation?.contactPhone || '',
+      pickupLocationEmail: trip.pickupLocation?.contactEmail || ''
     });
   };
 
@@ -334,6 +342,19 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
       payload.oxygenRequired = !!editFormData.oxygenRequired;
       payload.monitoringRequired = !!editFormData.monitoringRequired;
       
+      // Add pickup location data if any pickup location field is provided
+      if (editFormData.pickupLocationName || editFormData.pickupLocationFloor || 
+          editFormData.pickupLocationRoom || editFormData.pickupLocationPhone || 
+          editFormData.pickupLocationEmail) {
+        payload.pickupLocation = {
+          name: editFormData.pickupLocationName.trim() || editingTrip?.pickupLocation?.name || null,
+          floor: editFormData.pickupLocationFloor.trim() || editingTrip?.pickupLocation?.floor || null,
+          room: editFormData.pickupLocationRoom.trim() || editingTrip?.pickupLocation?.room || null,
+          contactPhone: editFormData.pickupLocationPhone.trim() || editingTrip?.pickupLocation?.contactPhone || null,
+          contactEmail: editFormData.pickupLocationEmail.trim() || editingTrip?.pickupLocation?.contactEmail || null
+        };
+      }
+      
       // Add completion timestamp if marking as completed
       if (editFormData.status === 'COMPLETED') {
         payload.completionTimestamp = new Date().toISOString();
@@ -341,13 +362,16 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
 
       console.log('TCC_EDIT_DEBUG: Sanitized payload for edit-save:', payload);
 
+      console.log('TCC_EDIT_DEBUG: Sending update request with payload:', payload);
       const response = await tripsAPI.updateStatus(editingTrip.id, payload);
+      console.log('TCC_EDIT_DEBUG: Update response:', response.data);
 
       if (!response.data.success) {
         throw new Error(response.data.error || 'Failed to update trip');
       }
 
       // Reload trips to get updated data
+      console.log('TCC_EDIT_DEBUG: Reloading trips after successful update');
       await loadTrips();
       setEditingTrip(null);
       setEditFormData({});
@@ -657,23 +681,16 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                           </p>
                           {trip.pickupLocation && (
                             <p className="text-xs text-blue-600">
-                              Pickup: {trip.pickupLocation.name}
-                              {trip.pickupLocation.floor && ` (Floor ${trip.pickupLocation.floor})`}
-                              {trip.pickupLocation.room && ` - Room ${trip.pickupLocation.room}`}
-                              {(trip.pickupTime || trip.scheduledTime) && ` • ${trip.pickupTime || trip.scheduledTime}`}
+                              Pickup: {trip.pickupLocation.name}: {trip.pickupLocation.floor && `${trip.pickupLocation.floor}`}{trip.pickupLocation.room && ` ${trip.pickupLocation.room}`}{trip.pickupLocation.contactPhone && ` Phone: ${trip.pickupLocation.contactPhone}`}{trip.pickupLocation.contactEmail && ` Email: ${trip.pickupLocation.contactEmail}`}
                             </p>
                           )}
                           {/* Unit Assignment Display */}
-                          {(trip.status === 'ACCEPTED' || trip.status === 'IN_PROGRESS') && (
-                            <p className="text-xs text-green-600">
-                              Unit: {trip.assignedUnitNumber
-                                ? `${trip.assignedUnitNumber}${trip.assignedUnitType ? ` (${trip.assignedUnitType})` : ''}`
-                                : (trip.assignedUnitId
-                                    ? `#${trip.assignedUnitId}`
-                                    : 'Awaiting unit assignment'
-                                  )}
-                            </p>
-                          )}
+                          <p className="text-xs text-green-600">
+                            Unit: {trip.assignedUnitNumber
+                              ? `${trip.assignedUnitNumber}${trip.assignedUnitType ? ` (${trip.assignedUnitType})` : ''}`
+                              : 'Awaiting unit assignment'
+                            }
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -781,10 +798,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                             {/* Pickup Location Display */}
                             {trip.pickupLocation && (
                               <p className="text-xs text-blue-600 mt-1">
-                                Pickup: {trip.pickupLocation.name}
-                                {trip.pickupLocation.floor && ` (Floor ${trip.pickupLocation.floor})`}
-                                {trip.pickupLocation.room && ` - Room ${trip.pickupLocation.room}`}
-                                {(trip.pickupTime || trip.scheduledTime) && ` • ${trip.pickupTime || trip.scheduledTime}`}
+                                Pickup: {trip.pickupLocation.name}: {trip.pickupLocation.floor && `${trip.pickupLocation.floor}`}{trip.pickupLocation.room && ` ${trip.pickupLocation.room}`}{trip.pickupLocation.contactPhone && ` Phone: ${trip.pickupLocation.contactPhone}`}{trip.pickupLocation.contactEmail && ` Email: ${trip.pickupLocation.contactEmail}`}
                               </p>
                             )}
                             <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
@@ -1307,6 +1321,82 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                         <label className="ml-2 block text-sm text-gray-900">
                           Continuous Monitoring Required
                         </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Pickup Location Details */}
+                  <div className="mb-4 md:col-span-2">
+                    <h4 className="text-md font-medium text-gray-900 mb-3">Pickup Location Details</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Pickup Location Name */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Location Name
+                        </label>
+                        <input
+                          type="text"
+                          value={editFormData.pickupLocationName}
+                          onChange={(e) => setEditFormData({...editFormData, pickupLocationName: e.target.value})}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+                          placeholder="e.g., Cancer Center"
+                        />
+                      </div>
+
+                      {/* Pickup Location Floor */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Floor
+                        </label>
+                        <input
+                          type="text"
+                          value={editFormData.pickupLocationFloor}
+                          onChange={(e) => setEditFormData({...editFormData, pickupLocationFloor: e.target.value})}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+                          placeholder="e.g., 3rd"
+                        />
+                      </div>
+
+                      {/* Pickup Location Room */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Room
+                        </label>
+                        <input
+                          type="text"
+                          value={editFormData.pickupLocationRoom}
+                          onChange={(e) => setEditFormData({...editFormData, pickupLocationRoom: e.target.value})}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+                          placeholder="e.g., 101"
+                        />
+                      </div>
+
+                      {/* Pickup Location Phone */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Contact Phone
+                        </label>
+                        <input
+                          type="text"
+                          value={editFormData.pickupLocationPhone}
+                          onChange={(e) => setEditFormData({...editFormData, pickupLocationPhone: e.target.value})}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+                          placeholder="e.g., 8885551212"
+                        />
+                      </div>
+
+                      {/* Pickup Location Email */}
+                      <div className="mb-4 md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Contact Email
+                        </label>
+                        <input
+                          type="email"
+                          value={editFormData.pickupLocationEmail}
+                          onChange={(e) => setEditFormData({...editFormData, pickupLocationEmail: e.target.value})}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+                          placeholder="e.g., nurse@phclearfield.com"
+                        />
                       </div>
                     </div>
                   </div>

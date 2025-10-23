@@ -17,10 +17,7 @@ import {
   User,
   ChevronDown,
   ChevronUp,
-  Plus,
-  Phone,
-  Mail,
-  ChevronRight
+  Plus
 } from 'lucide-react';
 import { tripsAPI } from '../services/api';
 
@@ -57,6 +54,9 @@ interface Trip {
       name: string;
     };
   };
+  // Distance and time fields
+  distanceMiles?: number;
+  estimatedTripTimeMinutes?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -69,103 +69,24 @@ interface TripsViewProps {
   };
 }
 
-interface TripTimelineEvent {
-  event: string;
-  timestamp: string;
-  description: string;
-}
 
 // Trip Card Component
 const TripCard: React.FC<{ trip: Trip; user: User }> = ({ trip, user }) => {
-  const [expanded, setExpanded] = useState(false);
-  const [timeline, setTimeline] = useState<TripTimelineEvent[]>([]);
-
-  // Build timeline for this trip
-  useEffect(() => {
-    const buildTimeline = () => {
-      const events: TripTimelineEvent[] = [];
-      
-      if (trip.createdAt) {
-        events.push({ 
-          event: 'Trip Created', 
-          timestamp: trip.createdAt,
-          description: ''
-        });
-      }
-      
-      if (trip.requestTimestamp) {
-        events.push({ 
-          event: 'Request Sent', 
-          timestamp: trip.requestTimestamp,
-          description: ''
-        });
-      }
-      
-      if (trip.transferRequestTime) {
-        events.push({ 
-          event: 'Transfer Requested', 
-          timestamp: trip.transferRequestTime,
-          description: ''
-        });
-      }
-      
-      if (trip.acceptedTimestamp) {
-        events.push({ 
-          event: 'Accepted by EMS', 
-          timestamp: trip.acceptedTimestamp,
-          description: ''
-        });
-      }
-      
-      if (trip.emsArrivalTime) {
-        events.push({ 
-          event: 'EMS Arrived', 
-          timestamp: trip.emsArrivalTime,
-          description: ''
-        });
-      }
-      
-      if (trip.pickupTimestamp) {
-        events.push({ 
-          event: 'Patient Picked Up', 
-          timestamp: trip.pickupTimestamp,
-          description: ''
-        });
-      }
-      
-      if (trip.actualStartTime) {
-        events.push({ 
-          event: 'Trip Started', 
-          timestamp: trip.actualStartTime,
-          description: ''
-        });
-      }
-      
-      if (trip.actualEndTime) {
-        events.push({ 
-          event: 'Trip Ended', 
-          timestamp: trip.actualEndTime,
-          description: ''
-        });
-      }
-      
-      if (trip.completionTimestamp) {
-        events.push({ 
-          event: 'Trip Completed', 
-          timestamp: trip.completionTimestamp,
-          description: ''
-        });
-      }
-      
-      // Sort timeline by timestamp
-      return events.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-    };
-
-    setTimeline(buildTimeline());
-  }, [trip]);
 
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleString();
+  };
+
+  const handleAcceptTrip = (trip: Trip) => {
+    // TODO: Implement accept functionality
+    console.log('Accept trip:', trip.id);
+    // This would call an API to accept the trip
+  };
+
+  const handleDeclineTrip = (trip: Trip) => {
+    // TODO: Implement decline functionality
+    console.log('Decline trip:', trip.id);
+    // This would call an API to decline the trip
   };
 
   const handleEditTrip = (trip: Trip) => {
@@ -227,134 +148,67 @@ const TripCard: React.FC<{ trip: Trip; user: User }> = ({ trip, user }) => {
   };
 
   return (
-    <div className="bg-white shadow rounded-lg border">
-      {/* Header Row */}
-      <div className="bg-gray-50 px-6 py-3 border-b">
-        <div className="grid grid-cols-5 gap-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
-          <div>PATIENT</div>
-          <div>ROUTE</div>
-          <div>PICKUP LOCATION</div>
-          <div>PRIORITY</div>
-          <div>ACTIONS</div>
-        </div>
-      </div>
-
-      {/* Main Information Row */}
-      <div className="px-6 py-4">
-        <div className="grid grid-cols-5 gap-4">
-          {/* Patient Column */}
-          <div>
-            <div className="font-bold text-gray-900">{trip.patientId}</div>
-            <div className="text-sm text-gray-500">{formatDateTime(trip.scheduledTime)}</div>
-          </div>
-
-          {/* Route Column */}
-          <div>
-            <div className="text-sm text-gray-900">{trip.fromLocation}</div>
-            <div className="text-sm text-gray-500 flex items-center">
-              <ChevronRight className="w-3 h-3 mr-1" />
-              {trip.toLocation}
-            </div>
-          </div>
-
-          {/* Pickup Location Column */}
-          <div>
-            {trip.pickupLocation ? (
-              <div>
-                <div className="font-bold text-gray-900">{trip.pickupLocation.name}</div>
-                {trip.pickupLocation.floor && (
-                  <div className="text-xs text-gray-500">Floor: {trip.pickupLocation.floor}</div>
-                )}
-                {trip.pickupLocation.room && (
-                  <div className="text-xs text-gray-500">Room: {trip.pickupLocation.room}</div>
-                )}
-                <div className="text-xs text-blue-600 mt-1">
-                  <div className="flex items-center">
-                    <Phone className="w-3 h-3 mr-1" />
-                    <span>Contact:</span>
-                  </div>
-                  <div className="text-blue-600">{trip.pickupLocation.contactPhone}</div>
-                  <div className="text-blue-600">{trip.pickupLocation.contactEmail}</div>
-                </div>
-              </div>
-            ) : (
-              <span className="text-gray-400 italic">No specific location</span>
-            )}
-          </div>
-
-          {/* Priority Column */}
-          <div>
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(formatPriority(trip.priority))}`}>
-              {formatPriority(trip.priority)}
-            </span>
-          </div>
-
-          {/* Actions Column */}
-          <div className="flex flex-col space-y-1">
-            <div className="flex space-x-1">
-              <button className="bg-green-600 text-white px-2 py-1 rounded text-xs font-medium hover:bg-green-700">
-                Accept
-              </button>
-              <button className="bg-red-600 text-white px-2 py-1 rounded text-xs font-medium hover:bg-red-700">
-                Decline
-              </button>
-            </div>
-            <div className="flex space-x-1">
-              <button 
-                onClick={() => handleEditTrip(trip)}
-                className="bg-blue-600 text-white px-2 py-1 rounded text-xs font-medium hover:bg-blue-700"
-              >
-                Edit
-              </button>
-              <button 
-                onClick={() => handleDeleteTrip(trip)}
-                className="bg-gray-600 text-white px-2 py-1 rounded text-xs font-medium hover:bg-gray-700"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Additional Details Row */}
-      <div className="bg-gray-50 px-6 py-3 border-t">
-        <div className="grid grid-cols-4 gap-4 text-sm text-gray-600">
-          <div>Level: {trip.transportLevel}</div>
-          <div>Distance: {trip.distanceMiles ? `${trip.distanceMiles} miles` : 'N/A'}</div>
-          <div>Time: {trip.estimatedTripTimeMinutes ? `${trip.estimatedTripTimeMinutes} minutes` : 'N/A'}</div>
-          <div>Revenue: {trip.tripCost ? `$${Number(trip.tripCost).toFixed(2)}` : 'N/A'}</div>
-        </div>
-      </div>
-
-      {/* Timeline Section */}
-      {timeline.length > 0 && (
-        <div className="border-t">
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="w-full px-6 py-3 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center justify-between"
-          >
-            <span>Trip Timeline ({timeline.length} events)</span>
-            {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
-          
-          {expanded && (
-            <div className="px-6 pb-4 bg-gray-50">
-              <div className="grid grid-cols-2 gap-4">
-                {timeline.map((event, index) => (
-                  <div key={index} className="flex items-center">
-                    <div className="flex-shrink-0 w-2 h-2 bg-blue-600 rounded-full mr-3"></div>
-                    <div className="flex-1 flex items-center justify-between">
-                      <p className="text-sm font-medium text-gray-900">{event.event}</p>
-                      <p className="text-xs text-gray-400">{formatDateTime(event.timestamp)}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+      <div className="flex items-center space-x-4">
+        <div>
+          <h4 className="text-lg font-medium text-gray-900">
+            Patient {trip.patientId} - {trip.transportLevel} - {formatDateTime(trip.scheduledTime)}
+          </h4>
+          <p className="text-base text-gray-600">
+            {trip.fromLocation} → {trip.toLocation}
+          </p>
+          {trip.pickupLocation && (
+            <p className="text-xs text-blue-600">
+              Pickup: {trip.pickupLocation.name}
+              {trip.pickupLocation.floor && ` (Floor ${trip.pickupLocation.floor})`}
+              {trip.pickupLocation.room && ` - Room ${trip.pickupLocation.room}`}
+              {trip.pickupLocation.contactPhone && ` • ${trip.pickupLocation.contactPhone}`}
+            </p>
           )}
+          <div className="mt-2 flex items-center space-x-6 text-sm text-gray-500">
+            <div>
+              <span className="font-medium">Priority:</span> {formatPriority(trip.priority)}
+            </div>
+            <div>
+              <span className="font-medium">Distance:</span> {trip.distanceMiles ? `${trip.distanceMiles.toFixed(1)} miles` : 'Calculating...'}
+            </div>
+            <div>
+              <span className="font-medium">Time:</span> {trip.estimatedTripTimeMinutes ? `${Math.round(trip.estimatedTripTimeMinutes)} min` : 'Calculating...'}
+            </div>
+          </div>
         </div>
-      )}
+      </div>
+      <div className="flex items-center space-x-2">
+        <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getStatusColor(trip.status)}`}>
+          {trip.status.replace('_', ' ')}
+        </span>
+        <div className="flex space-x-2">
+          <button 
+            onClick={() => handleAcceptTrip(trip)}
+            className="bg-green-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-green-700 transition-colors"
+          >
+            Accept
+          </button>
+          <button 
+            onClick={() => handleDeclineTrip(trip)}
+            className="bg-red-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-red-700 transition-colors"
+          >
+            Decline
+          </button>
+          <button 
+            onClick={() => handleEditTrip(trip)}
+            className="bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-blue-700 transition-colors"
+          >
+            Edit
+          </button>
+          <button 
+            onClick={() => handleDeleteTrip(trip)}
+            className="bg-gray-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-gray-700 transition-colors"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
