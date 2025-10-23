@@ -13,6 +13,8 @@ interface HealthcareLocation {
   facilityType: string;
   isActive: boolean;
   isPrimary: boolean;
+  latitude?: number | null;
+  longitude?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -52,6 +54,10 @@ const HealthcareLocationSettings: React.FC<HealthcareLocationSettingsProps> = ({
     phone: '',
     facilityType: 'Hospital'
   });
+
+  // GPS lookup state
+  const [gpsLookupStatus, setGpsLookupStatus] = useState<'idle' | 'looking' | 'found' | 'error'>('idle');
+  const [gpsCoordinates, setGpsCoordinates] = useState<{latitude: number, longitude: number} | null>(null);
 
   const states = [
     'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
@@ -111,6 +117,8 @@ const HealthcareLocationSettings: React.FC<HealthcareLocationSettingsProps> = ({
       phone: '',
       facilityType: 'Hospital'
     });
+    setGpsLookupStatus('idle');
+    setGpsCoordinates(null);
     setShowModal(true);
   };
 
@@ -125,12 +133,24 @@ const HealthcareLocationSettings: React.FC<HealthcareLocationSettingsProps> = ({
       phone: location.phone || '',
       facilityType: location.facilityType
     });
+    // Set GPS coordinates if they exist
+    if (location.latitude && location.longitude) {
+      setGpsCoordinates({
+        latitude: location.latitude,
+        longitude: location.longitude
+      });
+      setGpsLookupStatus('found');
+    } else {
+      setGpsCoordinates(null);
+      setGpsLookupStatus('idle');
+    }
     setShowModal(true);
   };
 
   // GPS lookup function using a geocoding service
   const geocodeAddress = async (address: string, city: string, state: string, zipCode: string): Promise<{latitude: number, longitude: number} | null> => {
     try {
+      setGpsLookupStatus('looking');
       const fullAddress = `${address}, ${city}, ${state} ${zipCode}`;
       console.log('MULTI_LOC: Geocoding address:', fullAddress);
       
@@ -140,19 +160,39 @@ const HealthcareLocationSettings: React.FC<HealthcareLocationSettingsProps> = ({
       
       if (data && data.length > 0) {
         const { lat, lon } = data[0];
-        console.log('MULTI_LOC: Geocoded coordinates:', { latitude: parseFloat(lat), longitude: parseFloat(lon) });
-        return {
+        const coordinates = {
           latitude: parseFloat(lat),
           longitude: parseFloat(lon)
         };
+        console.log('MULTI_LOC: Geocoded coordinates:', coordinates);
+        setGpsCoordinates(coordinates);
+        setGpsLookupStatus('found');
+        return coordinates;
       } else {
         console.warn('MULTI_LOC: No coordinates found for address:', fullAddress);
+        setGpsLookupStatus('error');
         return null;
       }
     } catch (error) {
       console.error('MULTI_LOC: Geocoding error:', error);
+      setGpsLookupStatus('error');
       return null;
     }
+  };
+
+  // Manual GPS lookup function
+  const handleGpsLookup = async () => {
+    if (!formData.address.trim() || !formData.city.trim() || !formData.state || !formData.zipCode.trim()) {
+      setError('Please fill in address, city, state, and ZIP code before looking up GPS coordinates');
+      return;
+    }
+
+    await geocodeAddress(
+      formData.address.trim(),
+      formData.city.trim(),
+      formData.state,
+      formData.zipCode.trim()
+    );
   };
 
   const handleSaveLocation = async (e: React.FormEvent) => {
@@ -167,13 +207,16 @@ const HealthcareLocationSettings: React.FC<HealthcareLocationSettingsProps> = ({
       setError(null);
       const token = localStorage.getItem('token');
 
-      // Get GPS coordinates
-      const coordinates = await geocodeAddress(
-        formData.address.trim(),
-        formData.city.trim(),
-        formData.state,
-        formData.zipCode.trim()
-      );
+      // Get GPS coordinates (use stored ones if available, otherwise lookup)
+      let coordinates = gpsCoordinates;
+      if (!coordinates) {
+        coordinates = await geocodeAddress(
+          formData.address.trim(),
+          formData.city.trim(),
+          formData.state,
+          formData.zipCode.trim()
+        );
+      }
 
       const data = {
         locationName: formData.locationName.trim(),
@@ -559,6 +602,61 @@ const HealthcareLocationSettings: React.FC<HealthcareLocationSettingsProps> = ({
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                     placeholder="(555) 123-4567"
                   />
+                </div>
+
+                {/* GPS Lookup Section */}
+                <div className="border-t border-gray-200 pt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-medium text-gray-700">GPS Coordinates</h4>
+                    <button
+                      type="button"
+                      onClick={handleGpsLookup}
+                      disabled={gpsLookupStatus === 'looking' || !formData.address.trim() || !formData.city.trim() || !formData.state || !formData.zipCode.trim()}
+                      className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {gpsLookupStatus === 'looking' ? (
+                        <>
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600 mr-2"></div>
+                          Looking up...
+                        </>
+                      ) : (
+                        <>
+                          <MapPin className="h-3 w-3 mr-1" />
+                          Lookup GPS
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  
+                  {gpsLookupStatus === 'found' && gpsCoordinates && (
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+                      <div className="flex items-center">
+                        <Check className="h-4 w-4 text-green-600 mr-2" />
+                        <span className="text-sm text-green-800">
+                          GPS coordinates found: {gpsCoordinates.latitude.toFixed(6)}, {gpsCoordinates.longitude.toFixed(6)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {gpsLookupStatus === 'error' && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                      <div className="flex items-center">
+                        <X className="h-4 w-4 text-red-600 mr-2" />
+                        <span className="text-sm text-red-800">
+                          GPS lookup failed. Coordinates will be saved as null.
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {gpsLookupStatus === 'idle' && (
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
+                      <span className="text-sm text-gray-600">
+                        Fill in the address fields above and click "Lookup GPS" to automatically find coordinates.
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 

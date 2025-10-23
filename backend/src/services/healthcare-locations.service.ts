@@ -57,6 +57,8 @@ export class HealthcareLocationsService {
         facilityType: locationData.facilityType,
         isActive: locationData.isActive ?? true,
         isPrimary: locationData.isPrimary ?? false,
+        latitude: locationData.latitude,
+        longitude: locationData.longitude,
       },
     });
 

@@ -1,0 +1,15 @@
+{
+  "users": {
+    "healthcare": "cmh3gdnfe0000lvk2y4lpnfbl",
+    "ems": "cmh3gdnh40001lvk2a58g22y2",
+    "admin": "cmh3gdnit0002lvk2jpevupiz"
+  },
+  "locations": {
+    "healthcareLocation": "cmh3gdniv0004lvk2w1zeykri",
+    "facility": "cmh3gdniy0005lvk27u7htu0u"
+  },
+  "ems": {
+    "agency": "cmh3gdniz0006lvk27j831714",
+    "unit": "cmh3gdnj10008lvk2q076mozq"
+  }
+}

@@ -628,6 +628,53 @@ router.get('/agencies/:hospitalId', authenticateAdmin, async (req: Authenticated
 });
 
 /**
+ * PUT /api/trips/:id/assign-unit
+ * Assign a unit to a trip
+ */
+router.put('/:id/assign-unit', async (req, res) => {
+  try {
+    console.log('TCC_DEBUG: Assign unit request:', { id: req.params.id, body: req.body });
+    
+    const { id } = req.params;
+    const { unitId, agencyId } = req.body;
+
+    if (!unitId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Unit ID is required'
+      });
+    }
+
+    // Use the existing updateTripStatus method to assign the unit
+    const result = await tripService.updateTripStatus(id, {
+      status: 'ACCEPTED', // Keep current status or set to ACCEPTED
+      assignedUnitId: unitId,
+      assignedAgencyId: agencyId
+    });
+
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        error: result.error
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Unit assigned successfully',
+      data: result.data
+    });
+
+  } catch (error) {
+    console.error('TCC_DEBUG: Assign unit error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to assign unit to trip'
+    });
+  }
+});
+
+/**
  * PUT /api/trips/:id/times
  * Update trip time tracking
  */

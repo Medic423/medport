@@ -8,14 +8,14 @@ const DEFAULT_DEV_URL = 'http://localhost:5001';
 // stable production API domain. Updated to latest Vercel backend deployment.
 const DEFAULT_PROD_URL = 'https://backend-nxv1218vn-chuck-ferrells-projects.vercel.app';
 
-let API_BASE_URL = EXPLICIT_API_URL || (import.meta.env.DEV ? DEFAULT_DEV_URL : DEFAULT_PROD_URL);
+let API_BASE_URL = EXPLICIT_API_URL || (import.meta.env.DEV ? '' : DEFAULT_PROD_URL);
 
 // Guard against accidental cross-environment use
 try {
   const isLocal = typeof window !== 'undefined' && window.location.hostname === 'localhost';
-  if (isLocal && API_BASE_URL !== DEFAULT_DEV_URL) {
-    console.warn('TCC_WARN: Localhost detected but API_BASE_URL is not local. For safety using', DEFAULT_DEV_URL);
-    API_BASE_URL = DEFAULT_DEV_URL;
+  if (isLocal && API_BASE_URL !== '') {
+    console.warn('TCC_WARN: Localhost detected but API_BASE_URL is not empty. For safety using empty string for proxy');
+    API_BASE_URL = '';
   }
 } catch {}
 
