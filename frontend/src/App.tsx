@@ -31,6 +31,9 @@ function AppContent() {
 
   useEffect(() => {
     const checkAuth = async () => {
+      // Always start with null user state
+      setUser(null);
+      
       const token = localStorage.getItem('token');
       if (token) {
         try {
@@ -42,9 +45,6 @@ function AppContent() {
           localStorage.removeItem('user');
           setUser(null);
         }
-      } else {
-        // No token, ensure user state is null
-        setUser(null);
       }
       setLoading(false);
     };
