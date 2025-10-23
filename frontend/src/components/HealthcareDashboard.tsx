@@ -662,6 +662,17 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                               {trip.pickupTime && ` • ${trip.pickupTime}`}
                             </p>
                           )}
+                          {/* Unit Assignment Display */}
+                          {(trip.status === 'ACCEPTED' || trip.status === 'IN_PROGRESS') && (
+                            <p className="text-xs text-green-600">
+                              Unit: {trip.assignedUnitNumber
+                                ? `${trip.assignedUnitNumber}${trip.assignedUnitType ? ` (${trip.assignedUnitType})` : ''}`
+                                : (trip.assignedUnitId
+                                    ? `#${trip.assignedUnitId}`
+                                    : 'Awaiting unit assignment'
+                                  )}
+                            </p>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -766,6 +777,15 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                           <div>
                             <h4 className="text-lg font-medium text-gray-900">Patient {trip.patientId}</h4>
                             <p className="text-base text-gray-600">{trip.origin} → {trip.destination}</p>
+                            {/* Pickup Location Display */}
+                            {trip.pickupLocation && (
+                              <p className="text-xs text-blue-600 mt-1">
+                                Pickup: {trip.pickupLocation.name}
+                                {trip.pickupLocation.floor && ` (Floor ${trip.pickupLocation.floor})`}
+                                {trip.pickupLocation.room && ` - Room ${trip.pickupLocation.room}`}
+                                {trip.pickupTime && ` • ${trip.pickupTime}`}
+                              </p>
+                            )}
                             <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                               <div>
                                 <div className="font-bold text-gray-800">Assigned Unit</div>
@@ -809,6 +829,15 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                                 className="px-3 py-2 bg-indigo-600 text-white rounded-md text-sm hover:bg-indigo-700 disabled:opacity-50"
                               >
                                 Mark Departure
+                              </button>
+                            )}
+                            {trip.arrivalTimestampISO && trip.departureTimestampISO && (
+                              <button
+                                onClick={() => handleCompleteTrip(trip.id)}
+                                disabled={updating}
+                                className="px-3 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700 disabled:opacity-50"
+                              >
+                                Mark Completed
                               </button>
                             )}
                           </div>
