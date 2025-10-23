@@ -444,12 +444,21 @@ async function testServerConnectivity() {
   console.log('   🌐 Testing server connectivity...');
   
   try {
-    const response = await axios.get(`${CONFIG.baseURL}/api/health`, { timeout: CONFIG.timeout });
-    if (response.status !== 200) {
-      throw new Error(`Server health check failed: ${response.status}`);
+    const response = await axios.post(`${CONFIG.baseURL}/api/auth/login`, 
+      { email: 'test-healthcare-e2e@example.com', password: 'TestPass123!' }, 
+      { timeout: CONFIG.timeout, headers: { 'Content-Type': 'application/json' } }
+    );
+    if (response.status !== 200 || !response.data.success) {
+      throw new Error(`Server health check failed: ${response.status} - ${response.data.message || 'Unknown error'}`);
     }
   } catch (error) {
-    throw new Error(`Server connectivity failed: ${error.message}`);
+    console.log('   ❌ Server connectivity error details:', error.message);
+    if (error.response) {
+      console.log('   ❌ Response status:', error.response.status);
+      console.log('   ❌ Response data:', error.response.data);
+    }
+    console.log('   ❌ Full error object:', error);
+    throw error; // Re-throw the original error instead of creating a new one
   }
 
   return {
@@ -498,13 +507,13 @@ async function createTestTrip() {
     specialNeeds: 'None',
     transportLevel: 'BLS',
     urgencyLevel: 'Routine',
-    priority: 'Normal',
+    priority: 'MEDIUM',
     specialRequirements: 'None',
     diagnosis: 'E2E Test Diagnosis',
     mobilityLevel: 'Ambulatory',
     oxygenRequired: false,
     monitoringRequired: false,
-    fromLocationId: testState.testDataIds.locations.healthcareLocation,
+    originFacilityId: testState.testDataIds.locations.healthcareLocation,
     destinationFacilityId: testState.testDataIds.locations.facility
   };
 
@@ -528,6 +537,11 @@ async function createTestTrip() {
     };
 
   } catch (error) {
+    console.log('   ❌ Trip creation error details:', error.message);
+    if (error.response) {
+      console.log('   ❌ Response status:', error.response.status);
+      console.log('   ❌ Response data:', error.response.data);
+    }
     throw new Error(`Trip creation failed: ${error.message}`);
   }
 }

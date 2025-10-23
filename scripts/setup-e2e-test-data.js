@@ -11,7 +11,7 @@
  * - Clean test environment
  */
 
-const { PrismaClient } = require('./backend/node_modules/@prisma/client');
+const { PrismaClient } = require('../backend/node_modules/@prisma/client');
 const bcrypt = require('bcryptjs');
 
 const prisma = new PrismaClient();
@@ -181,23 +181,38 @@ async function cleanTestData() {
 
   // Delete test users and related data
   for (const email of testEmails) {
-    const user = await prisma.centerUser.findUnique({ where: { email } });
-    if (user) {
+    // Check centerUser first
+    const centerUser = await prisma.centerUser.findUnique({ where: { email } });
+    if (centerUser) {
       // Delete related data first
-      await prisma.transportRequest.deleteMany({ where: { healthcareCreatedById: user.id } });
-      await prisma.healthcareLocation.deleteMany({ where: { userId: user.id } });
-      await prisma.unit.deleteMany({ where: { agencyId: user.id } });
-      await prisma.emsAgency.deleteMany({ where: { userId: user.id } });
+      await prisma.transportRequest.deleteMany({ where: { healthcareCreatedById: centerUser.id } });
+      // Find and delete EMS agencies created by this user
+      const agencies = await prisma.eMSAgency.findMany({ where: { addedBy: centerUser.id } });
+      for (const agency of agencies) {
+        await prisma.unit.deleteMany({ where: { agencyId: agency.id } });
+        await prisma.eMSAgency.delete({ where: { id: agency.id } });
+      }
       
       // Delete user
-      await prisma.centerUser.delete({ where: { id: user.id } });
+      await prisma.centerUser.delete({ where: { id: centerUser.id } });
+    }
+
+    // Check healthcareUser
+    const healthcareUser = await prisma.healthcareUser.findUnique({ where: { email } });
+    if (healthcareUser) {
+      // Delete related data first
+      await prisma.transportRequest.deleteMany({ where: { healthcareCreatedById: healthcareUser.id } });
+      await prisma.healthcareLocation.deleteMany({ where: { healthcareUserId: healthcareUser.id } });
+      
+      // Delete user
+      await prisma.healthcareUser.delete({ where: { id: healthcareUser.id } });
     }
   }
 
   // Delete test locations
-  await prisma.healthcareLocation.deleteMany({ where: { name: 'E2E Test Hospital' } });
+  await prisma.healthcareLocation.deleteMany({ where: { locationName: 'E2E Test Hospital' } });
   await prisma.facility.deleteMany({ where: { name: 'E2E Test Facility' } });
-  await prisma.emsAgency.deleteMany({ where: { name: 'E2E Test EMS Agency' } });
+  await prisma.eMSAgency.deleteMany({ where: { name: 'E2E Test EMS Agency' } });
 }
 
 async function createTestUsers() {
@@ -205,13 +220,14 @@ async function createTestUsers() {
 
   // Create healthcare user
   const hashedPassword = await bcrypt.hash(TEST_DATA.users.healthcare.password, 10);
-  users.healthcare = await prisma.centerUser.create({
+  users.healthcare = await prisma.healthcareUser.create({
     data: {
       email: TEST_DATA.users.healthcare.email,
       password: hashedPassword,
       name: TEST_DATA.users.healthcare.name,
+      facilityName: "E2E Test Hospital",
+      facilityType: "Hospital",
       userType: TEST_DATA.users.healthcare.userType,
-      facilityName: TEST_DATA.users.healthcare.facilityName,
       isActive: true
     }
   });
@@ -224,7 +240,6 @@ async function createTestUsers() {
       password: emsHashedPassword,
       name: TEST_DATA.users.ems.name,
       userType: TEST_DATA.users.ems.userType,
-      agencyName: TEST_DATA.users.ems.agencyName,
       isActive: true
     }
   });
@@ -250,16 +265,16 @@ async function createTestLocations(users) {
   // Create healthcare location
   locations.healthcareLocation = await prisma.healthcareLocation.create({
     data: {
-      name: TEST_DATA.locations.healthcareLocation.name,
+      locationName: TEST_DATA.locations.healthcareLocation.name,
       address: TEST_DATA.locations.healthcareLocation.address,
       city: TEST_DATA.locations.healthcareLocation.city,
       state: TEST_DATA.locations.healthcareLocation.state,
       zipCode: TEST_DATA.locations.healthcareLocation.zipCode,
       phone: TEST_DATA.locations.healthcareLocation.phone,
-      email: TEST_DATA.locations.healthcareLocation.email,
       latitude: TEST_DATA.locations.healthcareLocation.latitude,
       longitude: TEST_DATA.locations.healthcareLocation.longitude,
-      userId: users.healthcare.id,
+      healthcareUserId: users.healthcare.id,
+      facilityType: "Hospital",
       isActive: true
     }
   });
@@ -276,6 +291,8 @@ async function createTestLocations(users) {
       email: TEST_DATA.locations.facility.email,
       latitude: TEST_DATA.locations.facility.latitude,
       longitude: TEST_DATA.locations.facility.longitude,
+      type: "Hospital",
+      region: "Test Region",
       isActive: true
     }
   });
@@ -287,7 +304,7 @@ async function createTestEMSData(users) {
   const emsData = {};
 
   // Create EMS agency
-  emsData.agency = await prisma.emsAgency.create({
+  emsData.agency = await prisma.eMSAgency.create({
     data: {
       name: TEST_DATA.emsData.agency.name,
       address: TEST_DATA.emsData.agency.address,
@@ -296,9 +313,8 @@ async function createTestEMSData(users) {
       zipCode: TEST_DATA.emsData.agency.zipCode,
       phone: TEST_DATA.emsData.agency.phone,
       email: TEST_DATA.emsData.agency.email,
-      contactPerson: TEST_DATA.emsData.agency.contactPerson,
-      licenseNumber: TEST_DATA.emsData.agency.licenseNumber,
-      userId: users.ems.id,
+      contactName: TEST_DATA.emsData.agency.contactPerson,
+      addedBy: users.ems.id,
       isActive: true
     }
   });
@@ -307,8 +323,7 @@ async function createTestEMSData(users) {
   emsData.unit = await prisma.unit.create({
     data: {
       unitNumber: TEST_DATA.emsData.unit.unitNumber,
-      unitName: TEST_DATA.emsData.unit.unitName,
-      unitType: TEST_DATA.emsData.unit.unitType,
+      type: TEST_DATA.emsData.unit.unitType,
       status: TEST_DATA.emsData.unit.status,
       isActive: TEST_DATA.emsData.unit.isActive,
       agencyId: emsData.agency.id
@@ -321,7 +336,12 @@ async function createTestEMSData(users) {
 async function verifyTestData(users, locations, emsData) {
   // Verify users exist and can authenticate
   for (const [role, user] of Object.entries(users)) {
-    const foundUser = await prisma.centerUser.findUnique({ where: { id: user.id } });
+    let foundUser;
+    if (role === 'healthcare') {
+      foundUser = await prisma.healthcareUser.findUnique({ where: { id: user.id } });
+    } else {
+      foundUser = await prisma.centerUser.findUnique({ where: { id: user.id } });
+    }
     if (!foundUser) {
       throw new Error(`Test user ${role} not found`);
     }
@@ -346,7 +366,7 @@ async function verifyTestData(users, locations, emsData) {
   console.log(`   ✅ Facility verified: ${foundFacility.name}`);
 
   // Verify EMS data exists
-  const foundAgency = await prisma.emsAgency.findUnique({ 
+  const foundAgency = await prisma.eMSAgency.findUnique({ 
     where: { id: emsData.agency.id } 
   });
   if (!foundAgency) {
@@ -368,7 +388,7 @@ async function verifyTestData(users, locations, emsData) {
   }
   console.log(`   ✅ Unit-Agency relationship verified`);
 
-  if (foundHealthcareLocation.userId !== users.healthcare.id) {
+  if (foundHealthcareLocation.healthcareUserId !== users.healthcare.id) {
     throw new Error('Healthcare location not properly linked to user');
   }
   console.log(`   ✅ Healthcare location-User relationship verified`);

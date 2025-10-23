@@ -11,7 +11,7 @@
  * - All relationships are intact
  */
 
-const { PrismaClient } = require('./backend/node_modules/@prisma/client');
+const { PrismaClient } = require('../backend/node_modules/@prisma/client');
 const bcrypt = require('bcryptjs');
 
 const prisma = new PrismaClient();
@@ -93,7 +93,12 @@ async function verifyTestUsers(userIds) {
       throw new Error(`Missing ${role} user ID`);
     }
 
-    const user = await prisma.centerUser.findUnique({ where: { id: userId } });
+    let user;
+    if (role === 'healthcare') {
+      user = await prisma.healthcareUser.findUnique({ where: { id: userId } });
+    } else {
+      user = await prisma.centerUser.findUnique({ where: { id: userId } });
+    }
     if (!user) {
       throw new Error(`${role} user not found`);
     }
@@ -120,10 +125,10 @@ async function verifyTestLocations(locationIds) {
   if (!healthcareLocation) {
     throw new Error('Healthcare location not found');
   }
-  if (healthcareLocation.name !== 'E2E Test Hospital') {
+  if (healthcareLocation.locationName !== 'E2E Test Hospital') {
     throw new Error('Healthcare location has wrong name');
   }
-  console.log(`   ✅ Healthcare location: ${healthcareLocation.name} (${healthcareLocation.id})`);
+  console.log(`   ✅ Healthcare location: ${healthcareLocation.locationName} (${healthcareLocation.id})`);
 
   // Verify facility
   const facility = await prisma.facility.findUnique({ 
@@ -140,7 +145,7 @@ async function verifyTestLocations(locationIds) {
 
 async function verifyTestEMSData(emsIds) {
   // Verify EMS agency
-  const agency = await prisma.emsAgency.findUnique({ 
+  const agency = await prisma.eMSAgency.findUnique({ 
     where: { id: emsIds.agency } 
   });
   if (!agency) {
@@ -181,16 +186,16 @@ async function verifyRelationships(testDataIds) {
   const healthcareLocation = await prisma.healthcareLocation.findUnique({ 
     where: { id: testDataIds.locations.healthcareLocation } 
   });
-  if (healthcareLocation.userId !== testDataIds.users.healthcare) {
+  if (healthcareLocation.healthcareUserId !== testDataIds.users.healthcare) {
     throw new Error('Healthcare location not properly linked to user');
   }
   console.log('   ✅ Healthcare location-User relationship verified');
 
   // Verify EMS agency-user relationship
-  const agency = await prisma.emsAgency.findUnique({ 
+  const agency = await prisma.eMSAgency.findUnique({ 
     where: { id: testDataIds.ems.agency } 
   });
-  if (agency.userId !== testDataIds.users.ems) {
+  if (agency.addedBy !== testDataIds.users.ems) {
     throw new Error('EMS agency not properly linked to user');
   }
   console.log('   ✅ EMS agency-User relationship verified');
@@ -200,7 +205,7 @@ async function testAuthentication(userIds) {
   const testPassword = 'TestPass123!';
 
   // Test healthcare user authentication
-  const healthcareUser = await prisma.centerUser.findUnique({ 
+  const healthcareUser = await prisma.healthcareUser.findUnique({ 
     where: { id: userIds.healthcare } 
   });
   const healthcarePasswordValid = await bcrypt.compare(testPassword, healthcareUser.password);
