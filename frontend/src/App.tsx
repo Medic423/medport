@@ -37,9 +37,14 @@ function AppContent() {
           const response = await authAPI.verify();
           setUser(response.data.user);
         } catch (error) {
+          // Clear both localStorage and user state when token verification fails
           localStorage.removeItem('token');
           localStorage.removeItem('user');
+          setUser(null);
         }
+      } else {
+        // No token, ensure user state is null
+        setUser(null);
       }
       setLoading(false);
     };
