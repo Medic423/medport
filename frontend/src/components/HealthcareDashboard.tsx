@@ -131,8 +131,9 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
             status: trip.status,
             requestTime: new Date(trip.createdAt).toLocaleString(),
             requestTimeISO: trip.createdAt,
-            pickupTime: trip.pickupTimestamp ? new Date(trip.pickupTimestamp).toLocaleString() : null,
-            pickupTimeISO: trip.pickupTimestamp,
+            pickupTime: trip.pickupTimestamp ? new Date(trip.pickupTimestamp).toLocaleString() : (trip.scheduledTime ? new Date(trip.scheduledTime).toLocaleString() : null),
+            pickupTimeISO: trip.pickupTimestamp || trip.scheduledTime,
+            scheduledTime: trip.scheduledTime ? new Date(trip.scheduledTime).toLocaleString() : null,
             assignedUnitId: trip.assignedUnitId || null,
             assignedUnitNumber: trip.assignedUnit?.unitNumber || null,
             assignedUnitType: trip.assignedUnit?.type || null,
@@ -659,7 +660,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                               Pickup: {trip.pickupLocation.name}
                               {trip.pickupLocation.floor && ` (Floor ${trip.pickupLocation.floor})`}
                               {trip.pickupLocation.room && ` - Room ${trip.pickupLocation.room}`}
-                              {trip.pickupTime && ` • ${trip.pickupTime}`}
+                              {(trip.pickupTime || trip.scheduledTime) && ` • ${trip.pickupTime || trip.scheduledTime}`}
                             </p>
                           )}
                           {/* Unit Assignment Display */}
@@ -783,7 +784,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                                 Pickup: {trip.pickupLocation.name}
                                 {trip.pickupLocation.floor && ` (Floor ${trip.pickupLocation.floor})`}
                                 {trip.pickupLocation.room && ` - Room ${trip.pickupLocation.room}`}
-                                {trip.pickupTime && ` • ${trip.pickupTime}`}
+                                {(trip.pickupTime || trip.scheduledTime) && ` • ${trip.pickupTime || trip.scheduledTime}`}
                               </p>
                             )}
                             <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
@@ -800,7 +801,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                               </div>
                               <div>
                                 <div className="font-bold text-gray-800">Pickup Time</div>
-                                <div className="text-gray-600">{trip.pickupTime || (trip.arrivalTime ? '—' : '—')}</div>
+                                <div className="text-gray-600">{trip.pickupTime || trip.scheduledTime || '—'}</div>
                               </div>
                               <div>
                                 <div className="font-bold text-gray-800">Arrival Time</div>
