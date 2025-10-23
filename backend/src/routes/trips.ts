@@ -352,6 +352,7 @@ router.put('/:id/status', async (req, res) => {
       specialNeeds,
       oxygenRequired,
       monitoringRequired,
+      pickupLocation,
     } = req.body;
 
     if (!status) {
@@ -385,6 +386,7 @@ router.put('/:id/status', async (req, res) => {
       specialNeeds,
       oxygenRequired,
       monitoringRequired,
+      pickupLocation,
     };
 
     const result = await tripService.updateTripStatus(id, updateData);

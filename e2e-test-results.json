@@ -1,9 +1,9 @@
 {
-  "startTime": "2025-10-23T16:41:35.919Z",
+  "startTime": "2025-10-23T16:52:52.695Z",
   "phases": {
     "phaseA": {
       "name": "Test Data Setup Verification",
-      "startTime": "2025-10-23T16:41:35.921Z",
+      "startTime": "2025-10-23T16:52:52.697Z",
       "steps": [
         {
           "name": "Verify test data exists",
@@ -17,12 +17,12 @@
         }
       ],
       "status": "PASSED",
-      "endTime": "2025-10-23T16:41:35.990Z",
-      "duration": 69
+      "endTime": "2025-10-23T16:52:52.774Z",
+      "duration": 77
     },
     "phaseB": {
       "name": "Healthcare Trip Creation",
-      "startTime": "2025-10-23T16:41:35.990Z",
+      "startTime": "2025-10-23T16:52:52.774Z",
       "steps": [
         {
           "name": "Authenticate healthcare user",
@@ -36,8 +36,8 @@
       ],
       "status": "FAILED",
       "error": "Trip creation failed: Request failed with status code 400",
-      "endTime": "2025-10-23T16:41:36.051Z",
-      "duration": 61
+      "endTime": "2025-10-23T16:52:52.840Z",
+      "duration": 66
     }
   },
   "bugs": [],

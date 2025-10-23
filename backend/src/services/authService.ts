@@ -225,7 +225,8 @@ export class AuthService {
         userType: decoded.userType as 'ADMIN' | 'USER' | 'HEALTHCARE' | 'EMS',
         facilityName: decoded.userType === 'HEALTHCARE' ? (user as any).facilityName : undefined,
         agencyName: decoded.userType === 'EMS' ? (user as any).agencyName : undefined,
-        agencyId: decoded.userType === 'EMS' ? (user as any).agencyId : undefined
+        agencyId: decoded.userType === 'EMS' ? (user as any).agencyId : undefined,
+        manageMultipleLocations: decoded.userType === 'HEALTHCARE' ? (user as any).manageMultipleLocations : undefined
       };
 
     } catch (error) {

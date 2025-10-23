@@ -31,14 +31,19 @@ function AppContent() {
 
   useEffect(() => {
     const checkAuth = async () => {
+      // Always start with null user state
+      setUser(null);
+      
       const token = localStorage.getItem('token');
       if (token) {
         try {
           const response = await authAPI.verify();
           setUser(response.data.user);
         } catch (error) {
+          // Clear both localStorage and user state when token verification fails
           localStorage.removeItem('token');
           localStorage.removeItem('user');
+          setUser(null);
         }
       }
       setLoading(false);
