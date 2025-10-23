@@ -38,6 +38,13 @@ export interface UpdateTripStatusRequest {
   specialNeeds?: string;
   oxygenRequired?: boolean;
   monitoringRequired?: boolean;
+  pickupLocation?: {
+    name?: string;
+    floor?: string;
+    room?: string;
+    contactPhone?: string;
+    contactEmail?: string;
+  };
 }
 
 export interface EnhancedCreateTripRequest {
@@ -228,7 +235,9 @@ export class TripService {
               id: true,
               name: true,
               floor: true,
-              room: true
+              room: true,
+              contactPhone: true,
+              contactEmail: true
             }
           },
           healthcareLocation: {
@@ -273,7 +282,43 @@ export class TripService {
           }))
         );
       } catch {}
-      return { success: true, data: trips };
+
+      // Calculate distance and time for each trip
+      const tripsWithDistance = await Promise.all(trips.map(async (trip) => {
+        try {
+          // Calculate distance and time if we have location data
+          if (trip.fromLocation && trip.toLocation) {
+            const distanceResult = await this.calculateTripDistanceAndTime({
+              fromLocation: trip.fromLocation,
+              toLocation: trip.toLocation
+            });
+            
+            if (distanceResult.success && distanceResult.data) {
+              return {
+                ...trip,
+                distanceMiles: distanceResult.data.distance,
+                estimatedTripTimeMinutes: distanceResult.data.estimatedTimeMinutes
+              };
+            }
+          }
+          
+          // If no location data or calculation failed, return trip as-is
+          return {
+            ...trip,
+            distanceMiles: null,
+            estimatedTripTimeMinutes: null
+          };
+        } catch (error) {
+          console.error('TCC_DEBUG: Error calculating distance for trip:', trip.id, error);
+          return {
+            ...trip,
+            distanceMiles: null,
+            estimatedTripTimeMinutes: null
+          };
+        }
+      }));
+
+      return { success: true, data: tripsWithDistance };
     } catch (error) {
       console.error('TCC_DEBUG: Error getting trips:', error);
       return { success: false, error: 'Failed to fetch transport requests' };
@@ -309,7 +354,9 @@ export class TripService {
               id: true,
               name: true,
               floor: true,
-              room: true
+              room: true,
+              contactPhone: true,
+              contactEmail: true
             }
           },
           assignedUnit: {
@@ -433,6 +480,48 @@ export class TripService {
       if (data.monitoringRequired !== undefined) {
         updateData.monitoringRequired = data.monitoringRequired;
         console.log('TCC_EDIT_DEBUG: Setting monitoringRequired:', data.monitoringRequired);
+      }
+
+      // Handle pickup location updates
+      if (data.pickupLocation) {
+        console.log('TCC_EDIT_DEBUG: Processing pickup location update:', data.pickupLocation);
+        
+        // First, get the current trip to find the existing pickup location
+        const currentTrip = await prisma.transportRequest.findUnique({
+          where: { id },
+          include: { pickupLocation: true }
+        });
+
+        if (currentTrip?.pickupLocation) {
+          // Update existing pickup location
+          const pickupLocationUpdate: any = {};
+          
+          if (data.pickupLocation.name !== undefined) {
+            pickupLocationUpdate.name = data.pickupLocation.name || null;
+          }
+          if (data.pickupLocation.floor !== undefined) {
+            pickupLocationUpdate.floor = data.pickupLocation.floor || null;
+          }
+          if (data.pickupLocation.room !== undefined) {
+            pickupLocationUpdate.room = data.pickupLocation.room || null;
+          }
+          if (data.pickupLocation.contactPhone !== undefined) {
+            pickupLocationUpdate.contactPhone = data.pickupLocation.contactPhone || null;
+          }
+          if (data.pickupLocation.contactEmail !== undefined) {
+            pickupLocationUpdate.contactEmail = data.pickupLocation.contactEmail || null;
+          }
+
+          console.log('TCC_EDIT_DEBUG: Updating pickup location with:', pickupLocationUpdate);
+
+          // Update the pickup location
+          await prisma.pickup_locations.update({
+            where: { id: currentTrip.pickupLocation.id },
+            data: pickupLocationUpdate
+          });
+        } else {
+          console.log('TCC_EDIT_DEBUG: No existing pickup location found, skipping update');
+        }
       }
 
       // Handle unit assignment
