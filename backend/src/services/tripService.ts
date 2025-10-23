@@ -1070,19 +1070,53 @@ export class TripService {
         }
       }
 
-      // If we don't have coordinates, try to geocode the text addresses
+      // If we don't have coordinates, try to find them in healthcare locations
       if (!fromCoords && data.fromLocation) {
-        // For now, return mock data for text addresses
-        // In a real implementation, you would use a geocoding service
-        console.log('TCC_DEBUG: Using mock coordinates for fromLocation:', data.fromLocation);
-        fromCoords = { latitude: 40.2031, longitude: -79.9262 }; // Mock coordinates
+        console.log('TCC_DEBUG: Looking up coordinates for fromLocation:', data.fromLocation);
+        
+        // Try to find the location in healthcare locations
+        const healthcareLocation = await prisma.healthcareLocation.findFirst({
+          where: { 
+            locationName: { contains: data.fromLocation, mode: 'insensitive' }
+          },
+          select: { latitude: true, longitude: true, locationName: true }
+        });
+        
+        if (healthcareLocation?.latitude && healthcareLocation?.longitude) {
+          fromCoords = {
+            latitude: healthcareLocation.latitude,
+            longitude: healthcareLocation.longitude
+          };
+          console.log('TCC_DEBUG: Found coordinates from healthcare location:', fromCoords);
+        } else {
+          // Fallback to mock coordinates if not found
+          console.log('TCC_DEBUG: Using mock coordinates for fromLocation:', data.fromLocation);
+          fromCoords = { latitude: 40.2031, longitude: -79.9262 }; // Mock coordinates
+        }
       }
 
       if (!toCoords && data.toLocation) {
-        // For now, return mock data for text addresses
-        // In a real implementation, you would use a geocoding service
-        console.log('TCC_DEBUG: Using mock coordinates for toLocation:', data.toLocation);
-        toCoords = { latitude: 41.5025, longitude: -81.6214 }; // Mock coordinates
+        console.log('TCC_DEBUG: Looking up coordinates for toLocation:', data.toLocation);
+        
+        // Try to find the location in healthcare locations
+        const healthcareLocation = await prisma.healthcareLocation.findFirst({
+          where: { 
+            locationName: { contains: data.toLocation, mode: 'insensitive' }
+          },
+          select: { latitude: true, longitude: true, locationName: true }
+        });
+        
+        if (healthcareLocation?.latitude && healthcareLocation?.longitude) {
+          toCoords = {
+            latitude: healthcareLocation.latitude,
+            longitude: healthcareLocation.longitude
+          };
+          console.log('TCC_DEBUG: Found coordinates from healthcare location:', toCoords);
+        } else {
+          // Fallback to mock coordinates if not found
+          console.log('TCC_DEBUG: Using mock coordinates for toLocation:', data.toLocation);
+          toCoords = { latitude: 41.5025, longitude: -81.6214 }; // Mock coordinates
+        }
       }
 
       if (!fromCoords || !toCoords) {
