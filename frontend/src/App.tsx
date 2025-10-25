@@ -11,6 +11,7 @@ import HealthcareLogin from './components/HealthcareLogin';
 import EMSLogin from './components/EMSLogin';
 import { authAPI } from './services/api';
 import ErrorBoundary from './components/ErrorBoundary';
+import TripAcceptance from './components/TripAcceptance';
 
 interface User {
   id: string;
@@ -202,6 +203,17 @@ function AppContent() {
             onBack={handleBackToPublic}
             onLogin={handleLogin}
           />
+        } />
+        <Route path="/test-trip-acceptance" element={
+          <div className="min-h-screen bg-gray-50">
+            <div className="container mx-auto py-8">
+              <div className="mb-6">
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">Trip Acceptance Test Page</h1>
+                <p className="text-gray-600">Testing the TripAcceptance component</p>
+              </div>
+              <TripAcceptance />
+            </div>
+          </div>
         } />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

@@ -106,9 +106,40 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Filter state for Available Trips
+  const [filters, setFilters] = useState({
+    transportLevel: 'ALL',
+    priority: 'ALL',
+    maxDistance: '',
+    minRevenue: ''
+  });
+
   // Unit selection modal state
   const [isUnitModalOpen, setIsUnitModalOpen] = useState(false);
   const [unitModalTripId, setUnitModalTripId] = useState<string | null>(null);
+
+  // Filtered trips based on filter state
+  const [filteredAvailableTrips, setFilteredAvailableTrips] = useState<any[]>([]);
+
+  // Apply filters to available trips
+  useEffect(() => {
+    let filtered = [...availableTrips];
+    
+    // Filter by transport level
+    if (filters.transportLevel !== 'ALL') {
+      filtered = filtered.filter(trip => trip.transportLevel === filters.transportLevel);
+    }
+    
+    // Filter by priority (urgency level)
+    if (filters.priority !== 'ALL') {
+      filtered = filtered.filter(trip => trip.urgencyLevel === filters.priority);
+    }
+    
+    // Note: Distance and revenue filters would require additional data fields
+    // that may not be available in the current trip structure
+    
+    setFilteredAvailableTrips(filtered);
+  }, [availableTrips, filters]);
 
   // Load trips from API
   useEffect(() => {
@@ -607,11 +638,69 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
               </div>
             )}
             
+            {/* Filters Section */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Filters</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Transport Level</label>
+                  <select
+                    value={filters.transportLevel}
+                    onChange={(e) => setFilters(prev => ({ ...prev, transportLevel: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option value="ALL">All Levels</option>
+                    <option value="BLS">BLS</option>
+                    <option value="ALS">ALS</option>
+                    <option value="CCT">CCT</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                  <select
+                    value={filters.priority}
+                    onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option value="ALL">All Priorities</option>
+                    <option value="Routine">Routine</option>
+                    <option value="Urgent">Urgent</option>
+                    <option value="Emergent">Emergent</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Max Distance</label>
+                  <input
+                    type="number"
+                    value={filters.maxDistance}
+                    onChange={(e) => setFilters(prev => ({ ...prev, maxDistance: e.target.value }))}
+                    placeholder="No limit"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Min Revenue ($)</label>
+                  <input
+                    type="number"
+                    value={filters.minRevenue}
+                    onChange={(e) => setFilters(prev => ({ ...prev, minRevenue: e.target.value }))}
+                    placeholder="No minimum"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+              </div>
+            </div>
+            
             <div className="bg-white rounded-lg shadow">
               <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                 <div>
                   <h3 className="text-lg font-medium text-gray-900">Available Transport Requests</h3>
-                  <p className="text-sm text-gray-500">Accept or decline available transport requests</p>
+                  <p className="text-sm text-gray-500">
+                    Showing {filteredAvailableTrips.length} of {availableTrips.length} requests
+                  </p>
                 </div>
                 <button
                   onClick={loadTrips}
@@ -622,7 +711,7 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
                 </button>
               </div>
               <div className="space-y-4">
-                {availableTrips.map((trip) => (
+                {filteredAvailableTrips.map((trip) => (
                   <div key={trip.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                     <div className="flex items-center space-x-4">
                       <div>
@@ -669,6 +758,11 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
                     </div>
                   </div>
                 ))}
+                {filteredAvailableTrips.length === 0 && availableTrips.length > 0 && (
+                  <div className="p-6 text-center text-gray-500">
+                    No requests match your current filters. Try adjusting your filter settings.
+                  </div>
+                )}
                 {availableTrips.length === 0 && (
                   <div className="p-6 text-center text-gray-500">
                     No available transport requests at this time.

@@ -24,6 +24,7 @@ import emsAnalyticsRoutes from './routes/emsAnalytics';
 import backupRoutes from './routes/backup';
 import maintenanceRoutes from './routes/maintenance';
 import healthcareLocationsRoutes from './routes/healthcareLocations';
+import agencyTransportRoutes from './routes/agency';
 
 // Load environment variables
 dotenv.config();
@@ -106,6 +107,7 @@ app.use('/api/ems/analytics', emsAnalyticsRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/healthcare/locations', healthcareLocationsRoutes);
+app.use('/api/agency', agencyTransportRoutes);
 
 // Public endpoints for healthcare users
 app.get('/api/public/categories', async (req, res) => {
