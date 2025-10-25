@@ -52,6 +52,10 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
     specialNeeds: []
   });
 
+  // Agency Responses state
+  const [agencyResponses, setAgencyResponses] = useState<any[]>([]);
+  const [loadingResponses, setLoadingResponses] = useState(false);
+
   // Calculate wait time from request to pickup
   const calculateWaitTime = (requestTime: string, pickupTime: string | null) => {
     if (!pickupTime) return null;
@@ -95,6 +99,13 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
       setFilteredTrips(filtered);
     }
   }, [trips, statusFilter]);
+
+  // Load agency responses when responses tab is activated
+  useEffect(() => {
+    if (activeTab === 'responses') {
+      loadAgencyResponses();
+    }
+  }, [activeTab]);
 
   // Function to get urgency level styling
   const getUrgencyLevelStyle = (urgencyLevel: string) => {
@@ -254,6 +265,37 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
         insurance: ['Medicare', 'Medicaid', 'Private', 'Self-pay'],
         specialNeeds: ['Bariatric Stretcher']
       });
+    }
+  };
+
+  // Agency Responses functions
+  const loadAgencyResponses = async () => {
+    try {
+      setLoadingResponses(true);
+      const response = await api.get('/api/agency-responses');
+      if (response.data && response.data.success) {
+        setAgencyResponses(response.data.data || []);
+      }
+    } catch (error) {
+      console.error('Error loading agency responses:', error);
+      setAgencyResponses([]);
+    } finally {
+      setLoadingResponses(false);
+    }
+  };
+
+  const handleSelectAgency = async (tripId: string, responseId: string) => {
+    try {
+      const response = await api.post(`/api/agency-responses/${responseId}/select`);
+      if (response.data && response.data.success) {
+        // Reload responses to show updated selection status
+        await loadAgencyResponses();
+        // Also reload trips to show updated trip status
+        await loadTrips();
+      }
+    } catch (error) {
+      console.error('Error selecting agency:', error);
+      alert('Failed to select agency. Please try again.');
     }
   };
 
@@ -541,10 +583,11 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex space-x-8">
             {[
+              { id: 'create', name: 'Create Request', icon: Plus },
               { id: 'trips', name: 'Transport Requests', icon: Clock },
               { id: 'in-progress', name: 'In-Progress', icon: AlertCircle },
               { id: 'completed', name: 'Completed Trips', icon: CheckCircle },
-              { id: 'create', name: 'Create Request', icon: Plus },
+              { id: 'responses', name: 'Agency Responses', icon: Bell },
               { id: 'hospital-settings', name: 'Hospital Settings', icon: Building2 }
             ].map((tab) => {
               const Icon = tab.icon;
@@ -956,7 +999,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
           </div>
         )}
 
-        {false && activeTab === 'responses' && (
+        {activeTab === 'responses' && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold text-gray-900">Agency Responses</h2>
@@ -1117,8 +1160,19 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                               )}
                             </div>
                             <p className="text-sm text-gray-500">
-                              Trip ID: {response.tripId}
+                              Patient ID: {response.trip?.patientId || 'N/A'}
                             </p>
+                            <p className="text-sm text-gray-500">
+                              Route: {response.trip?.fromLocation || 'N/A'} → {response.trip?.toLocation || 'N/A'}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              Transport: {response.trip?.transportLevel || 'N/A'} • {response.trip?.urgencyLevel || 'N/A'}
+                            </p>
+                            {response.trip?.assignedUnit && (
+                              <p className="text-sm text-blue-600">
+                                Assigned Unit: {response.trip.assignedUnit.unitNumber} ({response.trip.assignedUnit.type})
+                              </p>
+                            )}
                             {response.responseNotes && (
                               <p className="text-sm text-gray-600 mt-1">
                                 {response.responseNotes}

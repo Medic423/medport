@@ -1011,9 +1011,68 @@ export class TripService {
   async getAgencyResponses(filters: any) {
     console.log('TCC_DEBUG: Getting agency responses with filters:', filters);
     
-    // For now, return an empty array
-    // This can be expanded to actually query agency responses
-    return { success: true, data: [], error: null };
+    try {
+      // For now, return trips that have been accepted with agency/unit assignments
+      // This simulates agency responses by showing trips that have been accepted
+      const where: any = {
+        status: {
+          in: ['ACCEPTED', 'IN_PROGRESS', 'COMPLETED']
+        }
+      };
+      
+      if (filters.tripId) where.id = filters.tripId;
+      if (filters.agencyId) where.assignedAgencyId = filters.agencyId;
+      if (filters.response) {
+        // Map response to status
+        if (filters.response === 'ACCEPTED') where.status = 'ACCEPTED';
+        if (filters.response === 'DECLINED') where.status = 'DECLINED';
+        if (filters.response === 'PENDING') where.status = 'PENDING';
+      }
+      
+      const trips = await prisma.transportRequest.findMany({
+        where,
+        include: {
+          assignedUnit: true,
+          originFacility: true,
+          destinationFacility: true
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      // Transform trips to look like agency responses
+      const responses = trips.map(trip => ({
+        id: `response-${trip.id}`,
+        tripId: trip.id,
+        agencyId: trip.assignedAgencyId,
+        agency: trip.assignedAgencyId ? { 
+          id: trip.assignedAgencyId, 
+          name: `Agency ${trip.assignedAgencyId}` 
+        } : null,
+        response: trip.status === 'ACCEPTED' ? 'ACCEPTED' : 
+                 trip.status === 'DECLINED' ? 'DECLINED' : 'PENDING',
+        responseTimestamp: trip.acceptedTimestamp || trip.createdAt,
+        responseNotes: trip.notes || '',
+        estimatedArrival: trip.pickupTimestamp,
+        isSelected: trip.status === 'ACCEPTED',
+        createdAt: trip.createdAt,
+        updatedAt: trip.updatedAt,
+        trip: {
+          id: trip.id,
+          patientId: trip.patientId,
+          fromLocation: trip.fromLocation,
+          toLocation: trip.toLocation,
+          transportLevel: trip.transportLevel,
+          urgencyLevel: trip.urgencyLevel,
+          assignedUnit: trip.assignedUnit
+        }
+      }));
+
+      console.log('TCC_DEBUG: Found agency responses:', responses.length);
+      return { success: true, data: responses };
+    } catch (error) {
+      console.error('TCC_DEBUG: Error getting agency responses:', error);
+      return { success: false, error: 'Failed to fetch agency responses' };
+    }
   }
 
   /**
