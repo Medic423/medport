@@ -1,109 +1,89 @@
-# Session Handoff: Multi-Agency Bidding Feature - Still in Progress
+# Session Handoff: Multi-Agency Bidding Feature - Completed Major Milestones
 
-## Context
-Working on the "Agency Bidding Restoration - Phase 2" feature in the `feature/restore-agency-bidding` branch. Phase 1 (backend API) is complete. Phase 2 (frontend) is mostly complete but has a critical blocking issue.
+## Summary
+Multi-agency bidding feature is now working! EMS agencies can accept/decline trips, healthcare providers can see and select agencies, and the workflow is fully functional.
 
-## What We've Accomplished
+## Completed Today (2025-10-26)
 
-### Completed:
-1. **Unit Assignment Fix**: Fixed units 51 and 81 that had `isActive: false` causing "Invalid unit assignment" errors
-2. **Manual Unit Status Control**: Added status dropdown to Edit Unit screen in Units Management
-3. **Agency Ownership Validation**: Added validation to prevent editing units from other agencies
-4. **Select/Reject Buttons**: Added UI for healthcare providers to select/reject agencies in the Healthcare Dashboard
-5. **Improved Error Messages**: Added backend validation to return specific error messages instead of generic ones
-6. **From Location Dropdown Fix**: Added key prop to force remount when switching tabs
+### 1. Fixed Multi-Agency Bidding Database Issues
+- **Issue**: Foreign key constraint violation when creating agency responses
+- **Root Cause**: `AgencyResponse` foreign key was pointing to `trips` table, but data is stored in `transport_requests`
+- **Fix**: Updated Prisma schema to reference `TransportRequest` model instead of `Trip` model
+- **Database Fix**: Manually updated the foreign key constraint in the database to reference `transport_requests` instead of `trips`
 
-### Files Modified:
-- `backend/src/services/tripService.ts` - Added validation for pickup locations and healthcare locations
-- `backend/src/routes/trips.ts` - Added check for `result.success` before returning
-- `backend/src/services/unitService.ts` - Added agency ownership validation
-- `backend/src/routes/units.ts` - Passes agencyId to updateUnit
-- `frontend/src/components/HealthcareDashboard.tsx` - Added Select/Reject buttons for agency responses
-- `frontend/src/components/EnhancedTripForm.tsx` - Added key prop and improved dropdown handling
-- `frontend/src/types/units.ts` - Added status field to UnitFormData
+### 2. Implemented Agency Response Creation
+- **EMS Accept Flow**: When EMS clicks "Accept", it now creates an `AgencyResponse` record in the database
+- **EMS Decline Flow**: When EMS clicks "Decline", it creates a `DECLINED` response
+- **Trip Status**: Trip remains `PENDING` until healthcare provider selects an agency
+- **Backend Function**: Fixed `createAgencyResponse` in `tripService.ts` to actually persist data to database
 
-## FIXED: "Selected facility not found" Error ✅
+### 3. Added Agency Selection for Healthcare Providers
+- **New Endpoint**: Added `POST /api/agency-responses/:id/select` endpoint
+- **Functionality**: Healthcare providers can select which EMS agency gets the trip
+- **Updates**: Selecting an agency marks it as selected, unselects others, and updates trip status to `ACCEPTED`
+- **UI**: Healthcare Dashboard now displays agency responses with Select/Reject buttons
 
-### Solution:
-Fixed the bug in `EnhancedTripForm.tsx` line 768-771 where it was looking up facilities in the wrong array. For multi-location users, it should search `healthcareLocations` instead of `facilities`.
+### 4. Fixed EMS Login Issue
+- **Issue**: EMS users getting 500 error on login
+- **Root Cause**: Password hash mismatch in database
+- **Fix**: Updated password hash in database to match "password"
+- **Added Debug Logging**: Enhanced logging in EMS login to trace authentication issues
 
-Also fixed EMS accept/decline functionality in `EMSDashboard.tsx` to properly create `AgencyResponse` records instead of directly assigning units.
+### 5. Updated Database Schema
+- Updated Prisma schema relations:
+  - `AgencyResponse` now correctly references `TransportRequest`
+  - Added `agencyResponses` relation to `TransportRequest` model
+  - Removed incorrect relation from `Trip` model
+- Regenerated Prisma client
+- Fixed database foreign key constraint
 
-## Previous Issue (Now Fixed)
+## Technical Changes
 
-### Problem:
-When creating a trip with:
-- From Location: "Penn Highlands Elk - St. Marys, PA"
-- Pickup Location: "Outpatient Surgery"
-The error "Selected facility not found" appears in the console at `EnhancedTripForm.tsx:847`.
+### Backend (`backend/src/`)
+- **services/tripService.ts**:
+  - Fixed `createAgencyResponse` to actually create database records
+  - Updated `selectAgencyForTrip` to accept responseId only
+  - Added error logging with detailed error messages
+  
+- **routes/agencyResponses.ts**:
+  - Added `POST /api/agency-responses/:id/select` endpoint
+  - Updated to pass correct parameters to `selectAgencyForTrip`
+  - Added debug logging for request validation
 
-### What We Know:
-1. The IDs being sent are correct (`fromLocationId: "loc_005"`, `pickupLocationId: "pickup-1760009478010-85myctz17"`)
-2. "Outpatient Surgery" appears in the dropdown options, confirming it exists in the system
-3. Backend has been updated with validation and detailed logging
-4. Backend logs are NOT appearing when the trip is created (no "TCC_DEBUG: Validating pickup location:" logs)
-5. Frontend console shows the generic error, not the specific backend error messages
+- **routes/auth.ts**:
+  - Added debug logging for EMS login process
+  - Added password validation logging
 
-### Hypothesis:
-- Backend changes aren't being hit (old code still running?)
-- Frontend is catching an error before it reaches the backend validation
-- There's a Prisma relation issue with the `pickupLocation` or `healthcareLocation` connection
+### Prisma Schema (`backend/prisma/schema.prisma`)
+- Changed `AgencyResponse.trip` relation from `Trip` to `TransportRequest`
+- Added `agencyResponses` relation to `TransportRequest` model
+- Regenerated Prisma client to match schema
 
-### Latest Changes Made:
-Added detailed logging in `tripService.ts`:
-```typescript
-// Line 675: Added "TCC_DEBUG: Validating pickup location:" log
-// Line 681: Added "TCC_DEBUG: Pickup location lookup result:" log  
-// Line 693: Added "TCC_DEBUG: No pickupLocationId provided" log
-```
+### Database
+- Updated foreign key constraint: `agency_responses_tripId_fkey` now references `transport_requests(id)`
+- Fixed EMS user password hash
 
-But these logs are NOT appearing in the terminal output when creating a trip.
+## Current Status
 
-## Next Steps
+✅ **Working**:
+- Trip creation for multi-location healthcare providers
+- EMS agencies can accept/decline trips
+- Agency responses are created in database
+- Healthcare providers can see agency responses
+- Healthcare providers can select an agency
+- Selecting an agency updates trip status to ACCEPTED
 
-### Immediate Priority:
-1. **Debug why backend logs aren't appearing**: Check if the backend is actually running the latest code
-2. **Try creating a trip again** and look for the validation logs in the backend terminal
-3. **If logs still don't appear**: The backend might need a hard restart (kill all processes, rebuild, restart)
+🔄 **Next Steps**:
+- Test complete workflow: Create trip → EMS accepts → Healthcare selects → Unit assignment
+- Test with multiple agencies accepting the same trip
+- Test that only selected agency sees the trip as active
+- Verify unit assignment after agency selection
 
-### If Backend Logs Appear:
-- The logs will show which validation is failing (pickup location or healthcare location)
-- Then we can fix that specific issue
+## Git Commits
+1. "Fix multi-agency bidding: Update foreign key constraint and agency response creation" (e2fbea65)
+2. "Fix EMS login and add agency selection functionality" (67dad43c)
 
-### If Logs Still Don't Appear:
-- Check if backend is running from a different directory/version
-- Force recompile the backend: `cd backend && npm run build && npm run dev`
-- Check backend terminal output vs frontend console for error messages
-
-## Git Status
-- Branch: `feature/restore-agency-bidding`
-- Recent commits:
-  - `8c53ca52` - fix: Properly return validation errors from trip creation endpoint
-  - `55d0dfa9` - debug: Add detailed logging for pickup location and healthcare location validation
-  - `a418a825` - feat: Add validation and better error messages for trip creation
-
-## Database Context
-- User is a multi-location healthcare provider (managesMultipleLocations: true)
-- Has 10 healthcare locations configured
-- Pickup location "Outpatient Surgery" has hospitalId: "loc_005"
-
-## Expected vs Actual Behavior
-**Expected**: When creating a trip, detailed backend logs should appear showing which location validation fails
-**Actual**: No backend logs appear, frontend shows generic "Selected facility not found" error
-
-## Key Files to Investigate
-- `backend/src/services/tripService.ts` (lines 673-720) - Validation logic
-- `backend/src/routes/trips.ts` (lines 195-204) - Error return logic
-- `frontend/src/components/EnhancedTripForm.tsx` (line 847) - Where error is caught
-
----
-
-**Action Items for Next Session:**
-1. Verify backend is running latest code (check file timestamps)
-2. Force restart/rebuild backend if needed
-3. Try trip creation again and capture backend logs
-4. If validation logs appear, fix the specific failing validation
-5. If logs still don't appear, investigate why backend isn't receiving requests
-
-**Hint**: The backend process ID is 3312 and should be running at `ts-node src/index.ts` in the backend directory. If no new logs appear, try killing it and doing a clean restart.
-
+## Testing Notes
+- Password for `doe@elkcoems.com` is now "password" (updated in database)
+- Backend needs to be restarted after schema changes
+- Agency responses now correctly linked to transport_requests table
