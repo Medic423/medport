@@ -156,6 +156,13 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
       // Load available trips (PENDING status)
       const availableResponse = await api.get('/api/trips?status=PENDING');
       
+      // Load agency responses for this agency to check if we've already responded to each trip
+      const responsesResponse = await api.get('/api/agency-responses');
+      const agencyResponses = responsesResponse.data?.data || [];
+      
+      // Create a set of trip IDs that this agency has already responded to
+      const respondedTrips = new Set(agencyResponses.map((r: any) => r.tripId));
+      
       if (availableResponse.data) {
         const availableData = availableResponse.data;
         if (availableData.success && availableData.data) {
@@ -207,7 +214,10 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
               distance: distance,
               estimatedTime: estimatedTime,
               requestTime: new Date(trip.createdAt).toLocaleString(),
-              scheduledTime: trip.scheduledTime
+              scheduledTime: trip.scheduledTime,
+              assignedUnitId: trip.assignedUnitId, // Track if this agency already assigned a unit
+              assignedUnit: trip.assignedUnit, // Include unit info if assigned
+              hasResponded: respondedTrips.has(trip.id) // Check if this agency has already responded
             };
           }));
           setAvailableTrips(transformedAvailable);
@@ -500,7 +510,7 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
       // First, create an agency response (accept the trip)
       const payload = {
         tripId,
-        agencyId: user.id, // Use user.id for EMS users (it's their agency ID)
+        agencyId: user.agencyId || user.id, // Use agencyId when available
         response: 'ACCEPTED',
         responseNotes: 'Accepted by EMS agency'
       };
@@ -528,7 +538,7 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
       // Create a declined agency response
       const response = await api.post('/api/agency-responses', {
         tripId,
-        agencyId: user.agencyId || user.id,
+        agencyId: user.agencyId || user.id, // Use agencyId when available
         response: 'DECLINED',
         responseNotes: 'Declined by EMS agency'
       });
@@ -771,18 +781,29 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
                         PENDING
                       </span>
                       <div className="flex space-x-2 ml-4">
-                        <button
-                          onClick={() => handleAcceptTrip(trip.id)}
-                          className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 text-sm font-medium"
-                        >
-                          Accept
-                        </button>
-                        <button
-                          onClick={() => handleDeclineTrip(trip.id)}
-                          className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 text-sm font-medium"
-                        >
-                          Decline
-                        </button>
+                        {/* Only show Accept button if this agency hasn't already responded */}
+                        {!trip.hasResponded && (
+                          <button
+                            onClick={() => handleAcceptTrip(trip.id)}
+                            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 text-sm font-medium"
+                          >
+                            Accept
+                          </button>
+                        )}
+                        {trip.hasResponded && (
+                          <span className="text-sm text-green-600 font-medium">
+                            ✓ You responded
+                          </span>
+                        )}
+                        {/* Decline button - only show if not yet responded */}
+                        {!trip.hasResponded && (
+                          <button
+                            onClick={() => handleDeclineTrip(trip.id)}
+                            className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 text-sm font-medium"
+                          >
+                            Decline
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

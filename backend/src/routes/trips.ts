@@ -653,9 +653,20 @@ router.put('/:id/assign-unit', async (req, res) => {
       });
     }
 
+    // Get current trip to preserve status
+    const currentTrip = await tripService.getTripById(id);
+    if (!currentTrip.success) {
+      return res.status(404).json({
+        success: false,
+        error: 'Trip not found'
+      });
+    }
+
     // Use the existing updateTripStatus method to assign the unit
+    // DO NOT change status to ACCEPTED - leave it PENDING until healthcare selects an agency
+    const currentStatus = (currentTrip.data?.status as any) || 'PENDING';
     const result = await tripService.updateTripStatus(id, {
-      status: 'ACCEPTED', // Keep current status or set to ACCEPTED
+      status: currentStatus, // Preserve current status (should be PENDING)
       assignedUnitId: unitId,
       assignedAgencyId: agencyId
     });

@@ -29,6 +29,8 @@ const UnitSelectionModal: React.FC<UnitSelectionModalProps> = ({ isOpen, tripId,
         const res = await unitsAPI.getOnDuty();
         const data = res.data;
         console.log('TCC_DEBUG: UnitSelectionModal - Units response:', { count: data.data?.length, units: data.data });
+        console.log('TCC_DEBUG: UnitSelectionModal - Current user agency:', { id: storedUser.id, agencyId: storedUser.agencyId, agencyName: storedUser.agencyName });
+        console.log('TCC_DEBUG: UnitSelectionModal - Units with agency info:', data.data?.map((u: any) => ({ id: u.id, unitNumber: u.unitNumber, agencyId: u.agencyId, type: u.type })));
         
         if (data.success && Array.isArray(data.data)) {
           setUnits(data.data);
@@ -56,12 +58,37 @@ const UnitSelectionModal: React.FC<UnitSelectionModalProps> = ({ isOpen, tripId,
     setError(null);
     try {
       const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      
+      // First, get the agency response for this trip and agency
+      console.log('TCC_DEBUG: UnitSelectionModal - Getting agency responses for trip:', tripId);
+      console.log('TCC_DEBUG: UnitSelectionModal - Looking for response from agency:', storedUser.agencyId || storedUser.id);
+      
+      const responses = await api.get(`/api/agency-responses?tripId=${tripId}`);
+      const agencyResponses = responses.data?.data || [];
+      console.log('TCC_DEBUG: UnitSelectionModal - Found agency responses:', agencyResponses.map((r: any) => ({ id: r.id, agencyId: r.agencyId, response: r.response })));
+      
+      const myResponse = agencyResponses.find((r: any) => r.agencyId === (storedUser.agencyId || storedUser.id));
+      console.log('TCC_DEBUG: UnitSelectionModal - My agency response:', myResponse);
+      
+      if (!myResponse) {
+        throw new Error('No agency response found for this trip');
+      }
+      
+      // Update the agency response with the unit assignment
+      console.log('TCC_DEBUG: UnitSelectionModal - Updating agency response:', myResponse.id, 'with unit:', selectedUnitId);
+      await api.put(`/api/agency-responses/${myResponse.id}`, {
+        assignedUnitId: selectedUnitId
+      });
+      console.log('TCC_DEBUG: UnitSelectionModal - Successfully updated agency response with unit assignment');
+      
+      // Also update the trip to track assigned unit (for legacy compatibility)
       await tripsAPI.updateStatus(tripId, {
-        status: 'ACCEPTED',
+        status: 'PENDING', // Keep as PENDING until healthcare selects an agency
         assignedUnitId: selectedUnitId,
         assignedAgencyId: storedUser.agencyId || storedUser.id,
-        acceptedTimestamp: new Date().toISOString(),
+        // Do NOT set acceptedTimestamp - will be set when healthcare selects this agency
       });
+      
       onAssigned();
       onClose();
     } catch (e: any) {

@@ -83,7 +83,8 @@ router.put('/:id', async (req, res) => {
     const {
       response,
       responseNotes,
-      estimatedArrival
+      estimatedArrival,
+      assignedUnitId
     } = req.body;
 
     if (response && !['ACCEPTED', 'DECLINED'].includes(response)) {
@@ -96,7 +97,8 @@ router.put('/:id', async (req, res) => {
     const result = await tripService.updateAgencyResponse(id, {
       response,
       responseNotes,
-      estimatedArrival
+      estimatedArrival,
+      assignedUnitId
     });
 
     if (!result.success) {

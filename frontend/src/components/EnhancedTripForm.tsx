@@ -151,6 +151,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
 
   const [destinationMode, setDestinationMode] = useState<'select' | 'manual'>('select');
   const [loadingPickupLocations, setLoadingPickupLocations] = useState(false);
+  const [loadingFormData, setLoadingFormData] = useState(true); // Track when form options are being loaded
   // Phase A: Geographic filtering state
   const [showAllStates, setShowAllStates] = useState(false);
   
@@ -324,6 +325,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
   }, [currentStep, formData.fromLocation, formOptions.facilities]);
 
   const loadFormOptions = async () => {
+    setLoadingFormData(true); // Start loading
     try {
       console.log('TCC_DEBUG: Loading real form options from API...');
       
@@ -491,8 +493,11 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
       } catch (e) {
         console.warn('TCC_DEBUG: Defaults not available yet');
       }
+      
+      setLoadingFormData(false); // Done loading
     } catch (error) {
       console.error('Error loading form options:', error);
+      setLoadingFormData(false); // Done loading even on error
       // Fallback to basic options if API fails
       const fallbackOptions: FormOptions = {
         diagnosis: ['Cardiac', 'Respiratory', 'Neurological', 'Trauma'],
@@ -719,6 +724,13 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('TCC_DEBUG: handleSubmit called, current step:', currentStep);
+    
+    // Prevent submission if data is still loading
+    if (loadingFormData) {
+      console.log('TCC_DEBUG: Form data is still loading, please wait...');
+      setError('Please wait for form data to finish loading');
+      return;
+    }
     
     // Only allow submission on the final step
     if (currentStep < steps.length) {

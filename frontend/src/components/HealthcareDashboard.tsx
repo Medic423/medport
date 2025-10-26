@@ -809,7 +809,15 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                                trip.agencyResponses.filter((r: any) => r.isSelected).length === 0 && (
                                 <div className="mt-2 border border-gray-300 rounded-lg p-3 bg-white">
                                   <p className="text-xs font-medium text-gray-700 mb-2">Select Agency:</p>
-                                  {trip.agencyResponses.filter((r: any) => r.response === 'ACCEPTED').map((response: any) => (
+                                  {trip.agencyResponses.filter((r: any) => r.response === 'ACCEPTED').map((response: any) => {
+                                    console.log('TCC_DEBUG: HealthcareDashboard - Rendering agency response:', {
+                                      id: response.id,
+                                      agency: response.agency?.name,
+                                      agencyId: response.agencyId,
+                                      assignedUnitId: response.assignedUnitId,
+                                      assignedUnit: response.assignedUnit
+                                    });
+                                    return (
                                     <div key={response.id} className="flex items-center justify-between py-2 border-b border-gray-200 last:border-b-0">
                                       <div>
                                         <p className="text-sm font-medium text-gray-900">{response.agency?.name || 'Unknown Agency'}</p>
@@ -819,9 +827,9 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                                         <p className="text-xs text-gray-500">
                                           Transport: {response.trip?.transportLevel || 'N/A'} • {response.trip?.urgencyLevel || 'N/A'}
                                         </p>
-                                        {response.trip?.assignedUnit && (
+                                        {response.assignedUnit && (
                                           <p className="text-xs text-green-600">
-                                            Assigned Unit: {response.trip.assignedUnit.unitNumber} ({response.trip.assignedUnit.type})
+                                            Assigned Unit: {response.assignedUnit.unitNumber} ({response.assignedUnit.type})
                                           </p>
                                         )}
                                       </div>
@@ -840,7 +848,8 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                                         </button>
                                       </div>
                                     </div>
-                                  ))}
+                                  );
+                                  })}
                                 </div>
                               )}
                             </div>

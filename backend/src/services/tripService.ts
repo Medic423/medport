@@ -1076,13 +1076,21 @@ export class TripService {
       if (data.estimatedArrival !== undefined) {
         updateData.estimatedArrival = data.estimatedArrival ? new Date(data.estimatedArrival) : null;
       }
+      if (data.assignedUnitId !== undefined) {
+        updateData.assignedUnitId = data.assignedUnitId;
+        console.log('TCC_DEBUG: Setting assignedUnitId on agency response:', data.assignedUnitId);
+      }
       
+      console.log('TCC_DEBUG: Update data for agency response:', updateData);
       const response = await prisma.agencyResponse.update({
         where: { id },
-        data: updateData
+        data: updateData,
+        include: {
+          assignedUnit: true
+        }
       });
       
-      console.log('TCC_DEBUG: Agency response updated successfully:', response.id);
+      console.log('TCC_DEBUG: Agency response updated successfully:', { id: response.id, assignedUnitId: response.assignedUnitId, assignedUnit: response.assignedUnit });
       return { success: true, data: response, error: null };
     } catch (error) {
       console.error('TCC_DEBUG: Error updating agency response:', error);
@@ -1104,9 +1112,12 @@ export class TripService {
       if (filters.response) where.response = filters.response;
       if (filters.isSelected !== undefined) where.isSelected = filters.isSelected;
       
-      // Get all agency responses from the agency_responses table
+      // Get all agency responses from the agency_responses table, including assigned units
       const agencyResponses = await prisma.agencyResponse.findMany({
         where,
+        include: {
+          assignedUnit: true // Include the unit assigned by this specific agency
+        },
         orderBy: { responseTimestamp: 'desc' }
       });
       
@@ -1182,6 +1193,12 @@ export class TripService {
           responseNotes: response.responseNotes || '',
           estimatedArrival: response.estimatedArrival,
           isSelected: response.isSelected,
+          assignedUnitId: response.assignedUnitId,
+          assignedUnit: response.assignedUnit ? {
+            id: response.assignedUnit.id,
+            unitNumber: response.assignedUnit.unitNumber,
+            type: response.assignedUnit.type
+          } : null,
           createdAt: response.createdAt,
           updatedAt: response.updatedAt,
           trip: trip ? {
@@ -1190,8 +1207,7 @@ export class TripService {
             fromLocation: trip.fromLocation,
             toLocation: trip.toLocation,
             transportLevel: trip.transportLevel,
-            urgencyLevel: trip.urgencyLevel,
-            assignedUnit: trip.assignedUnit
+            urgencyLevel: trip.urgencyLevel
           } : null
         };
       });

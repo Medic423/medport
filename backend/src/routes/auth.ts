@@ -726,7 +726,8 @@ router.post('/ems/login', async (req, res) => {
       { 
         id: user.id, // Use user ID for EMS users
         email: user.email, 
-        userType: 'EMS' 
+        userType: 'EMS',
+        agencyId: user.agencyId || user.id // Include agencyId in JWT for filtering
       },
       process.env.JWT_SECRET || 'fallback-secret',
       { expiresIn: '24h' }
@@ -748,7 +749,8 @@ router.post('/ems/login', async (req, res) => {
         email: user.email,
         name: user.name,
         userType: 'EMS',
-        agencyName: user.agencyName
+        agencyName: user.agencyName,
+        agencyId: user.agencyId || user.id // Use agencyId if available, fallback to user id for legacy
       },
       token
     });
