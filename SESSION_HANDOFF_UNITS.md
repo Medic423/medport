@@ -2,7 +2,43 @@
 
 **Date**: 2025-10-26  
 **Branch**: `feature/restore-agency-bidding`  
-**Status**: Debugging in progress - unit assignments not properly isolated by agency
+**Status**: ✅ Simplified flow implemented - unit assignment moved to post-selection
+
+---
+
+## FIXES APPLIED (2025-10-26 Session)
+
+### ✅ Fixed: Simplified Unit Assignment Flow
+**Problem**: Unit assignment happening during bid acceptance created complex multi-agency unit isolation issues.  
+**Solution**: Implemented simplified flow:
+1. Healthcare creates trip → Status = PENDING
+2. Agency accepts trip → No unit assignment yet
+3. Healthcare selects agency → Trip status = ACCEPTED
+4. Selected agency assigns unit → After healthcare makes selection
+
+**Changes Made**:
+- Removed UnitSelectionModal from EMS accept flow (`EMSDashboard.tsx`)
+- Removed unit assignment from unit selection modal (`UnitSelectionModal.tsx`)
+- Removed `assignedAgencyId` from trip update during unit assignment
+- Accept button now only creates AgencyResponse record
+
+### ✅ Fixed: Duplicate PUT Route Handlers
+**File**: `backend/src/routes/units.ts`  
+**Problem**: Had two handlers for `PUT /:id` - line 224 (no agencyId) and line 295 (with agencyId). Second handler was overriding first but not being called properly.  
+**Solution**: Removed the first handler (lines 224-252), keeping only the one that passes `agencyId` to `updateUnit()`.  
+**Result**: Unit updates now properly verify agency ownership before allowing changes.
+
+### ✅ Fixed: Missing Agency Check in deleteUnit
+**File**: `backend/src/services/unitService.ts`  
+**Problem**: `deleteUnit()` method was deleting units without verifying they belong to the requesting agency.  
+**Solution**: Added agency ownership verification (mirrors the logic in `updateUnit()`).  
+**Result**: Deleting a unit now throws error "Unit does not belong to your agency" if attempting to delete another agency's unit.
+
+### Testing Status
+- ✅ Backend server restarted with fixes
+- ⏳ Need to test: Simplified accept flow
+- ⏳ Need to test: Unit assignment after healthcare selects agency
+- ⏳ Need to test: Verify units are properly assigned to selected agency only
 
 ---
 
@@ -221,8 +257,21 @@ console.log('My agencyId:', storedUser.agencyId);
 ## Git Status
 
 **Current Branch**: `feature/restore-agency-bidding`  
-**Commits**: Multiple commits ahead of origin  
-**Status**: Working fixes implemented, debugging unit isolation
+**Commits**: 10 commits ahead of origin  
+**Status**: Partial fixes implemented, still debugging unit isolation
 
-**Recommended**: Commit current state before continuing debugging
+**What's Working**:
+- Multi-agency bidding (agencies can accept same trip)
+- JWT includes agencyId for filtering
+- Accept button checks hasResponded
+- Database schema supports per-agency unit assignment
+
+**Still Broken**:
+- Unit editing affects all agencies globally
+- Units may appear in wrong agency's list
+- Healthcare dashboard shows same unit for multiple agencies
+
+**Recommended**: 
+- Option A: Commit to branch and continue debugging (safer)
+- Option B: Cherry-pick working features to main, continue debugging in branch (requires careful review)
 
