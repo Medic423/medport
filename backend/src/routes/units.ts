@@ -317,7 +317,7 @@ router.put('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => 
       });
     }
 
-    const unit = await unitService.updateUnit(id, unitData);
+    const unit = await unitService.updateUnit(id, unitData, agencyId);
     console.log('🔍 Units API PUT: unit updated:', unit);
     
     res.json({

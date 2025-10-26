@@ -87,6 +87,7 @@ export interface UnitFormData {
   capabilities: UnitCapability[];
   customCapabilities?: string[];
   isActive: boolean;
+  status?: UnitStatus;
 }
 
 export interface UnitStatusUpdate {

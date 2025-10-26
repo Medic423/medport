@@ -28,6 +28,7 @@ const emsAnalytics_1 = __importDefault(require("./routes/emsAnalytics"));
 const backup_1 = __importDefault(require("./routes/backup"));
 const maintenance_1 = __importDefault(require("./routes/maintenance"));
 const healthcareLocations_1 = __importDefault(require("./routes/healthcareLocations"));
+const agency_1 = __importDefault(require("./routes/agency"));
 // Load environment variables
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -103,6 +104,7 @@ app.use('/api/ems/analytics', emsAnalytics_1.default);
 app.use('/api/backup', backup_1.default);
 app.use('/api/maintenance', maintenance_1.default);
 app.use('/api/healthcare/locations', healthcareLocations_1.default);
+app.use('/api/agency', agency_1.default);
 // Public endpoints for healthcare users
 app.get('/api/public/categories', async (req, res) => {
     try {

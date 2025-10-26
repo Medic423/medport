@@ -26,6 +26,7 @@ export interface UnitFormData {
   type: 'AMBULANCE' | 'HELICOPTER' | 'FIRE_TRUCK' | 'RESCUE_VEHICLE';
   capabilities: string[];
   customCapabilities: string[];
+  status?: 'AVAILABLE' | 'COMMITTED' | 'OUT_OF_SERVICE' | 'MAINTENANCE' | 'OFF_DUTY' | 'ON_CALL';
   currentStatus?: 'AVAILABLE' | 'COMMITTED' | 'OUT_OF_SERVICE' | 'MAINTENANCE' | 'OFF_DUTY' | 'ON_CALL';
   isActive: boolean;
 }
@@ -259,11 +260,29 @@ class UnitService {
   /**
    * Update a unit
    */
-  async updateUnit(unitId: string, unitData: UnitFormData): Promise<Unit> {
+  async updateUnit(unitId: string, unitData: UnitFormData, agencyId?: string): Promise<Unit> {
     try {
-      console.log('TCC_DEBUG: updateUnit called with unitId:', unitId, 'data:', unitData);
+      console.log('TCC_DEBUG: updateUnit called with unitId:', unitId, 'data:', unitData, 'agencyId:', agencyId);
       
       const prisma = databaseManager.getEMSDB();
+      
+      // If agencyId is provided, verify the unit belongs to that agency
+      if (agencyId) {
+        const existingUnit = await prisma.unit.findUnique({
+          where: { id: unitId },
+          select: { agencyId: true }
+        });
+        
+        if (!existingUnit) {
+          throw new Error('Unit not found');
+        }
+        
+        if (existingUnit.agencyId !== agencyId) {
+          throw new Error('Unit does not belong to your agency');
+        }
+        
+        console.log('TCC_DEBUG: Unit ownership verified');
+      }
       
       // Update the unit in the database
       const updatedUnit = await prisma.unit.update({
@@ -272,8 +291,8 @@ class UnitService {
           unitNumber: unitData.unitNumber,
           type: unitData.type,
           capabilities: unitData.capabilities,
-          status: unitData.currentStatus || 'AVAILABLE',
-          currentStatus: unitData.currentStatus || 'AVAILABLE',
+          status: (unitData as any).status || unitData.currentStatus || 'AVAILABLE',
+          currentStatus: (unitData as any).status || unitData.currentStatus || 'AVAILABLE',
           isActive: unitData.isActive,
           lastStatusUpdate: new Date(),
           updatedAt: new Date()

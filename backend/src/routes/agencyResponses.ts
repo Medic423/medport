@@ -1,6 +1,9 @@
 import express from 'express';
 import { tripService } from '../services/tripService';
 import { authenticateAdmin, AuthenticatedRequest } from '../middleware/authenticateAdmin';
+import { databaseManager } from '../services/databaseManager';
+
+const prisma = databaseManager.getPrismaClient();
 
 const router = express.Router();
 
@@ -188,25 +191,30 @@ router.get('/:id', async (req, res) => {
 });
 
 /**
- * POST /api/agency-responses/select/:tripId
- * Select an agency for a trip
+ * POST /api/agency-responses/:responseId/select
+ * Select an agency response (mark as selected)
  */
-router.post('/select/:tripId', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
+router.post('/:responseId/select', async (req, res) => {
   try {
-    console.log('TCC_DEBUG: Select agency for trip request:', { tripId: req.params.tripId, body: req.body });
+    console.log('TCC_DEBUG: Select agency response request:', { responseId: req.params.responseId, body: req.body });
     
-    const { tripId } = req.params;
-    const { agencyResponseId, selectionNotes } = req.body;
+    const { responseId } = req.params;
+    const { selectionNotes } = req.body;
 
-    if (!agencyResponseId) {
-      return res.status(400).json({
+    // Get the agency response to find the trip ID
+    const agencyResponse = await prisma.agencyResponse.findUnique({
+      where: { id: responseId }
+    });
+
+    if (!agencyResponse) {
+      return res.status(404).json({
         success: false,
-        error: 'Missing required field: agencyResponseId'
+        error: 'Agency response not found'
       });
     }
 
-    const result = await tripService.selectAgencyForTrip(tripId, {
-      agencyResponseId,
+    const result = await tripService.selectAgencyForTrip(agencyResponse.tripId, {
+      agencyResponseId: responseId,
       selectionNotes
     });
 

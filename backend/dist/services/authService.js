@@ -179,7 +179,8 @@ class AuthService {
                 userType: decoded.userType,
                 facilityName: decoded.userType === 'HEALTHCARE' ? user.facilityName : undefined,
                 agencyName: decoded.userType === 'EMS' ? user.agencyName : undefined,
-                agencyId: decoded.userType === 'EMS' ? user.agencyId : undefined
+                agencyId: decoded.userType === 'EMS' ? user.agencyId : undefined,
+                manageMultipleLocations: decoded.userType === 'HEALTHCARE' ? user.manageMultipleLocations : undefined
             };
         }
         catch (error) {

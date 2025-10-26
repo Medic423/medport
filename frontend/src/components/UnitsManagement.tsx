@@ -61,7 +61,8 @@ const UnitsManagement: React.FC<UnitsManagementProps> = ({ user, acceptedTrips =
     type: 'AMBULANCE',
     capabilities: ['BLS'],
     customCapabilities: [],
-    isActive: true
+    isActive: true,
+    status: 'AVAILABLE'
   });
 
   const [formLoading, setFormLoading] = useState(false);
@@ -266,7 +267,8 @@ const UnitsManagement: React.FC<UnitsManagementProps> = ({ user, acceptedTrips =
       type: 'AMBULANCE',
       capabilities: ['BLS'],
       customCapabilities: [],
-      isActive: true
+      isActive: true,
+      status: 'AVAILABLE'
     });
     setFormError(null);
   };
@@ -279,7 +281,8 @@ const UnitsManagement: React.FC<UnitsManagementProps> = ({ user, acceptedTrips =
       type: unit.type,
       capabilities: unit.capabilities,
       customCapabilities: [],
-      isActive: unit.isActive
+      isActive: unit.isActive,
+      status: unit.currentStatus
     });
     setShowEditModal(true);
   };
@@ -693,6 +696,25 @@ const UnitsManagement: React.FC<UnitsManagementProps> = ({ user, acceptedTrips =
                   </div>
                 </div>
 
+                {selectedUnit && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Current Status
+                    </label>
+                    <select
+                      value={formData.status}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value as UnitStatus })}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    >
+                      {Object.entries(UNIT_STATUS_LABELS).map(([value, label]) => (
+                        <option key={value} value={value}>{label}</option>
+                      ))}
+                    </select>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Manually set the unit's status. This overrides automatic status changes.
+                    </p>
+                  </div>
+                )}
 
                 <div className="flex items-center">
                   <input

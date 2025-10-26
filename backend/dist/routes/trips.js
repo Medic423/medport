@@ -293,7 +293,7 @@ router.put('/:id/status', async (req, res) => {
     try {
         console.log('TCC_DEBUG: Update trip status request:', { id: req.params.id, body: req.body });
         const { id } = req.params;
-        const { status, assignedAgencyId, assignedUnitId, acceptedTimestamp, pickupTimestamp, arrivalTimestamp, departureTimestamp, completionTimestamp, urgencyLevel, transportLevel, diagnosis, mobilityLevel, insuranceCompany, specialNeeds, oxygenRequired, monitoringRequired, } = req.body;
+        const { status, assignedAgencyId, assignedUnitId, acceptedTimestamp, pickupTimestamp, arrivalTimestamp, departureTimestamp, completionTimestamp, urgencyLevel, transportLevel, diagnosis, mobilityLevel, insuranceCompany, specialNeeds, oxygenRequired, monitoringRequired, pickupLocation, } = req.body;
         if (!status) {
             return res.status(400).json({
                 success: false,
@@ -323,6 +323,7 @@ router.put('/:id/status', async (req, res) => {
             specialNeeds,
             oxygenRequired,
             monitoringRequired,
+            pickupLocation,
         };
         const result = await tripService_1.tripService.updateTripStatus(id, updateData);
         if (!result.success) {
@@ -536,6 +537,47 @@ router.get('/agencies/:hospitalId', authenticateAdmin_1.authenticateAdmin, async
         res.status(500).json({
             success: false,
             error: 'Failed to get agencies for hospital'
+        });
+    }
+});
+/**
+ * PUT /api/trips/:id/assign-unit
+ * Assign a unit to a trip
+ */
+router.put('/:id/assign-unit', async (req, res) => {
+    try {
+        console.log('TCC_DEBUG: Assign unit request:', { id: req.params.id, body: req.body });
+        const { id } = req.params;
+        const { unitId, agencyId } = req.body;
+        if (!unitId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Unit ID is required'
+            });
+        }
+        // Use the existing updateTripStatus method to assign the unit
+        const result = await tripService_1.tripService.updateTripStatus(id, {
+            status: 'ACCEPTED', // Keep current status or set to ACCEPTED
+            assignedUnitId: unitId,
+            assignedAgencyId: agencyId
+        });
+        if (!result.success) {
+            return res.status(400).json({
+                success: false,
+                error: result.error
+            });
+        }
+        res.json({
+            success: true,
+            message: 'Unit assigned successfully',
+            data: result.data
+        });
+    }
+    catch (error) {
+        console.error('TCC_DEBUG: Assign unit error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to assign unit to trip'
         });
     }
 });

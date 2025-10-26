@@ -28,6 +28,8 @@ class HealthcareLocationsService {
                 facilityType: locationData.facilityType,
                 isActive: locationData.isActive ?? true,
                 isPrimary: locationData.isPrimary ?? false,
+                latitude: locationData.latitude,
+                longitude: locationData.longitude,
             },
         });
         console.log('MULTI_LOC: Location created successfully:', location.id);

@@ -29,6 +29,13 @@ export interface UpdateTripStatusRequest {
     specialNeeds?: string;
     oxygenRequired?: boolean;
     monitoringRequired?: boolean;
+    pickupLocation?: {
+        name?: string;
+        floor?: string;
+        room?: string;
+        contactPhone?: string;
+        contactEmail?: string;
+    };
 }
 export interface EnhancedCreateTripRequest {
     patientId?: string;
@@ -124,6 +131,8 @@ export declare class TripService {
     }): Promise<{
         success: boolean;
         data: ({
+            distanceMiles: number;
+            estimatedTripTimeMinutes: number;
             healthcareLocation: {
                 id: string;
                 facilityType: string;
@@ -144,6 +153,8 @@ export declare class TripService {
             pickupLocation: {
                 id: string;
                 name: string;
+                contactPhone: string | null;
+                contactEmail: string | null;
                 floor: string | null;
                 room: string | null;
             } | null;
@@ -156,7 +167,84 @@ export declare class TripService {
                 type: string;
                 unitNumber: string;
             } | null;
-        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            status: string;
+            tripNumber: string | null;
+            patientId: string;
+            patientWeight: string | null;
+            specialNeeds: string | null;
+            originFacilityId: string | null;
+            destinationFacilityId: string | null;
+            fromLocation: string | null;
+            toLocation: string | null;
+            fromLocationId: string | null;
+            isMultiLocationFacility: boolean;
+            scheduledTime: Date | null;
+            transportLevel: string;
+            urgencyLevel: string | null;
+            priority: string;
+            specialRequirements: string | null;
+            diagnosis: string | null;
+            mobilityLevel: string | null;
+            oxygenRequired: boolean;
+            monitoringRequired: boolean;
+            generateQRCode: boolean;
+            qrCodeData: string | null;
+            selectedAgencies: string[];
+            notificationRadius: number | null;
+            requestTimestamp: Date;
+            acceptedTimestamp: Date | null;
+            pickupTimestamp: Date | null;
+            arrivalTimestamp: Date | null;
+            departureTimestamp: Date | null;
+            completionTimestamp: Date | null;
+            pickupLocationId: string | null;
+            assignedAgencyId: string | null;
+            assignedUnitId: string | null;
+            createdById: string | null;
+            healthcareCreatedById: string | null;
+            isolation: boolean;
+            bariatric: boolean;
+            notes: string | null;
+        } | {
+            distanceMiles: null;
+            estimatedTripTimeMinutes: null;
+            healthcareLocation: {
+                id: string;
+                facilityType: string;
+                city: string;
+                state: string;
+                locationName: string;
+            } | null;
+            originFacility: {
+                id: string;
+                name: string;
+                type: string;
+            } | null;
+            destinationFacility: {
+                id: string;
+                name: string;
+                type: string;
+            } | null;
+            pickupLocation: {
+                id: string;
+                name: string;
+                contactPhone: string | null;
+                contactEmail: string | null;
+                floor: string | null;
+                room: string | null;
+            } | null;
+            assignedUnit: {
+                id: string;
+                agency: {
+                    id: string;
+                    name: string;
+                };
+                type: string;
+                unitNumber: string;
+            } | null;
             id: string;
             createdAt: Date;
             updatedAt: Date;
@@ -228,6 +316,8 @@ export declare class TripService {
             pickupLocation: {
                 id: string;
                 name: string;
+                contactPhone: string | null;
+                contactEmail: string | null;
                 floor: string | null;
                 room: string | null;
             } | null;
