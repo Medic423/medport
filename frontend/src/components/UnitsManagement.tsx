@@ -198,36 +198,7 @@ const UnitsManagement: React.FC<UnitsManagementProps> = ({ user, acceptedTrips =
   };
 
   // Handle duty status toggle
-  const handleToggleDuty = async (unitId: string, currentStatus: boolean) => {
-    try {
-      console.log('🔍 UnitsManagement: Toggling duty status for unit:', unitId, 'from', currentStatus, 'to', !currentStatus);
-      
-      const api = (await import('../services/api')).default;
-      const response = await api.patch(`/api/units/${unitId}/duty`, {
-        isActive: !currentStatus
-      });
-      
-      const data = response.data;
-      if (data.success) {
-        // Update local state immediately for better UX
-        setUnits(prev => prev.map(unit => 
-          unit.id === unitId 
-            ? { ...unit, isActive: !currentStatus }
-            : unit
-        ));
-        
-        // Refresh analytics to update counts
-        await fetchAnalytics();
-        
-        console.log('🔍 UnitsManagement: Duty status updated successfully');
-      } else {
-        throw new Error(data.error || 'Failed to update duty status');
-      }
-    } catch (error: any) {
-      console.error('Error updating duty status:', error);
-      setError(error.message || 'Failed to update duty status');
-    }
-  };
+  // handleToggleDuty removed - now using only status field instead of isActive
 
   // Handle status update
   const handleStatusUpdate = async (unitId: string, newStatus: UnitStatus) => {
@@ -538,9 +509,6 @@ const UnitsManagement: React.FC<UnitsManagementProps> = ({ user, acceptedTrips =
                       Status
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      On Duty
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Capabilities
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -566,19 +534,6 @@ const UnitsManagement: React.FC<UnitsManagementProps> = ({ user, acceptedTrips =
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {getStatusBadge(unit.currentStatus)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <label className="flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={unit.isActive}
-                            onChange={() => handleToggleDuty(unit.id, unit.isActive)}
-                            className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
-                          />
-                          <span className="ml-2 text-sm text-gray-700">
-                            {unit.isActive ? 'On Duty' : 'Off Duty'}
-                          </span>
-                        </label>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex flex-wrap gap-1">

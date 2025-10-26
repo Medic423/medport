@@ -628,17 +628,7 @@ const TCCUnitsManagement: React.FC = () => {
                   </select>
                 </div>
 
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    name="isActive"
-                    checked={editFormData.isActive}
-                    onChange={handleEditInputChange}
-                    className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-                  />
-                  <label className="ml-2 text-sm text-gray-700">On Duty</label>
-                  <p className="ml-2 text-xs text-gray-500">Check if unit is currently on duty</p>
-                </div>
+                {/* isActive checkbox removed - now using only status field */}
 
                 {editError && (
                   <div className="bg-red-50 border border-red-200 rounded-md p-3">

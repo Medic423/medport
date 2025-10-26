@@ -57,6 +57,9 @@ interface FormData {
   selectedAgencies: string[];
   notificationRadius: number;
   
+  // Unit Assignment (Optional)
+  assignedUnitId: string;
+  
   // Additional Notes
   notes: string;
 }
@@ -107,6 +110,7 @@ interface FormOptions {
   agencies: any[];
   pickupLocations: PickupLocation[];
   healthcareLocations: HealthcareLocation[]; // ✅ NEW: Healthcare locations for multi-location users
+  availableUnits: any[]; // Available units for optional assignment
 }
 
 const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated, onCancel }) => {
@@ -124,7 +128,8 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
     facilities: [],
     agencies: [],
     pickupLocations: [],
-    healthcareLocations: [] // ✅ NEW: Healthcare locations for multi-location users
+    healthcareLocations: [], // ✅ NEW: Healthcare locations for multi-location users
+    availableUnits: [] // Available units for optional assignment
   });
 
   const [formData, setFormData] = useState<FormData>({
@@ -146,6 +151,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
     monitoringRequired: false,
     selectedAgencies: [],
     notificationRadius: 100,
+    assignedUnitId: 'PENDING', // Default to PENDING - optional assignment
     notes: ''
   });
 
@@ -556,6 +562,50 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
     }
   };
 
+  const loadAvailableUnits = async () => {
+    try {
+      console.log('TCC_DEBUG: Loading available units for selected agencies:', formData.selectedAgencies);
+      
+      if (formData.selectedAgencies.length === 0) {
+        setFormOptions(prev => ({
+          ...prev,
+          availableUnits: []
+        }));
+        return;
+      }
+
+      // Load units from all selected agencies
+      const allUnits: any[] = [];
+      
+      for (const agencyId of formData.selectedAgencies) {
+        try {
+          const response = await unitsAPI.getByAgency(agencyId);
+          if (response.data?.success && Array.isArray(response.data.data)) {
+            // Only include available units
+            const availableUnits = response.data.data.filter((unit: any) => 
+              unit.currentStatus === 'AVAILABLE'
+            );
+            allUnits.push(...availableUnits);
+          }
+        } catch (error) {
+          console.warn('TCC_DEBUG: Failed to load units for agency:', agencyId, error);
+        }
+      }
+
+      console.log('TCC_DEBUG: Loaded available units:', allUnits.length);
+      setFormOptions(prev => ({
+        ...prev,
+        availableUnits: allUnits
+      }));
+    } catch (error) {
+      console.error('TCC_DEBUG: Error loading available units:', error);
+      setFormOptions(prev => ({
+        ...prev,
+        availableUnits: []
+      }));
+    }
+  };
+
   const loadPickupLocationsForHospital = async (hospitalId: string) => {
     try {
       setLoadingPickupLocations(true);
@@ -687,9 +737,15 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
       ...prev,
       selectedAgencies: prev.selectedAgencies.includes(agencyId)
         ? prev.selectedAgencies.filter(id => id !== agencyId)
-        : [...prev.selectedAgencies, agencyId]
+        : [...prev.selectedAgencies, agencyId],
+      assignedUnitId: 'PENDING' // Reset unit selection when agencies change
     }));
   };
+
+  // Load available units when selected agencies change
+  useEffect(() => {
+    loadAvailableUnits();
+  }, [formData.selectedAgencies]);
 
   const generatePatientId = () => {
     // Generate a random patient ID (in real app, this would be more sophisticated)
@@ -823,7 +879,8 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
         // ✅ TCC Command: Audit trail for trips created by admin/user
         createdByTCCUserId: (user.userType === 'ADMIN' || user.userType === 'USER') ? user.id : undefined,
         createdByTCCUserEmail: (user.userType === 'ADMIN' || user.userType === 'USER') ? user.email : undefined,
-        createdVia: (user.userType === 'ADMIN' || user.userType === 'USER') ? 'TCC_ADMIN_PORTAL' : 'HEALTHCARE_PORTAL'
+        createdVia: (user.userType === 'ADMIN' || user.userType === 'USER') ? 'TCC_ADMIN_PORTAL' : 'HEALTHCARE_PORTAL',
+        assignedUnitId: formData.assignedUnitId // Optional unit assignment
       };
 
       console.log('TCC_DEBUG: Submitting trip data:', tripData);
@@ -851,6 +908,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
             notificationRadius: formData.notificationRadius,
             notes: formData.notes,
             priority: (tripData as any).priority,
+            assignedUnitId: formData.assignedUnitId, // Optional unit assignment
             createdVia: 'HEALTHCARE_PORTAL'
           })
         : await tripsAPI.create(tripData);
@@ -1443,6 +1501,39 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
                 </div>
               )}
             </div>
+
+            {/* Unit Assignment (Optional) */}
+            {formData.selectedAgencies.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Unit Assignment (Optional)
+                </label>
+                <p className="text-xs text-gray-500 mb-3">
+                  You can optionally pre-assign a specific unit, or leave as "Pending" for later assignment.
+                </p>
+                
+                <select
+                  name="assignedUnitId"
+                  value={formData.assignedUnitId}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
+                >
+                  <option value="PENDING">Unit Assignment Pending</option>
+                  {formOptions.availableUnits.map((unit) => (
+                    <option key={unit.id} value={unit.id}>
+                      Unit {unit.unitNumber} - {unit.type} ({unit.agencyName || 'Unknown Agency'})
+                      {unit.currentStatus !== 'AVAILABLE' && ' - Not Available'}
+                    </option>
+                  ))}
+                </select>
+                
+                {formOptions.availableUnits.length === 0 && formData.selectedAgencies.length > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    No available units found for selected agencies. Unit assignment will remain pending.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         );
 
@@ -1496,6 +1587,15 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
                   <h4 className="font-medium text-gray-900 mb-2">Agency Selection</h4>
                   <p className="text-sm text-gray-600">Selected: {formData.selectedAgencies.length} agencies</p>
                   <p className="text-sm text-gray-600">Radius: {formData.notificationRadius} miles</p>
+                  <p className="text-sm text-gray-600">
+                    Unit Assignment: {formData.assignedUnitId === 'PENDING' 
+                      ? 'Pending (will be assigned later)'
+                      : (() => {
+                          const unit = formOptions.availableUnits.find(u => u.id === formData.assignedUnitId);
+                          return unit ? `Unit ${unit.unitNumber} (${unit.type})` : 'Unknown Unit';
+                        })()
+                    }
+                  </p>
                 </div>
               </div>
 

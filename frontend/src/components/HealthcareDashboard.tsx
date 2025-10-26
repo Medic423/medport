@@ -82,10 +82,10 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
     loadTrips();
     loadEditOptions();
     
-    // Set up auto-refresh every 30 seconds to catch status updates from EMS
+    // Set up auto-refresh every 15 seconds to catch status updates from EMS
     const interval = setInterval(() => {
       loadTrips();
-    }, 30000);
+    }, 15000);
     
     return () => clearInterval(interval);
   }, []);
@@ -811,7 +811,13 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                                trip.agencyResponses.filter((r: any) => r.isSelected).length === 0 && (
                                 <div className="mt-2 border border-gray-300 rounded-lg p-3 bg-white">
                                   <p className="text-xs font-medium text-gray-700 mb-2">Select Agency:</p>
-                                  {trip.agencyResponses.filter((r: any) => r.response === 'ACCEPTED').map((response: any) => {
+                                  {(() => {
+                                    const acceptedResponses = trip.agencyResponses.filter((r: any) => r.response === 'ACCEPTED');
+                                    console.log(`TCC_DEBUG: HealthcareDashboard - Trip ${trip.id} has ${trip.agencyResponses.length} total responses, ${acceptedResponses.length} accepted responses`);
+                                    console.log('TCC_DEBUG: HealthcareDashboard - All responses for trip:', trip.agencyResponses.map((r: any) => ({ id: r.id, agencyId: r.agencyId, response: r.response, responseValue: JSON.stringify(r.response), agencyName: r.agency?.name })));
+                                    console.log('TCC_DEBUG: HealthcareDashboard - Response values found:', [...new Set(trip.agencyResponses.map((r: any) => r.response))]);
+                                    return acceptedResponses;
+                                  })().map((response: any) => {
                                     console.log('TCC_DEBUG: HealthcareDashboard - Rendering agency response:', {
                                       id: response.id,
                                       agency: response.agency?.name,
