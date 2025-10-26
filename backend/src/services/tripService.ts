@@ -672,10 +672,13 @@ export class TripService {
 
       // Connect pickup location relation if provided
       if (data.pickupLocationId) {
+        console.log('TCC_DEBUG: Validating pickup location:', data.pickupLocationId);
         // First verify the pickup location exists
         const pickupLocation = await prisma.pickup_locations.findUnique({
           where: { id: data.pickupLocationId }
         });
+        
+        console.log('TCC_DEBUG: Pickup location lookup result:', pickupLocation ? `Found: ${pickupLocation.name}` : 'NOT FOUND');
         
         if (!pickupLocation) {
           console.error('TCC_DEBUG: Pickup location not found:', data.pickupLocationId);
@@ -687,14 +690,19 @@ export class TripService {
         
         console.log('TCC_DEBUG: Pickup location validated:', pickupLocation.name);
         tripData.pickupLocation = { connect: { id: data.pickupLocationId } };
+      } else {
+        console.log('TCC_DEBUG: No pickupLocationId provided, skipping pickup location connection');
       }
 
       // Connect healthcare location relation if provided
       if (data.fromLocationId) {
+        console.log('TCC_DEBUG: Validating healthcare location:', data.fromLocationId);
         // Verify the healthcare location exists
         const healthcareLocation = await prisma.healthcareLocation.findUnique({
           where: { id: data.fromLocationId }
         });
+        
+        console.log('TCC_DEBUG: Healthcare location lookup result:', healthcareLocation ? `Found: ${healthcareLocation.locationName}` : 'NOT FOUND');
         
         if (!healthcareLocation) {
           console.error('TCC_DEBUG: From Location not found:', data.fromLocationId);
@@ -706,6 +714,8 @@ export class TripService {
         
         console.log('TCC_DEBUG: Healthcare location validated:', healthcareLocation.locationName);
         tripData.healthcareLocation = { connect: { id: data.fromLocationId } };
+      } else {
+        console.log('TCC_DEBUG: No fromLocationId provided, skipping healthcare location connection');
       }
 
       const trip = await prisma.transportRequest.create({
