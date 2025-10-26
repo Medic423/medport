@@ -66,7 +66,7 @@ class UnitService {
       const prisma = databaseManager.getEMSDB();
       const units = await prisma.unit.findMany({
         where: {
-          isActive: true
+          // Remove isActive filter - show all units for admin users
         },
         include: {
           analytics: true,
@@ -115,8 +115,8 @@ class UnitService {
       const prisma = databaseManager.getEMSDB();
       const units = await prisma.unit.findMany({
         where: {
-          agencyId: agencyId,
-          isActive: true
+          agencyId: agencyId
+          // Remove isActive filter - show all units for agency (status filtering done elsewhere)
         },
         include: {
           analytics: true
@@ -438,8 +438,7 @@ class UnitService {
       const units = await prisma.unit.findMany({
         where: {
           agencyId: agencyId,
-          isActive: true,
-          status: 'AVAILABLE' // Only return units that are on-duty and available
+          status: 'AVAILABLE' // Only return units that are available (removes isActive dependency)
         },
         include: {
           analytics: true,

@@ -519,9 +519,6 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
       const response = await api.post('/api/agency-responses', payload);
 
       if (response.data && response.data.success) {
-        // Then open unit selection modal to assign a unit
-        setUnitModalTripId(tripId);
-        setIsUnitModalOpen(true);
         // Reload trips to show updated status
         await loadTrips();
       } else {
@@ -556,21 +553,27 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
   };
 
   const handleUpdateTripStatus = async (tripId: string, newStatus: string) => {
+    console.log('TCC_DEBUG: handleUpdateTripStatus called:', { tripId, newStatus });
     try {
-      const response = await api.put(`/trips/${tripId}/status`, {
+      const payload = {
         status: newStatus,
         ...(newStatus === 'IN_PROGRESS' && { pickupTimestamp: new Date().toISOString() }),
         ...(newStatus === 'COMPLETED' && { completionTimestamp: new Date().toISOString() })
-      });
+      };
+      console.log('TCC_DEBUG: Sending API request to /api/trips/' + tripId + '/status with payload:', payload);
+      
+      const response = await api.put(`/api/trips/${tripId}/status`, payload);
+      console.log('TCC_DEBUG: API response:', response.data);
 
       if (!response.data.success) {
         throw new Error(response.data.error || 'Failed to update trip status');
       }
 
+      console.log('TCC_DEBUG: Trip status updated successfully, reloading trips...');
       // Reload trips to get updated data
       await loadTrips();
     } catch (error: any) {
-      console.error('Error updating trip status:', error);
+      console.error('TCC_DEBUG: Error updating trip status:', error);
       setError(error.message || 'Failed to update trip status');
     }
   };

@@ -98,6 +98,7 @@ export class TripService {
         urgencyLevel: data.urgencyLevel || 'Routine',
         priority: data.priority,
         status: 'PENDING',
+        assignedUnitId: 'PENDING', // Default to PENDING - unit assignment is optional
         specialRequirements: data.specialNeeds || null,
         diagnosis: null,
         mobilityLevel: null,
