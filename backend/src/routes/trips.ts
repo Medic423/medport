@@ -194,6 +194,12 @@ router.post('/enhanced', authenticateAdmin, async (req: AuthenticatedRequest, re
 
     const result = await tripService.createEnhancedTrip(enhancedTripData);
     
+    if (!result.success) {
+      console.error('TCC_DEBUG: Enhanced trip creation failed:', result.error);
+      res.status(400).json(result);
+      return;
+    }
+    
     console.log('TCC_DEBUG: Enhanced trip created successfully:', result);
     res.status(201).json(result);
   } catch (error) {
