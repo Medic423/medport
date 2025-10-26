@@ -6079,3 +6079,130 @@ TCC_DEBUG: Calculated distance: 400.08515273699214 miles, estimated time: 800 mi
 TCC_DEBUG: Found coordinates from healthcare location: { latitude: 41.1614, longitude: -79.0831 }
 TCC_DEBUG: Calculated distance: 79.59963248949543 miles, estimated time: 159 minutes
 [31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/index.ts`[39m
+TCC_DEBUG: AuthService constructor - JWT_SECRET loaded: YES
+TCC_DEBUG: JWT_SECRET value: your-super-secret-jwt-key-here
+/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:859
+    return new TSError(diagnosticText, diagnosticCodes, diagnostics);
+           ^
+TSError: ⨯ Unable to compile TypeScript:
+src/routes/agencyResponses.ts(319,38): error TS2554: Expected 2 arguments, but got 1.
+
+    at createTSError (/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:859:12)
+    at reportTSError (/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:863:19)
+    at getOutput (/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:1077:36)
+    at Object.compile (/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:1433:41)
+    at Module.m._compile (/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:1617:30)
+    at node:internal/modules/cjs/loader:1824:10
+    at Object.require.extensions.<computed> [as .ts] (/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:1621:12)
+    at Module.load (node:internal/modules/cjs/loader:1427:32)
+    at Module._load (node:internal/modules/cjs/loader:1250:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14) {
+  diagnosticCodes: [ 2554 ]
+}
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/index.ts`[39m
+TCC_DEBUG: AuthService constructor - JWT_SECRET loaded: YES
+TCC_DEBUG: JWT_SECRET value: your-super-secret-jwt-key-here
+/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:859
+    return new TSError(diagnosticText, diagnosticCodes, diagnostics);
+           ^
+TSError: ⨯ Unable to compile TypeScript:
+src/services/tripService.ts(1275,47): error TS2552: Cannot find name 'agencyResponseId'. Did you mean 'agencyResponse'?
+
+    at createTSError (/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:859:12)
+    at reportTSError (/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:863:19)
+    at getOutput (/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:1077:36)
+    at Object.compile (/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:1433:41)
+    at Module.m._compile (/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:1617:30)
+    at node:internal/modules/cjs/loader:1824:10
+    at Object.require.extensions.<computed> [as .ts] (/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:1621:12)
+    at Module.load (node:internal/modules/cjs/loader:1427:32)
+    at Module._load (node:internal/modules/cjs/loader:1250:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14) {
+  diagnosticCodes: [ 2552 ]
+}
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/index.ts`[39m
+TCC_DEBUG: AuthService constructor - JWT_SECRET loaded: YES
+TCC_DEBUG: JWT_SECRET value: your-super-secret-jwt-key-here
+/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:859
+    return new TSError(diagnosticText, diagnosticCodes, diagnostics);
+           ^
+TSError: ⨯ Unable to compile TypeScript:
+src/routes/agencyResponses.ts(219,81): error TS2554: Expected 1 arguments, but got 2.
+
+    at createTSError (/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:859:12)
+    at reportTSError (/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:863:19)
+    at getOutput (/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:1077:36)
+    at Object.compile (/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:1433:41)
+    at Module.m._compile (/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:1617:30)
+    at node:internal/modules/cjs/loader:1824:10
+    at Object.require.extensions.<computed> [as .ts] (/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:1621:12)
+    at Module.load (node:internal/modules/cjs/loader:1427:32)
+    at Module._load (node:internal/modules/cjs/loader:1250:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14) {
+  diagnosticCodes: [ 2554 ]
+}
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/index.ts`[39m
+TCC_DEBUG: AuthService constructor - JWT_SECRET loaded: YES
+TCC_DEBUG: JWT_SECRET value: your-super-secret-jwt-key-here
+TCC_DEBUG: SMS carriers initialized: 5
+TCC_DEBUG: Twilio credentials not configured
+TCC_DEBUG: SendGrid API key not configured
+TCC_DEBUG: FRONTEND_URL = "http://localhost:3000"
+TCC_DEBUG: Cleaned frontendUrl = "http://localhost:3000"
+TCC_DEBUG: Cleaned corsOrigin = "http://localhost:3000"
+Error: listen EADDRINUSE: address already in use :::5001
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at Server.listen (node:net:2102:7)
+    at app.listen (/Users/scooper/Code/tcc-new-project/backend/node_modules/express/lib/application.js:635:24)
+    at startServer (/Users/scooper/Code/tcc-new-project/backend/src/index.ts:333:9)
+    at Object.<anonymous> (/Users/scooper/Code/tcc-new-project/backend/src/index.ts:351:3)
+    at Module._compile (node:internal/modules/cjs/loader:1692:14)
+    at Module.m._compile (/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:1618:23)
+    at node:internal/modules/cjs/loader:1824:10
+    at Object.require.extensions.<computed> [as .ts] (/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:1621:12) {
+  code: 'EADDRINUSE',
+  errno: -48,
+  syscall: 'listen',
+  address: '::',
+  port: 5001
+}
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/index.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/index.ts`[39m
+TCC_DEBUG: AuthService constructor - JWT_SECRET loaded: YES
+TCC_DEBUG: JWT_SECRET value: your-super-secret-jwt-key-here
+TCC_DEBUG: SMS carriers initialized: 5
+TCC_DEBUG: Twilio credentials not configured
+TCC_DEBUG: SendGrid API key not configured
+TCC_DEBUG: FRONTEND_URL = "http://localhost:3000"
+TCC_DEBUG: Cleaned frontendUrl = "http://localhost:3000"
+TCC_DEBUG: Cleaned corsOrigin = "http://localhost:3000"
+Error: listen EADDRINUSE: address already in use :::5001
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at Server.listen (node:net:2102:7)
+    at app.listen (/Users/scooper/Code/tcc-new-project/backend/node_modules/express/lib/application.js:635:24)
+    at startServer (/Users/scooper/Code/tcc-new-project/backend/src/index.ts:333:9)
+    at Object.<anonymous> (/Users/scooper/Code/tcc-new-project/backend/src/index.ts:351:3)
+    at Module._compile (node:internal/modules/cjs/loader:1692:14)
+    at Module.m._compile (/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:1618:23)
+    at node:internal/modules/cjs/loader:1824:10
+    at Object.require.extensions.<computed> [as .ts] (/Users/scooper/Code/tcc-new-project/backend/node_modules/ts-node/src/index.ts:1621:12) {
+  code: 'EADDRINUSE',
+  errno: -48,
+  syscall: 'listen',
+  address: '::',
+  port: 5001
+}
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m

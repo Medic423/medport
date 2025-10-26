@@ -694,12 +694,14 @@ router.post('/ems/login', async (req, res) => {
     }
 
     const db = databaseManager.getCenterDB();
+    console.log('TCC_DEBUG: Looking for EMS user with email:', email);
     const user = await db.eMSUser.findFirst({
       where: { 
         email,
         isActive: true
       }
     });
+    console.log('TCC_DEBUG: EMS user lookup result:', user ? { id: user.id, email: user.email, name: user.name } : 'NOT FOUND');
 
     if (!user) {
       console.log('TCC_DEBUG: No EMS user found for email:', email);
@@ -710,7 +712,9 @@ router.post('/ems/login', async (req, res) => {
     }
 
     const isValidPassword = await bcrypt.compare(password, user.password);
+    console.log('TCC_DEBUG: Password match result:', isValidPassword);
     if (!isValidPassword) {
+      console.log('TCC_DEBUG: Password mismatch for user:', email);
       return res.status(401).json({
         success: false,
         error: 'Invalid credentials'

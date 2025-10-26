@@ -216,10 +216,7 @@ router.post('/:responseId/select', async (req, res) => {
       });
     }
 
-    const result = await tripService.selectAgencyForTrip(agencyResponse.tripId, {
-      agencyResponseId: responseId,
-      selectionNotes
-    });
+    const result = await tripService.selectAgencyForTrip(responseId);
 
     if (!result.success) {
       return res.status(400).json({
@@ -300,6 +297,39 @@ router.get('/summary/:tripId', async (req, res) => {
 
   } catch (error) {
     console.error('TCC_DEBUG: Get response summary error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+/**
+ * POST /api/agency-responses/:id/select
+ * Select an agency for a trip (mark as selected and update trip status)
+ */
+router.post('/:id/select', async (req, res) => {
+  try {
+    console.log('TCC_DEBUG: Select agency request for response:', req.params.id);
+    
+    const { id } = req.params;
+    const result = await tripService.selectAgencyForTrip(id);
+
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        error: result.error
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Agency selected successfully',
+      data: result.data
+    });
+
+  } catch (error) {
+    console.error('TCC_DEBUG: Select agency error:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error'

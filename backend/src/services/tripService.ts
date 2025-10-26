@@ -1218,24 +1218,27 @@ export class TripService {
   /**
    * Select agency for trip
    */
-  async selectAgencyForTrip(tripId: string, data: any) {
-    console.log('TCC_DEBUG: Selecting agency for trip:', { tripId, data });
+  async selectAgencyForTrip(responseId: string) {
+    console.log('TCC_DEBUG: Selecting agency for trip, responseId:', responseId);
     
     try {
-      const { agencyResponseId, selectionNotes } = data;
-      
       // Get the agency response
       const agencyResponse = await prisma.agencyResponse.findUnique({
-        where: { id: agencyResponseId }
+        where: { id: responseId },
+        include: {
+          trip: true
+        }
       });
       
       if (!agencyResponse) {
         return { success: false, data: null, error: 'Agency response not found' };
       }
       
+      const tripId = agencyResponse.tripId;
+      
       // Mark this response as selected
       await prisma.agencyResponse.update({
-        where: { id: agencyResponseId },
+        where: { id: responseId },
         data: { isSelected: true }
       });
       
@@ -1243,7 +1246,7 @@ export class TripService {
       await prisma.agencyResponse.updateMany({
         where: { 
           tripId,
-          id: { not: agencyResponseId }
+          id: { not: responseId }
         },
         data: { isSelected: false }
       });
@@ -1269,7 +1272,7 @@ export class TripService {
       });
       
       console.log('TCC_DEBUG: Agency selected successfully for trip:', tripId);
-      return { success: true, data: { tripId, agencyResponseId }, error: null };
+      return { success: true, data: { tripId, responseId }, error: null };
     } catch (error) {
       console.error('TCC_DEBUG: Error selecting agency:', error);
       return { success: false, data: null, error: 'Failed to select agency for trip' };
