@@ -767,14 +767,56 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                           </p>
                           {/* Agency Responses Display */}
                           {trip.agencyResponses && trip.agencyResponses.length > 0 && (
-                            <div className="mt-2 flex items-center space-x-2">
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                {trip.agencyResponses.filter((r: any) => r.response === 'ACCEPTED').length} agencies accepted
-                              </span>
-                              {trip.agencyResponses.filter((r: any) => r.isSelected).length > 0 && (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                  Selected
+                            <div className="mt-2 space-y-2">
+                              <div className="flex items-center space-x-2">
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                  {trip.agencyResponses.filter((r: any) => r.response === 'ACCEPTED').length} agencies accepted
                                 </span>
+                                {trip.agencyResponses.filter((r: any) => r.isSelected).length > 0 && (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Selected
+                                  </span>
+                                )}
+                              </div>
+                              
+                              {/* Show Select/Reject buttons if there are ACCEPTED responses and none are selected */}
+                              {trip.agencyResponses.filter((r: any) => r.response === 'ACCEPTED').length > 0 && 
+                               trip.agencyResponses.filter((r: any) => r.isSelected).length === 0 && (
+                                <div className="mt-2 border border-gray-300 rounded-lg p-3 bg-white">
+                                  <p className="text-xs font-medium text-gray-700 mb-2">Select Agency:</p>
+                                  {trip.agencyResponses.filter((r: any) => r.response === 'ACCEPTED').map((response: any) => (
+                                    <div key={response.id} className="flex items-center justify-between py-2 border-b border-gray-200 last:border-b-0">
+                                      <div>
+                                        <p className="text-sm font-medium text-gray-900">{response.agency?.name || 'Unknown Agency'}</p>
+                                        <p className="text-xs text-gray-500">
+                                          Route: {response.trip?.fromLocation || 'N/A'} → {response.trip?.toLocation || 'N/A'}
+                                        </p>
+                                        <p className="text-xs text-gray-500">
+                                          Transport: {response.trip?.transportLevel || 'N/A'} • {response.trip?.urgencyLevel || 'N/A'}
+                                        </p>
+                                        {response.trip?.assignedUnit && (
+                                          <p className="text-xs text-green-600">
+                                            Assigned Unit: {response.trip.assignedUnit.unitNumber} ({response.trip.assignedUnit.type})
+                                          </p>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <button
+                                          onClick={() => handleSelectAgency(trip.id, response.id)}
+                                          className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-md hover:bg-green-700"
+                                        >
+                                          Select
+                                        </button>
+                                        <button
+                                          onClick={() => handleRejectAgency(trip.id, response.id, response.agency?.name || 'this agency')}
+                                          className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700"
+                                        >
+                                          Reject
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
                               )}
                             </div>
                           )}
@@ -847,6 +889,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
         {activeTab === 'create' && (
           <div>
             <EnhancedTripForm 
+              key="create-form"
               user={user} 
               onTripCreated={() => {
                 // Refresh trips list and go to trips tab to see the new trip

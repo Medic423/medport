@@ -230,6 +230,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
     console.log('MULTI_LOC: User object:', user);
     console.log('MULTI_LOC: user.manageMultipleLocations:', user.manageMultipleLocations);
     
+    // Always reload form options when component mounts or remounts
     loadFormOptions();
     // Note: loadHealthcareLocations is now handled within loadFormOptions
     

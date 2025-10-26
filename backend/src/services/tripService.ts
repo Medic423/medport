@@ -672,11 +672,39 @@ export class TripService {
 
       // Connect pickup location relation if provided
       if (data.pickupLocationId) {
+        // First verify the pickup location exists
+        const pickupLocation = await prisma.pickup_locations.findUnique({
+          where: { id: data.pickupLocationId }
+        });
+        
+        if (!pickupLocation) {
+          console.error('TCC_DEBUG: Pickup location not found:', data.pickupLocationId);
+          return { 
+            success: false, 
+            error: `Pickup location "${data.pickupLocationId}" not found. Please select a valid pickup location from the dropdown.` 
+          };
+        }
+        
+        console.log('TCC_DEBUG: Pickup location validated:', pickupLocation.name);
         tripData.pickupLocation = { connect: { id: data.pickupLocationId } };
       }
 
       // Connect healthcare location relation if provided
       if (data.fromLocationId) {
+        // Verify the healthcare location exists
+        const healthcareLocation = await prisma.healthcareLocation.findUnique({
+          where: { id: data.fromLocationId }
+        });
+        
+        if (!healthcareLocation) {
+          console.error('TCC_DEBUG: From Location not found:', data.fromLocationId);
+          return { 
+            success: false, 
+            error: `From Location "${data.fromLocation}" not found. Please select a valid from location from the dropdown.` 
+          };
+        }
+        
+        console.log('TCC_DEBUG: Healthcare location validated:', healthcareLocation.locationName);
         tripData.healthcareLocation = { connect: { id: data.fromLocationId } };
       }
 
