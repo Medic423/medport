@@ -3,7 +3,14 @@
 > vite
 
 
-  VITE v5.4.19  ready in 78 ms
+  VITE v5.4.19  ready in 84 ms
 
   ➜  Local:   http://localhost:3000/
   ➜  Network: use --host to expose
+9:46:59 AM [vite] hmr update /src/components/EMSDashboard.tsx, /src/index.css
+9:52:13 AM [vite] hmr update /src/components/UnitSelectionModal.tsx, /src/index.css
+9:52:16 AM [vite] hmr update /src/components/UnitSelectionModal.tsx, /src/index.css
+10:00:17 AM [vite] hmr update /src/components/HealthcareDashboard.tsx, /src/index.css
+10:00:19 AM [vite] hmr update /src/components/HealthcareDashboard.tsx, /src/index.css
+10:00:25 AM [vite] hmr update /src/components/HealthcareDashboard.tsx, /src/index.css
+10:00:28 AM [vite] hmr update /src/components/HealthcareDashboard.tsx, /src/index.css

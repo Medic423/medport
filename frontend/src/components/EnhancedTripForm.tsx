@@ -765,8 +765,18 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
       console.log('TCC_DEBUG: Creating trip with data:', formData);
       
       // Find the selected facility for fromLocation
-      const selectedFacility = formOptions.facilities.find(f => f.name === formData.fromLocation);
+      // For multi-location users, search in healthcareLocations; otherwise use facilities
+      let selectedFacility;
+      if (user.manageMultipleLocations) {
+        selectedFacility = formOptions.healthcareLocations.find(f => f.locationName === formData.fromLocation);
+      } else {
+        selectedFacility = formOptions.facilities.find(f => f.name === formData.fromLocation);
+      }
+      
       if (!selectedFacility) {
+        console.error('TCC_DEBUG: Selected facility not found. fromLocation:', formData.fromLocation);
+        console.error('TCC_DEBUG: Available healthcareLocations:', formOptions.healthcareLocations.map(l => l.locationName));
+        console.error('TCC_DEBUG: Available facilities:', formOptions.facilities.map(f => f.name));
         throw new Error('Selected facility not found');
       }
 

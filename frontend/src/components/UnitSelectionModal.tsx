@@ -22,14 +22,21 @@ const UnitSelectionModal: React.FC<UnitSelectionModalProps> = ({ isOpen, tripId,
       setLoading(true);
       setError(null);
       try {
+        console.log('TCC_DEBUG: UnitSelectionModal - Fetching units for logged-in user');
+        const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+        console.log('TCC_DEBUG: UnitSelectionModal - Current user:', { id: storedUser.id, userType: storedUser.userType, agencyName: storedUser.agencyName });
+        
         const res = await unitsAPI.getOnDuty();
         const data = res.data;
+        console.log('TCC_DEBUG: UnitSelectionModal - Units response:', { count: data.data?.length, units: data.data });
+        
         if (data.success && Array.isArray(data.data)) {
           setUnits(data.data);
         } else {
           setError('Failed to load on-duty units');
         }
       } catch (e: any) {
+        console.error('TCC_DEBUG: UnitSelectionModal - Error loading units:', e);
         setError(e?.response?.data?.error || 'Failed to load on-duty units');
       } finally {
         setLoading(false);

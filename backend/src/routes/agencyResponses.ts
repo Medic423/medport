@@ -23,8 +23,11 @@ router.post('/', async (req, res) => {
       estimatedArrival
     } = req.body;
 
+    console.log('TCC_DEBUG: Parsed fields:', { tripId, agencyId, response, responseNotes, estimatedArrival });
+
     // Validation
     if (!tripId || !agencyId || !response) {
+      console.log('TCC_DEBUG: Validation failed - missing required fields:', { tripId: !!tripId, agencyId: !!agencyId, response: !!response });
       return res.status(400).json({
         success: false,
         error: 'Missing required fields: tripId, agencyId, response'

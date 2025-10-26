@@ -118,14 +118,27 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
   const loadTrips = async () => {
     try {
       // Load trips
+      console.log('TCC_DEBUG: HealthcareDashboard - Loading trips...');
       const response = await api.get('/api/trips');
       
       // Also load agency responses
+      console.log('TCC_DEBUG: HealthcareDashboard - Loading agency responses...');
       const responsesResponse = await api.get('/api/agency-responses');
       
       if (response.data) {
         const data = response.data;
         const agencyResponses = responsesResponse.data?.data || [];
+        
+        console.log('TCC_DEBUG: HealthcareDashboard - Loaded agency responses:', {
+          count: agencyResponses.length,
+          responses: agencyResponses.map((r: any) => ({
+            id: r.id,
+            tripId: r.tripId,
+            agencyId: r.agencyId,
+            response: r.response,
+            isSelected: r.isSelected
+          }))
+        });
         
         // Group agency responses by trip ID
         const responsesByTrip = new Map();
@@ -135,6 +148,8 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
           }
           responsesByTrip.get(response.tripId).push(response);
         });
+        
+        console.log('TCC_DEBUG: HealthcareDashboard - Grouped responses by trip:', Array.from(responsesByTrip.entries()).map(([tripId, responses]) => ({ tripId, responseCount: (responses as any[]).length })));
         
         if (data.success && data.data) {
           // Transform API data to match component expectations
@@ -162,7 +177,11 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
             assignedUnitType: trip.assignedUnit?.type || null,
             arrivalTime: trip.arrivalTimestamp ? new Date(trip.arrivalTimestamp).toLocaleString() : null,
             arrivalTimestampISO: trip.arrivalTimestamp || null,
-            agencyResponses: responsesByTrip.get(trip.id) || [],
+            agencyResponses: (() => {
+              const responses = responsesByTrip.get(trip.id) || [];
+              console.log(`TCC_DEBUG: HealthcareDashboard - Trip ${trip.id} has ${responses.length} agency responses`);
+              return responses;
+            })(),
             departureTime: trip.departureTimestamp ? new Date(trip.departureTimestamp).toLocaleString() : null,
             departureTimestampISO: trip.departureTimestamp || null,
             assignedAgencyId: trip.assignedAgencyId || null,
@@ -766,7 +785,13 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                             }
                           </p>
                           {/* Agency Responses Display */}
-                          {trip.agencyResponses && trip.agencyResponses.length > 0 && (
+                          {(() => {
+                            console.log(`TCC_DEBUG: HealthcareDashboard - Rendering trip ${trip.id}, agencyResponses:`, {
+                              count: trip.agencyResponses?.length || 0,
+                              responses: trip.agencyResponses?.map((r: any) => ({ response: r.response, isSelected: r.isSelected, agencyName: r.agency?.name }))
+                            });
+                            return trip.agencyResponses && trip.agencyResponses.length > 0;
+                          })() && (
                             <div className="mt-2 space-y-2">
                               <div className="flex items-center space-x-2">
                                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">

@@ -493,15 +493,44 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
     setActiveTab('overview');
   };
 
-  const handleAcceptTrip = (tripId: string) => {
-    setUnitModalTripId(tripId);
-    setIsUnitModalOpen(true);
+  const handleAcceptTrip = async (tripId: string) => {
+    try {
+      console.log('TCC_DEBUG: EMS Dashboard - handleAcceptTrip called:', { tripId, user });
+      
+      // First, create an agency response (accept the trip)
+      const payload = {
+        tripId,
+        agencyId: user.id, // Use user.id for EMS users (it's their agency ID)
+        response: 'ACCEPTED',
+        responseNotes: 'Accepted by EMS agency'
+      };
+      
+      console.log('TCC_DEBUG: EMS Dashboard - Sending agency response payload:', payload);
+      const response = await api.post('/api/agency-responses', payload);
+
+      if (response.data && response.data.success) {
+        // Then open unit selection modal to assign a unit
+        setUnitModalTripId(tripId);
+        setIsUnitModalOpen(true);
+        // Reload trips to show updated status
+        await loadTrips();
+      } else {
+        throw new Error(response.data?.error || 'Failed to accept trip');
+      }
+    } catch (error: any) {
+      console.error('Error accepting trip:', error);
+      setError(error.message || 'Failed to accept trip');
+    }
   };
 
   const handleDeclineTrip = async (tripId: string) => {
     try {
-      const response = await api.put(`/trips/${tripId}/status`, {
-        status: 'CANCELLED'
+      // Create a declined agency response
+      const response = await api.post('/api/agency-responses', {
+        tripId,
+        agencyId: user.agencyId || user.id,
+        response: 'DECLINED',
+        responseNotes: 'Declined by EMS agency'
       });
 
       if (!response.data.success) {

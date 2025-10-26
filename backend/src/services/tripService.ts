@@ -1027,9 +1027,39 @@ export class TripService {
   async createAgencyResponse(data: any) {
     console.log('TCC_DEBUG: Creating agency response:', data);
     
-    // For now, return a simple success response
-    // This can be expanded to actually store agency responses
-    return { success: true, data: { id: 'temp-response-id', ...data }, error: null };
+    try {
+      // Create the agency response record
+      const agencyResponse = await prisma.agencyResponse.create({
+        data: {
+          tripId: data.tripId,
+          agencyId: data.agencyId,
+          response: data.response, // ACCEPTED or DECLINED
+          responseNotes: data.responseNotes || null,
+          estimatedArrival: data.estimatedArrival ? new Date(data.estimatedArrival) : null,
+          responseTimestamp: new Date(),
+          isSelected: false // Will be set to true when healthcare provider selects this agency
+        }
+      });
+      
+      console.log('TCC_DEBUG: Agency response created successfully:', agencyResponse.id);
+      
+      // DO NOT update trip status here - leave it as PENDING
+      // Only update status when healthcare provider selects an agency
+      
+      return { success: true, data: agencyResponse, error: null };
+    } catch (error: any) {
+      console.error('TCC_DEBUG: Error creating agency response:', error);
+      console.error('TCC_DEBUG: Error details:', {
+        message: error?.message,
+        code: error?.code,
+        meta: error?.meta
+      });
+      return { 
+        success: false, 
+        data: null, 
+        error: error?.message || 'Failed to create agency response' 
+      };
+    }
   }
 
   /**
