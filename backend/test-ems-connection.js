@@ -3,7 +3,7 @@ const { PrismaClient } = require('@prisma/client');
 const emsPrisma = new PrismaClient({
   datasources: {
     db: {
-      url: process.env.DATABASE_URL_EMS
+      url: process.env.DATABASE_URL
     }
   }
 });

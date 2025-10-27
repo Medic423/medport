@@ -1,18 +1,10 @@
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 
-const centerPrisma = new PrismaClient({
+const prisma = new PrismaClient({
   datasources: {
     db: {
-      url: process.env.DATABASE_URL_CENTER
-    }
-  }
-});
-
-const emsPrisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL_EMS
+      url: process.env.DATABASE_URL
     }
   }
 });
@@ -22,7 +14,7 @@ async function setupTestData() {
     console.log('Setting up test data...');
     
     // 1. Create EMS Agency
-    const agency = await emsPrisma.eMSAgency.create({
+    const agency = await prisma.eMSAgency.create({
       data: {
         name: 'Mountain Valley EMS',
         contactName: 'Frank Ferguson',
@@ -45,13 +37,13 @@ async function setupTestData() {
     console.log('Agency created:', agency.id);
     
     // 2. Create or find EMS User in CenterUser table
-    let emsUser = await centerPrisma.centerUser.findFirst({
+    let emsUser = await prisma.centerUser.findFirst({
       where: { email: 'fferguson@movalleyems.com' }
     });
     
     if (!emsUser) {
       const hashedPassword = await bcrypt.hash('movalley123', 10);
-      emsUser = await centerPrisma.centerUser.create({
+      emsUser = await prisma.centerUser.create({
         data: {
           email: 'fferguson@movalleyems.com',
           password: hashedPassword,
@@ -69,7 +61,7 @@ async function setupTestData() {
     }
     
     // 3. Create test units
-    const unit1 = await emsPrisma.unit.create({
+    const unit1 = await prisma.unit.create({
       data: {
         agencyId: agency.id,
         unitNumber: 'A-101',
@@ -84,7 +76,7 @@ async function setupTestData() {
       }
     });
     
-    const unit2 = await emsPrisma.unit.create({
+    const unit2 = await prisma.unit.create({
       data: {
         agencyId: agency.id,
         unitNumber: 'A-102',
@@ -102,7 +94,7 @@ async function setupTestData() {
     console.log('Units created:', unit1.id, unit2.id);
     
     // 4. Create analytics for units
-    await emsPrisma.unit_analytics.create({
+    await prisma.unit_analytics.create({
       data: {
         id: `analytics-${unit1.id}`,
         unitId: unit1.id,
@@ -113,7 +105,7 @@ async function setupTestData() {
       }
     });
     
-    await emsPrisma.unit_analytics.create({
+    await prisma.unit_analytics.create({
       data: {
         id: `analytics-${unit2.id}`,
         unitId: unit2.id,
@@ -127,7 +119,7 @@ async function setupTestData() {
     console.log('Analytics created for units');
     
     // 5. Update agency unit counts
-    await emsPrisma.eMSAgency.update({
+    await prisma.eMSAgency.update({
       where: { id: agency.id },
       data: {
         totalUnits: 2,
@@ -140,8 +132,8 @@ async function setupTestData() {
   } catch (error) {
     console.error('Error setting up test data:', error);
   } finally {
-    await centerPrisma.$disconnect();
-    await emsPrisma.$disconnect();
+    await prisma.$disconnect();
+    await prisma.$disconnect();
   }
 }
 

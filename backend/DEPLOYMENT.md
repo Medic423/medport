@@ -2,7 +2,7 @@
 
 ## Development Environment
 
-The development environment uses siloed databases and is configured for local development.
+The development environment uses a unified database architecture for simplified development.
 
 ### Setup Development
 ```bash
@@ -17,14 +17,14 @@ npm run dev
 ```
 
 ### Development Configuration
-- **Database**: Uses siloed databases (center, ems, hospital)
-- **Schema**: `prisma/schema.prisma` (uses `DATABASE_URL_CENTER`)
-- **Environment**: `.env` file with siloed database URLs
+- **Database**: Uses unified medport_ems database
+- **Schema**: `prisma/schema.prisma` (uses `DATABASE_URL`)
+- **Environment**: `.env` file with single database URL
 - **Port**: 5001
 
-## Production Environment (Render)
+## Production Environment (Vercel/Render)
 
-The production environment uses a unified database schema for Render deployment.
+The production environment uses the same unified database architecture as development.
 
 ### Setup Production
 ```bash
@@ -32,20 +32,17 @@ The production environment uses a unified database schema for Render deployment.
 npm install
 
 # Generate Prisma client for production
-npm run db:generate:prod
-
-# Build for production
-npm run build:prod
+npm run build
 
 # Start production server
 npm start
 ```
 
 ### Production Configuration
-- **Database**: Uses unified database
-- **Schema**: `prisma/schema-production.prisma` (uses `DATABASE_URL`)
-- **Environment**: Set `DATABASE_URL` in Render dashboard
-- **Build Command**: `npm run build:prod`
+- **Database**: Uses unified medport_ems database
+- **Schema**: `prisma/schema.prisma` (uses `DATABASE_URL`)
+- **Environment**: Set `DATABASE_URL` in deployment platform
+- **Build Command**: `npm run build`
 
 ## Render Deployment
 
@@ -112,15 +109,15 @@ Expected response:
 
 | Aspect | Development | Production |
 |--------|-------------|------------|
-| Database | Siloed (3 databases) | Unified (1 database) |
-| Schema File | `schema.prisma` | `schema-production.prisma` |
-| Build Command | `npm run build` | `npm run build:prod` |
-| Prisma Generate | `npm run db:generate` | `npm run db:generate:prod` |
-| Environment | `.env` | Render env vars |
+| Database | Unified medport_ems | Unified medport_ems |
+| Schema File | `schema.prisma` | `schema.prisma` |
+| Build Command | `npm run build` | `npm run build` |
+| Prisma Generate | `npm run db:generate` | `npm run db:generate` |
+| Environment | `.env` | Platform env vars |
 
 ## Important Notes
 
-- **Development and production are completely separate**
-- **Never change the development schema for production fixes**
-- **Use production-specific commands for Render deployment**
-- **Development environment remains unaffected by production changes**
+- **Development and production use the same unified architecture**
+- **Single database simplifies deployment and maintenance**
+- **All legacy three-database references have been eliminated**
+- **Standard build commands work for both environments**
