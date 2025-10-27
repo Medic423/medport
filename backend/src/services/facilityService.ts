@@ -56,7 +56,7 @@ export class FacilityService {
     return degrees * (Math.PI / 180);
   }
   async createFacility(data: FacilityData): Promise<any> {
-    const prisma = databaseManager.getCenterDB();
+    const prisma = databaseManager.getPrismaClient();
     
     return await prisma.hospital.create({
       data: {
@@ -75,7 +75,7 @@ export class FacilityService {
   }
 
   async getFacilities(filters: FacilitySearchFilters = {}): Promise<FacilityListResult> {
-    const prisma = databaseManager.getCenterDB();
+    const prisma = databaseManager.getPrismaClient();
     const { page = 1, limit = 50, ...whereFilters } = filters;
     const skip = (page - 1) * limit;
 
@@ -174,14 +174,14 @@ export class FacilityService {
   }
 
   async getFacilityById(id: string): Promise<any | null> {
-    const prisma = databaseManager.getCenterDB();
+    const prisma = databaseManager.getPrismaClient();
     return await prisma.facility.findUnique({
       where: { id }
     });
   }
 
   async updateFacility(id: string, data: Partial<FacilityData>): Promise<any> {
-    const prisma = databaseManager.getCenterDB();
+    const prisma = databaseManager.getPrismaClient();
     return await prisma.facility.update({
       where: { id },
       data: {
@@ -192,14 +192,14 @@ export class FacilityService {
   }
 
   async deleteFacility(id: string): Promise<void> {
-    const prisma = databaseManager.getCenterDB();
+    const prisma = databaseManager.getPrismaClient();
     await prisma.facility.delete({
       where: { id }
     });
   }
 
   async searchFacilities(query: string): Promise<any[]> {
-    const prisma = databaseManager.getCenterDB();
+    const prisma = databaseManager.getPrismaClient();
     return await prisma.facility.findMany({
       where: {
         OR: [

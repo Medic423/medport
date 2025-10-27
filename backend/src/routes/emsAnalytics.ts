@@ -17,7 +17,7 @@ router.use(async (req: AuthenticatedRequest, res, next) => {
 });
 
 async function resolveAgencyContext(req: AuthenticatedRequest) {
-  const emsPrisma = databaseManager.getEMSDB();
+  const emsPrisma = databaseManager.getPrismaClient();
   let agencyId = req.user?.id || null; // For EMS tokens, this should already be agencyId
   let agencyName: string | null = null;
 
@@ -49,7 +49,7 @@ router.get('/overview', async (req: AuthenticatedRequest, res) => {
       return res.status(400).json({ success: false, error: 'Unable to resolve EMS agency' });
     }
 
-    const centerPrisma = databaseManager.getCenterDB();
+    const centerPrisma = databaseManager.getPrismaClient();
 
     const [
       totalTrips,
@@ -104,7 +104,7 @@ router.get('/trips', async (req: AuthenticatedRequest, res) => {
       return res.status(400).json({ success: false, error: 'Unable to resolve EMS agency' });
     }
 
-    const prisma = databaseManager.getCenterDB();
+    const prisma = databaseManager.getPrismaClient();
 
     const [
       totalTrips,
@@ -184,7 +184,7 @@ router.get('/units', async (req: AuthenticatedRequest, res) => {
       return res.status(400).json({ success: false, error: 'Unable to resolve EMS agency' });
     }
 
-    const emsPrisma = databaseManager.getEMSDB();
+    const emsPrisma = databaseManager.getPrismaClient();
 
     const [
       totalUnits,
@@ -249,7 +249,7 @@ router.get('/performance', async (req: AuthenticatedRequest, res) => {
       return res.status(400).json({ success: false, error: 'Unable to resolve EMS agency' });
     }
 
-    const prisma = databaseManager.getCenterDB();
+    const prisma = databaseManager.getPrismaClient();
 
     // SIMPLIFIED: Only get basic trip counts, skip complex calculations
     const [totalTrips, completedTrips] = await Promise.all([
