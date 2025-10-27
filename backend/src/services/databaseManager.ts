@@ -31,18 +31,7 @@ class DatabaseManager {
     return this.prisma;
   }
 
-  // Backward compatibility methods for existing service calls
-  public getCenterDB(): PrismaClient {
-    return this.prisma;
-  }
-
-  public getEMSDB(): PrismaClient {
-    return this.prisma;
-  }
-
-  public getHospitalDB(): PrismaClient {
-    return this.prisma;
-  }
+  // Backward compatibility methods removed - all services now use getPrismaClient()
 
   public async healthCheck(): Promise<boolean> {
     return await this.executeWithRetry(async () => {
