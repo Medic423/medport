@@ -13,7 +13,7 @@ router.get('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     console.log('🔍 TCC Units API: req.user:', req.user);
     
-    const emsDB = databaseManager.getEMSDB();
+    const emsDB = databaseManager.getPrismaClient();
     console.log('🔍 TCC Units API: emsDB obtained:', !!emsDB);
     
     // Get all units from all agencies
@@ -54,7 +54,7 @@ router.get('/:agencyId', authenticateAdmin, async (req: AuthenticatedRequest, re
     const { agencyId } = req.params;
     console.log('🔍 TCC Units API: Getting units for agency:', agencyId);
     
-    const emsDB = databaseManager.getEMSDB();
+    const emsDB = databaseManager.getPrismaClient();
     
     const units = await emsDB.unit.findMany({
       where: {

@@ -401,7 +401,7 @@ router.get('/settings', async (req, res) => {
   try {
     const { agencyId } = req.query;
 
-    const prisma = databaseManager.getCenterDB();
+    const prisma = databaseManager.getPrismaClient();
     
     // Get settings for specific agency or global defaults
     let settings = await prisma.route_optimization_settings.findFirst({
@@ -459,7 +459,7 @@ router.post('/settings', async (req, res) => {
   try {
     const { agencyId, ...settingsData } = req.body;
 
-    const prisma = databaseManager.getCenterDB();
+    const prisma = databaseManager.getPrismaClient();
 
     // Check if settings already exist for this agency
     const existingSettings = await prisma.route_optimization_settings.findFirst({
@@ -512,7 +512,7 @@ router.post('/settings/reset', async (req, res) => {
   try {
     const { agencyId } = req.body;
 
-    const prisma = databaseManager.getCenterDB();
+    const prisma = databaseManager.getPrismaClient();
 
     // Deactivate existing settings
     await prisma.route_optimization_settings.updateMany({
@@ -576,7 +576,7 @@ router.post('/preview', async (req, res) => {
     // Use provided settings or get from database
     let optimizationSettings = settings;
     if (!optimizationSettings) {
-      const prisma = databaseManager.getCenterDB();
+      const prisma = databaseManager.getPrismaClient();
       const dbSettings = await prisma.route_optimization_settings.findFirst({
         where: { isActive: true },
         orderBy: { createdAt: 'desc' }
@@ -749,7 +749,7 @@ router.get('/stream', async (req: AuthenticatedRequest, res) => {
 
 async function getAllPendingRequests(): Promise<any[]> {
   try {
-    const prisma = databaseManager.getCenterDB();
+    const prisma = databaseManager.getPrismaClient();
     
     const trips = await prisma.transportRequest.findMany({
       where: {
@@ -822,7 +822,7 @@ async function getAllPendingRequests(): Promise<any[]> {
 
 async function getUnitById(unitId: string): Promise<any> {
   try {
-    const prisma = databaseManager.getEMSDB();
+    const prisma = databaseManager.getPrismaClient();
     const unit = await prisma.unit.findUnique({
       where: { id: unitId },
       include: {
@@ -857,7 +857,7 @@ async function getUnitById(unitId: string): Promise<any> {
 
 async function getUnitsByIds(unitIds: string[]): Promise<any[]> {
   try {
-    const prisma = databaseManager.getEMSDB();
+    const prisma = databaseManager.getPrismaClient();
     const units = await prisma.unit.findMany({
       where: { 
         id: { in: unitIds },
@@ -891,7 +891,7 @@ async function getUnitsByIds(unitIds: string[]): Promise<any[]> {
 
 async function getRequestsByIds(requestIds: string[]): Promise<any[]> {
   try {
-    const prisma = databaseManager.getCenterDB();
+    const prisma = databaseManager.getPrismaClient();
     const trips = await prisma.transportRequest.findMany({
       where: { 
         id: { in: requestIds }
@@ -952,7 +952,7 @@ async function getRequestsByIds(requestIds: string[]): Promise<any[]> {
 
 async function getCompletedTripsInRange(startTime: Date, endTime: Date, agencyId?: string): Promise<any[]> {
   try {
-    const prisma = databaseManager.getCenterDB();
+    const prisma = databaseManager.getPrismaClient();
     
     const whereClause: any = {
       status: 'COMPLETED',
@@ -1071,7 +1071,7 @@ function calculateLoadedMiles(trip: any): number {
 
 async function getPerformanceMetrics(startTime: Date, endTime: Date, unitId?: string): Promise<any> {
   try {
-    const prisma = databaseManager.getCenterDB();
+    const prisma = databaseManager.getPrismaClient();
     
     const whereClause: any = {
       status: 'COMPLETED',

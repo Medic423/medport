@@ -3,7 +3,7 @@ import emailService from './emailService';
 import { PatientIdService, DIAGNOSIS_OPTIONS, MOBILITY_OPTIONS, TRANSPORT_LEVEL_OPTIONS, URGENCY_OPTIONS } from './patientIdService';
 import { DistanceService } from './distanceService';
 
-const prisma = databaseManager.getCenterDB();
+const prisma = databaseManager.getPrismaClient();
 
 export interface CreateTripRequest {
   // Legacy fields (keeping for backward compatibility)
@@ -1303,7 +1303,7 @@ export class TripService {
     try {
       console.log('EMS_UNIT_ASSIGN: Validating unit assignment:', { unitId, agencyId });
       
-      const emsDB = databaseManager.getEMSDB();
+      const emsDB = databaseManager.getPrismaClient();
       const unit = await emsDB.unit.findUnique({
         where: { id: unitId },
         include: { agency: true }
@@ -1354,7 +1354,7 @@ export class TripService {
     try {
       console.log('TCC_DEBUG: Updating unit status:', { unitId, status });
       
-      const emsDB = databaseManager.getEMSDB();
+      const emsDB = databaseManager.getPrismaClient();
       await emsDB.unit.update({
         where: { id: unitId },
         data: { 
