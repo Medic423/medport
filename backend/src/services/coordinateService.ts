@@ -30,7 +30,7 @@ export class CoordinateService {
     }
 
     try {
-      const prisma = databaseManager.getCenterDB();
+      const prisma = databaseManager.getPrismaClient();
       const facility = await prisma.facility.findUnique({
         where: { id: facilityId },
         select: {

@@ -112,7 +112,7 @@ app.use('/api/agency', agencyTransportRoutes);
 // Public endpoints for healthcare users
 app.get('/api/public/categories', async (req, res) => {
   try {
-    const hospitalPrisma = databaseManager.getHospitalDB();
+    const hospitalPrisma = databaseManager.getPrismaClient();
     
     const categories = await hospitalPrisma.dropdownOption.findMany({
       select: {

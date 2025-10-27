@@ -47,7 +47,7 @@ interface HospitalActivity {
 export class AnalyticsService {
   
   async getSystemOverview(): Promise<SystemOverview> {
-    const prisma = databaseManager.getCenterDB();
+    const prisma = databaseManager.getPrismaClient();
     
     try {
       const [
@@ -96,7 +96,7 @@ export class AnalyticsService {
   }
 
   async getTripStatistics(): Promise<TripStatistics> {
-    const prisma = databaseManager.getCenterDB();
+    const prisma = databaseManager.getPrismaClient();
 
     try {
       const [
@@ -158,7 +158,7 @@ export class AnalyticsService {
   }
 
   async getAgencyPerformance(): Promise<AgencyPerformance[]> {
-    const prisma = databaseManager.getCenterDB();
+    const prisma = databaseManager.getPrismaClient();
 
     try {
       const agencies = await prisma.eMSAgency.findMany({
@@ -199,7 +199,7 @@ export class AnalyticsService {
   }
 
   async getHospitalActivity(): Promise<HospitalActivity[]> {
-    const prisma = databaseManager.getCenterDB();
+    const prisma = databaseManager.getPrismaClient();
 
     try {
       const facilities = await prisma.facility.findMany({

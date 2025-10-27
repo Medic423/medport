@@ -3,8 +3,8 @@ import { authenticateAdmin, AuthenticatedRequest } from '../middleware/authentic
 import { databaseManager } from '../services/databaseManager';
 
 const router = Router();
-const centerDb = databaseManager.getCenterDB();
-const emsDb = databaseManager.getEMSDB();
+const centerDb = databaseManager.getPrismaClient();
+const emsDb = databaseManager.getPrismaClient();
 
 // WARNING: Dev-only reset endpoint. Resets trips/units to a clean state.
 router.post('/reset-dev-state', authenticateAdmin, async (req: AuthenticatedRequest, res) => {

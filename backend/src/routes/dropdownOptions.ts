@@ -23,7 +23,7 @@ router.get('/:category', authenticateAdmin, async (req: AuthenticatedRequest, re
       return res.status(400).json({ success: false, error: 'Invalid category' });
     }
     
-    const hospitalPrisma = databaseManager.getHospitalDB();
+    const hospitalPrisma = databaseManager.getPrismaClient();
     // Ensure baseline defaults exist for urgency
     if (category === 'urgency') {
       const baseline = ['Routine', 'Urgent', 'Emergent'];
@@ -67,7 +67,7 @@ router.get('/:category/default', authenticateAdmin, async (req: AuthenticatedReq
       return res.status(400).json({ success: false, error: 'Invalid category' });
     }
 
-    const hospitalPrisma = databaseManager.getHospitalDB();
+    const hospitalPrisma = databaseManager.getPrismaClient();
     const existing = await hospitalPrisma.categoryDefault.findUnique({
       where: { category },
       include: { option: true }
@@ -93,7 +93,7 @@ router.post('/:category/default', authenticateAdmin, async (req: AuthenticatedRe
       return res.status(400).json({ success: false, error: 'optionId is required' });
     }
 
-    const hospitalPrisma = databaseManager.getHospitalDB();
+    const hospitalPrisma = databaseManager.getPrismaClient();
 
     // Validate option exists and belongs to category
     const option = await hospitalPrisma.dropdownOption.findUnique({ where: { id: optionId } });
@@ -133,7 +133,7 @@ router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
       return res.status(400).json({ success: false, error: 'Invalid category' });
     }
 
-    const hospitalPrisma = databaseManager.getHospitalDB();
+    const hospitalPrisma = databaseManager.getPrismaClient();
     
     // Check if option already exists
     const existingOption = await hospitalPrisma.dropdownOption.findFirst({
@@ -178,7 +178,7 @@ router.put('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => 
     const { id } = req.params;
     const { value, isActive } = req.body;
     
-    const hospitalPrisma = databaseManager.getHospitalDB();
+    const hospitalPrisma = databaseManager.getPrismaClient();
     
     const updatedOption = await hospitalPrisma.dropdownOption.update({
       where: { id },
@@ -207,7 +207,7 @@ router.delete('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) 
   try {
     const { id } = req.params;
     
-    const hospitalPrisma = databaseManager.getHospitalDB();
+    const hospitalPrisma = databaseManager.getPrismaClient();
     
     await hospitalPrisma.dropdownOption.update({
       where: { id },

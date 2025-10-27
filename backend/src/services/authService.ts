@@ -166,7 +166,7 @@ export class AuthService {
       }
 
       // Verify user still exists and is active using single database
-      const db = databaseManager.getCenterDB();
+      const db = databaseManager.getPrismaClient();
       let user: any = null;
 
       if (decoded.userType === 'ADMIN' || decoded.userType === 'USER') {
@@ -241,7 +241,7 @@ export class AuthService {
     name: string;
     userType: 'ADMIN' | 'USER';
   }): Promise<User> {
-    const centerDB = databaseManager.getCenterDB();
+    const centerDB = databaseManager.getPrismaClient();
     
     // Hash password
     const hashedPassword = await bcrypt.hash(userData.password, 12);
