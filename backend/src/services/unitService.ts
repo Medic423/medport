@@ -63,7 +63,7 @@ class UnitService {
     try {
       console.log('TCC_DEBUG: getAllUnits called');
       
-      const prisma = databaseManager.getEMSDB();
+      const prisma = databaseManager.getPrismaClient();
       const units = await prisma.unit.findMany({
         where: {
           // Remove isActive filter - show all units for admin users
@@ -112,7 +112,7 @@ class UnitService {
     try {
       console.log('TCC_DEBUG: getUnitsByAgency called with agencyId:', agencyId);
       
-      const prisma = databaseManager.getEMSDB();
+      const prisma = databaseManager.getPrismaClient();
       const units = await prisma.unit.findMany({
         where: {
           agencyId: agencyId
@@ -196,7 +196,7 @@ class UnitService {
     try {
       console.log('TCC_DEBUG: createUnit called with data:', unitData);
       
-      const prisma = databaseManager.getEMSDB();
+      const prisma = databaseManager.getPrismaClient();
       
       // Create the unit in the database
       const newUnit = await prisma.unit.create({
@@ -264,7 +264,7 @@ class UnitService {
     try {
       console.log('TCC_DEBUG: updateUnit called with unitId:', unitId, 'data:', unitData, 'agencyId:', agencyId);
       
-      const prisma = databaseManager.getEMSDB();
+      const prisma = databaseManager.getPrismaClient();
       
       // If agencyId is provided, verify the unit belongs to that agency
       if (agencyId) {
@@ -338,7 +338,7 @@ class UnitService {
     try {
       console.log('TCC_DEBUG: deleteUnit called with unitId:', unitId);
       
-      const prisma = databaseManager.getEMSDB();
+      const prisma = databaseManager.getPrismaClient();
       
       // First delete the analytics record if it exists
       await prisma.unit_analytics.deleteMany({
@@ -434,7 +434,7 @@ class UnitService {
     try {
       console.log('TCC_DEBUG: getOnDutyUnits called with agencyId:', agencyId);
       
-      const prisma = databaseManager.getEMSDB();
+      const prisma = databaseManager.getPrismaClient();
       const units = await prisma.unit.findMany({
         where: {
           agencyId: agencyId,
@@ -484,7 +484,7 @@ class UnitService {
     try {
       console.log('TCC_DEBUG: getUnitAnalytics called with agencyId:', agencyId);
       
-      const prisma = databaseManager.getEMSDB();
+      const prisma = databaseManager.getPrismaClient();
       
       // Get all units for the agency
       const units = await prisma.unit.findMany({
@@ -544,7 +544,7 @@ class UnitService {
     try {
       console.log('TCC_DEBUG: updateUnitDutyStatus called with unitId:', unitId, 'isActive:', isActive);
       
-      const prisma = databaseManager.getEMSDB();
+      const prisma = databaseManager.getPrismaClient();
       
       // Update the unit's isActive status
       const updatedUnit = await prisma.unit.update({

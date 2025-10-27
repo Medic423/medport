@@ -128,7 +128,7 @@ router.post('/healthcare/register', async (req, res) => {
       }
     }
 
-    const hospitalDB = databaseManager.getHospitalDB();
+    const hospitalDB = databaseManager.getPrismaClient();
     
     // Check if user already exists
     const existingUser = await hospitalDB.healthcareUser.findUnique({
@@ -143,7 +143,7 @@ router.post('/healthcare/register', async (req, res) => {
     }
     
     // Also check if facility name already exists
-    const centerDB = databaseManager.getCenterDB();
+    const centerDB = databaseManager.getPrismaClient();
     const existingFacility = await centerDB.hospital.findFirst({
       where: { name: facilityName }
     });
@@ -245,8 +245,8 @@ router.put('/healthcare/facility/update', authenticateAdmin, async (req: Authent
     const updateData = req.body;
     console.log('TCC_DEBUG: Update data received:', updateData);
 
-    const hospitalDB = databaseManager.getHospitalDB();
-    const centerDB = databaseManager.getCenterDB();
+    const hospitalDB = databaseManager.getPrismaClient();
+    const centerDB = databaseManager.getPrismaClient();
 
     console.log('TCC_DEBUG: Attempting to update healthcare user record...');
     
@@ -328,8 +328,8 @@ router.put('/ems/agency/update', authenticateAdmin, async (req: AuthenticatedReq
     const updateData = req.body;
     console.log('TCC_DEBUG: Update data received:', updateData);
 
-    const db = databaseManager.getCenterDB();
-    const centerDB = databaseManager.getCenterDB();
+    const db = databaseManager.getPrismaClient();
+    const centerDB = databaseManager.getPrismaClient();
 
     console.log('TCC_DEBUG: Attempting to update EMS user record...');
     console.log('TCC_DEBUG: Looking for EMS user by email:', req.user?.email);
@@ -474,7 +474,7 @@ router.post('/ems/register', async (req, res) => {
       }
     }
 
-    const db = databaseManager.getCenterDB();
+    const db = databaseManager.getPrismaClient();
     
     // Check if user already exists in EMS database
     const existingUser = await db.eMSUser.findUnique({
@@ -513,7 +513,7 @@ router.post('/ems/register', async (req, res) => {
     });
 
     // Also create a corresponding EMSAgency record in Center database for TCC dashboard
-    const centerDB = databaseManager.getCenterDB();
+    const centerDB = databaseManager.getPrismaClient();
     await centerDB.eMSAgency.create({
       data: {
         name: agencyName,
@@ -643,7 +643,7 @@ router.get('/users', authenticateAdmin, async (req: AuthenticatedRequest, res) =
       });
     }
 
-    const centerDB = (await import('../services/databaseManager')).databaseManager.getCenterDB();
+    const centerDB = (await import('../services/databaseManager')).databaseManager.getPrismaClient();
     const users = await centerDB.centerUser.findMany({
       select: {
         id: true,
@@ -693,7 +693,7 @@ router.post('/ems/login', async (req, res) => {
       });
     }
 
-    const db = databaseManager.getCenterDB();
+    const db = databaseManager.getPrismaClient();
     console.log('TCC_DEBUG: Looking for EMS user with email:', email);
     const user = await db.eMSUser.findFirst({
       where: { 
@@ -784,7 +784,7 @@ router.post('/healthcare/login', async (req, res) => {
       });
     }
 
-    const db = databaseManager.getCenterDB();
+    const db = databaseManager.getPrismaClient();
     const user = await db.healthcareUser.findFirst({
       where: { 
         email,
