@@ -343,11 +343,18 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
       const isMultiLocationUser = ((): boolean => {
         const persisted = typeof window !== 'undefined' ? localStorage.getItem('tcc_multi_loc') === 'true' : false;
         const effective = user.manageMultipleLocations || persisted;
+        console.log('[FORM-DEBUG] isMultiLocationUser calculation:', {
+          'user.manageMultipleLocations': user.manageMultipleLocations,
+          'persisted (localStorage)': persisted,
+          'effective (result)': effective
+        });
         if (effective && typeof window !== 'undefined') {
           localStorage.setItem('tcc_multi_loc', 'true');
         }
         return effective;
       })();
+      
+      console.log('[FORM-DEBUG] About to load facilities. isMultiLocationUser:', isMultiLocationUser);
       
       if (isMultiLocationUser) {
         // For Penn Highlands users, load healthcare locations AND facilities with geographic filtering
@@ -365,6 +372,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
             console.log('PHASE_A: Using primary location as origin:', primaryLocation.locationName);
             
             // Load facilities within 100 miles of the primary location, limited to PA
+            console.log('[FORM-DEBUG] Attempting to fetch facilities API with params:', { state: 'PA', radius: 100 });
             try {
               const facilitiesResponse = await api.get('/api/tcc/facilities', {
                 params: {
@@ -375,23 +383,29 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
                   isActive: true
                 }
               });
+              console.log('[FORM-DEBUG] Facilities API response:', facilitiesResponse.data);
               if (facilitiesResponse.data?.success && Array.isArray(facilitiesResponse.data.data)) {
                 facilities = facilitiesResponse.data.data;
                 console.log('PHASE_A: Loaded', facilities.length, 'PA facilities within 100 miles of', primaryLocation.locationName);
               }
             } catch (e) {
+              console.error('[FORM-DEBUG] Facilities API failed with error:', e);
               console.warn('PHASE_A: Facilities API failed, falling back to public hospitals');
             }
             // Fallback if protected facilities returned none
+            console.log('[FORM-DEBUG] Checking if facilities fallback is needed. Current facilities count:', facilities.length);
             if (!facilities || facilities.length === 0) {
+              console.log('[FORM-DEBUG] Facilities empty or zero, attempting public hospitals fallback');
               try {
                 const publicHospitals = await api.get('/api/public/hospitals');
+                console.log('[FORM-DEBUG] Public hospitals response:', publicHospitals.data);
                 if (publicHospitals.data?.success && Array.isArray(publicHospitals.data.data)) {
                   // Filter to PA only
                   facilities = publicHospitals.data.data.filter((f: any) => f.state === 'PA');
                   console.log('PHASE_A: Fallback loaded', facilities.length, 'public hospitals in PA');
                 }
               } catch (e) {
+                console.error('[FORM-DEBUG] Public hospitals fallback failed:', e);
                 console.warn('PHASE_A: Public hospitals fallback failed');
               }
             }
