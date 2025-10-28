@@ -337,9 +337,19 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
       
       // Phase A: Smart defaults for geographic filtering
       let facilities = [];
-      let healthcareLocations: HealthcareLocation[] = [];
+    let healthcareLocations: HealthcareLocation[] = [];
+
+      // Determine effective multi-location behavior with persistence
+      const isMultiLocationUser = ((): boolean => {
+        const persisted = typeof window !== 'undefined' ? localStorage.getItem('tcc_multi_loc') === 'true' : false;
+        const effective = user.manageMultipleLocations || persisted;
+        if (effective && typeof window !== 'undefined') {
+          localStorage.setItem('tcc_multi_loc', 'true');
+        }
+        return effective;
+      })();
       
-      if (user.manageMultipleLocations) {
+      if (isMultiLocationUser) {
         // For Penn Highlands users, load healthcare locations AND facilities with geographic filtering
         console.log('PHASE_A: Loading healthcare locations and facilities for Penn Highlands user');
         
@@ -355,28 +365,56 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
             console.log('PHASE_A: Using primary location as origin:', primaryLocation.locationName);
             
             // Load facilities within 100 miles of the primary location, limited to PA
-            const facilitiesResponse = await api.get('/api/tcc/facilities', {
-              params: {
-                state: 'PA', // Filter to Pennsylvania only
-                originLat: primaryLocation.latitude,
-                originLng: primaryLocation.longitude,
-                radius: 100, // 100 miles radius
-                isActive: true
+            try {
+              const facilitiesResponse = await api.get('/api/tcc/facilities', {
+                params: {
+                  state: 'PA',
+                  originLat: primaryLocation.latitude,
+                  originLng: primaryLocation.longitude,
+                  radius: 100,
+                  isActive: true
+                }
+              });
+              if (facilitiesResponse.data?.success && Array.isArray(facilitiesResponse.data.data)) {
+                facilities = facilitiesResponse.data.data;
+                console.log('PHASE_A: Loaded', facilities.length, 'PA facilities within 100 miles of', primaryLocation.locationName);
               }
-            });
-            
-            if (facilitiesResponse.data?.success && Array.isArray(facilitiesResponse.data.data)) {
-              facilities = facilitiesResponse.data.data;
-              console.log('PHASE_A: Loaded', facilities.length, 'PA facilities within 100 miles of', primaryLocation.locationName);
+            } catch (e) {
+              console.warn('PHASE_A: Facilities API failed, falling back to public hospitals');
+            }
+            // Fallback if protected facilities returned none
+            if (!facilities || facilities.length === 0) {
+              try {
+                const publicHospitals = await api.get('/api/public/hospitals');
+                if (publicHospitals.data?.success && Array.isArray(publicHospitals.data.data)) {
+                  // Filter to PA only
+                  facilities = publicHospitals.data.data.filter((f: any) => f.state === 'PA');
+                  console.log('PHASE_A: Fallback loaded', facilities.length, 'public hospitals in PA');
+                }
+              } catch (e) {
+                console.warn('PHASE_A: Public hospitals fallback failed');
+              }
             }
           } else {
             console.warn('PHASE_A: Primary location missing coordinates, falling back to PA facilities only');
             // Fallback to PA facilities only without geographic filtering
-            const facilitiesResponse = await api.get('/api/tcc/facilities', {
-              params: { state: 'PA', isActive: true }
-            });
-            if (facilitiesResponse.data?.success && Array.isArray(facilitiesResponse.data.data)) {
-              facilities = facilitiesResponse.data.data;
+            try {
+              const facilitiesResponse = await api.get('/api/tcc/facilities', {
+                params: { state: 'PA', isActive: true }
+              });
+              if (facilitiesResponse.data?.success && Array.isArray(facilitiesResponse.data.data)) {
+                facilities = facilitiesResponse.data.data;
+              }
+            } catch (e) {
+              console.warn('PHASE_A: Facilities API (no-geo) failed, using public hospitals fallback');
+            }
+            if (!facilities || facilities.length === 0) {
+              try {
+                const publicHospitals = await api.get('/api/public/hospitals');
+                if (publicHospitals.data?.success && Array.isArray(publicHospitals.data.data)) {
+                  facilities = publicHospitals.data.data.filter((f: any) => f.state === 'PA');
+                }
+              } catch {}
             }
           }
         }
@@ -464,7 +502,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
       setFormOptions(options);
       
       // Set default fromLocation and fromLocationId for multi-location users
-      if (user.manageMultipleLocations && healthcareLocations.length > 0) {
+      if (isMultiLocationUser && healthcareLocations.length > 0) {
         const primaryLocation = healthcareLocations.find(loc => loc.isPrimary);
         console.log('MULTI_LOC: Primary location found:', primaryLocation);
         if (primaryLocation) {
@@ -649,7 +687,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
     const { name, value, type } = e.target;
     
     // Handle healthcare location selection for multi-location users
-    if (name === 'fromLocation' && user.manageMultipleLocations) {
+    if (name === 'fromLocation' && (user.manageMultipleLocations || (typeof window !== 'undefined' && localStorage.getItem('tcc_multi_loc') === 'true'))) {
       const selectedLocation = formOptions.healthcareLocations.find(loc => loc.locationName === value);
       if (selectedLocation) {
         setFormData(prev => ({
