@@ -18,7 +18,7 @@ router.get('/', authenticateAdmin_1.authenticateAdmin, async (req, res) => {
         let units;
         if (user?.userType === 'EMS') {
             // For EMS users, get units for their agency
-            const agencyId = user.id; // EMS users have agencyId as their id
+            const agencyId = user.agencyId || user.id; // Use agencyId if available, fallback to user.id for EMS
             console.log('🔍 Units API: agencyId for EMS user:', agencyId);
             units = await unitService_1.unitService.getUnitsByAgency(agencyId);
         }
@@ -47,7 +47,7 @@ router.get('/', authenticateAdmin_1.authenticateAdmin, async (req, res) => {
  */
 router.post('/', authenticateAdmin_1.authenticateAdmin, async (req, res) => {
     try {
-        const agencyId = req.user?.id;
+        const agencyId = req.user?.agencyId || req.user?.id; // Use agencyId if available, fallback to user.id for EMS
         console.log('🔍 Units API POST: req.user:', req.user);
         console.log('🔍 Units API POST: agencyId:', agencyId);
         console.log('🔍 Units API POST: body:', req.body);
@@ -115,15 +115,16 @@ router.get('/available', authenticateAdmin_1.authenticateAdmin, async (req, res)
 router.get('/on-duty', authenticateAdmin_1.authenticateAdmin, async (req, res) => {
     try {
         const user = req.user;
-        console.log('TCC_DEBUG: Get on-duty units request from user:', user);
+        console.log('TCC_DEBUG: Get on-duty units request from user:', { id: user?.id, agencyId: user?.agencyId, userType: user?.userType });
         if (!user) {
             return res.status(401).json({ success: false, error: 'Unauthorized' });
         }
         let units;
         if (user.userType === 'EMS') {
-            const agencyId = user.id; // EMS users have agencyId as their id
+            const agencyId = user.agencyId || user.id; // Use agencyId if available, fallback to user.id for EMS
             console.log('TCC_DEBUG: Getting on-duty units for EMS agency:', agencyId);
             units = await unitService_1.unitService.getOnDutyUnits(agencyId);
+            console.log('TCC_DEBUG: Found', units.length, 'units for agency:', units.map((u) => ({ unitNumber: u.unitNumber, agencyId: u.agencyId })));
         }
         else if (user.userType === 'ADMIN') {
             console.log('TCC_DEBUG: ADMIN requesting on-duty units across all agencies');
@@ -270,7 +271,7 @@ router.put('/:id/status', authenticateAdmin_1.authenticateAdmin, async (req, res
 router.put('/:id', authenticateAdmin_1.authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const agencyId = req.user?.id;
+        const agencyId = req.user?.agencyId || req.user?.id; // Use agencyId if available, fallback to user.id for EMS
         console.log('🔍 Units API PUT: req.user:', req.user);
         console.log('🔍 Units API PUT: agencyId:', agencyId);
         console.log('🔍 Units API PUT: unitId:', id);
@@ -289,7 +290,7 @@ router.put('/:id', authenticateAdmin_1.authenticateAdmin, async (req, res) => {
                 error: 'Unit number and type are required'
             });
         }
-        const unit = await unitService_1.unitService.updateUnit(id, unitData);
+        const unit = await unitService_1.unitService.updateUnit(id, unitData, agencyId);
         console.log('🔍 Units API PUT: unit updated:', unit);
         res.json({
             success: true,
@@ -312,7 +313,7 @@ router.put('/:id', authenticateAdmin_1.authenticateAdmin, async (req, res) => {
 router.delete('/:id', authenticateAdmin_1.authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const agencyId = req.user?.id;
+        const agencyId = req.user?.agencyId || req.user?.id; // Use agencyId if available, fallback to user.id for EMS
         console.log('🔍 Units API DELETE: req.user:', req.user);
         console.log('🔍 Units API DELETE: agencyId:', agencyId);
         console.log('🔍 Units API DELETE: unitId:', id);

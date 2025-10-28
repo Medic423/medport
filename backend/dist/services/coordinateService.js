@@ -19,7 +19,7 @@ class CoordinateService {
             return this.coordinateCache.get(cacheKey) || null;
         }
         try {
-            const prisma = databaseManager_1.databaseManager.getCenterDB();
+            const prisma = databaseManager_1.databaseManager.getPrismaClient();
             const facility = await prisma.facility.findUnique({
                 where: { id: facilityId },
                 select: {

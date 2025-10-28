@@ -4,7 +4,7 @@ exports.hospitalService = exports.HospitalService = void 0;
 const databaseManager_1 = require("./databaseManager");
 class HospitalService {
     async createHospital(data) {
-        const centerDB = databaseManager_1.databaseManager.getCenterDB();
+        const centerDB = databaseManager_1.databaseManager.getPrismaClient();
         return await centerDB.hospital.create({
             data: {
                 name: data.name,
@@ -27,7 +27,7 @@ class HospitalService {
         });
     }
     async getHospitals(filters = {}) {
-        const centerDB = databaseManager_1.databaseManager.getCenterDB();
+        const centerDB = databaseManager_1.databaseManager.getPrismaClient();
         const { page = 1, limit = 50, ...whereFilters } = filters;
         const skip = (page - 1) * limit;
         const where = {};
@@ -66,13 +66,13 @@ class HospitalService {
         };
     }
     async getHospitalById(id) {
-        const centerDB = databaseManager_1.databaseManager.getCenterDB();
+        const centerDB = databaseManager_1.databaseManager.getPrismaClient();
         return await centerDB.hospital.findUnique({
             where: { id }
         });
     }
     async updateHospital(id, data) {
-        const centerDB = databaseManager_1.databaseManager.getCenterDB();
+        const centerDB = databaseManager_1.databaseManager.getPrismaClient();
         return await centerDB.hospital.update({
             where: { id },
             data: {
@@ -82,13 +82,13 @@ class HospitalService {
         });
     }
     async deleteHospital(id) {
-        const centerDB = databaseManager_1.databaseManager.getCenterDB();
+        const centerDB = databaseManager_1.databaseManager.getPrismaClient();
         await centerDB.hospital.delete({
             where: { id }
         });
     }
     async searchHospitals(query) {
-        const centerDB = databaseManager_1.databaseManager.getCenterDB();
+        const centerDB = databaseManager_1.databaseManager.getPrismaClient();
         return await centerDB.hospital.findMany({
             where: {
                 OR: [
@@ -103,7 +103,7 @@ class HospitalService {
         });
     }
     async approveHospital(id, approvedBy) {
-        const centerDB = databaseManager_1.databaseManager.getCenterDB();
+        const centerDB = databaseManager_1.databaseManager.getPrismaClient();
         return await centerDB.hospital.update({
             where: { id },
             data: {
@@ -116,7 +116,7 @@ class HospitalService {
         });
     }
     async rejectHospital(id, approvedBy) {
-        const centerDB = databaseManager_1.databaseManager.getCenterDB();
+        const centerDB = databaseManager_1.databaseManager.getPrismaClient();
         return await centerDB.hospital.update({
             where: { id },
             data: {

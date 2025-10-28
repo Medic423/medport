@@ -640,57 +640,11 @@ router.get('/agencies/:hospitalId', authenticateAdmin, async (req: Authenticated
  * Assign a unit to a trip
  */
 router.put('/:id/assign-unit', async (req, res) => {
-  try {
-    console.log('TCC_DEBUG: Assign unit request:', { id: req.params.id, body: req.body });
-    
-    const { id } = req.params;
-    const { unitId, agencyId } = req.body;
-
-    if (!unitId) {
-      return res.status(400).json({
-        success: false,
-        error: 'Unit ID is required'
-      });
-    }
-
-    // Get current trip to preserve status
-    const currentTrip = await tripService.getTripById(id);
-    if (!currentTrip.success) {
-      return res.status(404).json({
-        success: false,
-        error: 'Trip not found'
-      });
-    }
-
-    // Use the existing updateTripStatus method to assign the unit
-    // DO NOT change status to ACCEPTED - leave it PENDING until healthcare selects an agency
-    const currentStatus = (currentTrip.data?.status as any) || 'PENDING';
-    const result = await tripService.updateTripStatus(id, {
-      status: currentStatus, // Preserve current status (should be PENDING)
-      assignedUnitId: unitId,
-      assignedAgencyId: agencyId
-    });
-
-    if (!result.success) {
-      return res.status(400).json({
-        success: false,
-        error: result.error
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Unit assigned successfully',
-      data: result.data
-    });
-
-  } catch (error) {
-    console.error('TCC_DEBUG: Assign unit error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to assign unit to trip'
-    });
-  }
+  // Unit assignment is disabled in Option B. Return 410 Gone.
+  return res.status(410).json({
+    success: false,
+    error: 'Unit assignment is no longer supported. Use agency-level acceptance only.'
+  });
 });
 
 /**

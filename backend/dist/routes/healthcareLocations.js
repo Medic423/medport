@@ -31,7 +31,7 @@ router.get('/all', async (req, res) => {
         }
         console.log('TCC_COMMAND: Fetching all healthcare locations for:', user.email);
         const { databaseManager } = require('../services/databaseManager');
-        const db = databaseManager.getCenterDB();
+        const db = databaseManager.getPrismaClient();
         const locations = await db.healthcareLocation.findMany({
             where: { isActive: true },
             orderBy: [

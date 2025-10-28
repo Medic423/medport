@@ -175,6 +175,11 @@ router.post('/enhanced', authenticateAdmin_1.authenticateAdmin, async (req, res)
             });
         }
         const result = await tripService_1.tripService.createEnhancedTrip(enhancedTripData);
+        if (!result.success) {
+            console.error('TCC_DEBUG: Enhanced trip creation failed:', result.error);
+            res.status(400).json(result);
+            return;
+        }
         console.log('TCC_DEBUG: Enhanced trip created successfully:', result);
         res.status(201).json(result);
     }
@@ -555,9 +560,19 @@ router.put('/:id/assign-unit', async (req, res) => {
                 error: 'Unit ID is required'
             });
         }
+        // Get current trip to preserve status
+        const currentTrip = await tripService_1.tripService.getTripById(id);
+        if (!currentTrip.success) {
+            return res.status(404).json({
+                success: false,
+                error: 'Trip not found'
+            });
+        }
         // Use the existing updateTripStatus method to assign the unit
+        // DO NOT change status to ACCEPTED - leave it PENDING until healthcare selects an agency
+        const currentStatus = currentTrip.data?.status || 'PENDING';
         const result = await tripService_1.tripService.updateTripStatus(id, {
-            status: 'ACCEPTED', // Keep current status or set to ACCEPTED
+            status: currentStatus, // Preserve current status (should be PENDING)
             assignedUnitId: unitId,
             assignedAgencyId: agencyId
         });

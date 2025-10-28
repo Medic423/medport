@@ -4,7 +4,7 @@ exports.agencyService = exports.AgencyService = void 0;
 const databaseManager_1 = require("./databaseManager");
 class AgencyService {
     async createAgency(data) {
-        const prisma = databaseManager_1.databaseManager.getEMSDB();
+        const prisma = databaseManager_1.databaseManager.getPrismaClient();
         return await prisma.eMSAgency.create({
             data: {
                 name: data.name,
@@ -25,7 +25,7 @@ class AgencyService {
         });
     }
     async getAgencies(filters = {}) {
-        const prisma = databaseManager_1.databaseManager.getEMSDB();
+        const prisma = databaseManager_1.databaseManager.getPrismaClient();
         const { page = 1, limit = 50, ...whereFilters } = filters;
         const skip = (page - 1) * limit;
         const where = {};
@@ -61,13 +61,13 @@ class AgencyService {
         };
     }
     async getAgencyById(id) {
-        const prisma = databaseManager_1.databaseManager.getEMSDB();
+        const prisma = databaseManager_1.databaseManager.getPrismaClient();
         return await prisma.eMSAgency.findUnique({
             where: { id },
         });
     }
     async updateAgency(id, data) {
-        const prisma = databaseManager_1.databaseManager.getEMSDB();
+        const prisma = databaseManager_1.databaseManager.getPrismaClient();
         return await prisma.eMSAgency.update({
             where: { id },
             data: {
@@ -90,13 +90,13 @@ class AgencyService {
         });
     }
     async deleteAgency(id) {
-        const prisma = databaseManager_1.databaseManager.getEMSDB();
+        const prisma = databaseManager_1.databaseManager.getPrismaClient();
         await prisma.eMSAgency.delete({
             where: { id }
         });
     }
     async searchAgencies(query) {
-        const prisma = databaseManager_1.databaseManager.getEMSDB();
+        const prisma = databaseManager_1.databaseManager.getPrismaClient();
         return await prisma.eMSAgency.findMany({
             where: {
                 OR: [

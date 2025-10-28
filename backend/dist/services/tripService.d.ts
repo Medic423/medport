@@ -140,12 +140,21 @@ export declare class TripService {
                 state: string;
                 locationName: string;
             } | null;
-            originFacility: {
+            assignedUnit: {
+                id: string;
+                agency: {
+                    id: string;
+                    name: string;
+                };
+                type: string;
+                unitNumber: string;
+            } | null;
+            destinationFacility: {
                 id: string;
                 name: string;
                 type: string;
             } | null;
-            destinationFacility: {
+            originFacility: {
                 id: string;
                 name: string;
                 type: string;
@@ -157,15 +166,6 @@ export declare class TripService {
                 contactEmail: string | null;
                 floor: string | null;
                 room: string | null;
-            } | null;
-            assignedUnit: {
-                id: string;
-                agency: {
-                    id: string;
-                    name: string;
-                };
-                type: string;
-                unitNumber: string;
             } | null;
             id: string;
             createdAt: Date;
@@ -218,12 +218,21 @@ export declare class TripService {
                 state: string;
                 locationName: string;
             } | null;
-            originFacility: {
+            assignedUnit: {
+                id: string;
+                agency: {
+                    id: string;
+                    name: string;
+                };
+                type: string;
+                unitNumber: string;
+            } | null;
+            destinationFacility: {
                 id: string;
                 name: string;
                 type: string;
             } | null;
-            destinationFacility: {
+            originFacility: {
                 id: string;
                 name: string;
                 type: string;
@@ -235,15 +244,6 @@ export declare class TripService {
                 contactEmail: string | null;
                 floor: string | null;
                 room: string | null;
-            } | null;
-            assignedUnit: {
-                id: string;
-                agency: {
-                    id: string;
-                    name: string;
-                };
-                type: string;
-                unitNumber: string;
             } | null;
             id: string;
             createdAt: Date;
@@ -303,12 +303,21 @@ export declare class TripService {
     } | {
         success: boolean;
         data: {
-            originFacility: {
+            assignedUnit: {
+                id: string;
+                agency: {
+                    id: string;
+                    name: string;
+                };
+                type: string;
+                unitNumber: string;
+            } | null;
+            destinationFacility: {
                 id: string;
                 name: string;
                 type: string;
             } | null;
-            destinationFacility: {
+            originFacility: {
                 id: string;
                 name: string;
                 type: string;
@@ -320,15 +329,6 @@ export declare class TripService {
                 contactEmail: string | null;
                 floor: string | null;
                 room: string | null;
-            } | null;
-            assignedUnit: {
-                id: string;
-                agency: {
-                    id: string;
-                    name: string;
-                };
-                type: string;
-                unitNumber: string;
             } | null;
         } & {
             id: string;
@@ -381,7 +381,28 @@ export declare class TripService {
     updateTripStatus(id: string, data: UpdateTripStatusRequest): Promise<{
         success: boolean;
         data: {
-            originFacility: {
+            assignedUnit: {
+                id: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                agencyId: string;
+                latitude: number | null;
+                longitude: number | null;
+                type: string;
+                capabilities: string[];
+                status: string;
+                unitNumber: string;
+                currentStatus: string;
+                currentLocation: string | null;
+                crewSize: number;
+                equipment: string[];
+                location: import("@prisma/client/runtime/library").JsonValue | null;
+                lastMaintenance: Date | null;
+                nextMaintenance: Date | null;
+                lastStatusUpdate: Date;
+            } | null;
+            destinationFacility: {
                 email: string | null;
                 id: string;
                 name: string;
@@ -404,7 +425,7 @@ export declare class TripService {
                 approvedAt: Date | null;
                 approvedBy: string | null;
             } | null;
-            destinationFacility: {
+            originFacility: {
                 email: string | null;
                 id: string;
                 name: string;
@@ -439,27 +460,6 @@ export declare class TripService {
                 contactEmail: string | null;
                 floor: string | null;
                 room: string | null;
-            } | null;
-            assignedUnit: {
-                id: string;
-                isActive: boolean;
-                createdAt: Date;
-                updatedAt: Date;
-                agencyId: string;
-                latitude: number | null;
-                longitude: number | null;
-                type: string;
-                capabilities: string[];
-                status: string;
-                unitNumber: string;
-                currentStatus: string;
-                currentLocation: string | null;
-                crewSize: number;
-                equipment: string[];
-                location: import("@prisma/client/runtime/library").JsonValue | null;
-                lastMaintenance: Date | null;
-                nextMaintenance: Date | null;
-                lastStatusUpdate: Date;
             } | null;
         } & {
             id: string;
@@ -534,6 +534,10 @@ export declare class TripService {
      */
     createEnhancedTrip(data: EnhancedCreateTripRequest): Promise<{
         success: boolean;
+        error: string;
+        data?: undefined;
+    } | {
+        success: boolean;
         data: {
             healthcareLocation: {
                 id: string;
@@ -586,10 +590,6 @@ export declare class TripService {
             notes: string | null;
         };
         error?: undefined;
-    } | {
-        success: boolean;
-        error: string;
-        data?: undefined;
     }>;
     /**
      * Get trip history with filtering
@@ -791,6 +791,10 @@ export declare class TripService {
      */
     createTripWithResponses(data: any): Promise<{
         success: boolean;
+        error: string;
+        data?: undefined;
+    } | {
+        success: boolean;
         data: {
             healthcareLocation: {
                 id: string;
@@ -843,10 +847,6 @@ export declare class TripService {
             notes: string | null;
         };
         error?: undefined;
-    } | {
-        success: boolean;
-        error: string;
-        data?: undefined;
     }>;
     /**
      * Update trip response fields
@@ -974,24 +974,111 @@ export declare class TripService {
      */
     createAgencyResponse(data: any): Promise<{
         success: boolean;
-        data: any;
+        data: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            agencyId: string;
+            assignedUnitId: string | null;
+            tripId: string;
+            response: string;
+            responseTimestamp: Date;
+            responseNotes: string | null;
+            estimatedArrival: Date | null;
+            isSelected: boolean;
+        };
         error: null;
+    } | {
+        success: boolean;
+        data: null;
+        error: any;
     }>;
     /**
      * Update agency response
      */
     updateAgencyResponse(id: string, data: any): Promise<{
         success: boolean;
-        data: any;
+        data: {
+            assignedUnit: {
+                id: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                agencyId: string;
+                latitude: number | null;
+                longitude: number | null;
+                type: string;
+                capabilities: string[];
+                status: string;
+                unitNumber: string;
+                currentStatus: string;
+                currentLocation: string | null;
+                crewSize: number;
+                equipment: string[];
+                location: import("@prisma/client/runtime/library").JsonValue | null;
+                lastMaintenance: Date | null;
+                nextMaintenance: Date | null;
+                lastStatusUpdate: Date;
+            } | null;
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            agencyId: string;
+            assignedUnitId: string | null;
+            tripId: string;
+            response: string;
+            responseTimestamp: Date;
+            responseNotes: string | null;
+            estimatedArrival: Date | null;
+            isSelected: boolean;
+        };
         error: null;
+    } | {
+        success: boolean;
+        data: null;
+        error: string;
     }>;
     /**
      * Get agency responses
      */
     getAgencyResponses(filters: any): Promise<{
         success: boolean;
-        data: never[];
-        error: null;
+        data: {
+            id: string;
+            tripId: string;
+            agencyId: string;
+            agency: {
+                id: string;
+                name: string;
+            };
+            response: string;
+            responseTimestamp: Date;
+            responseNotes: string;
+            estimatedArrival: Date | null;
+            isSelected: boolean;
+            assignedUnitId: string | null;
+            assignedUnit: {
+                id: string;
+                unitNumber: string;
+                type: string;
+            } | null;
+            createdAt: Date;
+            updatedAt: Date;
+            trip: {
+                id: any;
+                patientId: any;
+                fromLocation: any;
+                toLocation: any;
+                transportLevel: any;
+                urgencyLevel: any;
+            } | null;
+        }[];
+        error?: undefined;
+    } | {
+        success: boolean;
+        error: string;
+        data?: undefined;
     }>;
     /**
      * Get agency response by ID
@@ -1007,11 +1094,15 @@ export declare class TripService {
     /**
      * Select agency for trip
      */
-    selectAgencyForTrip(tripId: string, data: any): Promise<{
+    selectAgencyForTrip(responseId: string): Promise<{
+        success: boolean;
+        data: null;
+        error: string;
+    } | {
         success: boolean;
         data: {
             tripId: string;
-            agencyResponseId: any;
+            responseId: string;
         };
         error: null;
     }>;

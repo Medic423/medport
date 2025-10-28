@@ -8,7 +8,7 @@ const databaseManager_1 = require("./databaseManager");
  */
 class AnalyticsService {
     async getSystemOverview() {
-        const prisma = databaseManager_1.databaseManager.getCenterDB();
+        const prisma = databaseManager_1.databaseManager.getPrismaClient();
         try {
             const [totalTrips, totalHospitals, activeHospitals, totalAgencies, activeAgencies, totalUnits, activeUnits] = await Promise.all([
                 prisma.transportRequest.count(),
@@ -47,7 +47,7 @@ class AnalyticsService {
         }
     }
     async getTripStatistics() {
-        const prisma = databaseManager_1.databaseManager.getCenterDB();
+        const prisma = databaseManager_1.databaseManager.getPrismaClient();
         try {
             const [totalTrips, pendingTrips, acceptedTrips, completedTrips, cancelledTrips] = await Promise.all([
                 prisma.transportRequest.count(),
@@ -97,7 +97,7 @@ class AnalyticsService {
         }
     }
     async getAgencyPerformance() {
-        const prisma = databaseManager_1.databaseManager.getCenterDB();
+        const prisma = databaseManager_1.databaseManager.getPrismaClient();
         try {
             const agencies = await prisma.eMSAgency.findMany({
                 where: { isActive: true },
@@ -132,7 +132,7 @@ class AnalyticsService {
         }
     }
     async getHospitalActivity() {
-        const prisma = databaseManager_1.databaseManager.getCenterDB();
+        const prisma = databaseManager_1.databaseManager.getPrismaClient();
         try {
             const facilities = await prisma.facility.findMany({
                 where: { isActive: true }

@@ -98,7 +98,7 @@ export class TripService {
         urgencyLevel: data.urgencyLevel || 'Routine',
         priority: data.priority,
         status: 'PENDING',
-        assignedUnitId: 'PENDING', // Default to PENDING - unit assignment is optional
+        // assignedUnitId removed from default; units are not used in trip lifecycle
         specialRequirements: data.specialNeeds || null,
         diagnosis: null,
         mobilityLevel: null,
@@ -401,16 +401,7 @@ export class TripService {
     });
     
     try {
-      // Validate unit assignment if provided
-      if (data.assignedUnitId) {
-        console.log('EMS_UNIT_ASSIGN: Starting unit validation...');
-        const unit = await this.validateUnitAssignment(data.assignedUnitId, data.assignedAgencyId);
-        if (!unit) {
-          console.log('EMS_UNIT_ASSIGN: Unit validation FAILED - returning error');
-          return { success: false, error: 'Invalid unit assignment or unit not available' };
-        }
-        console.log('EMS_UNIT_ASSIGN: Unit validation PASSED');
-      }
+      // Ignore assignedUnitId: unit assignment is disabled (Option B)
 
       const updateData: any = {
         status: data.status,
@@ -525,10 +516,7 @@ export class TripService {
         }
       }
 
-      // Handle unit assignment
-      if (data.assignedUnitId) {
-        updateData.assignedUnitId = data.assignedUnitId;
-      }
+      // Do not set assignedUnitId
       if (data.assignedAgencyId) {
         updateData.assignedAgencyId = data.assignedAgencyId;
       }
@@ -550,15 +538,7 @@ export class TripService {
         updateData.completionTimestamp = new Date(data.completionTimestamp);
       }
 
-      // Update unit status if assigning to a trip
-      if (data.assignedUnitId && data.status === 'ACCEPTED') {
-        await this.updateUnitStatus(data.assignedUnitId, 'COMMITTED');
-      }
-
-      // Update unit status if completing/cancelling a trip
-      if (data.assignedUnitId && (data.status === 'COMPLETED' || data.status === 'CANCELLED')) {
-        await this.updateUnitStatus(data.assignedUnitId, 'AVAILABLE');
-      }
+      // Do not update unit status; units are not in workflow
 
       // TCC_EDIT_DEBUG: Log final update data before Prisma call
       console.log('TCC_EDIT_DEBUG: Final updateData to be sent to Prisma:', JSON.stringify(updateData, null, 2));
@@ -1077,10 +1057,7 @@ export class TripService {
       if (data.estimatedArrival !== undefined) {
         updateData.estimatedArrival = data.estimatedArrival ? new Date(data.estimatedArrival) : null;
       }
-      if (data.assignedUnitId !== undefined) {
-        updateData.assignedUnitId = data.assignedUnitId;
-        console.log('TCC_DEBUG: Setting assignedUnitId on agency response:', data.assignedUnitId);
-      }
+      // Ignore assignedUnitId on agency responses
       
       console.log('TCC_DEBUG: Update data for agency response:', updateData);
       const response = await prisma.agencyResponse.update({
