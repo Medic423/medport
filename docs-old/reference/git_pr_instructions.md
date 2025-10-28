@@ -1,6 +1,37 @@
 ### Git PR and Merge Guide (tcc)
 
-Use this to merge `feature/trip-unit-assignment` into `main` safely after Phase 2.
+## 🚀 Quick Reference: Common Git Commands
+
+```bash
+# Check current status
+git status
+
+# See what branch you're on
+git branch
+
+# Push current branch to origin
+git push origin <branch-name>
+
+# Example: Push hotfix branch
+git push origin hotfix/facilities-fallback
+
+# Switch to main branch
+git checkout main
+
+# Pull latest from origin
+git pull origin main
+
+# See recent commits
+git log --oneline -10
+```
+
+**⚠️ Remember:** Per user preference, git push must be done manually in your terminal (AI can't push due to credential restrictions)
+
+---
+
+## Full PR and Merge Guide
+
+Use this to merge feature branches into `main` safely.
 
 1) Ensure all work is pushed
 - Current working branch: `feature/trip-unit-assignment`
