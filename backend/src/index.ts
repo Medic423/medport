@@ -193,10 +193,15 @@ app.get('/api/test-db', async (req, res) => {
     // Try a simple connection test first
     await databaseManager.getPrismaClient().$connect();
     const result = await databaseManager.getPrismaClient().$queryRaw`SELECT version() as version, now() as current_time`;
+    const hospitalCount = await databaseManager.getPrismaClient().hospital.count();
+    const hospitals = await databaseManager.getPrismaClient().hospital.findMany({ take: 2 });
     res.json({
       success: true,
       message: 'Database connection successful',
-      data: result
+      data: result,
+      hospitalCount: hospitalCount,
+      sampleHospitals: hospitals,
+      databaseUrl: process.env.DATABASE_URL ? process.env.DATABASE_URL.substring(0, 30) + '...' : 'Not set'
     });
   } catch (error) {
     res.json({
