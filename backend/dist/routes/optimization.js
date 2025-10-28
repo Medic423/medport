@@ -367,7 +367,7 @@ router.get('/performance', async (req, res) => {
 router.get('/settings', async (req, res) => {
     try {
         const { agencyId } = req.query;
-        const prisma = databaseManager_1.databaseManager.getCenterDB();
+        const prisma = databaseManager_1.databaseManager.getPrismaClient();
         // Get settings for specific agency or global defaults
         let settings = await prisma.route_optimization_settings.findFirst({
             where: {
@@ -420,7 +420,7 @@ router.get('/settings', async (req, res) => {
 router.post('/settings', async (req, res) => {
     try {
         const { agencyId, ...settingsData } = req.body;
-        const prisma = databaseManager_1.databaseManager.getCenterDB();
+        const prisma = databaseManager_1.databaseManager.getPrismaClient();
         // Check if settings already exist for this agency
         const existingSettings = await prisma.route_optimization_settings.findFirst({
             where: {
@@ -470,7 +470,7 @@ router.post('/settings', async (req, res) => {
 router.post('/settings/reset', async (req, res) => {
     try {
         const { agencyId } = req.body;
-        const prisma = databaseManager_1.databaseManager.getCenterDB();
+        const prisma = databaseManager_1.databaseManager.getPrismaClient();
         // Deactivate existing settings
         await prisma.route_optimization_settings.updateMany({
             where: {
@@ -527,7 +527,7 @@ router.post('/preview', async (req, res) => {
         // Use provided settings or get from database
         let optimizationSettings = settings;
         if (!optimizationSettings) {
-            const prisma = databaseManager_1.databaseManager.getCenterDB();
+            const prisma = databaseManager_1.databaseManager.getPrismaClient();
             const dbSettings = await prisma.route_optimization_settings.findFirst({
                 where: { isActive: true },
                 orderBy: { createdAt: 'desc' }
@@ -661,7 +661,7 @@ router.get('/stream', async (req, res) => {
 // Helper functions - Real database queries
 async function getAllPendingRequests() {
     try {
-        const prisma = databaseManager_1.databaseManager.getCenterDB();
+        const prisma = databaseManager_1.databaseManager.getPrismaClient();
         const trips = await prisma.transportRequest.findMany({
             where: {
                 status: 'PENDING'
@@ -728,7 +728,7 @@ async function getAllPendingRequests() {
 }
 async function getUnitById(unitId) {
     try {
-        const prisma = databaseManager_1.databaseManager.getEMSDB();
+        const prisma = databaseManager_1.databaseManager.getPrismaClient();
         const unit = await prisma.unit.findUnique({
             where: { id: unitId },
             include: {
@@ -761,7 +761,7 @@ async function getUnitById(unitId) {
 }
 async function getUnitsByIds(unitIds) {
     try {
-        const prisma = databaseManager_1.databaseManager.getEMSDB();
+        const prisma = databaseManager_1.databaseManager.getPrismaClient();
         const units = await prisma.unit.findMany({
             where: {
                 id: { in: unitIds },
@@ -794,7 +794,7 @@ async function getUnitsByIds(unitIds) {
 }
 async function getRequestsByIds(requestIds) {
     try {
-        const prisma = databaseManager_1.databaseManager.getCenterDB();
+        const prisma = databaseManager_1.databaseManager.getPrismaClient();
         const trips = await prisma.transportRequest.findMany({
             where: {
                 id: { in: requestIds }
@@ -850,7 +850,7 @@ async function getRequestsByIds(requestIds) {
 }
 async function getCompletedTripsInRange(startTime, endTime, agencyId) {
     try {
-        const prisma = databaseManager_1.databaseManager.getCenterDB();
+        const prisma = databaseManager_1.databaseManager.getPrismaClient();
         const whereClause = {
             status: 'COMPLETED',
             completionTimestamp: {
@@ -954,7 +954,7 @@ function calculateLoadedMiles(trip) {
 }
 async function getPerformanceMetrics(startTime, endTime, unitId) {
     try {
-        const prisma = databaseManager_1.databaseManager.getCenterDB();
+        const prisma = databaseManager_1.databaseManager.getPrismaClient();
         const whereClause = {
             status: 'COMPLETED',
             completionTimestamp: {

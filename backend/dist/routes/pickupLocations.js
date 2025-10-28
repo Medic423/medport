@@ -139,7 +139,7 @@ router.post('/', authenticateAdmin_1.authenticateAdmin, async (req, res) => {
         // For single-location healthcare users, ALWAYS use their own facility
         // regardless of what hospitalId they send (prevents managing other facilities)
         if (req.user && req.user.userType === 'HEALTHCARE') {
-            const healthcareUser = await databaseManager_1.databaseManager.getHospitalDB().healthcareUser.findUnique({
+            const healthcareUser = await databaseManager_1.databaseManager.getPrismaClient().healthcareUser.findUnique({
                 where: { id: req.user.id }
             });
             if (healthcareUser && !healthcareUser.manageMultipleLocations) {

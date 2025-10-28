@@ -16,9 +16,8 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import Notifications from './Notifications';
-import UnitsManagement from './UnitsManagement';
 import AgencySettings from './AgencySettings';
-import UnitSelectionModal from './UnitSelectionModal';
+import UnitsManagement from './UnitsManagement';
 import TripStatusButtons from './TripStatusButtons';
 import EMSTripCalculator from './EMSTripCalculator';
 // import RevenueSettings from './RevenueSettings'; // Replaced by AgencySettings
@@ -114,9 +113,7 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
     minRevenue: ''
   });
 
-  // Unit selection modal state
-  const [isUnitModalOpen, setIsUnitModalOpen] = useState(false);
-  const [unitModalTripId, setUnitModalTripId] = useState<string | null>(null);
+  // Unit selection disabled
 
   // Filtered trips based on filter state
   const [filteredAvailableTrips, setFilteredAvailableTrips] = useState<any[]>([]);
@@ -651,18 +648,7 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <UnitSelectionModal
-          isOpen={isUnitModalOpen}
-          tripId={unitModalTripId}
-          onClose={() => {
-            setIsUnitModalOpen(false);
-            setUnitModalTripId(null);
-          }}
-          onAssigned={async () => {
-            await loadTrips();
-            setActiveTab('accepted');
-          }}
-        />
+        {/* Unit selection modal removed (units not used) */}
         {/* Overview tab removed - Available Trips is now the landing page */}
 
         {activeTab === 'available' && (
@@ -867,19 +853,14 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
                         </div>
                       </div>
                     </div>
-                    <div className="ml-4 flex space-x-2">
+                  <div className="ml-4 flex space-x-2">
                       <TripStatusButtons tripId={trip.id} status={trip.status} onUpdate={handleUpdateTripStatus} />
                       {trip.status === 'COMPLETED' && (
                         <span className="text-sm text-gray-500">Completed</span>
                       )}
                     </div>
                   </div>
-                  {trip.assignedUnit && (
-                      <div className="mt-2 text-sm text-blue-600">
-                        Assigned Unit: {trip.assignedUnit.unitNumber}
-                        <span className="ml-2 text-xs text-gray-500">({trip.assignedUnit.type})</span>
-                      </div>
-                  )}
+                {/* Unit details removed */}
                 </div>
               ))}
               {acceptedTrips.length === 0 && (

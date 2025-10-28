@@ -12,7 +12,7 @@ async function testEMSAuthDirect() {
     const prisma = new PrismaClient({
       datasources: {
         db: {
-          url: process.env.DATABASE_URL_EMS
+          url: process.env.DATABASE_URL
         }
       }
     });

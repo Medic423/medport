@@ -8,9 +8,6 @@ declare class DatabaseManager {
     private constructor();
     static getInstance(): DatabaseManager;
     getPrismaClient(): PrismaClient;
-    getCenterDB(): PrismaClient;
-    getEMSDB(): PrismaClient;
-    getHospitalDB(): PrismaClient;
     healthCheck(): Promise<boolean>;
     private executeWithRetry;
     private delay;

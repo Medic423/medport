@@ -1,17 +1,9 @@
 const { PrismaClient } = require('@prisma/client');
 
-const centerPrisma = new PrismaClient({
+const prisma = new PrismaClient({
   datasources: {
     db: {
-      url: process.env.DATABASE_URL_CENTER
-    }
-  }
-});
-
-const emsPrisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL_EMS
+      url: process.env.DATABASE_URL
     }
   }
 });
@@ -19,7 +11,7 @@ const emsPrisma = new PrismaClient({
 async function associateEMSUser() {
   try {
     // Get the EMS user
-    const emsUser = await centerPrisma.centerUser.findFirst({
+    const emsUser = await prisma.centerUser.findFirst({
       where: {
         email: 'fferguson@movalleyems.com'
       }
@@ -28,12 +20,12 @@ async function associateEMSUser() {
     console.log('EMS User:', emsUser);
     
     // Get the test agency
-    const agency = await emsPrisma.eMSAgency.findFirst();
+    const agency = await prisma.eMSAgency.findFirst();
     console.log('Agency:', agency);
     
     if (emsUser && agency) {
       // Update the user to have the agencyId
-      const updatedUser = await centerPrisma.centerUser.update({
+      const updatedUser = await prisma.centerUser.update({
         where: { id: emsUser.id },
         data: { 
           // Add agencyId field if it exists in the schema
@@ -47,8 +39,8 @@ async function associateEMSUser() {
   } catch (error) {
     console.error('Error associating EMS user:', error);
   } finally {
-    await centerPrisma.$disconnect();
-    await emsPrisma.$disconnect();
+    await prisma.$disconnect();
+    await prisma.$disconnect();
   }
 }
 

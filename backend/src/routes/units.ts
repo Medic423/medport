@@ -46,44 +46,8 @@ router.get('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
  * Create a new unit for the authenticated agency
  */
 router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
-  try {
-    const agencyId = req.user?.agencyId || req.user?.id; // Use agencyId if available, fallback to user.id for EMS
-    console.log('🔍 Units API POST: req.user:', req.user);
-    console.log('🔍 Units API POST: agencyId:', agencyId);
-    console.log('🔍 Units API POST: body:', req.body);
-    
-    if (!agencyId) {
-      return res.status(400).json({
-        success: false,
-        error: 'Agency ID not found'
-      });
-    }
-
-    const unitData: UnitFormData = req.body;
-    
-    // Validate required fields
-    if (!unitData.unitNumber || !unitData.type) {
-      return res.status(400).json({
-        success: false,
-        error: 'Unit number and type are required'
-      });
-    }
-
-    const unit = await unitService.createUnit(unitData, agencyId);
-    console.log('🔍 Units API POST: unit created:', unit);
-    
-    res.status(201).json({
-      success: true,
-      data: unit,
-      message: 'Unit created successfully'
-    });
-  } catch (error) {
-    console.error('Error creating unit:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to create unit'
-    });
-  }
+  // Unit mutations are disabled in Option B. Return 410 Gone.
+  return res.status(410).json({ success: false, error: 'Unit creation is disabled. Units are inventory-only.' });
 });
 
 /**
@@ -121,40 +85,8 @@ router.get('/available', authenticateAdmin, async (req: AuthenticatedRequest, re
  * Get on-duty units for the authenticated EMS agency (for trip assignment)
  */
 router.get('/on-duty', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
-  try {
-    const user = req.user;
-    console.log('TCC_DEBUG: Get on-duty units request from user:', { id: user?.id, agencyId: user?.agencyId, userType: user?.userType });
-
-    if (!user) {
-      return res.status(401).json({ success: false, error: 'Unauthorized' });
-    }
-
-    let units;
-    if (user.userType === 'EMS') {
-      const agencyId = user.agencyId || user.id; // Use agencyId if available, fallback to user.id for EMS
-      console.log('TCC_DEBUG: Getting on-duty units for EMS agency:', agencyId);
-      units = await unitService.getOnDutyUnits(agencyId);
-      console.log('TCC_DEBUG: Found', units.length, 'units for agency:', units.map((u: any) => ({ unitNumber: u.unitNumber, agencyId: u.agencyId })));
-    } else if (user.userType === 'ADMIN') {
-      console.log('TCC_DEBUG: ADMIN requesting on-duty units across all agencies');
-      const allUnits = await unitService.getAllUnits();
-      units = allUnits.filter(u => u.isActive && u.currentStatus === 'AVAILABLE');
-    } else {
-      console.log('TCC_DEBUG: Non-EMS user requesting on-duty units - returning global available list');
-      const allUnits = await unitService.getAllUnits();
-      units = allUnits.filter(u => u.isActive && u.currentStatus === 'AVAILABLE');
-    }
-
-    console.log('TCC_DEBUG: Found on-duty units:', units.length);
-
-    res.json({ success: true, data: units });
-  } catch (error) {
-    console.error('Error getting on-duty units:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to retrieve on-duty units'
-    });
-  }
+  // On-duty listing is disabled (no unit assignment in workflow).
+  return res.status(410).json({ success: false, error: 'On-duty unit listing is disabled.' });
 });
 
 /**
@@ -222,38 +154,7 @@ router.get('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => 
  * Update unit details
  */
 router.put('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
-  try {
-    const { id } = req.params;
-    const unitData: Partial<UnitFormData> = req.body;
-    
-    // Validate required fields for update
-    if (unitData.unitNumber !== undefined && !unitData.unitNumber) {
-      return res.status(400).json({
-        success: false,
-        error: 'Unit number cannot be empty'
-      });
-    }
-    
-    if (unitData.type !== undefined && !unitData.type) {
-      return res.status(400).json({
-        success: false,
-        error: 'Unit type cannot be empty'
-      });
-    }
-    
-    const unit = await unitService.updateUnit(id, unitData as UnitFormData);
-    
-    res.json({
-      success: true,
-      data: unit
-    });
-  } catch (error) {
-    console.error('Error updating unit:', error);
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to update unit'
-    });
-  }
+  return res.status(410).json({ success: false, error: 'Unit updates are disabled. Units are inventory-only.' });
 });
 
 /**
@@ -292,82 +193,14 @@ router.put('/:id/status', authenticateAdmin, async (req: AuthenticatedRequest, r
  * PUT /api/units/:id
  * Update a unit
  */
-router.put('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
-  try {
-    const { id } = req.params;
-    const agencyId = req.user?.agencyId || req.user?.id; // Use agencyId if available, fallback to user.id for EMS
-    console.log('🔍 Units API PUT: req.user:', req.user);
-    console.log('🔍 Units API PUT: agencyId:', agencyId);
-    console.log('🔍 Units API PUT: unitId:', id);
-    console.log('🔍 Units API PUT: body:', req.body);
-    
-    if (!agencyId) {
-      return res.status(400).json({
-        success: false,
-        error: 'Agency ID not found'
-      });
-    }
-
-    const unitData: UnitFormData = req.body;
-    
-    // Validate required fields
-    if (!unitData.unitNumber || !unitData.type) {
-      return res.status(400).json({
-        success: false,
-        error: 'Unit number and type are required'
-      });
-    }
-
-    const unit = await unitService.updateUnit(id, unitData, agencyId);
-    console.log('🔍 Units API PUT: unit updated:', unit);
-    
-    res.json({
-      success: true,
-      data: unit,
-      message: 'Unit updated successfully'
-    });
-  } catch (error) {
-    console.error('Error updating unit:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to update unit'
-    });
-  }
-});
+// Duplicate PUT/:id above is also disabled via 410.
 
 /**
  * DELETE /api/units/:id
  * Delete a unit
  */
 router.delete('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
-  try {
-    const { id } = req.params;
-    const agencyId = req.user?.agencyId || req.user?.id; // Use agencyId if available, fallback to user.id for EMS
-    console.log('🔍 Units API DELETE: req.user:', req.user);
-    console.log('🔍 Units API DELETE: agencyId:', agencyId);
-    console.log('🔍 Units API DELETE: unitId:', id);
-    
-    if (!agencyId) {
-      return res.status(400).json({
-        success: false,
-        error: 'Agency ID not found'
-      });
-    }
-
-    await unitService.deleteUnit(id);
-    console.log('🔍 Units API DELETE: unit deleted');
-    
-    res.json({
-      success: true,
-      message: 'Unit deleted successfully'
-    });
-  } catch (error) {
-    console.error('Error deleting unit:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to delete unit'
-    });
-  }
+  return res.status(410).json({ success: false, error: 'Unit deletion is disabled. Units are inventory-only.' });
 });
 
 /**
@@ -375,45 +208,7 @@ router.delete('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) 
  * Toggle unit duty status (on/off duty)
  */
 router.patch('/:id/duty', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
-  try {
-    const { id } = req.params;
-    const { isActive } = req.body;
-    const agencyId = req.user?.id;
-    
-    console.log('🔍 Units API PATCH duty: req.user:', req.user);
-    console.log('🔍 Units API PATCH duty: agencyId:', agencyId);
-    console.log('🔍 Units API PATCH duty: unitId:', id);
-    console.log('🔍 Units API PATCH duty: isActive:', isActive);
-    
-    if (!agencyId) {
-      return res.status(400).json({
-        success: false,
-        error: 'Agency ID not found'
-      });
-    }
-
-    if (typeof isActive !== 'boolean') {
-      return res.status(400).json({
-        success: false,
-        error: 'isActive must be a boolean value'
-      });
-    }
-
-    const updatedUnit = await unitService.updateUnitDutyStatus(id, isActive);
-    console.log('🔍 Units API PATCH duty: unit updated:', updatedUnit);
-    
-    res.json({
-      success: true,
-      data: updatedUnit,
-      message: `Unit ${isActive ? 'activated' : 'deactivated'} successfully`
-    });
-  } catch (error) {
-    console.error('Error updating unit duty status:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to update unit duty status'
-    });
-  }
+  return res.status(410).json({ success: false, error: 'Unit duty status changes are disabled.' });
 });
 
 export default router;

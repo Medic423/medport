@@ -5,7 +5,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const tripService_1 = require("../services/tripService");
-const authenticateAdmin_1 = require("../middleware/authenticateAdmin");
+const databaseManager_1 = require("../services/databaseManager");
+const prisma = databaseManager_1.databaseManager.getPrismaClient();
 const router = express_1.default.Router();
 /**
  * POST /api/agency-responses
@@ -15,8 +16,10 @@ router.post('/', async (req, res) => {
     try {
         console.log('TCC_DEBUG: Create agency response request received:', req.body);
         const { tripId, agencyId, response, responseNotes, estimatedArrival } = req.body;
+        console.log('TCC_DEBUG: Parsed fields:', { tripId, agencyId, response, responseNotes, estimatedArrival });
         // Validation
         if (!tripId || !agencyId || !response) {
+            console.log('TCC_DEBUG: Validation failed - missing required fields:', { tripId: !!tripId, agencyId: !!agencyId, response: !!response });
             return res.status(400).json({
                 success: false,
                 error: 'Missing required fields: tripId, agencyId, response'
@@ -63,7 +66,7 @@ router.put('/:id', async (req, res) => {
     try {
         console.log('TCC_DEBUG: Update agency response request:', { id: req.params.id, body: req.body });
         const { id } = req.params;
-        const { response, responseNotes, estimatedArrival } = req.body;
+        const { response, responseNotes, estimatedArrival, assignedUnitId } = req.body;
         if (response && !['ACCEPTED', 'DECLINED'].includes(response)) {
             return res.status(400).json({
                 success: false,
@@ -73,7 +76,8 @@ router.put('/:id', async (req, res) => {
         const result = await tripService_1.tripService.updateAgencyResponse(id, {
             response,
             responseNotes,
-            estimatedArrival
+            estimatedArrival,
+            assignedUnitId
         });
         if (!result.success) {
             return res.status(400).json({
@@ -159,24 +163,25 @@ router.get('/:id', async (req, res) => {
     }
 });
 /**
- * POST /api/agency-responses/select/:tripId
- * Select an agency for a trip
+ * POST /api/agency-responses/:responseId/select
+ * Select an agency response (mark as selected)
  */
-router.post('/select/:tripId', authenticateAdmin_1.authenticateAdmin, async (req, res) => {
+router.post('/:responseId/select', async (req, res) => {
     try {
-        console.log('TCC_DEBUG: Select agency for trip request:', { tripId: req.params.tripId, body: req.body });
-        const { tripId } = req.params;
-        const { agencyResponseId, selectionNotes } = req.body;
-        if (!agencyResponseId) {
-            return res.status(400).json({
+        console.log('TCC_DEBUG: Select agency response request:', { responseId: req.params.responseId, body: req.body });
+        const { responseId } = req.params;
+        const { selectionNotes } = req.body;
+        // Get the agency response to find the trip ID
+        const agencyResponse = await prisma.agencyResponse.findUnique({
+            where: { id: responseId }
+        });
+        if (!agencyResponse) {
+            return res.status(404).json({
                 success: false,
-                error: 'Missing required field: agencyResponseId'
+                error: 'Agency response not found'
             });
         }
-        const result = await tripService_1.tripService.selectAgencyForTrip(tripId, {
-            agencyResponseId,
-            selectionNotes
-        });
+        const result = await tripService_1.tripService.selectAgencyForTrip(responseId);
         if (!result.success) {
             return res.status(400).json({
                 success: false,
@@ -247,6 +252,35 @@ router.get('/summary/:tripId', async (req, res) => {
     }
     catch (error) {
         console.error('TCC_DEBUG: Get response summary error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Internal server error'
+        });
+    }
+});
+/**
+ * POST /api/agency-responses/:id/select
+ * Select an agency for a trip (mark as selected and update trip status)
+ */
+router.post('/:id/select', async (req, res) => {
+    try {
+        console.log('TCC_DEBUG: Select agency request for response:', req.params.id);
+        const { id } = req.params;
+        const result = await tripService_1.tripService.selectAgencyForTrip(id);
+        if (!result.success) {
+            return res.status(400).json({
+                success: false,
+                error: result.error
+            });
+        }
+        res.json({
+            success: true,
+            message: 'Agency selected successfully',
+            data: result.data
+        });
+    }
+    catch (error) {
+        console.error('TCC_DEBUG: Select agency error:', error);
         res.status(500).json({
             success: false,
             error: 'Internal server error'

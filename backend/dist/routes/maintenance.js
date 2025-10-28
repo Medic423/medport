@@ -4,8 +4,8 @@ const express_1 = require("express");
 const authenticateAdmin_1 = require("../middleware/authenticateAdmin");
 const databaseManager_1 = require("../services/databaseManager");
 const router = (0, express_1.Router)();
-const centerDb = databaseManager_1.databaseManager.getCenterDB();
-const emsDb = databaseManager_1.databaseManager.getEMSDB();
+const centerDb = databaseManager_1.databaseManager.getPrismaClient();
+const emsDb = databaseManager_1.databaseManager.getPrismaClient();
 // WARNING: Dev-only reset endpoint. Resets trips/units to a clean state.
 router.post('/reset-dev-state', authenticateAdmin_1.authenticateAdmin, async (req, res) => {
     try {

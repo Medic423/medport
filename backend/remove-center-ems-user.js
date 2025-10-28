@@ -3,7 +3,7 @@ const { PrismaClient } = require('@prisma/client');
 const centerPrisma = new PrismaClient({
   datasources: {
     db: {
-      url: process.env.DATABASE_URL_CENTER
+      url: process.env.DATABASE_URL
     }
   }
 });

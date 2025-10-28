@@ -118,33 +118,38 @@ class UnitService {
           agencyId: agencyId
           // Remove isActive filter - show all units for agency (status filtering done elsewhere)
         },
-        include: {
-          analytics: true
-        },
+        // Remove analytics include - it might not exist in production schema
         orderBy: {
           unitNumber: 'asc'
         }
       });
 
       // Transform Prisma units to our Unit interface
-      const transformedUnits: Unit[] = units.map((unit: any) => ({
-        id: unit.id,
-        agencyId: unit.agencyId,
-        unitNumber: unit.unitNumber,
-        type: unit.type as any,
-        capabilities: unit.capabilities,
-        currentStatus: unit.status as any,
-        currentLocation: unit.location ? JSON.stringify(unit.location) : 'Unknown',
-        crew: [], // Will be populated from separate crew management
-        isActive: unit.isActive,
-        totalTripsCompleted: unit.analytics?.totalTripsCompleted || 0,
-        averageResponseTime: unit.analytics?.averageResponseTime?.toNumber() || 0,
-        lastMaintenanceDate: unit.lastMaintenance || new Date(),
-        nextMaintenanceDate: unit.nextMaintenance || new Date(),
-        lastStatusUpdate: unit.lastStatusUpdate || new Date(),
-        createdAt: unit.createdAt,
-        updatedAt: unit.updatedAt
-      }));
+      const transformedUnits: Unit[] = units.map((unit: any) => {
+        try {
+          return {
+            id: unit.id,
+            agencyId: unit.agencyId,
+            unitNumber: unit.unitNumber,
+            type: unit.type as any,
+            capabilities: unit.capabilities || [],
+            currentStatus: (unit.currentStatus || unit.status) as any,
+            currentLocation: unit.currentLocation || 'Unknown',
+            crew: [], // Will be populated from separate crew management
+            isActive: unit.isActive,
+            totalTripsCompleted: 0, // Remove analytics dependency
+            averageResponseTime: 0,  // Remove analytics dependency
+            lastMaintenanceDate: unit.lastMaintenance || new Date(),
+            nextMaintenanceDate: unit.nextMaintenance || new Date(),
+            lastStatusUpdate: unit.lastStatusUpdate || unit.updatedAt || new Date(),
+            createdAt: unit.createdAt,
+            updatedAt: unit.updatedAt
+          };
+        } catch (error) {
+          console.error('Error transforming unit:', error);
+          throw error;
+        }
+      });
 
       console.log('TCC_DEBUG: Found units:', transformedUnits.length);
       return transformedUnits;

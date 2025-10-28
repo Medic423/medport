@@ -22,7 +22,7 @@ router.get('/:category', authenticateAdmin_1.authenticateAdmin, async (req, res)
         if (!ALLOWED_CATEGORIES.has(category)) {
             return res.status(400).json({ success: false, error: 'Invalid category' });
         }
-        const hospitalPrisma = databaseManager_1.databaseManager.getHospitalDB();
+        const hospitalPrisma = databaseManager_1.databaseManager.getPrismaClient();
         // Ensure baseline defaults exist for urgency
         if (category === 'urgency') {
             const baseline = ['Routine', 'Urgent', 'Emergent'];
@@ -63,7 +63,7 @@ router.get('/:category/default', authenticateAdmin_1.authenticateAdmin, async (r
         if (!ALLOWED_CATEGORIES.has(category)) {
             return res.status(400).json({ success: false, error: 'Invalid category' });
         }
-        const hospitalPrisma = databaseManager_1.databaseManager.getHospitalDB();
+        const hospitalPrisma = databaseManager_1.databaseManager.getPrismaClient();
         const existing = await hospitalPrisma.categoryDefault.findUnique({
             where: { category },
             include: { option: true }
@@ -86,7 +86,7 @@ router.post('/:category/default', authenticateAdmin_1.authenticateAdmin, async (
         if (!optionId) {
             return res.status(400).json({ success: false, error: 'optionId is required' });
         }
-        const hospitalPrisma = databaseManager_1.databaseManager.getHospitalDB();
+        const hospitalPrisma = databaseManager_1.databaseManager.getPrismaClient();
         // Validate option exists and belongs to category
         const option = await hospitalPrisma.dropdownOption.findUnique({ where: { id: optionId } });
         if (!option || option.category !== category || !option.isActive) {
@@ -119,7 +119,7 @@ router.post('/', authenticateAdmin_1.authenticateAdmin, async (req, res) => {
         if (!ALLOWED_CATEGORIES.has(category)) {
             return res.status(400).json({ success: false, error: 'Invalid category' });
         }
-        const hospitalPrisma = databaseManager_1.databaseManager.getHospitalDB();
+        const hospitalPrisma = databaseManager_1.databaseManager.getPrismaClient();
         // Check if option already exists
         const existingOption = await hospitalPrisma.dropdownOption.findFirst({
             where: {
@@ -159,7 +159,7 @@ router.put('/:id', authenticateAdmin_1.authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const { value, isActive } = req.body;
-        const hospitalPrisma = databaseManager_1.databaseManager.getHospitalDB();
+        const hospitalPrisma = databaseManager_1.databaseManager.getPrismaClient();
         const updatedOption = await hospitalPrisma.dropdownOption.update({
             where: { id },
             data: {
@@ -185,7 +185,7 @@ router.put('/:id', authenticateAdmin_1.authenticateAdmin, async (req, res) => {
 router.delete('/:id', authenticateAdmin_1.authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const hospitalPrisma = databaseManager_1.databaseManager.getHospitalDB();
+        const hospitalPrisma = databaseManager_1.databaseManager.getPrismaClient();
         await hospitalPrisma.dropdownOption.update({
             where: { id },
             data: {

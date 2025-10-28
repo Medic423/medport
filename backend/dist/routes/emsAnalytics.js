@@ -17,7 +17,7 @@ router.use(async (req, res, next) => {
     next();
 });
 async function resolveAgencyContext(req) {
-    const emsPrisma = databaseManager_1.databaseManager.getEMSDB();
+    const emsPrisma = databaseManager_1.databaseManager.getPrismaClient();
     let agencyId = req.user?.id || null; // For EMS tokens, this should already be agencyId
     let agencyName = null;
     try {
@@ -45,7 +45,7 @@ router.get('/overview', async (req, res) => {
         if (!agencyId) {
             return res.status(400).json({ success: false, error: 'Unable to resolve EMS agency' });
         }
-        const centerPrisma = databaseManager_1.databaseManager.getCenterDB();
+        const centerPrisma = databaseManager_1.databaseManager.getPrismaClient();
         const [totalTrips, completedTrips, pendingTrips, responseTimes] = await Promise.all([
             centerPrisma.trip.count({ where: { assignedAgencyId: agencyId } }),
             centerPrisma.trip.count({ where: { assignedAgencyId: agencyId, status: 'COMPLETED' } }),
@@ -89,7 +89,7 @@ router.get('/trips', async (req, res) => {
         if (!agencyId) {
             return res.status(400).json({ success: false, error: 'Unable to resolve EMS agency' });
         }
-        const prisma = databaseManager_1.databaseManager.getCenterDB();
+        const prisma = databaseManager_1.databaseManager.getPrismaClient();
         const [totalTrips, completedTrips, pendingTrips, cancelledTrips, responseTimes, tripDurations, byLevel, byPriority] = await Promise.all([
             prisma.transportRequest.count({ where: { assignedAgencyId: agencyId } }),
             prisma.transportRequest.count({ where: { assignedAgencyId: agencyId, status: 'COMPLETED' } }),
@@ -153,7 +153,7 @@ router.get('/units', async (req, res) => {
         if (!agencyId) {
             return res.status(400).json({ success: false, error: 'Unable to resolve EMS agency' });
         }
-        const emsPrisma = databaseManager_1.databaseManager.getEMSDB();
+        const emsPrisma = databaseManager_1.databaseManager.getPrismaClient();
         const [totalUnits, activeUnits, availableUnits, committedUnits, outOfServiceUnits, topPerformingUnits] = await Promise.all([
             emsPrisma.unit.count({ where: { agencyId } }),
             emsPrisma.unit.count({ where: { agencyId, isActive: true } }),
@@ -206,7 +206,7 @@ router.get('/performance', async (req, res) => {
         if (!agencyId) {
             return res.status(400).json({ success: false, error: 'Unable to resolve EMS agency' });
         }
-        const prisma = databaseManager_1.databaseManager.getCenterDB();
+        const prisma = databaseManager_1.databaseManager.getPrismaClient();
         // SIMPLIFIED: Only get basic trip counts, skip complex calculations
         const [totalTrips, completedTrips] = await Promise.all([
             prisma.transportRequest.count({ where: { assignedAgencyId: agencyId } }),

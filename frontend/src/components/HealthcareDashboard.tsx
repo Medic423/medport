@@ -778,14 +778,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                             </p>
                           )}
                           {/* Unit Assignment Display */}
-                          <p className="text-xs text-green-600">
-                            Unit: {trip.assignedUnitId === 'PENDING' 
-                              ? 'Unit Assignment Pending'
-                              : trip.assignedUnitNumber
-                                ? `${trip.assignedUnitNumber}${trip.assignedUnitType ? ` (${trip.assignedUnitType})` : ''}`
-                                : 'Unit Assignment Pending'
-                            }
-                          </p>
+                          {/* Unit info removed under Option B */}
                           {/* Agency Responses Display */}
                           {(() => {
                             console.log(`TCC_DEBUG: HealthcareDashboard - Rendering trip ${trip.id}, agencyResponses:`, {

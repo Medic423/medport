@@ -13,10 +13,10 @@ class UnitService {
     async getAllUnits() {
         try {
             console.log('TCC_DEBUG: getAllUnits called');
-            const prisma = databaseManager_1.databaseManager.getEMSDB();
+            const prisma = databaseManager_1.databaseManager.getPrismaClient();
             const units = await prisma.unit.findMany({
                 where: {
-                    isActive: true
+                // Remove isActive filter - show all units for admin users
                 },
                 include: {
                     analytics: true,
@@ -59,38 +59,44 @@ class UnitService {
     async getUnitsByAgency(agencyId) {
         try {
             console.log('TCC_DEBUG: getUnitsByAgency called with agencyId:', agencyId);
-            const prisma = databaseManager_1.databaseManager.getEMSDB();
+            const prisma = databaseManager_1.databaseManager.getPrismaClient();
             const units = await prisma.unit.findMany({
                 where: {
-                    agencyId: agencyId,
-                    isActive: true
+                    agencyId: agencyId
+                    // Remove isActive filter - show all units for agency (status filtering done elsewhere)
                 },
-                include: {
-                    analytics: true
-                },
+                // Remove analytics include - it might not exist in production schema
                 orderBy: {
                     unitNumber: 'asc'
                 }
             });
             // Transform Prisma units to our Unit interface
-            const transformedUnits = units.map((unit) => ({
-                id: unit.id,
-                agencyId: unit.agencyId,
-                unitNumber: unit.unitNumber,
-                type: unit.type,
-                capabilities: unit.capabilities,
-                currentStatus: unit.status,
-                currentLocation: unit.location ? JSON.stringify(unit.location) : 'Unknown',
-                crew: [], // Will be populated from separate crew management
-                isActive: unit.isActive,
-                totalTripsCompleted: unit.analytics?.totalTripsCompleted || 0,
-                averageResponseTime: unit.analytics?.averageResponseTime?.toNumber() || 0,
-                lastMaintenanceDate: unit.lastMaintenance || new Date(),
-                nextMaintenanceDate: unit.nextMaintenance || new Date(),
-                lastStatusUpdate: unit.lastStatusUpdate || new Date(),
-                createdAt: unit.createdAt,
-                updatedAt: unit.updatedAt
-            }));
+            const transformedUnits = units.map((unit) => {
+                try {
+                    return {
+                        id: unit.id,
+                        agencyId: unit.agencyId,
+                        unitNumber: unit.unitNumber,
+                        type: unit.type,
+                        capabilities: unit.capabilities || [],
+                        currentStatus: (unit.currentStatus || unit.status),
+                        currentLocation: unit.currentLocation || 'Unknown',
+                        crew: [], // Will be populated from separate crew management
+                        isActive: unit.isActive,
+                        totalTripsCompleted: 0, // Remove analytics dependency
+                        averageResponseTime: 0, // Remove analytics dependency
+                        lastMaintenanceDate: unit.lastMaintenance || new Date(),
+                        nextMaintenanceDate: unit.nextMaintenance || new Date(),
+                        lastStatusUpdate: unit.lastStatusUpdate || unit.updatedAt || new Date(),
+                        createdAt: unit.createdAt,
+                        updatedAt: unit.updatedAt
+                    };
+                }
+                catch (error) {
+                    console.error('Error transforming unit:', error);
+                    throw error;
+                }
+            });
             console.log('TCC_DEBUG: Found units:', transformedUnits.length);
             return transformedUnits;
         }
@@ -138,7 +144,7 @@ class UnitService {
     async createUnit(unitData, agencyId) {
         try {
             console.log('TCC_DEBUG: createUnit called with data:', unitData);
-            const prisma = databaseManager_1.databaseManager.getEMSDB();
+            const prisma = databaseManager_1.databaseManager.getPrismaClient();
             // Create the unit in the database
             const newUnit = await prisma.unit.create({
                 data: {
@@ -198,10 +204,24 @@ class UnitService {
     /**
      * Update a unit
      */
-    async updateUnit(unitId, unitData) {
+    async updateUnit(unitId, unitData, agencyId) {
         try {
-            console.log('TCC_DEBUG: updateUnit called with unitId:', unitId, 'data:', unitData);
-            const prisma = databaseManager_1.databaseManager.getEMSDB();
+            console.log('TCC_DEBUG: updateUnit called with unitId:', unitId, 'data:', unitData, 'agencyId:', agencyId);
+            const prisma = databaseManager_1.databaseManager.getPrismaClient();
+            // If agencyId is provided, verify the unit belongs to that agency
+            if (agencyId) {
+                const existingUnit = await prisma.unit.findUnique({
+                    where: { id: unitId },
+                    select: { agencyId: true }
+                });
+                if (!existingUnit) {
+                    throw new Error('Unit not found');
+                }
+                if (existingUnit.agencyId !== agencyId) {
+                    throw new Error('Unit does not belong to your agency');
+                }
+                console.log('TCC_DEBUG: Unit ownership verified');
+            }
             // Update the unit in the database
             const updatedUnit = await prisma.unit.update({
                 where: { id: unitId },
@@ -209,8 +229,8 @@ class UnitService {
                     unitNumber: unitData.unitNumber,
                     type: unitData.type,
                     capabilities: unitData.capabilities,
-                    status: unitData.currentStatus || 'AVAILABLE',
-                    currentStatus: unitData.currentStatus || 'AVAILABLE',
+                    status: unitData.status || unitData.currentStatus || 'AVAILABLE',
+                    currentStatus: unitData.status || unitData.currentStatus || 'AVAILABLE',
                     isActive: unitData.isActive,
                     lastStatusUpdate: new Date(),
                     updatedAt: new Date()
@@ -253,7 +273,7 @@ class UnitService {
     async deleteUnit(unitId) {
         try {
             console.log('TCC_DEBUG: deleteUnit called with unitId:', unitId);
-            const prisma = databaseManager_1.databaseManager.getEMSDB();
+            const prisma = databaseManager_1.databaseManager.getPrismaClient();
             // First delete the analytics record if it exists
             await prisma.unit_analytics.deleteMany({
                 where: { unitId: unitId }
@@ -341,12 +361,11 @@ class UnitService {
     async getOnDutyUnits(agencyId) {
         try {
             console.log('TCC_DEBUG: getOnDutyUnits called with agencyId:', agencyId);
-            const prisma = databaseManager_1.databaseManager.getEMSDB();
+            const prisma = databaseManager_1.databaseManager.getPrismaClient();
             const units = await prisma.unit.findMany({
                 where: {
                     agencyId: agencyId,
-                    isActive: true,
-                    status: 'AVAILABLE' // Only return units that are on-duty and available
+                    status: 'AVAILABLE' // Only return units that are available (removes isActive dependency)
                 },
                 include: {
                     analytics: true,
@@ -389,7 +408,7 @@ class UnitService {
     async getUnitAnalytics(agencyId) {
         try {
             console.log('TCC_DEBUG: getUnitAnalytics called with agencyId:', agencyId);
-            const prisma = databaseManager_1.databaseManager.getEMSDB();
+            const prisma = databaseManager_1.databaseManager.getPrismaClient();
             // Get all units for the agency
             const units = await prisma.unit.findMany({
                 where: {
@@ -441,7 +460,7 @@ class UnitService {
     async updateUnitDutyStatus(unitId, isActive) {
         try {
             console.log('TCC_DEBUG: updateUnitDutyStatus called with unitId:', unitId, 'isActive:', isActive);
-            const prisma = databaseManager_1.databaseManager.getEMSDB();
+            const prisma = databaseManager_1.databaseManager.getPrismaClient();
             // Update the unit's isActive status
             const updatedUnit = await prisma.unit.update({
                 where: {

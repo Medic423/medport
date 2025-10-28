@@ -138,7 +138,7 @@ router.post('/healthcare/register', async (req, res) => {
                 });
             }
         }
-        const hospitalDB = databaseManager_1.databaseManager.getHospitalDB();
+        const hospitalDB = databaseManager_1.databaseManager.getPrismaClient();
         // Check if user already exists
         const existingUser = await hospitalDB.healthcareUser.findUnique({
             where: { email }
@@ -150,7 +150,7 @@ router.post('/healthcare/register', async (req, res) => {
             });
         }
         // Also check if facility name already exists
-        const centerDB = databaseManager_1.databaseManager.getCenterDB();
+        const centerDB = databaseManager_1.databaseManager.getPrismaClient();
         const existingFacility = await centerDB.hospital.findFirst({
             where: { name: facilityName }
         });
@@ -242,8 +242,8 @@ router.put('/healthcare/facility/update', authenticateAdmin_1.authenticateAdmin,
         }
         const updateData = req.body;
         console.log('TCC_DEBUG: Update data received:', updateData);
-        const hospitalDB = databaseManager_1.databaseManager.getHospitalDB();
-        const centerDB = databaseManager_1.databaseManager.getCenterDB();
+        const hospitalDB = databaseManager_1.databaseManager.getPrismaClient();
+        const centerDB = databaseManager_1.databaseManager.getPrismaClient();
         console.log('TCC_DEBUG: Attempting to update healthcare user record...');
         // Update healthcare user record
         const updatedUser = await hospitalDB.healthcareUser.update({
@@ -314,8 +314,8 @@ router.put('/ems/agency/update', authenticateAdmin_1.authenticateAdmin, async (r
         }
         const updateData = req.body;
         console.log('TCC_DEBUG: Update data received:', updateData);
-        const db = databaseManager_1.databaseManager.getCenterDB();
-        const centerDB = databaseManager_1.databaseManager.getCenterDB();
+        const db = databaseManager_1.databaseManager.getPrismaClient();
+        const centerDB = databaseManager_1.databaseManager.getPrismaClient();
         console.log('TCC_DEBUG: Attempting to update EMS user record...');
         console.log('TCC_DEBUG: Looking for EMS user by email:', req.user?.email);
         // Find EMS user by email first
@@ -430,7 +430,7 @@ router.post('/ems/register', async (req, res) => {
                 });
             }
         }
-        const db = databaseManager_1.databaseManager.getCenterDB();
+        const db = databaseManager_1.databaseManager.getPrismaClient();
         // Check if user already exists in EMS database
         const existingUser = await db.eMSUser.findUnique({
             where: { email }
@@ -463,7 +463,7 @@ router.post('/ems/register', async (req, res) => {
             }
         });
         // Also create a corresponding EMSAgency record in Center database for TCC dashboard
-        const centerDB = databaseManager_1.databaseManager.getCenterDB();
+        const centerDB = databaseManager_1.databaseManager.getPrismaClient();
         await centerDB.eMSAgency.create({
             data: {
                 name: agencyName,
@@ -580,7 +580,7 @@ router.get('/users', authenticateAdmin_1.authenticateAdmin, async (req, res) => 
                 error: 'Only administrators can view all users'
             });
         }
-        const centerDB = (await Promise.resolve().then(() => __importStar(require('../services/databaseManager')))).databaseManager.getCenterDB();
+        const centerDB = (await Promise.resolve().then(() => __importStar(require('../services/databaseManager')))).databaseManager.getPrismaClient();
         const users = await centerDB.centerUser.findMany({
             select: {
                 id: true,
@@ -625,13 +625,15 @@ router.post('/ems/login', async (req, res) => {
                 error: 'Email and password are required'
             });
         }
-        const db = databaseManager_1.databaseManager.getCenterDB();
+        const db = databaseManager_1.databaseManager.getPrismaClient();
+        console.log('TCC_DEBUG: Looking for EMS user with email:', email);
         const user = await db.eMSUser.findFirst({
             where: {
                 email,
                 isActive: true
             }
         });
+        console.log('TCC_DEBUG: EMS user lookup result:', user ? { id: user.id, email: user.email, name: user.name } : 'NOT FOUND');
         if (!user) {
             console.log('TCC_DEBUG: No EMS user found for email:', email);
             return res.status(401).json({
@@ -640,7 +642,9 @@ router.post('/ems/login', async (req, res) => {
             });
         }
         const isValidPassword = await bcrypt_1.default.compare(password, user.password);
+        console.log('TCC_DEBUG: Password match result:', isValidPassword);
         if (!isValidPassword) {
+            console.log('TCC_DEBUG: Password mismatch for user:', email);
             return res.status(401).json({
                 success: false,
                 error: 'Invalid credentials'
@@ -650,7 +654,8 @@ router.post('/ems/login', async (req, res) => {
         const token = jsonwebtoken_1.default.sign({
             id: user.id, // Use user ID for EMS users
             email: user.email,
-            userType: 'EMS'
+            userType: 'EMS',
+            agencyId: user.agencyId || user.id // Include agencyId in JWT for filtering
         }, process.env.JWT_SECRET || 'fallback-secret', { expiresIn: '24h' });
         // Set HttpOnly cookie
         res.cookie('tcc_token', token, {
@@ -667,7 +672,8 @@ router.post('/ems/login', async (req, res) => {
                 email: user.email,
                 name: user.name,
                 userType: 'EMS',
-                agencyName: user.agencyName
+                agencyName: user.agencyName,
+                agencyId: user.agencyId || user.id // Use agencyId if available, fallback to user id for legacy
             },
             token
         });
@@ -697,7 +703,7 @@ router.post('/healthcare/login', async (req, res) => {
                 error: 'Email and password are required'
             });
         }
-        const db = databaseManager_1.databaseManager.getCenterDB();
+        const db = databaseManager_1.databaseManager.getPrismaClient();
         const user = await db.healthcareUser.findFirst({
             where: {
                 email,

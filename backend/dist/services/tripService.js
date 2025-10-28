@@ -4,7 +4,7 @@ exports.tripService = exports.TripService = void 0;
 const databaseManager_1 = require("./databaseManager");
 const patientIdService_1 = require("./patientIdService");
 const distanceService_1 = require("./distanceService");
-const prisma = databaseManager_1.databaseManager.getCenterDB();
+const prisma = databaseManager_1.databaseManager.getPrismaClient();
 class TripService {
     /**
      * Create a new transport request
@@ -26,6 +26,7 @@ class TripService {
                 urgencyLevel: data.urgencyLevel || 'Routine',
                 priority: data.priority,
                 status: 'PENDING',
+                assignedUnitId: 'PENDING', // Default to PENDING - unit assignment is optional
                 specialRequirements: data.specialNeeds || null,
                 diagnosis: null,
                 mobilityLevel: null,
@@ -550,11 +551,45 @@ class TripService {
             console.log('TCC_CREATE_DEBUG: Trip data healthcareCreatedById before create:', tripData.healthcareCreatedById);
             // Connect pickup location relation if provided
             if (data.pickupLocationId) {
+                console.log('TCC_DEBUG: Validating pickup location:', data.pickupLocationId);
+                // First verify the pickup location exists
+                const pickupLocation = await prisma.pickup_locations.findUnique({
+                    where: { id: data.pickupLocationId }
+                });
+                console.log('TCC_DEBUG: Pickup location lookup result:', pickupLocation ? `Found: ${pickupLocation.name}` : 'NOT FOUND');
+                if (!pickupLocation) {
+                    console.error('TCC_DEBUG: Pickup location not found:', data.pickupLocationId);
+                    return {
+                        success: false,
+                        error: `Pickup location "${data.pickupLocationId}" not found. Please select a valid pickup location from the dropdown.`
+                    };
+                }
+                console.log('TCC_DEBUG: Pickup location validated:', pickupLocation.name);
                 tripData.pickupLocation = { connect: { id: data.pickupLocationId } };
+            }
+            else {
+                console.log('TCC_DEBUG: No pickupLocationId provided, skipping pickup location connection');
             }
             // Connect healthcare location relation if provided
             if (data.fromLocationId) {
+                console.log('TCC_DEBUG: Validating healthcare location:', data.fromLocationId);
+                // Verify the healthcare location exists
+                const healthcareLocation = await prisma.healthcareLocation.findUnique({
+                    where: { id: data.fromLocationId }
+                });
+                console.log('TCC_DEBUG: Healthcare location lookup result:', healthcareLocation ? `Found: ${healthcareLocation.locationName}` : 'NOT FOUND');
+                if (!healthcareLocation) {
+                    console.error('TCC_DEBUG: From Location not found:', data.fromLocationId);
+                    return {
+                        success: false,
+                        error: `From Location "${data.fromLocation}" not found. Please select a valid from location from the dropdown.`
+                    };
+                }
+                console.log('TCC_DEBUG: Healthcare location validated:', healthcareLocation.locationName);
                 tripData.healthcareLocation = { connect: { id: data.fromLocationId } };
+            }
+            else {
+                console.log('TCC_DEBUG: No fromLocationId provided, skipping healthcare location connection');
             }
             const trip = await prisma.transportRequest.create({
                 data: tripData,
@@ -821,27 +856,184 @@ class TripService {
      */
     async createAgencyResponse(data) {
         console.log('TCC_DEBUG: Creating agency response:', data);
-        // For now, return a simple success response
-        // This can be expanded to actually store agency responses
-        return { success: true, data: { id: 'temp-response-id', ...data }, error: null };
+        try {
+            // Create the agency response record
+            const agencyResponse = await prisma.agencyResponse.create({
+                data: {
+                    tripId: data.tripId,
+                    agencyId: data.agencyId,
+                    response: data.response, // ACCEPTED or DECLINED
+                    responseNotes: data.responseNotes || null,
+                    estimatedArrival: data.estimatedArrival ? new Date(data.estimatedArrival) : null,
+                    responseTimestamp: new Date(),
+                    isSelected: false // Will be set to true when healthcare provider selects this agency
+                }
+            });
+            console.log('TCC_DEBUG: Agency response created successfully:', agencyResponse.id);
+            // DO NOT update trip status here - leave it as PENDING
+            // Only update status when healthcare provider selects an agency
+            return { success: true, data: agencyResponse, error: null };
+        }
+        catch (error) {
+            console.error('TCC_DEBUG: Error creating agency response:', error);
+            console.error('TCC_DEBUG: Error details:', {
+                message: error?.message,
+                code: error?.code,
+                meta: error?.meta
+            });
+            return {
+                success: false,
+                data: null,
+                error: error?.message || 'Failed to create agency response'
+            };
+        }
     }
     /**
      * Update agency response
      */
     async updateAgencyResponse(id, data) {
         console.log('TCC_DEBUG: Updating agency response:', { id, data });
-        // For now, return a simple success response
-        // This can be expanded to actually update agency responses
-        return { success: true, data: { id, ...data }, error: null };
+        try {
+            const updateData = {};
+            if (data.response)
+                updateData.response = data.response;
+            if (data.responseNotes !== undefined)
+                updateData.responseNotes = data.responseNotes;
+            if (data.estimatedArrival !== undefined) {
+                updateData.estimatedArrival = data.estimatedArrival ? new Date(data.estimatedArrival) : null;
+            }
+            if (data.assignedUnitId !== undefined) {
+                updateData.assignedUnitId = data.assignedUnitId;
+                console.log('TCC_DEBUG: Setting assignedUnitId on agency response:', data.assignedUnitId);
+            }
+            console.log('TCC_DEBUG: Update data for agency response:', updateData);
+            const response = await prisma.agencyResponse.update({
+                where: { id },
+                data: updateData,
+                include: {
+                    assignedUnit: true
+                }
+            });
+            console.log('TCC_DEBUG: Agency response updated successfully:', { id: response.id, assignedUnitId: response.assignedUnitId, assignedUnit: response.assignedUnit });
+            return { success: true, data: response, error: null };
+        }
+        catch (error) {
+            console.error('TCC_DEBUG: Error updating agency response:', error);
+            return { success: false, data: null, error: 'Failed to update agency response' };
+        }
     }
     /**
      * Get agency responses
      */
     async getAgencyResponses(filters) {
         console.log('TCC_DEBUG: Getting agency responses with filters:', filters);
-        // For now, return an empty array
-        // This can be expanded to actually query agency responses
-        return { success: true, data: [], error: null };
+        try {
+            const where = {};
+            if (filters.tripId)
+                where.tripId = filters.tripId;
+            if (filters.agencyId)
+                where.agencyId = filters.agencyId;
+            if (filters.response)
+                where.response = filters.response;
+            if (filters.isSelected !== undefined)
+                where.isSelected = filters.isSelected;
+            // Get all agency responses from the agency_responses table, including assigned units
+            const agencyResponses = await prisma.agencyResponse.findMany({
+                where,
+                include: {
+                    assignedUnit: true // Include the unit assigned by this specific agency
+                },
+                orderBy: { responseTimestamp: 'desc' }
+            });
+            console.log('TCC_DEBUG: Found', agencyResponses.length, 'agency responses in database');
+            // Get unique trip IDs to fetch trip details
+            const tripIds = [...new Set(agencyResponses.map(r => r.tripId))];
+            // Fetch trip details - check both transport_requests and trips tables
+            const transportRequests = await prisma.transportRequest.findMany({
+                where: { id: { in: tripIds } },
+                include: {
+                    assignedUnit: true,
+                    originFacility: true,
+                    destinationFacility: true
+                }
+            });
+            const tripsData = await prisma.trip.findMany({
+                where: { id: { in: tripIds } }
+            });
+            // Combine both sources into a single map
+            const tripMap = new Map();
+            transportRequests.forEach(trip => {
+                tripMap.set(trip.id, {
+                    id: trip.id,
+                    patientId: trip.patientId,
+                    fromLocation: trip.fromLocation,
+                    toLocation: trip.toLocation,
+                    transportLevel: trip.transportLevel,
+                    urgencyLevel: trip.urgencyLevel,
+                    assignedUnit: trip.assignedUnit
+                });
+            });
+            tripsData.forEach(trip => {
+                if (!tripMap.has(trip.id)) {
+                    tripMap.set(trip.id, {
+                        id: trip.id,
+                        patientId: trip.patientId,
+                        fromLocation: trip.fromLocation,
+                        toLocation: trip.toLocation,
+                        transportLevel: trip.transportLevel,
+                        urgencyLevel: trip.urgencyLevel,
+                        assignedUnit: null
+                    });
+                }
+            });
+            // Get agency names for all agencies in responses
+            const agencyIds = [...new Set(agencyResponses.map(r => r.agencyId))];
+            const agencies = await prisma.eMSAgency.findMany({
+                where: { id: { in: agencyIds } },
+                select: { id: true, name: true }
+            });
+            const agencyMap = new Map(agencies.map(agency => [agency.id, agency.name]));
+            // Combine agency response data with trip details
+            const responses = agencyResponses.map(response => {
+                const trip = tripMap.get(response.tripId);
+                return {
+                    id: response.id,
+                    tripId: response.tripId,
+                    agencyId: response.agencyId,
+                    agency: {
+                        id: response.agencyId,
+                        name: agencyMap.get(response.agencyId) || `Agency ${response.agencyId}`
+                    },
+                    response: response.response,
+                    responseTimestamp: response.responseTimestamp,
+                    responseNotes: response.responseNotes || '',
+                    estimatedArrival: response.estimatedArrival,
+                    isSelected: response.isSelected,
+                    assignedUnitId: response.assignedUnitId,
+                    assignedUnit: response.assignedUnit ? {
+                        id: response.assignedUnit.id,
+                        unitNumber: response.assignedUnit.unitNumber,
+                        type: response.assignedUnit.type
+                    } : null,
+                    createdAt: response.createdAt,
+                    updatedAt: response.updatedAt,
+                    trip: trip ? {
+                        id: trip.id,
+                        patientId: trip.patientId,
+                        fromLocation: trip.fromLocation,
+                        toLocation: trip.toLocation,
+                        transportLevel: trip.transportLevel,
+                        urgencyLevel: trip.urgencyLevel
+                    } : null
+                };
+            });
+            console.log('TCC_DEBUG: Returning', responses.length, 'agency responses with trip details');
+            return { success: true, data: responses };
+        }
+        catch (error) {
+            console.error('TCC_DEBUG: Error getting agency responses:', error);
+            return { success: false, error: 'Failed to fetch agency responses' };
+        }
     }
     /**
      * Get agency response by ID
@@ -855,11 +1047,59 @@ class TripService {
     /**
      * Select agency for trip
      */
-    async selectAgencyForTrip(tripId, data) {
-        console.log('TCC_DEBUG: Selecting agency for trip:', { tripId, data });
-        // For now, return a simple success response
-        // This can be expanded to actually update trip assignment
-        return { success: true, data: { tripId, agencyResponseId: data.agencyResponseId }, error: null };
+    async selectAgencyForTrip(responseId) {
+        console.log('TCC_DEBUG: Selecting agency for trip, responseId:', responseId);
+        try {
+            // Get the agency response
+            const agencyResponse = await prisma.agencyResponse.findUnique({
+                where: { id: responseId },
+                include: {
+                    trip: true
+                }
+            });
+            if (!agencyResponse) {
+                return { success: false, data: null, error: 'Agency response not found' };
+            }
+            const tripId = agencyResponse.tripId;
+            // Mark this response as selected
+            await prisma.agencyResponse.update({
+                where: { id: responseId },
+                data: { isSelected: true }
+            });
+            // Unselect all other responses for this trip
+            await prisma.agencyResponse.updateMany({
+                where: {
+                    tripId,
+                    id: { not: responseId }
+                },
+                data: { isSelected: false }
+            });
+            // Update the trip with the selected agency
+            await prisma.transportRequest.update({
+                where: { id: tripId },
+                data: {
+                    assignedAgencyId: agencyResponse.agencyId,
+                    status: 'ACCEPTED',
+                    acceptedTimestamp: new Date()
+                }
+            }).catch(() => {
+                // If transportRequest doesn't exist, try updating Trip table
+                return prisma.trip.update({
+                    where: { id: tripId },
+                    data: {
+                        assignedAgencyId: agencyResponse.agencyId,
+                        status: 'ACCEPTED',
+                        acceptedTimestamp: new Date()
+                    }
+                });
+            });
+            console.log('TCC_DEBUG: Agency selected successfully for trip:', tripId);
+            return { success: true, data: { tripId, responseId }, error: null };
+        }
+        catch (error) {
+            console.error('TCC_DEBUG: Error selecting agency:', error);
+            return { success: false, data: null, error: 'Failed to select agency for trip' };
+        }
     }
     /**
      * Validate unit assignment
@@ -867,7 +1107,7 @@ class TripService {
     async validateUnitAssignment(unitId, agencyId) {
         try {
             console.log('EMS_UNIT_ASSIGN: Validating unit assignment:', { unitId, agencyId });
-            const emsDB = databaseManager_1.databaseManager.getEMSDB();
+            const emsDB = databaseManager_1.databaseManager.getPrismaClient();
             const unit = await emsDB.unit.findUnique({
                 where: { id: unitId },
                 include: { agency: true }
@@ -911,7 +1151,7 @@ class TripService {
     async updateUnitStatus(unitId, status) {
         try {
             console.log('TCC_DEBUG: Updating unit status:', { unitId, status });
-            const emsDB = databaseManager_1.databaseManager.getEMSDB();
+            const emsDB = databaseManager_1.databaseManager.getPrismaClient();
             await emsDB.unit.update({
                 where: { id: unitId },
                 data: {

@@ -21,6 +21,7 @@ export interface UnitFormData {
     type: 'AMBULANCE' | 'HELICOPTER' | 'FIRE_TRUCK' | 'RESCUE_VEHICLE';
     capabilities: string[];
     customCapabilities: string[];
+    status?: 'AVAILABLE' | 'COMMITTED' | 'OUT_OF_SERVICE' | 'MAINTENANCE' | 'OFF_DUTY' | 'ON_CALL';
     currentStatus?: 'AVAILABLE' | 'COMMITTED' | 'OUT_OF_SERVICE' | 'MAINTENANCE' | 'OFF_DUTY' | 'ON_CALL';
     isActive: boolean;
 }
@@ -62,7 +63,7 @@ declare class UnitService {
     /**
      * Update a unit
      */
-    updateUnit(unitId: string, unitData: UnitFormData): Promise<Unit>;
+    updateUnit(unitId: string, unitData: UnitFormData, agencyId?: string): Promise<Unit>;
     /**
      * Delete a unit
      */

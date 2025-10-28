@@ -108,7 +108,7 @@ app.use('/api/agency', agency_1.default);
 // Public endpoints for healthcare users
 app.get('/api/public/categories', async (req, res) => {
     try {
-        const hospitalPrisma = databaseManager_1.databaseManager.getHospitalDB();
+        const hospitalPrisma = databaseManager_1.databaseManager.getPrismaClient();
         const categories = await hospitalPrisma.dropdownOption.findMany({
             select: {
                 category: true

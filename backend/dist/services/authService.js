@@ -125,7 +125,7 @@ class AuthService {
                 return null;
             }
             // Verify user still exists and is active using single database
-            const db = databaseManager_1.databaseManager.getCenterDB();
+            const db = databaseManager_1.databaseManager.getPrismaClient();
             let user = null;
             if (decoded.userType === 'ADMIN' || decoded.userType === 'USER') {
                 user = await db.centerUser.findUnique({
@@ -189,7 +189,7 @@ class AuthService {
         }
     }
     async createUser(userData) {
-        const centerDB = databaseManager_1.databaseManager.getCenterDB();
+        const centerDB = databaseManager_1.databaseManager.getPrismaClient();
         // Hash password
         const hashedPassword = await bcryptjs_1.default.hash(userData.password, 12);
         // Create user
