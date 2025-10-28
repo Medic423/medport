@@ -35,6 +35,8 @@ model Hospital {
   capabilities  String[]
   region        String
   coordinates   Json?
+  latitude      Float?
+  longitude     Float?
   operatingHours String?
   isActive      Boolean  @default(true)
   requiresReview Boolean @default(false)
