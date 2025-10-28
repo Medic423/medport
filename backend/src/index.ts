@@ -142,56 +142,32 @@ app.get('/api/public/hospitals', async (req, res) => {
   try {
     const prisma = databaseManager.getPrismaClient();
     
-    // Load BOTH facilities and hospitals to support all user types
-    const [facilities, hospitals] = await Promise.all([
-      prisma.facility.findMany({
-        where: { isActive: true },
-        select: {
-          id: true,
-          name: true,
-          address: true,
-          city: true,
-          state: true,
-          zipCode: true,
-          phone: true,
-          email: true,
-          type: true,
-          latitude: true,
-          longitude: true
-        }
-      }),
-      prisma.hospital.findMany({
-        where: { isActive: true },
-        select: {
-          id: true,
-          name: true,
-          address: true,
-          city: true,
-          state: true,
-          zipCode: true,
-          phone: true,
-          email: true,
-          type: true,
-          latitude: true,
-          longitude: true
-        }
-      })
-    ]);
+    // Only query hospitals table for production data (schema uses Hospital model)
+    const hospitals = await prisma.hospital.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        name: true,
+        address: true,
+        city: true,
+        state: true,
+        zipCode: true,
+        phone: true,
+        email: true,
+        type: true,
+        latitude: true,
+        longitude: true
+      }
+    });
 
-    // Merge both arrays and remove duplicates by name
-    const allFacilities = [...facilities, ...hospitals];
-    const uniqueFacilities = allFacilities.filter((facility, index, self) =>
-      index === self.findIndex((f) => f.name === facility.name)
-    );
-    
     // Sort by name
-    uniqueFacilities.sort((a, b) => a.name.localeCompare(b.name));
+    hospitals.sort((a, b) => a.name.localeCompare(b.name));
 
-    console.log('TCC_DEBUG: Public hospitals endpoint - Facilities:', facilities.length, 'Hospitals:', hospitals.length, 'Total unique:', uniqueFacilities.length);
+    console.log('TCC_DEBUG: Public hospitals endpoint - Hospitals:', hospitals.length);
 
     res.json({
       success: true,
-      data: uniqueFacilities,
+      data: hospitals,
       message: 'Hospitals retrieved successfully'
     });
   } catch (error) {
