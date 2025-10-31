@@ -435,7 +435,7 @@ router.post('/:id/authorize', authenticateAdmin, async (req: AuthenticatedReques
     // Get the trip to verify it exists
     const getTripResult = await tripService.getTripById(id);
 
-    if (!getTripResult.success) {
+    if (!getTripResult.success || !getTripResult.data) {
       return res.status(404).json({
         success: false,
         error: 'Trip not found'
@@ -444,22 +444,27 @@ router.post('/:id/authorize', authenticateAdmin, async (req: AuthenticatedReques
 
     const trip = getTripResult.data;
 
+    // Verify the trip has a scheduledTime
+    if (!trip.scheduledTime) {
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot authorize trip without a scheduled time'
+      });
+    }
+
     // Verify the trip is in the future category
-    if (trip.scheduledTime) {
-      const category = getDateCategory(new Date(trip.scheduledTime));
-      
-      if (category !== 'future') {
-        return res.status(400).json({
-          success: false,
-          error: `Cannot authorize trip. Trip is in '${category}' category, only 'future' trips can be authorized`
-        });
-      }
+    const category = getDateCategory(new Date(trip.scheduledTime));
+    
+    if (category !== 'future') {
+      return res.status(400).json({
+        success: false,
+        error: `Cannot authorize trip. Trip is in '${category}' category, only 'future' trips can be authorized`
+      });
     }
 
     // Update the scheduledTime to today's date/time
     // Keep the same time portion but change the date to today
     const now = new Date();
-    const currentTime = now.getHours() * 60 + now.getMinutes(); // minutes since midnight
     
     // Create a new Date with today's date and keep the original time
     const originalScheduledTime = new Date(trip.scheduledTime);
@@ -476,13 +481,7 @@ router.post('/:id/authorize', authenticateAdmin, async (req: AuthenticatedReques
       authorizedTime.setTime(now.getTime());
     }
 
-    // Update the trip's scheduledTime
-    const updateData: UpdateTripStatusRequest = {
-      status: trip.status, // Keep the same status
-      // Note: scheduledTime is not in UpdateTripStatusRequest type, so we'll need to update via Prisma directly
-    };
-
-    // We need to update scheduledTime directly via Prisma since it's not in the UpdateTripStatusRequest
+    // We need to update scheduledTime directly via Prisma
     const prisma = databaseManager.getPrismaClient();
     
     const updatedTrip = await prisma.transportRequest.update({

@@ -20,6 +20,7 @@ import AgencySettings from './AgencySettings';
 import UnitsManagement from './UnitsManagement';
 import TripStatusButtons from './TripStatusButtons';
 import EMSTripCalculator from './EMSTripCalculator';
+import { categorizeTripByDate, formatSectionHeader, DateCategory } from '../utils/dateUtils';
 // import RevenueSettings from './RevenueSettings'; // Replaced by AgencySettings
 // import EMSAnalytics from './EMSAnalytics'; // Moved to backup - will move to Admin later
 
@@ -104,6 +105,12 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
   const [acceptedTrips, setAcceptedTrips] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Date-based trip categorization
+  const [todayTrips, setTodayTrips] = useState<any[]>([]);
+  const [futureTrips, setFutureTrips] = useState<any[]>([]);
+  const [pastTrips, setPastTrips] = useState<any[]>([]);
+  const [unscheduledTrips, setUnscheduledTrips] = useState<any[]>([]);
 
   // Filter state for Available Trips
   const [filters, setFilters] = useState({
@@ -211,13 +218,43 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
               distance: distance,
               estimatedTime: estimatedTime,
               requestTime: new Date(trip.createdAt).toLocaleString(),
-              scheduledTime: trip.scheduledTime,
+              scheduledTime: trip.scheduledTime ? new Date(trip.scheduledTime).toLocaleString() : null,
+              scheduledTimeISO: trip.scheduledTime || null, // Raw ISO for categorization
               assignedUnitId: trip.assignedUnitId, // Track if this agency already assigned a unit
               assignedUnit: trip.assignedUnit, // Include unit info if assigned
               hasResponded: respondedTrips.has(trip.id) // Check if this agency has already responded
             };
           }));
           setAvailableTrips(transformedAvailable);
+
+          // Categorize trips by date for four sections
+          const today: any[] = [];
+          const future: any[] = [];
+          const past: any[] = [];
+          const unscheduled: any[] = [];
+
+          transformedAvailable.forEach((trip: any) => {
+            const category = categorizeTripByDate(trip);
+            switch (category) {
+              case 'today':
+                today.push(trip);
+                break;
+              case 'future':
+                future.push(trip);
+                break;
+              case 'past':
+                past.push(trip);
+                break;
+              case 'unscheduled':
+                unscheduled.push(trip);
+                break;
+            }
+          });
+
+          setTodayTrips(today);
+          setFutureTrips(future);
+          setPastTrips(past);
+          setUnscheduledTrips(unscheduled);
         }
       }
 
@@ -375,13 +412,13 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
   const getUrgencyLevelStyle = (urgencyLevel: string) => {
     switch (urgencyLevel) {
       case 'Routine':
-        return 'text-black bg-transparent';
+        return 'bg-green-100 text-green-800';
       case 'Urgent':
-        return 'text-black bg-orange-200';
+        return 'bg-yellow-100 text-yellow-800';
       case 'Emergent':
-        return 'text-black bg-red-200';
+        return 'bg-red-100 text-red-800';
       default:
-        return 'text-black bg-transparent';
+        return 'bg-green-100 text-green-800';
     }
   };
 
@@ -738,75 +775,117 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
                   {loading ? 'Loading...' : 'Refresh'}
                 </button>
               </div>
-              <div className="space-y-4">
-                {filteredAvailableTrips.map((trip) => (
-                  <div key={trip.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-4">
-                      <div>
-                        <h4 className="text-lg font-medium text-gray-900">Patient {trip.patientId} - {trip.transportLevel} - Request Time: {trip.requestTime}</h4>
-                        <p className="text-base text-gray-600">
-                          {trip.origin} → {trip.destination}
-                        </p>
-                        {trip.pickupLocation && (
-                          <p className="text-xs text-blue-600">
-                            Pickup: {trip.pickupLocation.name}: {trip.pickupLocation.floor && `${trip.pickupLocation.floor}`}{trip.pickupLocation.room && ` ${trip.pickupLocation.room}`}{trip.pickupLocation.contactPhone && ` Phone: ${trip.pickupLocation.contactPhone}`}{trip.pickupLocation.contactEmail && ` Email: ${trip.pickupLocation.contactEmail}`}
-                          </p>
-                        )}
-                        <div className="flex items-center space-x-4 text-sm text-gray-500 mt-1">
-                          <div>
-                            <span className="font-medium">Distance:</span> {trip.distance}
-                          </div>
-                          <div>
-                            <span className="font-medium">Time:</span> {formatTime(trip.estimatedTime)}
-                          </div>
-                          <div>
-                            <span className="font-medium">Priority:</span> {trip.urgencyLevel}
-                          </div>
+              <div>
+                {(() => {
+                  // Apply filters to each section independently
+                  const filteredToday = filters.transportLevel === 'ALL' ? todayTrips : todayTrips.filter(t => t.transportLevel === filters.transportLevel);
+                  const filteredFuture = filters.transportLevel === 'ALL' ? futureTrips : futureTrips.filter(t => t.transportLevel === filters.transportLevel);
+                  const filteredUnscheduled = filters.transportLevel === 'ALL' ? unscheduledTrips : unscheduledTrips.filter(t => t.transportLevel === filters.transportLevel);
+                  const filteredPast = filters.transportLevel === 'ALL' ? pastTrips : pastTrips.filter(t => t.transportLevel === filters.transportLevel);
+
+                  const renderTripSection = (trips: any[], title: string, category: DateCategory) => {
+                    if (trips.length === 0) return null;
+                    
+                    return (
+                      <div key={category} className="mb-8">
+                        <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                          {title} ({trips.length})
+                        </h4>
+                        <div className="space-y-4">
+                          {trips.map((trip: any) => {
+                            const category_actual = categorizeTripByDate(trip);
+                            return (
+                              <div key={trip.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                <div className="flex items-center space-x-4">
+                                  <div>
+                                    <h4 className="text-lg font-medium text-gray-900">
+                                      Patient {trip.patientId} - Requested Pickup Time: {trip.scheduledTime || 'Not scheduled'}
+                                    </h4>
+                                    <p className="text-base text-gray-600">
+                                      {trip.origin} → {trip.destination}
+                                    </p>
+                                    {trip.pickupLocation && (
+                                      <p className="text-xs text-blue-600">
+                                        Pickup: {trip.pickupLocation.name}{trip.pickupLocation.floor || trip.pickupLocation.room ? ': ' : ''}{trip.pickupLocation.floor && trip.pickupLocation.floor}{trip.pickupLocation.room && `${trip.pickupLocation.floor ? ' ' : ''}Room ${trip.pickupLocation.room}`}{trip.pickupLocation.contactPhone && ` Phone: ${trip.pickupLocation.contactPhone}`}{trip.pickupLocation.contactEmail && ` Email: ${trip.pickupLocation.contactEmail}`}
+                                      </p>
+                                    )}
+                                    <p className="text-sm text-gray-500 mt-1">
+                                      Distance: {trip.distance} Time: {formatTime(trip.estimatedTime)}
+                                    </p>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                      {trip.transportLevel} - Ticket Created At: {trip.requestTime}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getUrgencyLevelStyle(trip.urgencyLevel || 'Routine')}`}>
+                                    {trip.urgencyLevel || 'Routine'}
+                                  </span>
+                                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor('PENDING')}`}>
+                                    PENDING
+                                  </span>
+                                  <div className="flex space-x-2 ml-4">
+                                    {/* Hide Accept/Decline buttons for future trips, show "Awaiting Authorization" */}
+                                    {category_actual === 'future' ? (
+                                      <span className="text-sm text-yellow-600 font-medium">
+                                        Awaiting Authorization
+                                      </span>
+                                    ) : (
+                                      <>
+                                        {!trip.hasResponded && (
+                                          <button
+                                            onClick={() => handleAcceptTrip(trip.id)}
+                                            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 text-sm font-medium"
+                                          >
+                                            Accept
+                                          </button>
+                                        )}
+                                        {trip.hasResponded && (
+                                          <span className="text-sm text-green-600 font-medium">
+                                            ✓ You responded
+                                          </span>
+                                        )}
+                                        {!trip.hasResponded && (
+                                          <button
+                                            onClick={() => handleDeclineTrip(trip.id)}
+                                            className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 text-sm font-medium"
+                                          >
+                                            Decline
+                                          </button>
+                                        )}
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor('PENDING')}`}>
-                        PENDING
-                      </span>
-                      <div className="flex space-x-2 ml-4">
-                        {/* Only show Accept button if this agency hasn't already responded */}
-                        {!trip.hasResponded && (
-                          <button
-                            onClick={() => handleAcceptTrip(trip.id)}
-                            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 text-sm font-medium"
-                          >
-                            Accept
-                          </button>
-                        )}
-                        {trip.hasResponded && (
-                          <span className="text-sm text-green-600 font-medium">
-                            ✓ You responded
-                          </span>
-                        )}
-                        {/* Decline button - only show if not yet responded */}
-                        {!trip.hasResponded && (
-                          <button
-                            onClick={() => handleDeclineTrip(trip.id)}
-                            className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 text-sm font-medium"
-                          >
-                            Decline
-                          </button>
-                        )}
+                    );
+                  };
+
+                  const hasAnyTrips = filteredToday.length > 0 || filteredFuture.length > 0 || filteredUnscheduled.length > 0 || filteredPast.length > 0;
+
+                  if (!hasAnyTrips) {
+                    return (
+                      <div className="p-6 text-center text-gray-500">
+                        {availableTrips.length === 0 
+                          ? 'No available transport requests at this time.'
+                          : 'No requests match your current filters. Try adjusting your filter settings.'}
                       </div>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-8">
+                      {renderTripSection(filteredToday, formatSectionHeader('today'), 'today')}
+                      {renderTripSection(filteredFuture, formatSectionHeader('future'), 'future')}
+                      {renderTripSection(filteredUnscheduled, formatSectionHeader('unscheduled'), 'unscheduled')}
+                      {renderTripSection(filteredPast, formatSectionHeader('past'), 'past')}
                     </div>
-                  </div>
-                ))}
-                {filteredAvailableTrips.length === 0 && availableTrips.length > 0 && (
-                  <div className="p-6 text-center text-gray-500">
-                    No requests match your current filters. Try adjusting your filter settings.
-                  </div>
-                )}
-                {availableTrips.length === 0 && (
-                  <div className="p-6 text-center text-gray-500">
-                    No available transport requests at this time.
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             </div>
           </div>

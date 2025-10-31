@@ -723,15 +723,9 @@ export class TripService {
       console.log('MULTI_LOC: Trip created with location:', trip.healthcareLocation?.locationName || 'N/A');
       console.log('TCC_CREATE_DEBUG: Created trip healthcareCreatedById:', (trip as any).healthcareCreatedById);
       return { success: true, data: trip };
-    } catch (error: any) {
+    } catch (error) {
       console.error('TCC_DEBUG: Error creating enhanced trip:', error);
-      console.error('TCC_DEBUG: Error message:', error?.message);
-      console.error('TCC_DEBUG: Error code:', error?.code);
-      console.error('TCC_DEBUG: Error meta:', error?.meta);
-      
-      // Return detailed error message for debugging
-      const errorMessage = error?.message || 'Failed to create enhanced transport request';
-      return { success: false, error: errorMessage };
+      return { success: false, error: 'Failed to create enhanced transport request' };
     }
   }
 
