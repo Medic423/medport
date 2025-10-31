@@ -527,7 +527,7 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
       'mobility': 'Mobility Levels',
       'transport-level': 'Transport Levels',
       'urgency': 'Urgency Levels',
-      'special-needs': 'Special Needs'
+      'special-needs': 'Secondary Insurance'
     };
     return displayNames[category] || category;
   };

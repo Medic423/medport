@@ -1240,17 +1240,17 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                     </select>
                   </div>
 
-                  {/* Special Needs */}
+                  {/* Secondary Insurance */}
                   <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Special Needs
+                      Secondary Insurance
                     </label>
                     <select
                       value={editFormData.specialNeeds}
                       onChange={(e) => setEditFormData({...editFormData, specialNeeds: e.target.value})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
                     >
-                      <option value="">Select special needs</option>
+                      <option value="">Select secondary insurance</option>
                       {editOptions.specialNeeds.map((specialNeed: string) => (
                         <option key={specialNeed} value={specialNeed}>{specialNeed}</option>
                       ))}

@@ -33,6 +33,7 @@ interface EnhancedTripFormProps {
 interface FormData {
   // Patient Information
   patientId: string;
+  patientAge?: string;
   patientWeight: string;
   specialNeeds: string;
   insuranceCompany: string;
@@ -134,6 +135,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
 
   const [formData, setFormData] = useState<FormData>({
     patientId: '',
+    patientAge: '',
     patientWeight: '',
     specialNeeds: '',
     insuranceCompany: '',
@@ -977,7 +979,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Patient ID *
@@ -1000,6 +1002,22 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
                     Generate ID
                   </button>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Age
+                </label>
+                <input
+                  type="number"
+                  name="patientAge"
+                  value={formData.patientAge || ''}
+                  onChange={handleChange}
+                  min="0"
+                  step="1"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Age (years)"
+                />
               </div>
 
               <div>
@@ -1039,7 +1057,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Special Needs
+                  Secondary Insurance
                 </label>
                 <select
                   name="specialNeeds"
@@ -1047,7 +1065,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 >
-                  <option value="">Select special needs</option>
+                  <option value="">Select secondary insurance</option>
                   {formOptions.specialNeeds.map((sn) => (
                     <option key={sn} value={sn}>{sn}</option>
                   ))}
