@@ -18,6 +18,7 @@ import Notifications from './Notifications';
 import EnhancedTripForm from './EnhancedTripForm';
 import HealthcareSettingsPanel from './HealthcareSettingsPanel';
 import { tripsAPI, unitsAPI } from '../services/api';
+import { categorizeTripByDate, formatSectionHeader, DateCategory } from '../utils/dateUtils';
 
 interface HealthcareDashboardProps {
   user: {
@@ -55,6 +56,12 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
   // Agency Responses state
   const [agencyResponses, setAgencyResponses] = useState<any[]>([]);
   const [loadingResponses, setLoadingResponses] = useState(false);
+
+  // Date-based trip categorization
+  const [todayTrips, setTodayTrips] = useState<any[]>([]);
+  const [futureTrips, setFutureTrips] = useState<any[]>([]);
+  const [pastTrips, setPastTrips] = useState<any[]>([]);
+  const [unscheduledTrips, setUnscheduledTrips] = useState<any[]>([]);
 
   // Calculate wait time from request to pickup
   const calculateWaitTime = (requestTime: string, pickupTime: string | null) => {
@@ -172,6 +179,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
             pickupTime: trip.pickupTimestamp ? new Date(trip.pickupTimestamp).toLocaleString() : (trip.scheduledTime ? new Date(trip.scheduledTime).toLocaleString() : null),
             pickupTimeISO: trip.pickupTimestamp || trip.scheduledTime,
             scheduledTime: trip.scheduledTime ? new Date(trip.scheduledTime).toLocaleString() : null,
+            scheduledTimeISO: trip.scheduledTime || null, // Raw ISO for categorization
             assignedUnitId: trip.assignedUnitId || null,
             assignedUnitNumber: trip.assignedUnit?.unitNumber || null,
             assignedUnitType: trip.assignedUnit?.type || null,
@@ -235,6 +243,35 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
 
           setTrips(activeTrips);
           setFilteredTrips(activeTrips); // Initialize filtered trips
+
+          // Categorize trips by date for four sections
+          const today: any[] = [];
+          const future: any[] = [];
+          const past: any[] = [];
+          const unscheduled: any[] = [];
+
+          activeTrips.forEach((trip: any) => {
+            const category = categorizeTripByDate(trip);
+            switch (category) {
+              case 'today':
+                today.push(trip);
+                break;
+              case 'future':
+                future.push(trip);
+                break;
+              case 'past':
+                past.push(trip);
+                break;
+              case 'unscheduled':
+                unscheduled.push(trip);
+                break;
+            }
+          });
+
+          setTodayTrips(today);
+          setFutureTrips(future);
+          setPastTrips(past);
+          setUnscheduledTrips(unscheduled);
           
           // Set completed/cancelled trips for the completed tab with wait time calculation
           const completed = transformedTrips
@@ -517,6 +554,25 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
     }
   };
 
+  const handleAuthorizeTrip = async (tripId: string) => {
+    setUpdating(true);
+    try {
+      console.log('TCC_DEBUG: Authorizing trip:', tripId);
+      const response = await api.post(`/api/trips/${tripId}/authorize`);
+      if (response.data && response.data.success) {
+        console.log('TCC_DEBUG: Trip authorized successfully');
+        await loadTrips(); // Refresh trips to update categorization
+      } else {
+        throw new Error(response.data.error || 'Failed to authorize trip');
+      }
+    } catch (error: any) {
+      console.error('Error authorizing trip:', error);
+      alert(error?.response?.data?.error || error.message || 'Failed to authorize trip');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   // Settings state
 
   const handleLogout = () => {
@@ -762,160 +818,184 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                 </div>
               </div>
               <div className="p-6">
-              {filteredTrips.length > 0 ? (
-                <div className="space-y-4">
-                  {filteredTrips.map((trip) => (
-                    <div key={trip.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div>
-                          <h4 className="text-lg font-medium text-gray-900">Patient {trip.patientId} - {trip.transportLevel} - Request Time: {trip.requestTime}</h4>
-                          <p className="text-base text-gray-600">
-                            {trip.origin} → {trip.destination}
-                          </p>
-                          {trip.pickupLocation && (
-                            <p className="text-xs text-blue-600">
-                              Pickup: {trip.pickupLocation.name}: {trip.pickupLocation.floor && `${trip.pickupLocation.floor}`}{trip.pickupLocation.room && ` ${trip.pickupLocation.room}`}{trip.pickupLocation.contactPhone && ` Phone: ${trip.pickupLocation.contactPhone}`}{trip.pickupLocation.contactEmail && ` Email: ${trip.pickupLocation.contactEmail}`}
-                            </p>
-                          )}
-                          {/* Unit Assignment Display */}
-                          {/* Unit info removed under Option B */}
-                          {/* Agency Responses Display */}
-                          {(() => {
-                            console.log(`TCC_DEBUG: HealthcareDashboard - Rendering trip ${trip.id}, agencyResponses:`, {
-                              count: trip.agencyResponses?.length || 0,
-                              responses: trip.agencyResponses?.map((r: any) => ({ response: r.response, isSelected: r.isSelected, agencyName: r.agency?.name }))
-                            });
-                            return trip.agencyResponses && trip.agencyResponses.length > 0;
-                          })() && (
-                            <div className="mt-2 space-y-2">
-                              <div className="flex items-center space-x-2">
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                  {trip.agencyResponses.filter((r: any) => r.response === 'ACCEPTED').length} agencies accepted
-                                </span>
-                                {trip.agencyResponses.filter((r: any) => r.isSelected).length > 0 && (
-                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    Selected
-                                  </span>
-                                )}
-                              </div>
-                              
-                              {/* Show Select/Reject buttons if there are ACCEPTED responses and none are selected */}
-                              {trip.agencyResponses.filter((r: any) => r.response === 'ACCEPTED').length > 0 && 
-                               trip.agencyResponses.filter((r: any) => r.isSelected).length === 0 && (
-                                <div className="mt-2 border border-gray-300 rounded-lg p-3 bg-white">
-                                  <p className="text-xs font-medium text-gray-700 mb-2">Select Agency:</p>
-                                  {(() => {
-                                    const acceptedResponses = trip.agencyResponses.filter((r: any) => r.response === 'ACCEPTED');
-                                    console.log(`TCC_DEBUG: HealthcareDashboard - Trip ${trip.id} has ${trip.agencyResponses.length} total responses, ${acceptedResponses.length} accepted responses`);
-                                    console.log('TCC_DEBUG: HealthcareDashboard - All responses for trip:', trip.agencyResponses.map((r: any) => ({ id: r.id, agencyId: r.agencyId, response: r.response, responseValue: JSON.stringify(r.response), agencyName: r.agency?.name })));
-                                    console.log('TCC_DEBUG: HealthcareDashboard - Response values found:', [...new Set(trip.agencyResponses.map((r: any) => r.response))]);
-                                    return acceptedResponses;
-                                  })().map((response: any) => {
-                                    console.log('TCC_DEBUG: HealthcareDashboard - Rendering agency response:', {
-                                      id: response.id,
-                                      agency: response.agency?.name,
-                                      agencyId: response.agencyId,
-                                      assignedUnitId: response.assignedUnitId,
-                                      assignedUnit: response.assignedUnit
-                                    });
-                                    return (
-                                    <div key={response.id} className="flex items-center justify-between py-2 border-b border-gray-200 last:border-b-0">
-                                      <div>
-                                        <p className="text-sm font-medium text-gray-900">{response.agency?.name || 'Unknown Agency'}</p>
-                                        <p className="text-xs text-gray-500">
-                                          Route: {response.trip?.fromLocation || 'N/A'} → {response.trip?.toLocation || 'N/A'}
-                                        </p>
-                                        <p className="text-xs text-gray-500">
-                                          Transport: {response.trip?.transportLevel || 'N/A'} • {response.trip?.urgencyLevel || 'N/A'}
-                                        </p>
-                                        {response.assignedUnit && (
-                                          <p className="text-xs text-green-600">
-                                            Assigned Unit: {response.assignedUnit.unitNumber} ({response.assignedUnit.type})
-                                          </p>
+              {(() => {
+                // Filter trips by status for each section independently
+                const filteredToday = statusFilter === 'ALL' ? todayTrips : todayTrips.filter(t => t.status === statusFilter);
+                const filteredFuture = statusFilter === 'ALL' ? futureTrips : futureTrips.filter(t => t.status === statusFilter);
+                const filteredUnscheduled = statusFilter === 'ALL' ? unscheduledTrips : unscheduledTrips.filter(t => t.status === statusFilter);
+                const filteredPast = statusFilter === 'ALL' ? pastTrips : pastTrips.filter(t => t.status === statusFilter);
+
+                const renderTripSection = (trips: any[], title: string, category: DateCategory) => {
+                  if (trips.length === 0) return null;
+                  
+                  return (
+                    <div key={category} className="mb-8">
+                      <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                        {title} ({trips.length})
+                      </h4>
+                      <div className="space-y-4">
+                        {trips.map((trip) => {
+                          const category_actual = categorizeTripByDate(trip);
+                          return (
+                            <div key={trip.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                              <div className="flex items-center space-x-4">
+                                <div>
+                                  <h4 className="text-lg font-medium text-gray-900">Patient {trip.patientId} - {trip.transportLevel} - Request Time: {trip.requestTime}</h4>
+                                  <p className="text-base text-gray-600">
+                                    {trip.origin} → {trip.destination}
+                                  </p>
+                                  {trip.pickupLocation && (
+                                    <p className="text-xs text-blue-600">
+                                      Pickup: {trip.pickupLocation.name}: {trip.pickupLocation.floor && `${trip.pickupLocation.floor}`}{trip.pickupLocation.room && ` ${trip.pickupLocation.room}`}{trip.pickupLocation.contactPhone && ` Phone: ${trip.pickupLocation.contactPhone}`}{trip.pickupLocation.contactEmail && ` Email: ${trip.pickupLocation.contactEmail}`}
+                                    </p>
+                                  )}
+                                  {trip.scheduledTime && (
+                                    <p className="text-xs text-gray-500">
+                                      Scheduled: {trip.scheduledTime}
+                                    </p>
+                                  )}
+                                  {/* Agency Responses Display */}
+                                  {trip.agencyResponses && trip.agencyResponses.length > 0 && (
+                                    <div className="mt-2 space-y-2">
+                                      <div className="flex items-center space-x-2">
+                                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                          {trip.agencyResponses.filter((r: any) => r.response === 'ACCEPTED').length} agencies accepted
+                                        </span>
+                                        {trip.agencyResponses.filter((r: any) => r.isSelected).length > 0 && (
+                                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            Selected
+                                          </span>
                                         )}
                                       </div>
-                                      <div className="flex items-center space-x-2">
-                                        <button
-                                          onClick={() => handleSelectAgency(trip.id, response.id)}
-                                          className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-md hover:bg-green-700"
-                                        >
-                                          Select
-                                        </button>
-                                        <button
-                                          onClick={() => handleRejectAgency(trip.id, response.id, response.agency?.name || 'this agency')}
-                                          className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700"
-                                        >
-                                          Reject
-                                        </button>
-                                      </div>
+                                      
+                                      {trip.agencyResponses.filter((r: any) => r.response === 'ACCEPTED').length > 0 && 
+                                       trip.agencyResponses.filter((r: any) => r.isSelected).length === 0 && (
+                                        <div className="mt-2 border border-gray-300 rounded-lg p-3 bg-white">
+                                          <p className="text-xs font-medium text-gray-700 mb-2">Select Agency:</p>
+                                          {trip.agencyResponses.filter((r: any) => r.response === 'ACCEPTED').map((response: any) => (
+                                            <div key={response.id} className="flex items-center justify-between py-2 border-b border-gray-200 last:border-b-0">
+                                              <div>
+                                                <p className="text-sm font-medium text-gray-900">{response.agency?.name || 'Unknown Agency'}</p>
+                                                <p className="text-xs text-gray-500">
+                                                  Route: {response.trip?.fromLocation || 'N/A'} → {response.trip?.toLocation || 'N/A'}
+                                                </p>
+                                                {response.assignedUnit && (
+                                                  <p className="text-xs text-green-600">
+                                                    Assigned Unit: {response.assignedUnit.unitNumber} ({response.assignedUnit.type})
+                                                  </p>
+                                                )}
+                                              </div>
+                                              <div className="flex items-center space-x-2">
+                                                <button
+                                                  onClick={() => handleSelectAgency(trip.id, response.id)}
+                                                  className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-md hover:bg-green-700"
+                                                >
+                                                  Select
+                                                </button>
+                                                <button
+                                                  onClick={() => handleRejectAgency(trip.id, response.id, response.agency?.name || 'this agency')}
+                                                  className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700"
+                                                >
+                                                  Reject
+                                                </button>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
                                     </div>
-                                  );
-                                  })}
+                                  )}
                                 </div>
-                              )}
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                  (trip.urgencyLevel || 'Routine') === 'Emergent' 
+                                    ? 'bg-red-100 text-red-800' 
+                                    : (trip.urgencyLevel || 'Routine') === 'Urgent'
+                                    ? 'bg-yellow-100 text-yellow-800'
+                                    : 'bg-green-100 text-green-800'
+                                }`}>
+                                  {trip.urgencyLevel || 'Routine'}
+                                </span>
+                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(trip.status)}`}>
+                                  {trip.status}
+                                </span>
+                                <div className="flex space-x-2 ml-4">
+                                  {/* Show Authorize button for future trips */}
+                                  {category_actual === 'future' && (
+                                    <button
+                                      title="Authorize"
+                                      onClick={() => handleAuthorizeTrip(trip.id)}
+                                      className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-green-100 text-green-800 hover:bg-green-200"
+                                      disabled={updating}
+                                    >
+                                      <CheckCircle className="h-4 w-4" />
+                                    </button>
+                                  )}
+                                  <button
+                                    title="Edit"
+                                    onClick={() => handleEditTrip(trip)}
+                                    className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200"
+                                    disabled={updating}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </button>
+                                  {trip.status !== 'COMPLETED' && (
+                                    <button
+                                      title="Complete"
+                                      onClick={() => handleCompleteTrip(trip.id)}
+                                      className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-green-100 text-green-800 hover:bg-green-200"
+                                      disabled={updating}
+                                    >
+                                      <CheckCircle className="h-4 w-4" />
+                                    </button>
+                                  )}
+                                  <button
+                                    title="Delete"
+                                    onClick={() => handleDeleteTrip(trip.id)}
+                                    className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-red-100 text-red-800 hover:bg-red-200"
+                                    disabled={updating}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </div>
                             </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          (trip.urgencyLevel || 'Routine') === 'Emergent' 
-                            ? 'bg-red-100 text-red-800' 
-                            : (trip.urgencyLevel || 'Routine') === 'Urgent'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-green-100 text-green-800'
-                        }`}>
-                          {trip.urgencyLevel || 'Routine'}
-                        </span>
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(trip.status)}`}>
-                          {trip.status}
-                        </span>
-                        <div className="flex space-x-2 ml-4">
-                          <button
-                            title="Edit"
-                            onClick={() => handleEditTrip(trip)}
-                            className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200"
-                            disabled={updating}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          {trip.status !== 'COMPLETED' && (
-                            <button
-                              title="Complete"
-                              onClick={() => handleCompleteTrip(trip.id)}
-                              className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-green-100 text-green-800 hover:bg-green-200"
-                              disabled={updating}
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                            </button>
-                          )}
-                          <button
-                            title="Delete"
-                            onClick={() => handleDeleteTrip(trip.id)}
-                            className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-red-100 text-red-800 hover:bg-red-200"
-                            disabled={updating}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
+                          );
+                        })}
                       </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <Clock className="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">
-                    {statusFilter === 'ALL' ? 'No transport requests' : `No ${statusFilter.toLowerCase()} requests`}
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    {statusFilter === 'ALL' 
-                      ? 'Create your first transport request to get started.'
-                      : 'Try selecting a different status filter or create a new request.'
-                    }
-                  </p>
-                </div>
-              )}
+                  );
+                };
+
+                const hasAnyTrips = filteredToday.length > 0 || filteredFuture.length > 0 || filteredUnscheduled.length > 0 || filteredPast.length > 0;
+
+                if (!hasAnyTrips) {
+                  return (
+                    <div className="text-center py-12">
+                      <Clock className="mx-auto h-12 w-12 text-gray-400" />
+                      <h3 className="mt-2 text-sm font-medium text-gray-900">
+                        {statusFilter === 'ALL' ? 'No transport requests' : `No ${statusFilter.toLowerCase()} requests`}
+                      </h3>
+                      <p className="mt-1 text-sm text-gray-500">
+                        {statusFilter === 'ALL' 
+                          ? 'Create your first transport request to get started.'
+                          : 'Try selecting a different status filter or create a new request.'
+                        }
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-8">
+                    {renderTripSection(filteredToday, formatSectionHeader('today'), 'today')}
+                    {renderTripSection(filteredFuture, formatSectionHeader('future'), 'future')}
+                    {renderTripSection(filteredUnscheduled, formatSectionHeader('unscheduled'), 'unscheduled')}
+                    {renderTripSection(filteredPast, formatSectionHeader('past'), 'past')}
+                  </div>
+                );
+              })()}
               </div>
             </div>
           </div>
@@ -1240,17 +1320,17 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                     </select>
                   </div>
 
-                  {/* Secondary Insurance */}
+                  {/* Special Needs */}
                   <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Secondary Insurance
+                      Special Needs
                     </label>
                     <select
                       value={editFormData.specialNeeds}
                       onChange={(e) => setEditFormData({...editFormData, specialNeeds: e.target.value})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
                     >
-                      <option value="">Select secondary insurance</option>
+                      <option value="">Select special needs</option>
                       {editOptions.specialNeeds.map((specialNeed: string) => (
                         <option key={specialNeed} value={specialNeed}>{specialNeed}</option>
                       ))}
