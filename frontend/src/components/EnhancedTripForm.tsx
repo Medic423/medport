@@ -33,7 +33,9 @@ interface EnhancedTripFormProps {
 interface FormData {
   // Patient Information
   patientId: string;
-  ageInMonths?: string; // simple approach: store age in months in UI only (for now)
+  ageYears?: string; // direct entry years
+  isNewborn?: boolean;
+  isInfantToddler?: boolean;
   patientWeight: string;
   specialNeeds: string;
   insuranceCompany: string;
@@ -135,7 +137,9 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
 
   const [formData, setFormData] = useState<FormData>({
     patientId: '',
-    ageInMonths: '',
+    ageYears: '',
+    isNewborn: false,
+    isInfantToddler: false,
     patientWeight: '',
     specialNeeds: '',
     insuranceCompany: '',
@@ -835,6 +839,13 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
       if (!formData.patientId || !formData.patientWeight) {
         throw new Error('Please fill in Patient ID and Patient Weight');
       }
+      // Age logic: require valid years only if not newborn/infant-toddler
+      if (!formData.isNewborn && !formData.isInfantToddler) {
+        const years = parseInt((formData.ageYears || '').trim(), 10);
+        if (!Number.isInteger(years) || years < 1 || years > 110) {
+          throw new Error('Please enter a valid patient age (1-110 years) or select Newborn/Infant-Toddler');
+        }
+      }
 
       // Validate patient weight is a number
       const weight = parseFloat(formData.patientWeight);
@@ -969,16 +980,6 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
       case 1:
         return (
           <div className="space-y-6">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-center">
-                <User className="h-5 w-5 text-blue-600 mr-2" />
-                <h3 className="text-sm font-medium text-blue-800">Patient Information</h3>
-              </div>
-              <p className="text-sm text-blue-700 mt-1">
-                Enter patient details. No names or ages for HIPAA compliance.
-              </p>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
               <div className="md:col-span-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1003,23 +1004,6 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
                   </button>
                 </div>
               </div>
-
-              <div className="md:col-span-3">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Age (months)
-                </label>
-                <input
-                  type="number"
-                  name="ageInMonths"
-                  value={formData.ageInMonths || ''}
-                  onChange={handleChange}
-                  min="0"
-                  step="1"
-                  className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 w-24"
-                  placeholder="0 = Newborn"
-                />
-              </div>
-
               <div className="md:col-span-3">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Patient Weight (kgs)
@@ -1033,6 +1017,48 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
                   step="0.1"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter weight in kilograms"
+                />
+              </div>
+            </div>
+
+            {/* Pediatric quick flags and Age (years) */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+              <div className="md:col-span-3 flex items-center space-x-4">
+                <label className="inline-flex items-center text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    name="isNewborn"
+                    checked={!!formData.isNewborn}
+                    onChange={handleChange}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mr-2"
+                  />
+                  Newborn
+                </label>
+                <label className="inline-flex items-center text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    name="isInfantToddler"
+                    checked={!!formData.isInfantToddler}
+                    onChange={handleChange}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mr-2"
+                  />
+                  Infant/Toddler
+                </label>
+              </div>
+              <div className="md:col-span-3">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Age (years)
+                </label>
+                <input
+                  type="text"
+                  name="ageYears"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={formData.ageYears || ''}
+                  onChange={handleChange}
+                  disabled={!!formData.isNewborn || !!formData.isInfantToddler}
+                  className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 w-24 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  placeholder="1 - 110"
                 />
               </div>
             </div>
@@ -1574,15 +1600,13 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
                 <div className="bg-white border rounded-lg p-4">
                   <h4 className="font-medium text-gray-900 mb-2">Patient Information</h4>
                   <p className="text-sm text-gray-600">ID: {formData.patientId}</p>
-                  {formData.ageInMonths !== undefined && formData.ageInMonths !== '' && (
-                    <p className="text-sm text-gray-600">
-                      Age: {parseInt(formData.ageInMonths || '0', 10) === 0
-                        ? 'Newborn'
-                        : (parseInt(formData.ageInMonths || '0', 10) < 24
-                          ? `${parseInt(formData.ageInMonths || '0', 10)} months`
-                          : `${Math.floor(parseInt(formData.ageInMonths || '0', 10) / 12)} years`)}
-                    </p>
-                  )}
+                  {formData.isNewborn ? (
+                    <p className="text-sm text-gray-600">Age: Newborn</p>
+                  ) : formData.isInfantToddler ? (
+                    <p className="text-sm text-gray-600">Age: Infant/Toddler</p>
+                  ) : (formData.ageYears && (
+                    <p className="text-sm text-gray-600">Age: {parseInt(formData.ageYears, 10)} years</p>
+                  ))}
                   {formData.patientWeight && <p className="text-sm text-gray-600">Weight: {formData.patientWeight} kgs</p>}
                   {formData.insuranceCompany && <p className="text-sm text-gray-600">Insurance: {formData.insuranceCompany}</p>}
                   {formData.specialNeeds && <p className="text-sm text-gray-600">Special Needs: {formData.specialNeeds}</p>}
