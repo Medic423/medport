@@ -932,12 +932,17 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
       console.log('TCC_DEBUG: Submitting trip data:', tripData);
 
       // Submit trip to API (healthcare users use enhanced endpoint so trip shows in list)
+      const ageCategory = formData.isNewborn ? 'NEWBORN' : formData.isInfant ? 'INFANT' : formData.isToddler ? 'TODDLER' : 'ADULT';
+      const ageYears = ageCategory === 'ADULT' && formData.ageYears ? parseInt(formData.ageYears, 10) : undefined;
+
       const response = user.userType === 'HEALTHCARE'
         ? await tripsAPI.createEnhanced({
             patientId: tripData.patientId,
             patientWeight: formData.patientWeight,
             specialNeeds: formData.specialNeeds,
             insuranceCompany: formData.insuranceCompany,
+            patientAgeCategory: ageCategory as any,
+            patientAgeYears: ageYears,
             fromLocation: formData.fromLocation,
             fromLocationId: formData.fromLocationId || undefined,
             pickupLocationId: formData.pickupLocationId,
