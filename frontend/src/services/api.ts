@@ -181,7 +181,7 @@ export const tripsAPI = {
   
   // Enhanced create used by EnhancedTripForm
   createEnhanced: (data: any) =>
-    api.post('/api/trips/with-responses', data),
+    api.post('/api/trips/enhanced', data),
   
   update: (id: string, data: any) =>
     api.put(`/api/trips/${id}`, data),
