@@ -1011,12 +1011,11 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
                   Patient Weight (kgs)
                 </label>
                 <input
-                  type="number"
+                  type="text"
                   name="patientWeight"
                   value={formData.patientWeight}
                   onChange={handleChange}
-                  min="0"
-                  step="0.1"
+                  inputMode="decimal"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter weight in kilograms"
                 />
@@ -1057,7 +1056,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
                   Toddler
                 </label>
               </div>
-              <div className="md:col-span-3 md:col-start-10">
+              <div className="md:col-span-3 md:col-start-7">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Age (years)
                 </label>
