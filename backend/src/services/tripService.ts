@@ -52,6 +52,9 @@ export interface EnhancedCreateTripRequest {
   patientWeight?: string;
   specialNeeds?: string;
   insuranceCompany?: string;
+  // Patient age fields
+  patientAgeYears?: number;
+  patientAgeCategory?: 'NEWBORN' | 'INFANT' | 'TODDLER' | 'ADULT';
   fromLocation: string;
   fromLocationId?: string; // ✅ NEW: Reference to healthcare location
   pickupLocationId?: string;
@@ -623,6 +626,8 @@ export class TripService {
         patientId: data.patientId || 'PAT-UNKNOWN',
         patientWeight: data.patientWeight || null,
         specialNeeds: data.specialNeeds || null,
+        patientAgeYears: data.patientAgeCategory === 'ADULT' ? (data.patientAgeYears ?? null) : null,
+        patientAgeCategory: data.patientAgeCategory || null,
         fromLocation: data.fromLocation,
         isMultiLocationFacility, // ✅ NEW: Analytics flag
         toLocation: data.toLocation,

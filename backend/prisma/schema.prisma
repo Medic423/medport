@@ -203,6 +203,9 @@ model Trip {
   revenuePerHour           Decimal?          @db.Decimal(10, 2)
   tripCost                 Decimal?          @db.Decimal(10, 2)
   pickupLocationId         String?
+  // Patient age fields (optional)
+  patientAgeYears          Int?
+  patientAgeCategory       String?
   maxResponses             Int               @default(5)
   responseDeadline         DateTime?
   responseStatus           String            @default("PENDING")
@@ -510,6 +513,9 @@ model TransportRequest {
   isolation               Boolean             @default(false)
   bariatric               Boolean             @default(false)
   notes                   String?
+  // Patient age fields (optional)
+  patientAgeYears         Int?
+  patientAgeCategory      String?
   createdAt               DateTime            @default(now())
   updatedAt               DateTime            @updatedAt
   assignedUnit            Unit?               @relation(fields: [assignedUnitId], references: [id])
