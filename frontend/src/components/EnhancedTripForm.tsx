@@ -502,9 +502,10 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
       const toValues = (resp: any, fallback: string[]) => (resp?.data?.success && Array.isArray(resp.data.data) ? resp.data.data.map((o: any) => o.value) : fallback);
 
       // Ensure urgency always has baseline defaults merged with hospital settings
+      // Filter out "Critical" since backend only accepts Routine/Urgent/Emergent
       const urgencyDefaults = ['Routine', 'Urgent', 'Emergent'];
       const urgencyFromAPI = toValues(urgRes, []);
-      const urgencyOptions = [...urgencyDefaults, ...urgencyFromAPI.filter(val => !urgencyDefaults.includes(val))];
+      const urgencyOptions = [...urgencyDefaults, ...urgencyFromAPI.filter(val => !urgencyDefaults.includes(val) && val !== 'Critical')];
 
       const options: FormOptions = {
         diagnosis: toValues(diagRes, ['Cardiac', 'Respiratory', 'Neurological', 'Trauma']),
@@ -871,9 +872,9 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
         throw new Error('Invalid transport level');
       }
 
-      // Validate urgency level
-      if (!['Routine', 'Urgent', 'Emergent', 'Critical'].includes(formData.urgencyLevel)) {
-        throw new Error('Invalid urgency level');
+      // Validate urgency level (backend only accepts Routine/Urgent/Emergent)
+      if (!['Routine', 'Urgent', 'Emergent'].includes(formData.urgencyLevel)) {
+        throw new Error('Invalid urgency level. Must be Routine, Urgent, or Emergent');
       }
 
       // Create the trip in the database
@@ -909,8 +910,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
         destinationFacilityId: destinationFacility.id,
         transportLevel: formData.transportLevel,
         urgencyLevel: formData.urgencyLevel,
-        priority: formData.urgencyLevel === 'Critical' ? 'HIGH' : 
-                 formData.urgencyLevel === 'Emergent' ? 'HIGH' :
+        priority: formData.urgencyLevel === 'Emergent' ? 'HIGH' :
                  formData.urgencyLevel === 'Urgent' ? 'MEDIUM' : 'LOW',
         specialRequirements: formData.specialNeeds || '',
         readyStart: new Date(formData.scheduledTime).toISOString(),
@@ -936,8 +936,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
       const ageCategory = formData.isNewborn ? 'NEWBORN' : formData.isInfant ? 'INFANT' : formData.isToddler ? 'TODDLER' : 'ADULT';
       const ageYears = ageCategory === 'ADULT' && formData.ageYears ? parseInt(formData.ageYears, 10) : undefined;
 
-      const response = user.userType === 'HEALTHCARE'
-        ? await tripsAPI.createEnhanced({
+      const enhancedPayload = {
             patientId: tripData.patientId,
             patientWeight: formData.patientWeight,
             specialNeeds: formData.specialNeeds,
@@ -962,7 +961,13 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
             priority: (tripData as any).priority,
             // assignedUnitId removed (not applicable)
             createdVia: 'HEALTHCARE_PORTAL'
-          })
+          };
+      
+      console.log('TCC_DEBUG: Enhanced payload being sent:', enhancedPayload);
+      console.log('TCC_DEBUG: Age fields in payload:', { patientAgeCategory: enhancedPayload.patientAgeCategory, patientAgeYears: enhancedPayload.patientAgeYears });
+
+      const response = user.userType === 'HEALTHCARE'
+        ? await tripsAPI.createEnhanced(enhancedPayload)
         : await tripsAPI.create({ ...tripData, assignedUnitId: undefined });
       
       if (response.data.success) {
@@ -978,7 +983,10 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
 
     } catch (error: any) {
       console.error('TCC_DEBUG: Error creating trip:', error);
-      setError(error.message || 'Failed to create transport request');
+      console.error('TCC_DEBUG: Error response data:', error.response?.data);
+      console.error('TCC_DEBUG: Error response status:', error.response?.status);
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to create transport request';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
