@@ -35,7 +35,8 @@ interface FormData {
   patientId: string;
   ageYears?: string; // direct entry years
   isNewborn?: boolean;
-  isInfantToddler?: boolean;
+  isInfant?: boolean;
+  isToddler?: boolean;
   patientWeight: string;
   specialNeeds: string;
   insuranceCompany: string;
@@ -139,7 +140,8 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
     patientId: '',
     ageYears: '',
     isNewborn: false,
-    isInfantToddler: false,
+    isInfant: false,
+    isToddler: false,
     patientWeight: '',
     specialNeeds: '',
     insuranceCompany: '',
@@ -840,7 +842,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
         throw new Error('Please fill in Patient ID and Patient Weight');
       }
       // Age logic: require valid years only if not newborn/infant-toddler
-      if (!formData.isNewborn && !formData.isInfantToddler) {
+      if (!formData.isNewborn && !formData.isInfant && !formData.isToddler) {
         const years = parseInt((formData.ageYears || '').trim(), 10);
         if (!Number.isInteger(years) || years < 1 || years > 110) {
           throw new Error('Please enter a valid patient age (1-110 years) or select Newborn/Infant-Toddler');
@@ -1023,7 +1025,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
 
             {/* Pediatric quick flags and Age (years) */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-              <div className="md:col-span-3 flex items-center space-x-4">
+              <div className="md:col-span-6 flex items-center space-x-6">
                 <label className="inline-flex items-center text-sm text-gray-700">
                   <input
                     type="checkbox"
@@ -1037,15 +1039,25 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
                 <label className="inline-flex items-center text-sm text-gray-700">
                   <input
                     type="checkbox"
-                    name="isInfantToddler"
-                    checked={!!formData.isInfantToddler}
+                    name="isInfant"
+                    checked={!!formData.isInfant}
                     onChange={handleChange}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mr-2"
                   />
-                  Infant/Toddler
+                  Infant
+                </label>
+                <label className="inline-flex items-center text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    name="isToddler"
+                    checked={!!formData.isToddler}
+                    onChange={handleChange}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mr-2"
+                  />
+                  Toddler
                 </label>
               </div>
-              <div className="md:col-span-3">
+              <div className="md:col-span-3 md:col-start-10">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Age (years)
                 </label>
@@ -1056,7 +1068,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
                   pattern="[0-9]*"
                   value={formData.ageYears || ''}
                   onChange={handleChange}
-                  disabled={!!formData.isNewborn || !!formData.isInfantToddler}
+                  disabled={!!formData.isNewborn || !!formData.isInfant || !!formData.isToddler}
                   className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 w-24 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   placeholder="1 - 110"
                 />
@@ -1602,8 +1614,8 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
                   <p className="text-sm text-gray-600">ID: {formData.patientId}</p>
                   {formData.isNewborn ? (
                     <p className="text-sm text-gray-600">Age: Newborn</p>
-                  ) : formData.isInfantToddler ? (
-                    <p className="text-sm text-gray-600">Age: Infant/Toddler</p>
+                  ) : (formData.isInfant || formData.isToddler) ? (
+                    <p className="text-sm text-gray-600">Age: {formData.isInfant ? 'Infant' : 'Toddler'}</p>
                   ) : (formData.ageYears && (
                     <p className="text-sm text-gray-600">Age: {parseInt(formData.ageYears, 10)} years</p>
                   ))}
