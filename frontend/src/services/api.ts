@@ -83,8 +83,32 @@ api.interceptors.response.use(
       }
     } catch {}
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      // Only redirect on 401 errors for non-auth endpoints
+      // Auth endpoints should handle their own redirects
+      const url = (error.response?.config?.baseURL || '') + (error.response?.config?.url || '');
+      const isAuthEndpoint = url.includes('/api/auth/');
+      
+      if (!isAuthEndpoint) {
+        localStorage.removeItem('token');
+        // Determine correct login page based on user type from localStorage
+        try {
+          const userStr = localStorage.getItem('user');
+          if (userStr) {
+            const user = JSON.parse(userStr);
+            if (user.userType === 'HEALTHCARE') {
+              window.location.href = '/healthcare-login';
+            } else if (user.userType === 'EMS') {
+              window.location.href = '/ems-login';
+            } else {
+              window.location.href = '/login';
+            }
+          } else {
+            window.location.href = '/';
+          }
+        } catch {
+          window.location.href = '/';
+        }
+      }
     }
     return Promise.reject(error);
   }
