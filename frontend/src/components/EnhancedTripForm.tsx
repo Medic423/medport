@@ -979,8 +979,8 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+              <div className="md:col-span-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Patient ID *
                 </label>
@@ -1004,7 +1004,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
                 </div>
               </div>
 
-              <div>
+              <div className="md:col-span-3">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Age
                 </label>
@@ -1015,12 +1015,12 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
                   onChange={handleChange}
                   min="0"
                   step="1"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 w-24"
                   placeholder="Age (years)"
                 />
               </div>
 
-              <div>
+              <div className="md:col-span-3">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Patient Weight (kgs)
                 </label>
