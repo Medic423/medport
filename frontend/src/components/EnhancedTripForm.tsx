@@ -33,7 +33,7 @@ interface EnhancedTripFormProps {
 interface FormData {
   // Patient Information
   patientId: string;
-  patientAge?: string;
+  ageInMonths?: string; // simple approach: store age in months in UI only (for now)
   patientWeight: string;
   specialNeeds: string;
   insuranceCompany: string;
@@ -135,7 +135,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
 
   const [formData, setFormData] = useState<FormData>({
     patientId: '',
-    patientAge: '',
+    ageInMonths: '',
     patientWeight: '',
     specialNeeds: '',
     insuranceCompany: '',
@@ -1006,17 +1006,17 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
 
               <div className="md:col-span-3">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Age
+                  Age (months)
                 </label>
                 <input
                   type="number"
-                  name="patientAge"
-                  value={formData.patientAge || ''}
+                  name="ageInMonths"
+                  value={formData.ageInMonths || ''}
                   onChange={handleChange}
                   min="0"
                   step="1"
                   className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 w-24"
-                  placeholder="Age (years)"
+                  placeholder="0 = Newborn"
                 />
               </div>
 
@@ -1574,6 +1574,15 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
                 <div className="bg-white border rounded-lg p-4">
                   <h4 className="font-medium text-gray-900 mb-2">Patient Information</h4>
                   <p className="text-sm text-gray-600">ID: {formData.patientId}</p>
+                  {formData.ageInMonths !== undefined && formData.ageInMonths !== '' && (
+                    <p className="text-sm text-gray-600">
+                      Age: {parseInt(formData.ageInMonths || '0', 10) === 0
+                        ? 'Newborn'
+                        : (parseInt(formData.ageInMonths || '0', 10) < 24
+                          ? `${parseInt(formData.ageInMonths || '0', 10)} months`
+                          : `${Math.floor(parseInt(formData.ageInMonths || '0', 10) / 12)} years`)}
+                    </p>
+                  )}
                   {formData.patientWeight && <p className="text-sm text-gray-600">Weight: {formData.patientWeight} kgs</p>}
                   {formData.insuranceCompany && <p className="text-sm text-gray-600">Insurance: {formData.insuranceCompany}</p>}
                   {formData.specialNeeds && <p className="text-sm text-gray-600">Special Needs: {formData.specialNeeds}</p>}
