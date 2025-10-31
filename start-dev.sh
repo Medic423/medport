@@ -42,6 +42,8 @@ echo "🔧 Starting Backend Server (Port 5001)..."
 cd backend
 npm run dev &
 BACKEND_PID=$!
+# Write backend PID file at project root
+echo "$BACKEND_PID" > ../backend-live.pid 2>/dev/null || true
 
 # Wait for backend to start and verify health
 echo "⏳ Waiting for backend to start..."
@@ -62,6 +64,8 @@ echo "🎨 Starting Frontend Server (Port 3000)..."
 cd ../frontend
 npm run dev &
 FRONTEND_PID=$!
+# Write frontend PID file at project root
+echo "$FRONTEND_PID" > ../frontend-live.pid 2>/dev/null || true
 
 # Wait for frontend to start
 sleep 3
