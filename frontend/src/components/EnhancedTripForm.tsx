@@ -856,8 +856,9 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
       }
 
       // Validate step 2 required fields (Trip Details)
-      if (!formData.fromLocation || !formData.pickupLocationId || !formData.toLocation || !formData.scheduledTime || !formData.transportLevel || !formData.urgencyLevel) {
-        throw new Error('Please fill in all trip details: From Location, Pickup Location, To Location, Scheduled Time, Transport Level, and Urgency Level');
+      // Pickup Location is optional for some facilities; do not block submission on it
+      if (!formData.fromLocation || !formData.toLocation || !formData.scheduledTime || !formData.transportLevel || !formData.urgencyLevel) {
+        throw new Error('Please fill in all trip details: From Location, To Location, Scheduled Time, Transport Level, and Urgency Level');
       }
 
       // Validate scheduled time is not in the past
