@@ -946,7 +946,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
             patientAgeYears: ageYears,
             fromLocation: formData.fromLocation,
             fromLocationId: formData.fromLocationId || undefined,
-            pickupLocationId: formData.pickupLocationId,
+            pickupLocationId: formData.pickupLocationId || undefined,
             toLocation: formData.toLocation,
             scheduledTime: new Date(formData.scheduledTime).toISOString(),
             transportLevel: formData.transportLevel as any,
@@ -972,6 +972,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
           onTripCreated();
         }, 3000); // Show success message for 3 seconds
       } else {
+        console.error('TCC_DEBUG: Backend responded with error payload:', response.data);
         throw new Error(response.data.error || 'Failed to create transport request');
       }
 
