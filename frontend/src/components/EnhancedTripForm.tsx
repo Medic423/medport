@@ -569,7 +569,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
         diagnosis: ['Cardiac', 'Respiratory', 'Neurological', 'Trauma'],
         mobility: ['Ambulatory', 'Wheelchair', 'Stretcher', 'Bed-bound'],
         transportLevel: ['BLS', 'ALS', 'CCT', 'Other'],
-        urgency: ['Routine', 'Urgent', 'Emergent', 'Critical'],
+        urgency: ['Routine', 'Urgent', 'Emergent'],
         insurance: ['Medicare', 'Medicaid', 'Private', 'Self-pay'],
         specialNeeds: ['Bariatric Stretcher'],
         facilities: [],
