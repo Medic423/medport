@@ -83,6 +83,20 @@ if [ $failed -ne 0 ]; then
   echo "⚠️  One or more feeds are unhealthy. See results above."
 fi
 
+echo ""
+echo "🔍 Running critical trip creation smoke test..."
+if [ -x "$ROOT_DIR/scripts/check-trip-creation.sh" ]; then
+  if "$ROOT_DIR/scripts/check-trip-creation.sh"; then
+    echo ""
+  else
+    echo ""
+    echo "⚠️  Trip creation smoke test failed! This is critical."
+    echo "⚠️  Trip creation may not work. Investigate before proceeding."
+  fi
+else
+  echo "⚠️  Trip creation smoke test script not found or not executable"
+fi
+
 echo "🌐 Frontend expected at http://localhost:3000"
 echo "🔧 Backend at http://localhost:5001"
 echo "📊 Health: $HEALTH_URL"
