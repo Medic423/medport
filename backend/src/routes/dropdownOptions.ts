@@ -73,6 +73,12 @@ router.get('/:category/default', authenticateAdmin, async (req: AuthenticatedReq
       include: { option: true }
     });
 
+    // Special handling for urgency: filter out "Critical" since backend only accepts Routine/Urgent/Emergent
+    if (category === 'urgency' && existing?.option?.value === 'Critical') {
+      console.log('TCC_DEBUG: Filtering out invalid "Critical" urgency default');
+      return res.json({ success: true, data: null });
+    }
+
     res.json({ success: true, data: existing || null });
   } catch (error) {
     console.error('TCC_DEBUG: Get default option error:', error);
@@ -99,6 +105,14 @@ router.post('/:category/default', authenticateAdmin, async (req: AuthenticatedRe
     const option = await hospitalPrisma.dropdownOption.findUnique({ where: { id: optionId } });
     if (!option || option.category !== category || !option.isActive) {
       return res.status(400).json({ success: false, error: 'Invalid option for this category' });
+    }
+
+    // Special validation for urgency: prevent setting "Critical" as default (backend only accepts Routine/Urgent/Emergent)
+    if (category === 'urgency' && option.value === 'Critical') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Cannot set "Critical" as urgency default. Only Routine, Urgent, and Emergent are valid.' 
+      });
     }
 
     // Upsert default for category
@@ -131,6 +145,14 @@ router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
 
     if (!ALLOWED_CATEGORIES.has(category)) {
       return res.status(400).json({ success: false, error: 'Invalid category' });
+    }
+
+    // Special validation for urgency: prevent adding "Critical" (backend only accepts Routine/Urgent/Emergent)
+    if (category === 'urgency' && value === 'Critical') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Cannot add "Critical" as urgency option. Only Routine, Urgent, and Emergent are valid urgency levels.' 
+      });
     }
 
     const hospitalPrisma = databaseManager.getPrismaClient();

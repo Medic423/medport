@@ -206,11 +206,18 @@ router.post('/enhanced', authenticateAdmin, async (req: AuthenticatedRequest, re
     
     console.log('TCC_DEBUG: Enhanced trip created successfully:', result);
     res.status(201).json(result);
-  } catch (error) {
+  } catch (error: any) {
     console.error('TCC_DEBUG: Error creating enhanced trip:', error);
+    console.error('TCC_DEBUG: Error message:', error?.message);
+    console.error('TCC_DEBUG: Error stack:', error?.stack);
+    console.error('TCC_DEBUG: Error code:', error?.code);
+    console.error('TCC_DEBUG: Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+    
+    // Return more detailed error message
+    const errorMessage = error?.message || 'Failed to create enhanced transport request';
     res.status(500).json({
       success: false,
-      error: 'Failed to create enhanced transport request'
+      error: errorMessage
     });
   }
 });

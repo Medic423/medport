@@ -517,7 +517,8 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
         facilities: facilities,
         agencies: [],
         pickupLocations: [],
-        healthcareLocations: healthcareLocations // ✅ Use the loaded healthcare locations
+        healthcareLocations: healthcareLocations, // ✅ Use the loaded healthcare locations
+        availableUnits: [] // Available units for optional assignment
       };
  
       console.log('TCC_DEBUG: Setting real form options:', options);
@@ -548,15 +549,23 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
           api.get('/api/dropdown-options/insurance/default'),
           api.get('/api/dropdown-options/special-needs/default')
         ]);
-        setFormData(prev => ({
+        setFormData(prev => {
+          // Filter out "Critical" from urgency default since backend doesn't accept it
+          const backendUrgencyDefault = urg.data?.data?.option?.value;
+          const validUrgencyDefault = backendUrgencyDefault && ['Routine', 'Urgent', 'Emergent'].includes(backendUrgencyDefault) 
+            ? backendUrgencyDefault 
+            : prev.urgencyLevel;
+          
+          return {
           ...prev,
           transportLevel: tl.data?.data?.option?.value || prev.transportLevel,
-          urgencyLevel: urg.data?.data?.option?.value || prev.urgencyLevel,
+          urgencyLevel: validUrgencyDefault,
           diagnosis: dx.data?.data?.option?.value ? dx.data.data.option.value : '',
           mobilityLevel: mob.data?.data?.option?.value || prev.mobilityLevel,
           insuranceCompany: ins.data?.data?.option?.value || prev.insuranceCompany,
           specialNeeds: sn.data?.data?.option?.value || prev.specialNeeds
-        }));
+          };
+        });
       } catch (e) {
         console.warn('TCC_DEBUG: Defaults not available yet');
       }
@@ -576,7 +585,8 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
         facilities: [],
         agencies: [],
         pickupLocations: [],
-        healthcareLocations: [] // ✅ Initialize empty array for healthcare locations
+        healthcareLocations: [], // ✅ Initialize empty array for healthcare locations
+        availableUnits: [] // Available units for optional assignment
       };
       setFormOptions(fallbackOptions);
     }
@@ -858,8 +868,24 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
 
       // Validate step 2 required fields (Trip Details)
       // Pickup Location is optional for some facilities; do not block submission on it
-      if (!formData.fromLocation || !formData.toLocation || !formData.scheduledTime || !formData.transportLevel || !formData.urgencyLevel) {
-        throw new Error('Please fill in all trip details: From Location, To Location, Scheduled Time, Transport Level, and Urgency Level');
+      console.log('TCC_DEBUG: Validating trip details:', {
+        fromLocation: formData.fromLocation,
+        toLocation: formData.toLocation,
+        scheduledTime: formData.scheduledTime,
+        transportLevel: formData.transportLevel,
+        urgencyLevel: formData.urgencyLevel
+      });
+      
+      const missingFields: string[] = [];
+      if (!formData.fromLocation || formData.fromLocation.trim() === '') missingFields.push('From Location');
+      if (!formData.toLocation || formData.toLocation.trim() === '') missingFields.push('To Location');
+      if (!formData.scheduledTime || formData.scheduledTime.trim() === '') missingFields.push('Scheduled Time');
+      if (!formData.transportLevel || formData.transportLevel.trim() === '') missingFields.push('Transport Level');
+      if (!formData.urgencyLevel || formData.urgencyLevel.trim() === '') missingFields.push('Urgency Level');
+      
+      if (missingFields.length > 0) {
+        console.error('TCC_DEBUG: Missing required fields:', missingFields);
+        throw new Error(`Please fill in all trip details: ${missingFields.join(', ')}`);
       }
 
       // Validate scheduled time is not in the past
