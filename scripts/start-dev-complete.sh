@@ -86,10 +86,9 @@ fi
 echo "🌐 Frontend expected at http://localhost:3000"
 echo "🔧 Backend at http://localhost:5001"
 echo "📊 Health: $HEALTH_URL"
-echo "Press Ctrl+C to stop all servers"
-
-trap 'echo; echo "🛑 Stopping dev servers..."; kill $START_PID 2>/dev/null || true; echo "✅ Stopped"; exit 0' SIGINT SIGTERM
-
-wait $START_PID
+echo "✅ Development servers are running in the background (PID: $START_PID)"
+echo "📝 Tip: To stop them: kill $START_PID"
+echo "🗒️  Logs: backend-live.log, frontend-live.log (project root)"
+exit 0
 
 
