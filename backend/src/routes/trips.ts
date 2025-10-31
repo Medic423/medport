@@ -2,6 +2,8 @@ import express from 'express';
 import { tripService, CreateTripRequest, UpdateTripStatusRequest, EnhancedCreateTripRequest } from '../services/tripService';
 import { authenticateAdmin, AuthenticatedRequest } from '../middleware/authenticateAdmin';
 import { CreateTripWithResponsesRequest, UpdateTripResponseFieldsRequest } from '../types/agencyResponse';
+import { getDateCategory, isFuture } from '../utils/dateUtils';
+import { databaseManager } from '../services/databaseManager';
 
 const router = express.Router();
 
@@ -106,8 +108,6 @@ router.post('/enhanced', authenticateAdmin, async (req: AuthenticatedRequest, re
       patientWeight,
       specialNeeds,
       insuranceCompany,
-      patientAgeYears,
-      patientAgeCategory,
       fromLocation,
       fromLocationId,
       pickupLocationId,
@@ -160,8 +160,6 @@ router.post('/enhanced', authenticateAdmin, async (req: AuthenticatedRequest, re
       patientWeight,
       specialNeeds,
       insuranceCompany,
-      patientAgeYears,
-      patientAgeCategory,
       fromLocation,
       fromLocationId,
       pickupLocationId,
@@ -206,18 +204,11 @@ router.post('/enhanced', authenticateAdmin, async (req: AuthenticatedRequest, re
     
     console.log('TCC_DEBUG: Enhanced trip created successfully:', result);
     res.status(201).json(result);
-  } catch (error: any) {
+  } catch (error) {
     console.error('TCC_DEBUG: Error creating enhanced trip:', error);
-    console.error('TCC_DEBUG: Error message:', error?.message);
-    console.error('TCC_DEBUG: Error stack:', error?.stack);
-    console.error('TCC_DEBUG: Error code:', error?.code);
-    console.error('TCC_DEBUG: Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
-    
-    // Return more detailed error message
-    const errorMessage = error?.message || 'Failed to create enhanced transport request';
     res.status(500).json({
       success: false,
-      error: errorMessage
+      error: 'Failed to create enhanced transport request'
     });
   }
 });
@@ -423,6 +414,99 @@ router.put('/:id/status', async (req, res) => {
 
   } catch (error) {
     console.error('TCC_DEBUG: Update trip status error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+/**
+ * POST /api/trips/:id/authorize
+ * Authorize a future trip to be scheduled for today
+ * Moves a trip from "Future" section to "Today's" section
+ */
+router.post('/:id/authorize', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    console.log('TCC_DEBUG: Authorize trip request:', { id: req.params.id, user: req.user });
+    
+    const { id } = req.params;
+
+    // Get the trip to verify it exists
+    const getTripResult = await tripService.getTripById(id);
+
+    if (!getTripResult.success) {
+      return res.status(404).json({
+        success: false,
+        error: 'Trip not found'
+      });
+    }
+
+    const trip = getTripResult.data;
+
+    // Verify the trip is in the future category
+    if (trip.scheduledTime) {
+      const category = getDateCategory(new Date(trip.scheduledTime));
+      
+      if (category !== 'future') {
+        return res.status(400).json({
+          success: false,
+          error: `Cannot authorize trip. Trip is in '${category}' category, only 'future' trips can be authorized`
+        });
+      }
+    }
+
+    // Update the scheduledTime to today's date/time
+    // Keep the same time portion but change the date to today
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes(); // minutes since midnight
+    
+    // Create a new Date with today's date and keep the original time
+    const originalScheduledTime = new Date(trip.scheduledTime);
+    const authorizedTime = new Date(now);
+    authorizedTime.setHours(
+      originalScheduledTime.getHours(),
+      originalScheduledTime.getMinutes(),
+      0,
+      0
+    );
+
+    // If the time has already passed today, set it to now instead
+    if (authorizedTime < now) {
+      authorizedTime.setTime(now.getTime());
+    }
+
+    // Update the trip's scheduledTime
+    const updateData: UpdateTripStatusRequest = {
+      status: trip.status, // Keep the same status
+      // Note: scheduledTime is not in UpdateTripStatusRequest type, so we'll need to update via Prisma directly
+    };
+
+    // We need to update scheduledTime directly via Prisma since it's not in the UpdateTripStatusRequest
+    const prisma = databaseManager.getPrismaClient();
+    
+    const updatedTrip = await prisma.transportRequest.update({
+      where: { id },
+      data: {
+        scheduledTime: authorizedTime
+      }
+    });
+
+    console.log('TCC_DEBUG: Trip authorized successfully:', {
+      tripId: id,
+      originalTime: trip.scheduledTime,
+      authorizedTime: authorizedTime,
+      user: req.user?.id
+    });
+
+    res.json({
+      success: true,
+      message: 'Trip authorized successfully. Scheduled time updated to today.',
+      data: updatedTrip
+    });
+
+  } catch (error) {
+    console.error('TCC_DEBUG: Authorize trip error:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error'
