@@ -840,20 +840,20 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                             <div key={trip.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                               <div className="flex items-center space-x-4">
                                 <div>
-                                  <h4 className="text-lg font-medium text-gray-900">Patient {trip.patientId} - {trip.transportLevel} - Request Time: {trip.requestTime}</h4>
+                                  <h4 className="text-lg font-medium text-gray-900">
+                                    Patient {trip.patientId} - Requested Pickup Time: {trip.scheduledTime || 'Not scheduled'}
+                                  </h4>
                                   <p className="text-base text-gray-600">
                                     {trip.origin} → {trip.destination}
                                   </p>
                                   {trip.pickupLocation && (
                                     <p className="text-xs text-blue-600">
-                                      Pickup: {trip.pickupLocation.name}: {trip.pickupLocation.floor && `${trip.pickupLocation.floor}`}{trip.pickupLocation.room && ` ${trip.pickupLocation.room}`}{trip.pickupLocation.contactPhone && ` Phone: ${trip.pickupLocation.contactPhone}`}{trip.pickupLocation.contactEmail && ` Email: ${trip.pickupLocation.contactEmail}`}
+                                      Pickup: {trip.pickupLocation.name}{trip.pickupLocation.floor || trip.pickupLocation.room ? ': ' : ''}{trip.pickupLocation.floor && trip.pickupLocation.floor}{trip.pickupLocation.room && `${trip.pickupLocation.floor ? ' ' : ''}Room ${trip.pickupLocation.room}`}{trip.pickupLocation.contactPhone && ` Phone: ${trip.pickupLocation.contactPhone}`}{trip.pickupLocation.contactEmail && ` Email: ${trip.pickupLocation.contactEmail}`}
                                     </p>
                                   )}
-                                  {trip.scheduledTime && (
-                                    <p className="text-xs text-gray-500">
-                                      Scheduled: {trip.scheduledTime}
-                                    </p>
-                                  )}
+                                  <p className="text-sm text-gray-500 mt-1">
+                                    {trip.transportLevel} - Ticket Created At: {trip.requestTime}
+                                  </p>
                                   {/* Agency Responses Display */}
                                   {trip.agencyResponses && trip.agencyResponses.length > 0 && (
                                     <div className="mt-2 space-y-2">
