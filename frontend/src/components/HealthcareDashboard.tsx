@@ -11,12 +11,14 @@ import {
   Bell,
   X,
   Edit,
-  Trash2
+  Trash2,
+  Truck
 } from 'lucide-react';
 import api from '../services/api';
 import Notifications from './Notifications';
 import EnhancedTripForm from './EnhancedTripForm';
 import HealthcareSettingsPanel from './HealthcareSettingsPanel';
+import HealthcareEMSAgencies from './HealthcareEMSAgencies';
 import { tripsAPI, unitsAPI } from '../services/api';
 import { categorizeTripByDate, formatSectionHeader, DateCategory } from '../utils/dateUtils';
 
@@ -694,7 +696,8 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
               { id: 'trips', name: 'Transport Requests', icon: Clock },
               { id: 'in-progress', name: 'In-Progress', icon: AlertCircle },
               { id: 'completed', name: 'Completed Trips', icon: CheckCircle },
-              { id: 'hospital-settings', name: 'Hospital Settings', icon: Building2 }
+              { id: 'hospital-settings', name: 'Hospital Settings', icon: Building2 },
+              { id: 'ems-providers', name: 'EMS Providers', icon: Truck }
             ].map((tab) => {
               const Icon = tab.icon;
               return (
@@ -1203,6 +1206,10 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
 
         {activeTab === 'hospital-settings' && (
           <HealthcareSettingsPanel user={user} />
+        )}
+
+        {activeTab === 'ems-providers' && (
+          <HealthcareEMSAgencies user={user} />
         )}
       </main>
 

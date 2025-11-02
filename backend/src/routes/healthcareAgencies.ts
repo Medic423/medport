@@ -1,0 +1,333 @@
+import express from 'express';
+import { healthcareAgencyService } from '../services/healthcareAgencyService';
+import { authenticateAdmin } from '../middleware/authenticateAdmin';
+import { AuthenticatedRequest } from '../middleware/authenticateAdmin';
+
+const router = express.Router();
+
+// Apply authentication middleware to all routes
+router.use(authenticateAdmin);
+
+/**
+ * GET /api/healthcare/agencies
+ * List all EMS agencies for the logged-in healthcare user with optional filtering
+ */
+router.get('/', async (req: AuthenticatedRequest, res) => {
+  try {
+    // Verify user is healthcare type
+    if (req.user?.userType !== 'HEALTHCARE') {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: Healthcare users only',
+      });
+    }
+
+    const filters = {
+      name: req.query.search as string,
+      city: req.query.city as string,
+      state: req.query.state as string,
+      capabilities: req.query.capabilities ? (req.query.capabilities as string).split(',') : undefined,
+      isActive: req.query.isActive ? req.query.isActive === 'true' : undefined,
+      status: (req.query.status as string) || 'all', // preferred, regular, or all
+      page: req.query.page ? parseInt(req.query.page as string) : 1,
+      limit: req.query.limit ? parseInt(req.query.limit as string) : 50,
+    };
+
+    const result = await healthcareAgencyService.getAgenciesForHealthcareUser(
+      req.user!.id,
+      filters
+    );
+
+    res.json({
+      success: true,
+      data: result.agencies,
+      pagination: {
+        page: result.page,
+        totalPages: result.totalPages,
+        total: result.total,
+        limit: filters.limit,
+      },
+    });
+  } catch (error) {
+    console.error('Get healthcare agencies error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve agencies',
+    });
+  }
+});
+
+/**
+ * POST /api/healthcare/agencies
+ * Create new EMS agency for the logged-in healthcare user
+ */
+router.post('/', async (req: AuthenticatedRequest, res) => {
+  try {
+    // Verify user is healthcare type
+    if (req.user?.userType !== 'HEALTHCARE') {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: Healthcare users only',
+      });
+    }
+
+    const agencyData = req.body;
+
+    // Validate required fields
+    const requiredFields = ['name', 'contactName', 'phone', 'email', 'address', 'city', 'state', 'zipCode', 'capabilities'];
+    const missingFields = requiredFields.filter((field) => !agencyData[field]);
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: `Missing required fields: ${missingFields.join(', ')}`,
+      });
+    }
+
+    const agency = await healthcareAgencyService.createAgencyForHealthcareUser(
+      req.user!.id,
+      agencyData
+    );
+
+    res.status(201).json({
+      success: true,
+      message: 'Agency created successfully',
+      data: agency,
+    });
+  } catch (error) {
+    console.error('Create healthcare agency error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create agency',
+    });
+  }
+});
+
+/**
+ * GET /api/healthcare/agencies/:id
+ * Get agency by ID (only if owned by the logged-in healthcare user)
+ */
+router.get('/:id', async (req: AuthenticatedRequest, res) => {
+  try {
+    // Verify user is healthcare type
+    if (req.user?.userType !== 'HEALTHCARE') {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: Healthcare users only',
+      });
+    }
+
+    const { id } = req.params;
+    const agency = await healthcareAgencyService.getAgencyByIdForHealthcareUser(
+      id,
+      req.user!.id
+    );
+
+    if (!agency) {
+      return res.status(404).json({
+        success: false,
+        error: 'Agency not found or access denied',
+      });
+    }
+
+    // Transform to include isPreferred
+    const transformedAgency = {
+      ...agency,
+      isPreferred: agency.healthcarePreferences?.[0]?.isPreferred || false,
+      healthcarePreferences: undefined,
+    };
+
+    res.json({
+      success: true,
+      data: transformedAgency,
+    });
+  } catch (error) {
+    console.error('Get healthcare agency error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve agency',
+    });
+  }
+});
+
+/**
+ * PUT /api/healthcare/agencies/:id
+ * Update agency (only if owned by the logged-in healthcare user)
+ */
+router.put('/:id', async (req: AuthenticatedRequest, res) => {
+  try {
+    // Verify user is healthcare type
+    if (req.user?.userType !== 'HEALTHCARE') {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: Healthcare users only',
+      });
+    }
+
+    const { id } = req.params;
+    const updateData = req.body;
+
+    const agency = await healthcareAgencyService.updateAgencyForHealthcareUser(
+      id,
+      req.user!.id,
+      updateData
+    );
+
+    res.json({
+      success: true,
+      message: 'Agency updated successfully',
+      data: agency,
+    });
+  } catch (error: any) {
+    console.error('Update healthcare agency error:', error);
+    
+    // Handle ownership error
+    if (error.message === 'Agency not found or access denied') {
+      return res.status(404).json({
+        success: false,
+        error: error.message,
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update agency',
+    });
+  }
+});
+
+/**
+ * PATCH /api/healthcare/agencies/:id/preferred
+ * Toggle preferred status for an agency
+ */
+router.patch('/:id/preferred', async (req: AuthenticatedRequest, res) => {
+  try {
+    // Verify user is healthcare type
+    if (req.user?.userType !== 'HEALTHCARE') {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: Healthcare users only',
+      });
+    }
+
+    const { id } = req.params;
+    const { isPreferred } = req.body;
+
+    if (typeof isPreferred !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        error: 'isPreferred must be a boolean',
+      });
+    }
+
+    const preference = await healthcareAgencyService.togglePreferredStatus(
+      req.user!.id,
+      id,
+      isPreferred
+    );
+
+    res.json({
+      success: true,
+      message: `Agency marked as ${isPreferred ? 'preferred' : 'regular'}`,
+      data: preference,
+    });
+  } catch (error: any) {
+    console.error('Toggle preferred status error:', error);
+    
+    // Handle ownership error
+    if (error.message === 'Agency not found or access denied') {
+      return res.status(404).json({
+        success: false,
+        error: error.message,
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update preferred status',
+    });
+  }
+});
+
+/**
+ * DELETE /api/healthcare/agencies/:id
+ * Soft delete agency (only if owned by the logged-in healthcare user)
+ */
+router.delete('/:id', async (req: AuthenticatedRequest, res) => {
+  try {
+    // Verify user is healthcare type
+    if (req.user?.userType !== 'HEALTHCARE') {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: Healthcare users only',
+      });
+    }
+
+    const { id } = req.params;
+    await healthcareAgencyService.deleteAgencyForHealthcareUser(id, req.user!.id);
+
+    res.json({
+      success: true,
+      message: 'Agency deleted successfully',
+    });
+  } catch (error: any) {
+    console.error('Delete healthcare agency error:', error);
+    
+    // Handle ownership error
+    if (error.message === 'Agency not found or access denied') {
+      return res.status(404).json({
+        success: false,
+        error: error.message,
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete agency',
+    });
+  }
+});
+
+/**
+ * GET /api/healthcare/agencies/search/:query
+ * Search agencies for the logged-in healthcare user
+ */
+router.get('/search/:query', async (req: AuthenticatedRequest, res) => {
+  try {
+    // Verify user is healthcare type
+    if (req.user?.userType !== 'HEALTHCARE') {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: Healthcare users only',
+      });
+    }
+
+    const { query } = req.params;
+
+    if (!query) {
+      return res.status(400).json({
+        success: false,
+        error: 'Search query is required',
+      });
+    }
+
+    const agencies = await healthcareAgencyService.searchAgenciesForHealthcareUser(
+      req.user!.id,
+      query
+    );
+
+    res.json({
+      success: true,
+      data: agencies,
+    });
+  } catch (error) {
+    console.error('Search healthcare agencies error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to search agencies',
+    });
+  }
+});
+
+export default router;
+

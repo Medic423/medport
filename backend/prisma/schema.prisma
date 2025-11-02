@@ -26,18 +26,19 @@ model CenterUser {
 }
 
 model HealthcareUser {
-  id                      String               @id @default(cuid())
-  email                   String               @unique
+  id                      String                        @id @default(cuid())
+  email                   String                        @unique
   password                String
   name                    String
   facilityName            String
   facilityType            String
-  userType                String               @default("HEALTHCARE")
-  isActive                Boolean              @default(true)
-  manageMultipleLocations Boolean              @default(false)
-  createdAt               DateTime             @default(now())
-  updatedAt               DateTime             @updatedAt
+  userType                String                        @default("HEALTHCARE")
+  isActive                Boolean                       @default(true)
+  manageMultipleLocations Boolean                       @default(false)
+  createdAt               DateTime                      @default(now())
+  updatedAt               DateTime                      @updatedAt
   locations               HealthcareLocation[]
+  agencyPreferences       HealthcareAgencyPreference[]
 
   @@map("healthcare_users")
 }
@@ -64,6 +65,22 @@ model HealthcareLocation {
   @@index([healthcareUserId])
   @@index([isActive])
   @@map("healthcare_locations")
+}
+
+model HealthcareAgencyPreference {
+  id              String          @id @default(cuid())
+  healthcareUserId String
+  agencyId        String
+  isPreferred     Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  healthcareUser  HealthcareUser  @relation(fields: [healthcareUserId], references: [id], onDelete: Cascade)
+  agency          EMSAgency       @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  @@unique([healthcareUserId, agencyId])
+  @@index([healthcareUserId])
+  @@index([agencyId])
+  @@map("healthcare_agency_preferences")
 }
 
 model Hospital {
@@ -109,7 +126,7 @@ model EMSUser {
 }
 
 model EMSAgency {
-  id                   String    @id @default(cuid())
+  id                   String                        @id @default(cuid())
   name                 String
   contactName          String
   phone                String
@@ -122,25 +139,26 @@ model EMSAgency {
   operatingHours       Json?
   capabilities         String[]
   pricingStructure     Json?
-  isActive             Boolean   @default(true)
-  status               String    @default("ACTIVE")
+  isActive             Boolean                       @default(true)
+  status               String                        @default("ACTIVE")
   addedBy              String?
-  addedAt              DateTime  @default(now())
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-  acceptsNotifications Boolean   @default(true)
+  addedAt              DateTime                      @default(now())
+  createdAt            DateTime                      @default(now())
+  updatedAt            DateTime                      @updatedAt
+  acceptsNotifications Boolean                       @default(true)
   approvedAt           DateTime?
   approvedBy           String?
-  availableUnits       Int       @default(0)
-  lastUpdated          DateTime  @default(now())
+  availableUnits       Int                           @default(0)
+  lastUpdated          DateTime                      @default(now())
   latitude             Float?
   longitude            Float?
   notificationMethods  String[]
-  requiresReview       Boolean   @default(false)
+  requiresReview       Boolean                       @default(false)
   serviceRadius        Int?
-  totalUnits           Int       @default(0)
+  totalUnits           Int                           @default(0)
   users                EMSUser[]
   units                Unit[]
+  healthcarePreferences HealthcareAgencyPreference[]
 
   @@map("ems_agencies")
 }

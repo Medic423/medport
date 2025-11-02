@@ -228,6 +228,24 @@ export const agenciesAPI = {
     api.delete(`/api/tcc/agencies/${id}`),
 };
 
+// Healthcare Agencies API
+export const healthcareAgenciesAPI = {
+  getAll: (params?: any) =>
+    api.get('/api/healthcare/agencies', { params }),
+  
+  create: (data: any) =>
+    api.post('/api/healthcare/agencies', data),
+  
+  update: (id: string, data: any) =>
+    api.put(`/api/healthcare/agencies/${id}`, data),
+  
+  delete: (id: string) =>
+    api.delete(`/api/healthcare/agencies/${id}`),
+  
+  togglePreferred: (id: string, isPreferred: boolean) =>
+    api.patch(`/api/healthcare/agencies/${id}/preferred`, { isPreferred }),
+};
+
 // Facilities API (legacy export for compatibility)
 export const facilitiesAPI = {
   getAll: (params?: any) =>
