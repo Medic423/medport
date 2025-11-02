@@ -146,31 +146,31 @@ TCC_DEBUG: Calculating trip distance and time: {
   toLocation: 'Altoona Regional Emergency Department'
 }
 TCC_DEBUG: Looking up coordinates for fromLocation: Penn Highlands Clearfield
+TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Huntingdon
+TCC_DEBUG: Looking up coordinates for toLocation: UPMC Bedford Emergency Department
+TCC_DEBUG: Using mock coordinates for toLocation: UPMC Bedford Emergency Department
+TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
+TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Elk
+TCC_DEBUG: Looking up coordinates for toLocation: Altoona Regional Emergency Department
 TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Mon Valley
+TCC_DEBUG: Looking up coordinates for toLocation: UPMC Bedford Emergency Department
+TCC_DEBUG: Using mock coordinates for toLocation: Altoona Regional Emergency Department
+TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
+TCC_DEBUG: Using mock coordinates for toLocation: UPMC Bedford Emergency Department
+TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
+TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Huntingdon
+TCC_DEBUG: Looking up coordinates for toLocation: UPMC Bedford Emergency Department
+TCC_DEBUG: Using mock coordinates for toLocation: UPMC Bedford Emergency Department
+TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
+TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Connellsville
 TCC_DEBUG: Looking up coordinates for toLocation: UPMC Bedford Emergency Department
 TCC_DEBUG: Using mock coordinates for toLocation: UPMC Bedford Emergency Department
 TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
 TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Clearfield
 TCC_DEBUG: Looking up coordinates for toLocation: Altoona Regional Emergency Department
-TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Connellsville
-TCC_DEBUG: Looking up coordinates for toLocation: UPMC Bedford Emergency Department
-TCC_DEBUG: Using mock coordinates for toLocation: UPMC Bedford Emergency Department
-TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
 TCC_DEBUG: Using mock coordinates for toLocation: Altoona Regional Emergency Department
 TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
 TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands State College
-TCC_DEBUG: Looking up coordinates for toLocation: Altoona Regional Emergency Department
-TCC_DEBUG: Using mock coordinates for toLocation: Altoona Regional Emergency Department
-TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
-TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Huntingdon
-TCC_DEBUG: Looking up coordinates for toLocation: UPMC Bedford Emergency Department
-TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Huntingdon
-TCC_DEBUG: Looking up coordinates for toLocation: UPMC Bedford Emergency Department
-TCC_DEBUG: Using mock coordinates for toLocation: UPMC Bedford Emergency Department
-TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
-TCC_DEBUG: Using mock coordinates for toLocation: UPMC Bedford Emergency Department
-TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
-TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Elk
 TCC_DEBUG: Looking up coordinates for toLocation: Altoona Regional Emergency Department
 TCC_DEBUG: Using mock coordinates for toLocation: Altoona Regional Emergency Department
 TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes

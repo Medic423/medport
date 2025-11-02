@@ -47,6 +47,7 @@ export class HealthcareDestinationService {
 
     const where: any = {
       healthcareUserId,
+      isActive: true, // Only get active destinations by default
     };
 
     if (whereFilters.name) {
