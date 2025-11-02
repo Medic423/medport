@@ -22,7 +22,7 @@ export interface CreateTripRequest {
 }
 
 export interface UpdateTripStatusRequest {
-  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  status: 'PENDING' | 'PENDING_DISPATCH' | 'ACCEPTED' | 'DECLINED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
   assignedAgencyId?: string;
   assignedUnitId?: string;
   acceptedTimestamp?: string;
@@ -72,6 +72,7 @@ export interface EnhancedCreateTripRequest {
   notes?: string;
   priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   healthcareUserId?: string; // ✅ NEW: For determining if multi-location facility
+  status?: 'PENDING' | 'PENDING_DISPATCH'; // ✅ Phase 3: Allow custom status for dispatch workflow
   // ✅ TCC Command: Audit trail for trips created by TCC staff
   createdByTCCUserId?: string; // TCC admin/user who created trip
   createdByTCCUserEmail?: string; // Email of TCC staff member
@@ -635,7 +636,7 @@ export class TripService {
         transportLevel: data.transportLevel,
         urgencyLevel: data.urgencyLevel,
         priority: data.priority || 'MEDIUM',
-        status: 'PENDING',
+        status: data.status || 'PENDING', // ✅ Phase 3: Use provided status or default to PENDING
         specialRequirements: data.specialNeeds || null,
         diagnosis: data.diagnosis || null,
         mobilityLevel: data.mobilityLevel || null,

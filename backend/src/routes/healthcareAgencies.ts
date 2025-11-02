@@ -2,6 +2,7 @@ import express from 'express';
 import { healthcareAgencyService } from '../services/healthcareAgencyService';
 import { authenticateAdmin } from '../middleware/authenticateAdmin';
 import { AuthenticatedRequest } from '../middleware/authenticateAdmin';
+import { healthcareTripDispatchService } from '../services/healthcareTripDispatchService';
 
 const router = express.Router();
 
@@ -325,6 +326,51 @@ router.get('/search/:query', async (req: AuthenticatedRequest, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to search agencies',
+    });
+  }
+});
+
+/**
+ * GET /api/healthcare/agencies/trip-agencies?tripId=xxx
+ * Get available agencies for a specific trip (Phase 3)
+ */
+router.get('/trip-agencies', async (req: AuthenticatedRequest, res) => {
+  try {
+    // Verify user is healthcare type
+    if (req.user?.userType !== 'HEALTHCARE') {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: Healthcare users only',
+      });
+    }
+
+    const tripId = req.query.tripId as string;
+    const mode = req.query.mode as 'PREFERRED' | 'GEOGRAPHIC' | 'HYBRID' | undefined;
+    const radius = req.query.radius ? parseInt(req.query.radius as string) : undefined;
+
+    if (!tripId) {
+      return res.status(400).json({
+        success: false,
+        error: 'tripId query parameter is required',
+      });
+    }
+
+    const result = await healthcareTripDispatchService.getTripAgencies(
+      tripId,
+      req.user!.id,
+      mode,
+      radius
+    );
+
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (error: any) {
+    console.error('Get trip agencies error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to retrieve trip agencies',
     });
   }
 });

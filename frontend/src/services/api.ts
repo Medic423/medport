@@ -192,6 +192,10 @@ export const tripsAPI = {
   updateStatus: (id: string, data: any) =>
     api.put(`/api/trips/${id}/status`, data),
 
+  // Phase 3: Dispatch trip to selected agencies
+  dispatch: (id: string, data: { agencyIds: string[]; dispatchMode: string; notificationRadius?: number }) =>
+    api.post(`/api/trips/${id}/dispatch`, data),
+
   // Trip form option endpoints
   getOptions: {
     diagnosis: () => api.get('/api/trips/options/diagnosis'),
@@ -244,6 +248,10 @@ export const healthcareAgenciesAPI = {
   
   togglePreferred: (id: string, isPreferred: boolean) =>
     api.patch(`/api/healthcare/agencies/${id}/preferred`, { isPreferred }),
+  
+  // Phase 3: Trip agencies for dispatch screen
+  getForTrip: (tripId: string, params?: { mode?: string; radius?: number }) =>
+    api.get(`/api/healthcare/agencies/trip-agencies?tripId=${tripId}`, { params }),
 };
 
 // Healthcare Destinations API

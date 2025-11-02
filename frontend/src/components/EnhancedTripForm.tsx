@@ -26,7 +26,7 @@ interface EnhancedTripFormProps {
     facilityType?: string;
     manageMultipleLocations?: boolean;
   };
-  onTripCreated: () => void;
+  onTripCreated: (tripId?: string) => void; // Phase 3: Pass tripId to open dispatch screen
   onCancel?: () => void;
 }
 
@@ -981,10 +981,11 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
             oxygenRequired: !!formData.oxygenRequired,
             monitoringRequired: !!formData.monitoringRequired,
             generateQRCode: false,
-            selectedAgencies: formData.selectedAgencies,
-            notificationRadius: formData.notificationRadius,
+            selectedAgencies: [], // Phase 3: Agencies not selected at creation
+            notificationRadius: undefined, // Phase 3: Set at dispatch
             notes: formData.notes,
             priority: (tripData as any).priority,
+            status: 'PENDING_DISPATCH', // Phase 3: Set status to PENDING_DISPATCH for dispatch workflow
             // assignedUnitId removed (not applicable)
             createdVia: 'HEALTHCARE_PORTAL'
           };
@@ -998,10 +999,11 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
       
       if (response.data.success) {
         console.log('TCC_DEBUG: Trip created successfully:', response.data.data);
+        const createdTripId = response.data.data?.id;
         setSuccess(true);
         setTimeout(() => {
-          onTripCreated();
-        }, 3000); // Show success message for 3 seconds
+          onTripCreated(createdTripId); // Phase 3: Pass tripId for dispatch screen
+        }, 1500); // Reduced time - user will go to dispatch screen
       } else {
         console.error('TCC_DEBUG: Backend responded with error payload:', response.data);
         throw new Error(response.data.error || 'Failed to create transport request');
