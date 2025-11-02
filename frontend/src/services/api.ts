@@ -57,7 +57,7 @@ api.interceptors.request.use((config) => {
   } catch {}
   try {
     const url = (config.baseURL || '') + (config.url || '');
-    if (url.includes('/api/tcc/agencies') || url.includes('/api/tcc/analytics') || url.includes('/api/dropdown-options')) {
+    if (url.includes('/api/tcc/agencies') || url.includes('/api/tcc/analytics') || url.includes('/api/dropdown-options') || url.includes('/trip-agencies') || url.includes('/dispatch')) {
       console.log('TCC_DEBUG: API request →', config.method?.toUpperCase(), url, 'params:', config.params, 'data:', config.data);
     }
   } catch {}
@@ -69,7 +69,7 @@ api.interceptors.response.use(
   (response) => {
     try {
       const url = response.config?.baseURL + (response.config?.url || '');
-      if (url?.includes('/api/tcc/agencies') || url.includes('/api/tcc/analytics') || url.includes('/api/dropdown-options')) {
+      if (url?.includes('/api/tcc/agencies') || url.includes('/api/tcc/analytics') || url.includes('/api/dropdown-options') || url.includes('/trip-agencies') || url.includes('/dispatch')) {
         console.log('TCC_DEBUG: API response ←', response.status, url, 'data:', response.data);
       }
     } catch {}
@@ -78,7 +78,7 @@ api.interceptors.response.use(
   (error) => {
     try {
       const url = (error.response?.config?.baseURL || '') + (error.response?.config?.url || '');
-      if (url.includes('/api/tcc/agencies') || url.includes('/api/tcc/analytics') || url.includes('/api/dropdown-options')) {
+      if (url.includes('/api/tcc/agencies') || url.includes('/api/tcc/analytics') || url.includes('/api/dropdown-options') || url.includes('/trip-agencies') || url.includes('/dispatch')) {
         console.log('TCC_DEBUG: API error ✖', error.response?.status, url, 'data:', error.response?.data);
       }
     } catch {}
