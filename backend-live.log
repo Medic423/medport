@@ -23,9 +23,9 @@ TCC_DEBUG: Cleaned corsOrigin = "http://localhost:3000"
 🚑 Agencies API: http://localhost:5001/api/tcc/agencies
 🏢 Facilities API: http://localhost:5001/api/tcc/facilities
 📈 Analytics API: http://localhost:5001/api/tcc/analytics
-TCC_DEBUG: authenticateAdmin - authHeader: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtaGh1NzJ0cjAwMGc2MG81ZWgxM3FvcDMiLCJlbWFpbCI6ImNodWNrQGZlcnJlbGxob3NwaXRhbHMuY29tIiwidXNlclR5cGUiOiJIRUFMVEhDQVJFIiwiaWF0IjoxNzYyMTAyOTkyLCJleHAiOjE3NjIxODkzOTJ9.9SvPwsh-cH0vsoKtdiwF-VaUZ8qMuUlq_z3rnPIP1NU
+TCC_DEBUG: authenticateAdmin - authHeader: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtaGh1NzJ0cjAwMGc2MG81ZWgxM3FvcDMiLCJlbWFpbCI6ImNodWNrQGZlcnJlbGxob3NwaXRhbHMuY29tIiwidXNlclR5cGUiOiJIRUFMVEhDQVJFIiwiaWF0IjoxNzYyMTAzMzMwLCJleHAiOjE3NjIxODk3MzB9.0-YXtUiB5oRp-bbz8qrXSjY-49uKmuHndkJkf2LytzE
 TCC_DEBUG: authenticateAdmin - cookies: {
-  tcc_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtaGh1NzJ0cjAwMGc2MG81ZWgxM3FvcDMiLCJlbWFpbCI6ImNodWNrQGZlcnJlbGxob3NwaXRhbHMuY29tIiwidXNlclR5cGUiOiJIRUFMVEhDQVJFIiwiaWF0IjoxNzYyMTAyOTkyLCJleHAiOjE3NjIxODkzOTJ9.9SvPwsh-cH0vsoKtdiwF-VaUZ8qMuUlq_z3rnPIP1NU'
+  tcc_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtaGh1NzJ0cjAwMGc2MG81ZWgxM3FvcDMiLCJlbWFpbCI6ImNodWNrQGZlcnJlbGxob3NwaXRhbHMuY29tIiwidXNlclR5cGUiOiJIRUFMVEhDQVJFIiwiaWF0IjoxNzYyMTAzMzMwLCJleHAiOjE3NjIxODk3MzB9.0-YXtUiB5oRp-bbz8qrXSjY-49uKmuHndkJkf2LytzE'
 }
 TCC_DEBUG: authenticateAdmin - token from header: eyJhbGciOiJIUzI1NiIs...
 TCC_DEBUG: verifyToken called with JWT_SECRET: SET
@@ -76,8 +76,14 @@ TCC_FILTER_DEBUG: OR filter applied: [
     "healthcareCreatedById": "cmhhu72tr000g60o5eh13qop3"
   }
 ]
-TCC_DEBUG: Found trips: 5
+TCC_DEBUG: Found trips: 6
 TCC_DEBUG: Trips sample fields → [
+  {
+    id: 'cmhhyugvc0000qmu72fwoba90',
+    status: 'PENDING',
+    assignedUnitId: null,
+    assignedUnit: null
+  },
   {
     id: 'cmhhynn3q0000h5a2qx80m94m',
     status: 'PENDING',
@@ -86,12 +92,6 @@ TCC_DEBUG: Trips sample fields → [
   },
   {
     id: 'cmhhwq4830000vva06b58p5ho',
-    status: 'PENDING',
-    assignedUnitId: null,
-    assignedUnit: null
-  },
-  {
-    id: 'cmhhw54u20000ln6z1ssrugkc',
     status: 'PENDING',
     assignedUnitId: null,
     assignedUnit: null
@@ -99,18 +99,23 @@ TCC_DEBUG: Trips sample fields → [
 ]
 TCC_FILTER_DEBUG: Trips healthcareCreatedById sample → [
   {
+    id: 'cmhhyugvc0000qmu72fwoba90',
+    healthcareCreatedById: 'cmhhu72tr000g60o5eh13qop3'
+  },
+  {
     id: 'cmhhynn3q0000h5a2qx80m94m',
     healthcareCreatedById: 'cmhhu72tr000g60o5eh13qop3'
   },
   {
     id: 'cmhhwq4830000vva06b58p5ho',
     healthcareCreatedById: 'cmhhu72tr000g60o5eh13qop3'
-  },
-  {
-    id: 'cmhhw54u20000ln6z1ssrugkc',
-    healthcareCreatedById: 'cmhhu72tr000g60o5eh13qop3'
   }
 ]
+TCC_DEBUG: Calculating trip distance and time: {
+  fromLocation: 'Penn Highlands Mon Valley',
+  toLocation: 'UPMC Bedford Emergency Department'
+}
+TCC_DEBUG: Looking up coordinates for fromLocation: Penn Highlands Mon Valley
 TCC_DEBUG: Calculating trip distance and time: {
   fromLocation: 'Penn Highlands State College',
   toLocation: 'Altoona Regional Emergency Department'
@@ -136,25 +141,29 @@ TCC_DEBUG: Calculating trip distance and time: {
   toLocation: 'Altoona Regional Emergency Department'
 }
 TCC_DEBUG: Looking up coordinates for fromLocation: Penn Highlands Clearfield
+TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Mon Valley
+TCC_DEBUG: Looking up coordinates for toLocation: UPMC Bedford Emergency Department
+TCC_DEBUG: Using mock coordinates for toLocation: UPMC Bedford Emergency Department
+TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
 TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands State College
+TCC_DEBUG: Looking up coordinates for toLocation: Altoona Regional Emergency Department
+TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Clearfield
+TCC_DEBUG: Looking up coordinates for toLocation: Altoona Regional Emergency Department
+TCC_DEBUG: Using mock coordinates for toLocation: Altoona Regional Emergency Department
+TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
+TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Connellsville
+TCC_DEBUG: Looking up coordinates for toLocation: UPMC Bedford Emergency Department
+TCC_DEBUG: Using mock coordinates for toLocation: Altoona Regional Emergency Department
+TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
+TCC_DEBUG: Using mock coordinates for toLocation: UPMC Bedford Emergency Department
+TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
+TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Elk
 TCC_DEBUG: Looking up coordinates for toLocation: Altoona Regional Emergency Department
 TCC_DEBUG: Using mock coordinates for toLocation: Altoona Regional Emergency Department
 TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
 TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Huntingdon
 TCC_DEBUG: Looking up coordinates for toLocation: UPMC Bedford Emergency Department
-TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Elk
-TCC_DEBUG: Looking up coordinates for toLocation: Altoona Regional Emergency Department
 TCC_DEBUG: Using mock coordinates for toLocation: UPMC Bedford Emergency Department
-TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
-TCC_DEBUG: Using mock coordinates for toLocation: Altoona Regional Emergency Department
-TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
-TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Connellsville
-TCC_DEBUG: Looking up coordinates for toLocation: UPMC Bedford Emergency Department
-TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Clearfield
-TCC_DEBUG: Looking up coordinates for toLocation: Altoona Regional Emergency Department
-TCC_DEBUG: Using mock coordinates for toLocation: UPMC Bedford Emergency Department
-TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
-TCC_DEBUG: Using mock coordinates for toLocation: Altoona Regional Emergency Department
 TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
 TCC_DEBUG: Get agency responses request with query: {}
 TCC_DEBUG: Getting agency responses with filters: {
@@ -167,9 +176,78 @@ TCC_DEBUG: Getting agency responses with filters: {
 }
 TCC_DEBUG: Found 2 agency responses in database
 TCC_DEBUG: Returning 2 agency responses with trip details
-TCC_DEBUG: authenticateAdmin - authHeader: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtaGh1NzJ0cjAwMGc2MG81ZWgxM3FvcDMiLCJlbWFpbCI6ImNodWNrQGZlcnJlbGxob3NwaXRhbHMuY29tIiwidXNlclR5cGUiOiJIRUFMVEhDQVJFIiwiaWF0IjoxNzYyMTAyOTkyLCJleHAiOjE3NjIxODkzOTJ9.9SvPwsh-cH0vsoKtdiwF-VaUZ8qMuUlq_z3rnPIP1NU
+TCC_DEBUG: authenticateAdmin - authHeader: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtaGh1NzJ0cjAwMGc2MG81ZWgxM3FvcDMiLCJlbWFpbCI6ImNodWNrQGZlcnJlbGxob3NwaXRhbHMuY29tIiwidXNlclR5cGUiOiJIRUFMVEhDQVJFIiwiaWF0IjoxNzYyMTAzMzMwLCJleHAiOjE3NjIxODk3MzB9.0-YXtUiB5oRp-bbz8qrXSjY-49uKmuHndkJkf2LytzE
 TCC_DEBUG: authenticateAdmin - cookies: {
-  tcc_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtaGh1NzJ0cjAwMGc2MG81ZWgxM3FvcDMiLCJlbWFpbCI6ImNodWNrQGZlcnJlbGxob3NwaXRhbHMuY29tIiwidXNlclR5cGUiOiJIRUFMVEhDQVJFIiwiaWF0IjoxNzYyMTAyOTkyLCJleHAiOjE3NjIxODkzOTJ9.9SvPwsh-cH0vsoKtdiwF-VaUZ8qMuUlq_z3rnPIP1NU'
+  tcc_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtaGh1NzJ0cjAwMGc2MG81ZWgxM3FvcDMiLCJlbWFpbCI6ImNodWNrQGZlcnJlbGxob3NwaXRhbHMuY29tIiwidXNlclR5cGUiOiJIRUFMVEhDQVJFIiwiaWF0IjoxNzYyMTAzMzMwLCJleHAiOjE3NjIxODk3MzB9.0-YXtUiB5oRp-bbz8qrXSjY-49uKmuHndkJkf2LytzE'
+}
+TCC_DEBUG: authenticateAdmin - token from header: eyJhbGciOiJIUzI1NiIs...
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmhhu72tr000g60o5eh13qop3',
+  email: 'chuck@ferrellhospitals.com',
+  userType: 'HEALTHCARE'
+}
+PHASE3_DEBUG: Getting agencies for trip: cmhhyugvc0000qmu72fwoba90 Mode: GEOGRAPHIC
+PHASE3_DEBUG: Trip origin location: Penn Highlands Mon Valley Coords: { lat: null, lng: null }
+PHASE3_DEBUG: Found registered agencies: 5
+PHASE3_DEBUG: Registered agencies: [
+  { name: 'Altoona EMS', addedBy: null },
+  { name: 'Bedford Ambulance Service', addedBy: null },
+  { name: 'Elk County EMS', addedBy: null },
+  { name: 'Duncansville EMS', addedBy: null },
+  { name: 'HALAS', addedBy: null }
+]
+PHASE3_DEBUG: Found user agencies: 2
+PHASE3_DEBUG: User agencies: [
+  { name: 'Duncansville EMS', addedBy: 'cmhhu72tr000g60o5eh13qop3' },
+  { name: 'HALAS', addedBy: 'cmhhu72tr000g60o5eh13qop3' }
+]
+PHASE3_DEBUG: Before filtering - total agencies: 5
+PHASE3_DEBUG: Preferred count: 1 User agencies count: 0
+PHASE3_DEBUG: Dispatch mode: GEOGRAPHIC Radius: 100
+PHASE3_DEBUG: Applying GEOGRAPHIC/HYBRID filtering with radius: 100
+PHASE3_DEBUG: Agency check: Altoona EMS distance: null keep: false
+PHASE3_DEBUG: Agency check: Bedford Ambulance Service distance: null keep: false
+PHASE3_DEBUG: Agency check: Elk County EMS distance: null keep: false
+PHASE3_DEBUG: Keeping agency (user/preferred): Duncansville EMS isRegistered: true isPreferred: true
+PHASE3_DEBUG: Agency check: HALAS distance: null keep: false
+PHASE3_DEBUG: After filter - agencies: 5 -> 1
+PHASE3_DEBUG: Returning agencies: 1 Preferred: 1 Geographic: 0
+TCC_DEBUG: authenticateAdmin - authHeader: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtaGh1NzJ0cjAwMGc2MG81ZWgxM3FvcDMiLCJlbWFpbCI6ImNodWNrQGZlcnJlbGxob3NwaXRhbHMuY29tIiwidXNlclR5cGUiOiJIRUFMVEhDQVJFIiwiaWF0IjoxNzYyMTAzMzMwLCJleHAiOjE3NjIxODk3MzB9.0-YXtUiB5oRp-bbz8qrXSjY-49uKmuHndkJkf2LytzE
+TCC_DEBUG: authenticateAdmin - cookies: {
+  tcc_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtaGh1NzJ0cjAwMGc2MG81ZWgxM3FvcDMiLCJlbWFpbCI6ImNodWNrQGZlcnJlbGxob3NwaXRhbHMuY29tIiwidXNlclR5cGUiOiJIRUFMVEhDQVJFIiwiaWF0IjoxNzYyMTAzMzMwLCJleHAiOjE3NjIxODk3MzB9.0-YXtUiB5oRp-bbz8qrXSjY-49uKmuHndkJkf2LytzE'
+}
+TCC_DEBUG: authenticateAdmin - token from header: eyJhbGciOiJIUzI1NiIs...
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmhhu72tr000g60o5eh13qop3',
+  email: 'chuck@ferrellhospitals.com',
+  userType: 'HEALTHCARE'
+}
+PHASE3_DEBUG: Getting agencies for trip: cmhhyugvc0000qmu72fwoba90 Mode: PREFERRED
+PHASE3_DEBUG: Trip origin location: Penn Highlands Mon Valley Coords: { lat: null, lng: null }
+PHASE3_DEBUG: Found registered agencies: 5
+PHASE3_DEBUG: Registered agencies: [
+  { name: 'Altoona EMS', addedBy: null },
+  { name: 'Bedford Ambulance Service', addedBy: null },
+  { name: 'Elk County EMS', addedBy: null },
+  { name: 'Duncansville EMS', addedBy: null },
+  { name: 'HALAS', addedBy: null }
+]
+PHASE3_DEBUG: Found user agencies: 2
+PHASE3_DEBUG: User agencies: [
+  { name: 'Duncansville EMS', addedBy: 'cmhhu72tr000g60o5eh13qop3' },
+  { name: 'HALAS', addedBy: 'cmhhu72tr000g60o5eh13qop3' }
+]
+PHASE3_DEBUG: Before filtering - total agencies: 5
+PHASE3_DEBUG: Preferred count: 1 User agencies count: 0
+PHASE3_DEBUG: Dispatch mode: PREFERRED Radius: 100
+PHASE3_DEBUG: Applying PREFERRED filtering
+PHASE3_DEBUG: After PREFERRED filter - agencies: 1
+PHASE3_DEBUG: Returning agencies: 1 Preferred: 1 Geographic: 0
+TCC_DEBUG: authenticateAdmin - authHeader: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtaGh1NzJ0cjAwMGc2MG81ZWgxM3FvcDMiLCJlbWFpbCI6ImNodWNrQGZlcnJlbGxob3NwaXRhbHMuY29tIiwidXNlclR5cGUiOiJIRUFMVEhDQVJFIiwiaWF0IjoxNzYyMTAzMzMwLCJleHAiOjE3NjIxODk3MzB9.0-YXtUiB5oRp-bbz8qrXSjY-49uKmuHndkJkf2LytzE
+TCC_DEBUG: authenticateAdmin - cookies: {
+  tcc_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtaGh1NzJ0cjAwMGc2MG81ZWgxM3FvcDMiLCJlbWFpbCI6ImNodWNrQGZlcnJlbGxob3NwaXRhbHMuY29tIiwidXNlclR5cGUiOiJIRUFMVEhDQVJFIiwiaWF0IjoxNzYyMTAzMzMwLCJleHAiOjE3NjIxODk3MzB9.0-YXtUiB5oRp-bbz8qrXSjY-49uKmuHndkJkf2LytzE'
 }
 TCC_DEBUG: authenticateAdmin - token from header: eyJhbGciOiJIUzI1NiIs...
 TCC_DEBUG: verifyToken called with JWT_SECRET: SET
@@ -220,8 +298,14 @@ TCC_FILTER_DEBUG: OR filter applied: [
     "healthcareCreatedById": "cmhhu72tr000g60o5eh13qop3"
   }
 ]
-TCC_DEBUG: Found trips: 5
+TCC_DEBUG: Found trips: 6
 TCC_DEBUG: Trips sample fields → [
+  {
+    id: 'cmhhyugvc0000qmu72fwoba90',
+    status: 'PENDING',
+    assignedUnitId: null,
+    assignedUnit: null
+  },
   {
     id: 'cmhhynn3q0000h5a2qx80m94m',
     status: 'PENDING',
@@ -230,12 +314,6 @@ TCC_DEBUG: Trips sample fields → [
   },
   {
     id: 'cmhhwq4830000vva06b58p5ho',
-    status: 'PENDING',
-    assignedUnitId: null,
-    assignedUnit: null
-  },
-  {
-    id: 'cmhhw54u20000ln6z1ssrugkc',
     status: 'PENDING',
     assignedUnitId: null,
     assignedUnit: null
@@ -243,18 +321,23 @@ TCC_DEBUG: Trips sample fields → [
 ]
 TCC_FILTER_DEBUG: Trips healthcareCreatedById sample → [
   {
+    id: 'cmhhyugvc0000qmu72fwoba90',
+    healthcareCreatedById: 'cmhhu72tr000g60o5eh13qop3'
+  },
+  {
     id: 'cmhhynn3q0000h5a2qx80m94m',
     healthcareCreatedById: 'cmhhu72tr000g60o5eh13qop3'
   },
   {
     id: 'cmhhwq4830000vva06b58p5ho',
     healthcareCreatedById: 'cmhhu72tr000g60o5eh13qop3'
-  },
-  {
-    id: 'cmhhw54u20000ln6z1ssrugkc',
-    healthcareCreatedById: 'cmhhu72tr000g60o5eh13qop3'
   }
 ]
+TCC_DEBUG: Calculating trip distance and time: {
+  fromLocation: 'Penn Highlands Mon Valley',
+  toLocation: 'UPMC Bedford Emergency Department'
+}
+TCC_DEBUG: Looking up coordinates for fromLocation: Penn Highlands Mon Valley
 TCC_DEBUG: Calculating trip distance and time: {
   fromLocation: 'Penn Highlands State College',
   toLocation: 'Altoona Regional Emergency Department'
@@ -280,6 +363,8 @@ TCC_DEBUG: Calculating trip distance and time: {
   toLocation: 'Altoona Regional Emergency Department'
 }
 TCC_DEBUG: Looking up coordinates for fromLocation: Penn Highlands Clearfield
+TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Mon Valley
+TCC_DEBUG: Looking up coordinates for toLocation: UPMC Bedford Emergency Department
 TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands State College
 TCC_DEBUG: Looking up coordinates for toLocation: Altoona Regional Emergency Department
 TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Huntingdon
@@ -290,6 +375,8 @@ TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Connellsville
 TCC_DEBUG: Looking up coordinates for toLocation: UPMC Bedford Emergency Department
 TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Clearfield
 TCC_DEBUG: Looking up coordinates for toLocation: Altoona Regional Emergency Department
+TCC_DEBUG: Using mock coordinates for toLocation: UPMC Bedford Emergency Department
+TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
 TCC_DEBUG: Using mock coordinates for toLocation: Altoona Regional Emergency Department
 TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
 TCC_DEBUG: Using mock coordinates for toLocation: UPMC Bedford Emergency Department
@@ -311,3 +398,109 @@ TCC_DEBUG: Getting agency responses with filters: {
 }
 TCC_DEBUG: Found 2 agency responses in database
 TCC_DEBUG: Returning 2 agency responses with trip details
+TCC_DEBUG: authenticateAdmin - authHeader: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtaGh1NzJ0cjAwMGc2MG81ZWgxM3FvcDMiLCJlbWFpbCI6ImNodWNrQGZlcnJlbGxob3NwaXRhbHMuY29tIiwidXNlclR5cGUiOiJIRUFMVEhDQVJFIiwiaWF0IjoxNzYyMTAzMzMwLCJleHAiOjE3NjIxODk3MzB9.0-YXtUiB5oRp-bbz8qrXSjY-49uKmuHndkJkf2LytzE
+TCC_DEBUG: authenticateAdmin - cookies: {
+  tcc_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtaGh1NzJ0cjAwMGc2MG81ZWgxM3FvcDMiLCJlbWFpbCI6ImNodWNrQGZlcnJlbGxob3NwaXRhbHMuY29tIiwidXNlclR5cGUiOiJIRUFMVEhDQVJFIiwiaWF0IjoxNzYyMTAzMzMwLCJleHAiOjE3NjIxODk3MzB9.0-YXtUiB5oRp-bbz8qrXSjY-49uKmuHndkJkf2LytzE'
+}
+TCC_DEBUG: authenticateAdmin - token from header: eyJhbGciOiJIUzI1NiIs...
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmhhu72tr000g60o5eh13qop3',
+  email: 'chuck@ferrellhospitals.com',
+  userType: 'HEALTHCARE'
+}
+PHASE3_DEBUG: Getting agencies for trip: cmhhyugvc0000qmu72fwoba90 Mode: GEOGRAPHIC
+PHASE3_DEBUG: Trip origin location: Penn Highlands Mon Valley Coords: { lat: null, lng: null }
+PHASE3_DEBUG: Found registered agencies: 5
+PHASE3_DEBUG: Registered agencies: [
+  { name: 'Altoona EMS', addedBy: null },
+  { name: 'Bedford Ambulance Service', addedBy: null },
+  { name: 'Elk County EMS', addedBy: null },
+  { name: 'Duncansville EMS', addedBy: null },
+  { name: 'HALAS', addedBy: null }
+]
+PHASE3_DEBUG: Found user agencies: 2
+PHASE3_DEBUG: User agencies: [
+  { name: 'Duncansville EMS', addedBy: 'cmhhu72tr000g60o5eh13qop3' },
+  { name: 'HALAS', addedBy: 'cmhhu72tr000g60o5eh13qop3' }
+]
+PHASE3_DEBUG: Before filtering - total agencies: 5
+PHASE3_DEBUG: Preferred count: 1 User agencies count: 0
+PHASE3_DEBUG: Dispatch mode: GEOGRAPHIC Radius: 100
+PHASE3_DEBUG: Applying GEOGRAPHIC/HYBRID filtering with radius: 100
+PHASE3_DEBUG: Agency check: Altoona EMS distance: null keep: false
+PHASE3_DEBUG: Agency check: Bedford Ambulance Service distance: null keep: false
+PHASE3_DEBUG: Agency check: Elk County EMS distance: null keep: false
+PHASE3_DEBUG: Keeping agency (user/preferred): Duncansville EMS isRegistered: true isPreferred: true
+PHASE3_DEBUG: Agency check: HALAS distance: null keep: false
+PHASE3_DEBUG: After filter - agencies: 5 -> 1
+PHASE3_DEBUG: Returning agencies: 1 Preferred: 1 Geographic: 0
+TCC_DEBUG: authenticateAdmin - authHeader: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtaGh1NzJ0cjAwMGc2MG81ZWgxM3FvcDMiLCJlbWFpbCI6ImNodWNrQGZlcnJlbGxob3NwaXRhbHMuY29tIiwidXNlclR5cGUiOiJIRUFMVEhDQVJFIiwiaWF0IjoxNzYyMTAzMzMwLCJleHAiOjE3NjIxODk3MzB9.0-YXtUiB5oRp-bbz8qrXSjY-49uKmuHndkJkf2LytzE
+TCC_DEBUG: authenticateAdmin - cookies: {
+  tcc_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtaGh1NzJ0cjAwMGc2MG81ZWgxM3FvcDMiLCJlbWFpbCI6ImNodWNrQGZlcnJlbGxob3NwaXRhbHMuY29tIiwidXNlclR5cGUiOiJIRUFMVEhDQVJFIiwiaWF0IjoxNzYyMTAzMzMwLCJleHAiOjE3NjIxODk3MzB9.0-YXtUiB5oRp-bbz8qrXSjY-49uKmuHndkJkf2LytzE'
+}
+TCC_DEBUG: authenticateAdmin - token from header: eyJhbGciOiJIUzI1NiIs...
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmhhu72tr000g60o5eh13qop3',
+  email: 'chuck@ferrellhospitals.com',
+  userType: 'HEALTHCARE'
+}
+PHASE3_DEBUG: Getting agencies for trip: cmhhyugvc0000qmu72fwoba90 Mode: PREFERRED
+PHASE3_DEBUG: Trip origin location: Penn Highlands Mon Valley Coords: { lat: null, lng: null }
+PHASE3_DEBUG: Found registered agencies: 5
+PHASE3_DEBUG: Registered agencies: [
+  { name: 'Altoona EMS', addedBy: null },
+  { name: 'Bedford Ambulance Service', addedBy: null },
+  { name: 'Elk County EMS', addedBy: null },
+  { name: 'Duncansville EMS', addedBy: null },
+  { name: 'HALAS', addedBy: null }
+]
+PHASE3_DEBUG: Found user agencies: 2
+PHASE3_DEBUG: User agencies: [
+  { name: 'Duncansville EMS', addedBy: 'cmhhu72tr000g60o5eh13qop3' },
+  { name: 'HALAS', addedBy: 'cmhhu72tr000g60o5eh13qop3' }
+]
+PHASE3_DEBUG: Before filtering - total agencies: 5
+PHASE3_DEBUG: Preferred count: 1 User agencies count: 0
+PHASE3_DEBUG: Dispatch mode: PREFERRED Radius: 100
+PHASE3_DEBUG: Applying PREFERRED filtering
+PHASE3_DEBUG: After PREFERRED filter - agencies: 1
+PHASE3_DEBUG: Returning agencies: 1 Preferred: 1 Geographic: 0
+TCC_DEBUG: authenticateAdmin - authHeader: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtaGh1NzJ0cjAwMGc2MG81ZWgxM3FvcDMiLCJlbWFpbCI6ImNodWNrQGZlcnJlbGxob3NwaXRhbHMuY29tIiwidXNlclR5cGUiOiJIRUFMVEhDQVJFIiwiaWF0IjoxNzYyMTAzMzMwLCJleHAiOjE3NjIxODk3MzB9.0-YXtUiB5oRp-bbz8qrXSjY-49uKmuHndkJkf2LytzE
+TCC_DEBUG: authenticateAdmin - cookies: {
+  tcc_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtaGh1NzJ0cjAwMGc2MG81ZWgxM3FvcDMiLCJlbWFpbCI6ImNodWNrQGZlcnJlbGxob3NwaXRhbHMuY29tIiwidXNlclR5cGUiOiJIRUFMVEhDQVJFIiwiaWF0IjoxNzYyMTAzMzMwLCJleHAiOjE3NjIxODk3MzB9.0-YXtUiB5oRp-bbz8qrXSjY-49uKmuHndkJkf2LytzE'
+}
+TCC_DEBUG: authenticateAdmin - token from header: eyJhbGciOiJIUzI1NiIs...
+TCC_DEBUG: verifyToken called with JWT_SECRET: SET
+TCC_DEBUG: Token decoded successfully: {
+  id: 'cmhhu72tr000g60o5eh13qop3',
+  email: 'chuck@ferrellhospitals.com',
+  userType: 'HEALTHCARE'
+}
+PHASE3_DEBUG: Getting agencies for trip: cmhhyugvc0000qmu72fwoba90 Mode: HYBRID
+PHASE3_DEBUG: Trip origin location: Penn Highlands Mon Valley Coords: { lat: null, lng: null }
+PHASE3_DEBUG: Found registered agencies: 5
+PHASE3_DEBUG: Registered agencies: [
+  { name: 'Altoona EMS', addedBy: null },
+  { name: 'Bedford Ambulance Service', addedBy: null },
+  { name: 'Elk County EMS', addedBy: null },
+  { name: 'Duncansville EMS', addedBy: null },
+  { name: 'HALAS', addedBy: null }
+]
+PHASE3_DEBUG: Found user agencies: 2
+PHASE3_DEBUG: User agencies: [
+  { name: 'Duncansville EMS', addedBy: 'cmhhu72tr000g60o5eh13qop3' },
+  { name: 'HALAS', addedBy: 'cmhhu72tr000g60o5eh13qop3' }
+]
+PHASE3_DEBUG: Before filtering - total agencies: 5
+PHASE3_DEBUG: Preferred count: 1 User agencies count: 0
+PHASE3_DEBUG: Dispatch mode: HYBRID Radius: 100
+PHASE3_DEBUG: Applying GEOGRAPHIC/HYBRID filtering with radius: 100
+PHASE3_DEBUG: Agency check: Altoona EMS distance: null keep: false
+PHASE3_DEBUG: Agency check: Bedford Ambulance Service distance: null keep: false
+PHASE3_DEBUG: Agency check: Elk County EMS distance: null keep: false
+PHASE3_DEBUG: Keeping agency (user/preferred): Duncansville EMS isRegistered: true isPreferred: true
+PHASE3_DEBUG: Agency check: HALAS distance: null keep: false
+PHASE3_DEBUG: After filter - agencies: 5 -> 1
+PHASE3_DEBUG: Returning agencies: 1 Preferred: 1 Geographic: 0

@@ -119,7 +119,9 @@ export class HealthcareTripDispatchService {
       });
 
       console.log('PHASE3_DEBUG: Found registered agencies:', registeredAgencies.length);
+      console.log('PHASE3_DEBUG: Registered agencies:', registeredAgencies.map(a => ({ name: a.name, addedBy: null })));
       console.log('PHASE3_DEBUG: Found user agencies:', userAgencies.length);
+      console.log('PHASE3_DEBUG: User agencies:', userAgencies.map(a => ({ name: a.name, addedBy: (a as any).addedBy })));
 
       // Create a map of agencies by ID to deduplicate
       const agencyMap = new Map<string, TripAgencyInfo>();
@@ -196,23 +198,36 @@ export class HealthcareTripDispatchService {
       const preferredCount = allAgencies.filter(a => a.isPreferred).length;
       const userAgenciesCount = allAgencies.filter(a => !a.isRegistered).length;
 
+      console.log('PHASE3_DEBUG: Before filtering - total agencies:', allAgencies.length);
+      console.log('PHASE3_DEBUG: Preferred count:', preferredCount, 'User agencies count:', userAgenciesCount);
+      console.log('PHASE3_DEBUG: Dispatch mode:', dispatchMode, 'Radius:', notificationRadius);
+
       // Apply geographic filtering based on dispatch mode
       if (dispatchMode === 'GEOGRAPHIC' || dispatchMode === 'HYBRID') {
         const radius = notificationRadius || 100;
         
+        console.log('PHASE3_DEBUG: Applying GEOGRAPHIC/HYBRID filtering with radius:', radius);
+        
         // Keep preferred agencies and user agencies regardless of distance
         // Filter registered agencies by distance
+        const beforeFilter = allAgencies.length;
         allAgencies = allAgencies.filter(agency => {
           // User agencies and preferred agencies always shown
           if (!agency.isRegistered || agency.isPreferred) {
+            console.log('PHASE3_DEBUG: Keeping agency (user/preferred):', agency.name, 'isRegistered:', agency.isRegistered, 'isPreferred:', agency.isPreferred);
             return true;
           }
           // Registered agencies filtered by distance
-          return agency.distance !== null && agency.distance <= radius;
+          const keep = agency.distance !== null && agency.distance <= radius;
+          console.log('PHASE3_DEBUG: Agency check:', agency.name, 'distance:', agency.distance, 'keep:', keep);
+          return keep;
         });
+        console.log('PHASE3_DEBUG: After filter - agencies:', beforeFilter, '->', allAgencies.length);
       } else if (dispatchMode === 'PREFERRED') {
         // Only show preferred agencies
+        console.log('PHASE3_DEBUG: Applying PREFERRED filtering');
         allAgencies = allAgencies.filter(a => a.isPreferred);
+        console.log('PHASE3_DEBUG: After PREFERRED filter - agencies:', allAgencies.length);
       }
 
       // Sort: preferred first, then by distance
