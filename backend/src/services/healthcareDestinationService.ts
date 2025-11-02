@@ -47,6 +47,7 @@ export class HealthcareDestinationService {
 
     const where: any = {
       healthcareUserId,
+      isActive: true, // Only get active destinations by default
     };
 
     if (whereFilters.name) {
@@ -122,8 +123,8 @@ export class HealthcareDestinationService {
         phone: data.phone,
         email: data.email,
         contactName: data.contactName,
-        latitude: data.latitude,
-        longitude: data.longitude,
+        latitude: data.latitude ? parseFloat(String(data.latitude)) : null,
+        longitude: data.longitude ? parseFloat(String(data.longitude)) : null,
         isActive: data.isActive ?? true,
         notes: data.notes,
       },

@@ -4,6 +4,7 @@ import { authenticateAdmin, AuthenticatedRequest } from '../middleware/authentic
 import { CreateTripWithResponsesRequest, UpdateTripResponseFieldsRequest } from '../types/agencyResponse';
 import { getDateCategory, isFuture } from '../utils/dateUtils';
 import { databaseManager } from '../services/databaseManager';
+import { healthcareTripDispatchService } from '../services/healthcareTripDispatchService';
 
 const router = express.Router();
 
@@ -124,6 +125,7 @@ router.post('/enhanced', authenticateAdmin, async (req: AuthenticatedRequest, re
       notificationRadius,
       notes,
       priority,
+      status, // ✅ Phase 3: Allow custom status for dispatch workflow
       // TCC Command: Audit trail fields
       createdByTCCUserId,
       createdByTCCUserEmail,
@@ -176,6 +178,7 @@ router.post('/enhanced', authenticateAdmin, async (req: AuthenticatedRequest, re
       notificationRadius: notificationRadius || 100,
       notes,
       priority,
+      status, // ✅ Phase 3: Allow custom status for dispatch workflow (PENDING_DISPATCH)
       healthcareUserId: req.user?.userType === 'HEALTHCARE' ? req.user.id : undefined, // ✅ CRITICAL: Set healthcare user ID
       // ✅ TCC Command: Audit trail
       createdByTCCUserId,
@@ -370,10 +373,10 @@ router.put('/:id/status', async (req, res) => {
       });
     }
 
-    if (!['PENDING', 'ACCEPTED', 'DECLINED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'].includes(status)) {
+    if (!['PENDING', 'PENDING_DISPATCH', 'ACCEPTED', 'DECLINED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'].includes(status)) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid status. Must be PENDING, ACCEPTED, DECLINED, IN_PROGRESS, COMPLETED, or CANCELLED'
+        error: 'Invalid status. Must be PENDING, PENDING_DISPATCH, ACCEPTED, DECLINED, IN_PROGRESS, COMPLETED, or CANCELLED'
       });
     }
 
@@ -1132,6 +1135,64 @@ router.post('/calculate-distance', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Internal server error'
+    });
+  }
+});
+
+/**
+ * POST /api/trips/:id/dispatch
+ * Dispatch trip to selected agencies (Phase 3)
+ */
+router.post('/:id/dispatch', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    console.log('PHASE3_DEBUG: Dispatch trip request received:', req.body);
+    
+    // Verify user is healthcare type
+    if (req.user?.userType !== 'HEALTHCARE') {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: Healthcare users only',
+      });
+    }
+
+    const tripId = req.params.id;
+    const { agencyIds, dispatchMode, notificationRadius } = req.body;
+
+    // Validation
+    if (!agencyIds || !Array.isArray(agencyIds) || agencyIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'agencyIds is required and must be a non-empty array',
+      });
+    }
+
+    if (!dispatchMode || !['PREFERRED', 'GEOGRAPHIC', 'HYBRID'].includes(dispatchMode)) {
+      return res.status(400).json({
+        success: false,
+        error: 'dispatchMode is required and must be PREFERRED, GEOGRAPHIC, or HYBRID',
+      });
+    }
+
+    const result = await healthcareTripDispatchService.dispatchTrip(
+      tripId,
+      req.user!.id,
+      {
+        agencyIds,
+        dispatchMode,
+        notificationRadius
+      }
+    );
+
+    res.json({
+      success: true,
+      message: 'Trip dispatched successfully',
+      data: result
+    });
+  } catch (error: any) {
+    console.error('PHASE3_DEBUG: Error dispatching trip:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to dispatch trip'
     });
   }
 });

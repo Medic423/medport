@@ -67,11 +67,14 @@ const HealthcareEMSAgencies: React.FC<HealthcareEMSAgenciesProps> = ({ user }) =
     city: '',
     state: '',
     zipCode: '',
+    latitude: '',
+    longitude: '',
     capabilities: [] as string[],
     isPreferred: false,
   });
   const [addLoading, setAddLoading] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+  const [geocoding, setGeocoding] = useState(false);
   
   // Edit modal state
   const [editingAgency, setEditingAgency] = useState<Agency | null>(null);
@@ -144,6 +147,8 @@ const HealthcareEMSAgencies: React.FC<HealthcareEMSAgenciesProps> = ({ user }) =
       city: '',
       state: '',
       zipCode: '',
+      latitude: '',
+      longitude: '',
       capabilities: [],
       isPreferred: false,
     });
@@ -157,6 +162,53 @@ const HealthcareEMSAgencies: React.FC<HealthcareEMSAgenciesProps> = ({ user }) =
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
     }));
+  };
+
+  // Geocoding function using OpenStreetMap Nominatim API
+  const geocodeAddress = async () => {
+    if (!addFormData.address || !addFormData.city || !addFormData.state || !addFormData.zipCode) {
+      setAddError('Please fill in address, city, state, and ZIP code before looking up coordinates');
+      return;
+    }
+
+    setGeocoding(true);
+    setAddError(null);
+
+    const fullAddress = `${addFormData.address}, ${addFormData.city}, ${addFormData.state} ${addFormData.zipCode}`;
+    console.log('TCC_DEBUG: Geocoding address:', fullAddress);
+
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&limit=1&addressdetails=1`, {
+        headers: {
+          'User-Agent': 'TCC-Healthcare-App/1.0'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Geocoding service unavailable');
+      }
+
+      const data = await response.json();
+      console.log('TCC_DEBUG: Geocoding response:', data);
+
+      if (data && data.length > 0) {
+        const result = data[0];
+        setAddFormData(prev => ({
+          ...prev,
+          latitude: result.lat,
+          longitude: result.lon
+        }));
+        setAddError(null);
+        console.log('TCC_DEBUG: Coordinates set successfully:', result.lat, result.lon);
+      } else {
+        setAddError('No coordinates found for this address. Please enter them manually.');
+      }
+    } catch (err) {
+      console.error('Geocoding error:', err);
+      setAddError('Failed to lookup coordinates. Please enter them manually.');
+    } finally {
+      setGeocoding(false);
+    }
   };
 
   const handleAddSubmit = async (e: React.FormEvent) => {
@@ -195,6 +247,8 @@ const HealthcareEMSAgencies: React.FC<HealthcareEMSAgenciesProps> = ({ user }) =
       city: '',
       state: '',
       zipCode: '',
+      latitude: '',
+      longitude: '',
       capabilities: [],
       isPreferred: false,
     });
@@ -635,6 +689,74 @@ const HealthcareEMSAgencies: React.FC<HealthcareEMSAgenciesProps> = ({ user }) =
                       className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
                       required
                     />
+                  </div>
+                </div>
+
+                {/* Location Coordinates */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center mb-3">
+                    <MapPin className="h-5 w-5 text-blue-600 mr-2" />
+                    <h3 className="text-sm font-medium text-blue-800">Location Coordinates</h3>
+                  </div>
+                  <p className="text-sm text-blue-700 mb-4">
+                    Location coordinates are required for distance calculations. You can either lookup coordinates automatically or enter them manually.
+                  </p>
+                  
+                  <div className="space-y-4">
+                    {/* Geocoding Button */}
+                    <div>
+                      <button
+                        type="button"
+                        onClick={geocodeAddress}
+                        disabled={geocoding || !addFormData.address || !addFormData.city || !addFormData.state || !addFormData.zipCode}
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {geocoding ? (
+                          <>
+                            <div className="animate-spin -ml-1 mr-3 h-4 w-4 text-white">
+                              <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                            </div>
+                            Looking up...
+                          </>
+                        ) : (
+                          <>
+                            <MapPin className="h-4 w-4 mr-2" />
+                            Lookup Coordinates
+                          </>
+                        )}
+                      </button>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {(geocoding || !addFormData.address || !addFormData.city || !addFormData.state || !addFormData.zipCode) ? (
+                          geocoding ? 'Looking up coordinates...' : 'Please fill in address fields above'
+                        ) : 'Click to automatically look up GPS coordinates'}
+                      </p>
+                    </div>
+                    
+                    {/* Manual Entry */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Latitude</label>
+                        <input
+                          type="text"
+                          name="latitude"
+                          value={addFormData.latitude}
+                          onChange={handleAddInputChange}
+                          placeholder="e.g., 40.123456"
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Longitude</label>
+                        <input
+                          type="text"
+                          name="longitude"
+                          value={addFormData.longitude}
+                          onChange={handleAddInputChange}
+                          placeholder="e.g., -75.123456"
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 

@@ -9,6 +9,8 @@ export interface HealthcareAgencyData {
   city: string;
   state: string;
   zipCode: string;
+  latitude?: string | number | null;
+  longitude?: string | number | null;
   serviceArea: string[];
   operatingHours?: any;
   capabilities: string[];
@@ -50,6 +52,7 @@ export class HealthcareAgencyService {
 
     const where: any = {
       addedBy: healthcareUserId, // Only get agencies added by this user
+      isActive: true, // Only get active agencies by default
     };
 
     if (whereFilters.name) {
@@ -162,6 +165,8 @@ export class HealthcareAgencyService {
         city: data.city,
         state: data.state,
         zipCode: data.zipCode,
+        latitude: data.latitude ? parseFloat(String(data.latitude)) : null,
+        longitude: data.longitude ? parseFloat(String(data.longitude)) : null,
         serviceArea: data.serviceArea || [],
         operatingHours: data.operatingHours,
         capabilities: data.capabilities,

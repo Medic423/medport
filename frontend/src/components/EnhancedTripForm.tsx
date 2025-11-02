@@ -13,8 +13,7 @@ import {
   Building2,
   RefreshCw
 } from 'lucide-react';
-import { tripsAPI } from '../services/api';
-import { dropdownOptionsAPI } from '../services/api';
+import { tripsAPI, dropdownOptionsAPI, healthcareDestinationsAPI } from '../services/api';
 
 interface EnhancedTripFormProps {
   user: {
@@ -26,7 +25,7 @@ interface EnhancedTripFormProps {
     facilityType?: string;
     manageMultipleLocations?: boolean;
   };
-  onTripCreated: () => void;
+  onTripCreated: (tripId?: string) => void; // Phase 3: Pass tripId to open dispatch screen
   onCancel?: () => void;
 }
 
@@ -484,9 +483,90 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
         healthcareLocations = [];
       }
       
-      if (facilities.length === 0) {
-        console.warn('TCC_DEBUG: Failed to load facilities, using fallback');
+      // ✅ Phase 3: Load healthcare locations (9 Penn Highlands locations) and healthcare destinations (Maybrook Hills)
+      // These should be combined with facilities for the "To Location" dropdown
+      let healthcareLocationsForDestinations: any[] = [];
+      let healthcareDestinations: any[] = [];
+      
+      try {
+        // Load healthcare locations (Hospital Settings -> Manage Locations)
+        const locationsResponse = await api.get('/api/healthcare/locations/active');
+        if (locationsResponse.data?.success && Array.isArray(locationsResponse.data.data)) {
+          healthcareLocationsForDestinations = locationsResponse.data.data.map((loc: any) => ({
+            id: `loc_${loc.id}`,
+            name: loc.locationName,
+            address: loc.address,
+            city: loc.city,
+            state: loc.state,
+            zipCode: loc.zipCode,
+            type: loc.facilityType || 'Hospital',
+            phone: loc.phone || '',
+            email: '',
+            capabilities: [],
+            region: loc.state,
+            isActive: loc.isActive,
+            latitude: loc.latitude,
+            longitude: loc.longitude
+          }));
+          console.log('PHASE3_DESTINATIONS: Loaded', healthcareLocationsForDestinations.length, 'healthcare locations for To Location dropdown');
+        }
+      } catch (error) {
+        console.error('PHASE3_DESTINATIONS: Error loading healthcare locations:', error);
+      }
+      
+      try {
+        // Load healthcare destinations (Healthcare -> My Healthcare Destinations)
+        const destinationsResponse = await healthcareDestinationsAPI.getAll({ isActive: true });
+        if (destinationsResponse.data?.success && Array.isArray(destinationsResponse.data.data)) {
+          healthcareDestinations = destinationsResponse.data.data.map((dest: any) => ({
+            id: `dest_${dest.id}`,
+            name: dest.name,
+            address: dest.address,
+            city: dest.city,
+            state: dest.state,
+            zipCode: dest.zipCode,
+            type: dest.type || 'Destination',
+            phone: dest.phone || '',
+            email: dest.email || '',
+            capabilities: [],
+            region: dest.state,
+            isActive: dest.isActive,
+            latitude: dest.latitude,
+            longitude: dest.longitude
+          }));
+          console.log('PHASE3_DESTINATIONS: Loaded', healthcareDestinations.length, 'healthcare destinations for To Location dropdown');
+        }
+      } catch (error) {
+        console.error('PHASE3_DESTINATIONS: Error loading healthcare destinations:', error);
+      }
+      
+      // Combine all destinations: facilities + healthcare locations + healthcare destinations
+      // Remove duplicates by name to avoid showing the same destination multiple times
+      const allDestinations = [
+        ...facilities,
+        ...healthcareLocationsForDestinations,
+        ...healthcareDestinations
+      ];
+      
+      // Deduplicate by name (keep first occurrence)
+      const uniqueDestinations = allDestinations.filter((dest, index, self) =>
+        index === self.findIndex(d => d.name === dest.name && d.city === dest.city && d.state === dest.state)
+      );
+      
+      console.log('PHASE3_DESTINATIONS: Combined destinations:', {
+        facilities: facilities.length,
+        healthcareLocations: healthcareLocationsForDestinations.length,
+        healthcareDestinations: healthcareDestinations.length,
+        total: allDestinations.length,
+        unique: uniqueDestinations.length
+      });
+      
+      if (facilities.length === 0 && uniqueDestinations.length === 0) {
+        console.warn('TCC_DEBUG: Failed to load any destinations, using fallback');
         facilities = [];
+      } else {
+        // Use the combined unique destinations
+        facilities = uniqueDestinations;
       }
       
       // Load dropdown options from backend Hospital Settings
@@ -981,10 +1061,11 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
             oxygenRequired: !!formData.oxygenRequired,
             monitoringRequired: !!formData.monitoringRequired,
             generateQRCode: false,
-            selectedAgencies: formData.selectedAgencies,
-            notificationRadius: formData.notificationRadius,
+            selectedAgencies: [], // Phase 3: Agencies not selected at creation
+            notificationRadius: undefined, // Phase 3: Set at dispatch
             notes: formData.notes,
             priority: (tripData as any).priority,
+            status: 'PENDING_DISPATCH', // Phase 3: Set status to PENDING_DISPATCH for dispatch workflow
             // assignedUnitId removed (not applicable)
             createdVia: 'HEALTHCARE_PORTAL'
           };
@@ -998,10 +1079,11 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
       
       if (response.data.success) {
         console.log('TCC_DEBUG: Trip created successfully:', response.data.data);
+        const createdTripId = response.data.data?.id;
         setSuccess(true);
         setTimeout(() => {
-          onTripCreated();
-        }, 3000); // Show success message for 3 seconds
+          onTripCreated(createdTripId); // Phase 3: Pass tripId for dispatch screen
+        }, 1500); // Reduced time - user will go to dispatch screen
       } else {
         console.error('TCC_DEBUG: Backend responded with error payload:', response.data);
         throw new Error(response.data.error || 'Failed to create transport request');

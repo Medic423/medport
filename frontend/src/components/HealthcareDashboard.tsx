@@ -21,6 +21,7 @@ import EnhancedTripForm from './EnhancedTripForm';
 import HealthcareSettingsPanel from './HealthcareSettingsPanel';
 import HealthcareEMSAgencies from './HealthcareEMSAgencies';
 import HealthcareDestinations from './HealthcareDestinations';
+import TripDispatchScreen from './TripDispatchScreen'; // Phase 3
 import { tripsAPI, unitsAPI } from '../services/api';
 import { categorizeTripByDate, formatSectionHeader, DateCategory } from '../utils/dateUtils';
 
@@ -66,6 +67,10 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
   const [futureTrips, setFutureTrips] = useState<any[]>([]);
   const [pastTrips, setPastTrips] = useState<any[]>([]);
   const [unscheduledTrips, setUnscheduledTrips] = useState<any[]>([]);
+
+  // Phase 3: Dispatch screen state
+  const [showDispatchScreen, setShowDispatchScreen] = useState(false);
+  const [dispatchTrip, setDispatchTrip] = useState<any>(null);
 
   // Calculate wait time from request to pickup
   const calculateWaitTime = (requestTime: string, pickupTime: string | null) => {
@@ -1012,10 +1017,30 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
             <EnhancedTripForm 
               key="create-form"
               user={user} 
-              onTripCreated={() => {
-                // Refresh trips list and go to trips tab to see the new trip
-                loadTrips();
-                setActiveTab('trips');
+              onTripCreated={async (tripId) => {
+                // Phase 3: If tripId provided, open dispatch screen
+                if (tripId) {
+                  try {
+                    const response = await tripsAPI.getAll();
+                    const trip = response.data.data.find((t: any) => t.id === tripId);
+                    if (trip) {
+                      setDispatchTrip(trip);
+                      setShowDispatchScreen(true);
+                    } else {
+                      // Fallback: just refresh trips
+                      loadTrips();
+                      setActiveTab('trips');
+                    }
+                  } catch (error) {
+                    console.error('Error loading trip for dispatch:', error);
+                    loadTrips();
+                    setActiveTab('trips');
+                  }
+                } else {
+                  // Fallback: just refresh trips
+                  loadTrips();
+                  setActiveTab('trips');
+                }
               }}
               onCancel={() => {
                 // Go back to trips tab when cancel is clicked
@@ -1482,6 +1507,27 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
             </div>
           </div>
         </div>
+      )}
+
+      {/* Phase 3: Dispatch Screen Modal */}
+      {showDispatchScreen && dispatchTrip && (
+        <TripDispatchScreen
+          tripId={dispatchTrip.id}
+          trip={dispatchTrip}
+          user={user}
+          onDispatchComplete={() => {
+            setShowDispatchScreen(false);
+            setDispatchTrip(null);
+            loadTrips();
+            setActiveTab('trips');
+          }}
+          onCancel={() => {
+            setShowDispatchScreen(false);
+            setDispatchTrip(null);
+            loadTrips();
+            setActiveTab('trips');
+          }}
+        />
       )}
     </div>
   );
