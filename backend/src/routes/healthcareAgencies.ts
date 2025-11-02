@@ -110,6 +110,7 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
  * MUST come before /:id route to avoid route conflicts
  */
 router.get('/trip-agencies', async (req: AuthenticatedRequest, res) => {
+  console.log('🚨 ROUTE HIT: GET /trip-agencies', req.query);
   try {
     // Verify user is healthcare type
     if (req.user?.userType !== 'HEALTHCARE') {
@@ -122,6 +123,7 @@ router.get('/trip-agencies', async (req: AuthenticatedRequest, res) => {
     const tripId = req.query.tripId as string;
     const mode = req.query.mode as 'PREFERRED' | 'GEOGRAPHIC' | 'HYBRID' | undefined;
     const radius = req.query.radius ? parseInt(req.query.radius as string) : undefined;
+    console.log('🚨 Processing trip-agencies request:', { tripId, mode, radius });
 
     if (!tripId) {
       return res.status(400).json({
