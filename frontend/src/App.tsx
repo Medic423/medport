@@ -5,6 +5,8 @@ import TCCDashboard from './components/TCCDashboard';
 import HealthcareDashboard from './components/HealthcareDashboard';
 import EMSDashboard from './components/EMSDashboard';
 import PublicLogin from './components/PublicLogin';
+import UniversalLogin from './components/UniversalLogin';
+import RegistrationChoiceModal from './components/RegistrationChoiceModal';
 import HealthcareRegistration from './components/HealthcareRegistration';
 import EMSRegistration from './components/EMSRegistration';
 import HealthcareLogin from './components/HealthcareLogin';
@@ -27,6 +29,7 @@ interface User {
 function AppContent() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showRegistrationModal, setShowRegistrationModal] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -110,6 +113,24 @@ function AppContent() {
     }
   };
 
+  const handleShowRegistrationModal = () => {
+    setShowRegistrationModal(true);
+  };
+
+  const handleCloseRegistrationModal = () => {
+    setShowRegistrationModal(false);
+  };
+
+  const handleSelectHealthcareRegistration = () => {
+    setShowRegistrationModal(false);
+    navigate('/healthcare-register');
+  };
+
+  const handleSelectEMSRegistration = () => {
+    setShowRegistrationModal(false);
+    navigate('/ems-register');
+  };
+
   const handleRegistrationSuccess = () => {
     navigate('/');
   };
@@ -168,12 +189,20 @@ function AppContent() {
   // If not logged in, show public interface with proper routing
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Registration Choice Modal */}
+      {showRegistrationModal && (
+        <RegistrationChoiceModal
+          onClose={handleCloseRegistrationModal}
+          onSelectHealthcare={handleSelectHealthcareRegistration}
+          onSelectEMS={handleSelectEMSRegistration}
+        />
+      )}
+
       <Routes>
         <Route path="/" element={
-          <PublicLogin 
-            onRoleSelect={handleRoleSelect}
-            onShowRegistration={handleShowRegistration}
-            onClearSession={handleClearSession}
+          <UniversalLogin
+            onLogin={handleLogin}
+            onShowRegistration={handleShowRegistrationModal}
           />
         } />
         <Route path="/healthcare-register" element={
