@@ -38,18 +38,21 @@
 - `docs/plans/healthcare_additions.md` - Progress tracking
 - `docs/plans/PHASE_3_REMAINING_WORK.md` - NEW summary doc
 
+## ✅ Completed: Backfill Script Results (2025-11-02)
+
+**Successfully geocoded all existing records:**
+- 9/9 healthcare locations (all Penn Highlands facilities)
+- 5/5 EMS agencies (was 3, all now have coordinates)
+- 1/1 healthcare destinations
+
+**Distance calculations verified:**
+- Before: 5000+ miles ❌
+- After: Accurate distances (26-84 miles) ✅
+
+See `BACKFILL_RESULTS.md` for full details.
+
 ## Next Steps
-1. Run backfill script to geocode existing records
+1. ~~Run backfill script~~ ✅ **COMPLETE**
 2. Wait for notification provider decision
-3. Integrate actual notification service when ready
-
-## How to Run Backfill Script
-
-After restarting backend, run:
-```bash
-cd backend
-npx ts-node scripts/backfill-missing-coordinates.ts
-```
-
-This will geocode all existing locations, agencies, and destinations missing coordinates.
+3. Integrate actual notification service when ready (2-4 hours after provider decision)
 
