@@ -250,8 +250,13 @@ export const healthcareAgenciesAPI = {
     api.patch(`/api/healthcare/agencies/${id}/preferred`, { isPreferred }),
   
   // Phase 3: Trip agencies for dispatch screen
-  getForTrip: (tripId: string, params?: { mode?: string; radius?: number }) =>
-    api.get(`/api/healthcare/agencies/trip-agencies?tripId=${tripId}`, { params }),
+  getForTrip: (tripId: string, params?: { mode?: string; radius?: number }) => {
+    const queryParams = new URLSearchParams();
+    queryParams.set('tripId', tripId);
+    if (params?.mode) queryParams.set('mode', params.mode);
+    if (params?.radius) queryParams.set('radius', params.radius.toString());
+    return api.get(`/api/healthcare/agencies/trip-agencies?${queryParams.toString()}`);
+  },
 };
 
 // Healthcare Destinations API

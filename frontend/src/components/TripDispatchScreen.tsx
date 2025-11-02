@@ -70,7 +70,8 @@ const TripDispatchScreen: React.FC<TripDispatchScreenProps> = ({ tripId, trip, u
   // Load agencies when component mounts or mode changes
   useEffect(() => {
     loadAgencies();
-  }, [dispatchMode, notificationRadius]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatchMode, notificationRadius, tripId]);
 
   // Set default mode based on available agencies
   useEffect(() => {
@@ -90,10 +91,14 @@ const TripDispatchScreen: React.FC<TripDispatchScreenProps> = ({ tripId, trip, u
       setAgenciesLoading(true);
       setError(null);
       
+      console.log('PHASE3_FRONTEND: Loading agencies for trip:', tripId, 'mode:', dispatchMode);
+      
       const response = await healthcareAgenciesAPI.getForTrip(tripId, {
         mode: dispatchMode,
         radius: notificationRadius
       });
+
+      console.log('PHASE3_FRONTEND: API response:', response.data);
 
       if (response.data.success && response.data.data) {
         setAgencies(response.data.data.agencies || []);
@@ -101,7 +106,7 @@ const TripDispatchScreen: React.FC<TripDispatchScreenProps> = ({ tripId, trip, u
         setError('Failed to load agencies');
       }
     } catch (err: any) {
-      console.error('Error loading agencies:', err);
+      console.error('PHASE3_FRONTEND: Error loading agencies:', err);
       setError(err.response?.data?.error || 'Failed to load agencies');
     } finally {
       setAgenciesLoading(false);
