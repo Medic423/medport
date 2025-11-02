@@ -52,6 +52,7 @@ export class HealthcareAgencyService {
 
     const where: any = {
       addedBy: healthcareUserId, // Only get agencies added by this user
+      isActive: true, // Only get active agencies by default
     };
 
     if (whereFilters.name) {
