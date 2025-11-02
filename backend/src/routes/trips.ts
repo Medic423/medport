@@ -125,6 +125,7 @@ router.post('/enhanced', authenticateAdmin, async (req: AuthenticatedRequest, re
       notificationRadius,
       notes,
       priority,
+      status, // ✅ Phase 3: Allow custom status for dispatch workflow
       // TCC Command: Audit trail fields
       createdByTCCUserId,
       createdByTCCUserEmail,
@@ -177,6 +178,7 @@ router.post('/enhanced', authenticateAdmin, async (req: AuthenticatedRequest, re
       notificationRadius: notificationRadius || 100,
       notes,
       priority,
+      status, // ✅ Phase 3: Allow custom status for dispatch workflow (PENDING_DISPATCH)
       healthcareUserId: req.user?.userType === 'HEALTHCARE' ? req.user.id : undefined, // ✅ CRITICAL: Set healthcare user ID
       // ✅ TCC Command: Audit trail
       createdByTCCUserId,

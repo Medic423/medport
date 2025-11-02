@@ -14,6 +14,7 @@ export interface TripAgencyInfo {
   capabilities: string[];
   isRegistered: boolean;  // Has account in system
   isPreferred: boolean;   // Marked as preferred by user
+  isUserAdded: boolean;   // Added by the healthcare user (should always show in HYBRID mode)
   distance: number | null; // Miles from origin (if calculated)
   unitType?: string;
   unitNumber?: string;
@@ -149,6 +150,7 @@ export class HealthcareTripDispatchService {
           capabilities: agency.capabilities,
           isRegistered: true,
           isPreferred: false, // Will be updated if user has preference
+          isUserAdded: false, // Registered agencies are not user-added
           distance: distance,
           unitNumber: agency.totalUnits > 0 ? `${agency.totalUnits} units` : undefined
         });
@@ -159,22 +161,26 @@ export class HealthcareTripDispatchService {
         const isPreferred = agency.healthcarePreferences?.[0]?.isPreferred || false;
         const isRegistered = agencyMap.has(agency.id);
 
-        // If already in map, just update the isPreferred flag
+        // Calculate distance if we have origin coordinates
+        let distance: number | null = null;
+        if (originCoords && agency.latitude && agency.longitude) {
+          distance = DistanceService.calculateDistance(
+            { latitude: agency.latitude, longitude: agency.longitude },
+            { latitude: originCoords.lat!, longitude: originCoords.lng! }
+          );
+        }
+
+        // If already in map (from registered list), update flags to mark as user-added
         if (isRegistered) {
           const existingAgency = agencyMap.get(agency.id)!;
           existingAgency.isPreferred = isPreferred;
+          existingAgency.isUserAdded = true; // Mark as user-added so it always shows in HYBRID mode
+          // Update distance if not already calculated (shouldn't happen, but just in case)
+          if (existingAgency.distance === null && distance !== null) {
+            existingAgency.distance = distance;
+          }
         } else {
           // New agency - add it
-          let distance: number | null = null;
-
-          // Calculate distance if we have origin coordinates
-          if (originCoords && agency.latitude && agency.longitude) {
-            distance = DistanceService.calculateDistance(
-              { latitude: agency.latitude, longitude: agency.longitude },
-              { latitude: originCoords.lat!, longitude: originCoords.lng! }
-            );
-          }
-
           agencyMap.set(agency.id, {
             id: agency.id,
             name: agency.name,
@@ -186,6 +192,7 @@ export class HealthcareTripDispatchService {
             capabilities: agency.capabilities,
             isRegistered: false, // This is a user-added agency
             isPreferred: isPreferred,
+            isUserAdded: true, // User-added agency
             distance: distance
           });
         }
@@ -196,7 +203,7 @@ export class HealthcareTripDispatchService {
 
       // Apply mode-specific filtering
       const preferredCount = allAgencies.filter(a => a.isPreferred).length;
-      const userAgenciesCount = allAgencies.filter(a => !a.isRegistered).length;
+      const userAgenciesCount = allAgencies.filter(a => a.isUserAdded).length;
 
       console.log('PHASE3_DEBUG: Before filtering - total agencies:', allAgencies.length);
       console.log('PHASE3_DEBUG: Preferred count:', preferredCount, 'User agencies count:', userAgenciesCount);
@@ -208,20 +215,30 @@ export class HealthcareTripDispatchService {
         
         console.log('PHASE3_DEBUG: Applying GEOGRAPHIC/HYBRID filtering with radius:', radius);
         
-        // Keep preferred agencies and user agencies regardless of distance
-        // Filter registered agencies by distance
         const beforeFilter = allAgencies.length;
-        allAgencies = allAgencies.filter(agency => {
-          // User agencies and preferred agencies always shown
-          if (!agency.isRegistered || agency.isPreferred) {
-            console.log('PHASE3_DEBUG: Keeping agency (user/preferred):', agency.name, 'isRegistered:', agency.isRegistered, 'isPreferred:', agency.isPreferred);
-            return true;
-          }
-          // Registered agencies filtered by distance
-          const keep = agency.distance !== null && agency.distance <= radius;
-          console.log('PHASE3_DEBUG: Agency check:', agency.name, 'distance:', agency.distance, 'keep:', keep);
-          return keep;
-        });
+        
+        if (dispatchMode === 'GEOGRAPHIC') {
+          // GEOGRAPHIC mode: Show all agencies within radius (including user-added)
+          allAgencies = allAgencies.filter(agency => {
+            const keep = agency.distance !== null && agency.distance <= radius;
+            console.log('PHASE3_DEBUG: GEOGRAPHIC - Agency check:', agency.name, 'distance:', agency.distance, 'keep:', keep);
+            return keep;
+          });
+        } else {
+          // HYBRID mode: Keep preferred agencies and user-added agencies regardless of distance
+          // Filter registered agencies (not user-added) by distance
+          allAgencies = allAgencies.filter(agency => {
+            // User-added agencies and preferred agencies always shown
+            if (agency.isUserAdded || agency.isPreferred) {
+              console.log('PHASE3_DEBUG: HYBRID - Keeping agency (user/preferred):', agency.name, 'isRegistered:', agency.isRegistered, 'isUserAdded:', agency.isUserAdded, 'isPreferred:', agency.isPreferred);
+              return true;
+            }
+            // Registered agencies (not user-added) filtered by distance
+            const keep = agency.distance !== null && agency.distance <= radius;
+            console.log('PHASE3_DEBUG: HYBRID - Agency check:', agency.name, 'distance:', agency.distance, 'keep:', keep);
+            return keep;
+          });
+        }
         console.log('PHASE3_DEBUG: After filter - agencies:', beforeFilter, '->', allAgencies.length);
       } else if (dispatchMode === 'PREFERRED') {
         // Only show preferred agencies
@@ -242,7 +259,7 @@ export class HealthcareTripDispatchService {
       });
 
       const geographicCount = allAgencies.filter(a => 
-        a.isRegistered && !a.isPreferred && 
+        a.isRegistered && !a.isUserAdded && !a.isPreferred && 
         (dispatchMode !== 'GEOGRAPHIC' && dispatchMode !== 'HYBRID' || 
          (a.distance !== null && a.distance <= (notificationRadius || 100)))
       ).length;
