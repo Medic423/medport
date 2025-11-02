@@ -9,6 +9,8 @@ export interface HealthcareAgencyData {
   city: string;
   state: string;
   zipCode: string;
+  latitude?: string | number | null;
+  longitude?: string | number | null;
   serviceArea: string[];
   operatingHours?: any;
   capabilities: string[];
@@ -162,6 +164,8 @@ export class HealthcareAgencyService {
         city: data.city,
         state: data.state,
         zipCode: data.zipCode,
+        latitude: data.latitude ? parseFloat(String(data.latitude)) : null,
+        longitude: data.longitude ? parseFloat(String(data.longitude)) : null,
         serviceArea: data.serviceArea || [],
         operatingHours: data.operatingHours,
         capabilities: data.capabilities,
