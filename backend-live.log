@@ -23,9 +23,9 @@ TCC_DEBUG: Cleaned corsOrigin = "http://localhost:3000"
 🚑 Agencies API: http://localhost:5001/api/tcc/agencies
 🏢 Facilities API: http://localhost:5001/api/tcc/facilities
 📈 Analytics API: http://localhost:5001/api/tcc/analytics
-TCC_DEBUG: authenticateAdmin - authHeader: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtaGh1NzJ0cjAwMGc2MG81ZWgxM3FvcDMiLCJlbWFpbCI6ImNodWNrQGZlcnJlbGxob3NwaXRhbHMuY29tIiwidXNlclR5cGUiOiJIRUFMVEhDQVJFIiwiaWF0IjoxNzYyMDk4OTUwLCJleHAiOjE3NjIxODUzNTB9.-JPkQ841Kzg3dwVvLMyphQRCqTknC3xcpTjkVONDKTI
+TCC_DEBUG: authenticateAdmin - authHeader: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtaGh1NzJ0cjAwMGc2MG81ZWgxM3FvcDMiLCJlbWFpbCI6ImNodWNrQGZlcnJlbGxob3NwaXRhbHMuY29tIiwidXNlclR5cGUiOiJIRUFMVEhDQVJFIiwiaWF0IjoxNzYyMTAyOTkyLCJleHAiOjE3NjIxODkzOTJ9.9SvPwsh-cH0vsoKtdiwF-VaUZ8qMuUlq_z3rnPIP1NU
 TCC_DEBUG: authenticateAdmin - cookies: {
-  tcc_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtaGh1NzJ0cjAwMGc2MG81ZWgxM3FvcDMiLCJlbWFpbCI6ImNodWNrQGZlcnJlbGxob3NwaXRhbHMuY29tIiwidXNlclR5cGUiOiJIRUFMVEhDQVJFIiwiaWF0IjoxNzYyMDk4OTUwLCJleHAiOjE3NjIxODUzNTB9.-JPkQ841Kzg3dwVvLMyphQRCqTknC3xcpTjkVONDKTI'
+  tcc_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtaGh1NzJ0cjAwMGc2MG81ZWgxM3FvcDMiLCJlbWFpbCI6ImNodWNrQGZlcnJlbGxob3NwaXRhbHMuY29tIiwidXNlclR5cGUiOiJIRUFMVEhDQVJFIiwiaWF0IjoxNzYyMTAyOTkyLCJleHAiOjE3NjIxODkzOTJ9.9SvPwsh-cH0vsoKtdiwF-VaUZ8qMuUlq_z3rnPIP1NU'
 }
 TCC_DEBUG: authenticateAdmin - token from header: eyJhbGciOiJIUzI1NiIs...
 TCC_DEBUG: verifyToken called with JWT_SECRET: SET
@@ -76,8 +76,14 @@ TCC_FILTER_DEBUG: OR filter applied: [
     "healthcareCreatedById": "cmhhu72tr000g60o5eh13qop3"
   }
 ]
-TCC_DEBUG: Found trips: 4
+TCC_DEBUG: Found trips: 5
 TCC_DEBUG: Trips sample fields → [
+  {
+    id: 'cmhhynn3q0000h5a2qx80m94m',
+    status: 'PENDING',
+    assignedUnitId: null,
+    assignedUnit: null
+  },
   {
     id: 'cmhhwq4830000vva06b58p5ho',
     status: 'PENDING',
@@ -86,12 +92,6 @@ TCC_DEBUG: Trips sample fields → [
   },
   {
     id: 'cmhhw54u20000ln6z1ssrugkc',
-    status: 'PENDING',
-    assignedUnitId: null,
-    assignedUnit: null
-  },
-  {
-    id: 'cmhhvjqbk0005ffwt237kn5xn',
     status: 'PENDING',
     assignedUnitId: null,
     assignedUnit: null
@@ -99,18 +99,23 @@ TCC_DEBUG: Trips sample fields → [
 ]
 TCC_FILTER_DEBUG: Trips healthcareCreatedById sample → [
   {
+    id: 'cmhhynn3q0000h5a2qx80m94m',
+    healthcareCreatedById: 'cmhhu72tr000g60o5eh13qop3'
+  },
+  {
     id: 'cmhhwq4830000vva06b58p5ho',
     healthcareCreatedById: 'cmhhu72tr000g60o5eh13qop3'
   },
   {
     id: 'cmhhw54u20000ln6z1ssrugkc',
     healthcareCreatedById: 'cmhhu72tr000g60o5eh13qop3'
-  },
-  {
-    id: 'cmhhvjqbk0005ffwt237kn5xn',
-    healthcareCreatedById: 'cmhhu72tr000g60o5eh13qop3'
   }
 ]
+TCC_DEBUG: Calculating trip distance and time: {
+  fromLocation: 'Penn Highlands State College',
+  toLocation: 'Altoona Regional Emergency Department'
+}
+TCC_DEBUG: Looking up coordinates for fromLocation: Penn Highlands State College
 TCC_DEBUG: Calculating trip distance and time: {
   fromLocation: 'Penn Highlands Huntingdon',
   toLocation: 'UPMC Bedford Emergency Department'
@@ -131,18 +136,22 @@ TCC_DEBUG: Calculating trip distance and time: {
   toLocation: 'Altoona Regional Emergency Department'
 }
 TCC_DEBUG: Looking up coordinates for fromLocation: Penn Highlands Clearfield
+TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands State College
+TCC_DEBUG: Looking up coordinates for toLocation: Altoona Regional Emergency Department
+TCC_DEBUG: Using mock coordinates for toLocation: Altoona Regional Emergency Department
+TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
 TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Huntingdon
 TCC_DEBUG: Looking up coordinates for toLocation: UPMC Bedford Emergency Department
-TCC_DEBUG: Using mock coordinates for toLocation: UPMC Bedford Emergency Department
-TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
 TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Elk
 TCC_DEBUG: Looking up coordinates for toLocation: Altoona Regional Emergency Department
+TCC_DEBUG: Using mock coordinates for toLocation: UPMC Bedford Emergency Department
+TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
+TCC_DEBUG: Using mock coordinates for toLocation: Altoona Regional Emergency Department
+TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
 TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Connellsville
 TCC_DEBUG: Looking up coordinates for toLocation: UPMC Bedford Emergency Department
 TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Clearfield
 TCC_DEBUG: Looking up coordinates for toLocation: Altoona Regional Emergency Department
-TCC_DEBUG: Using mock coordinates for toLocation: Altoona Regional Emergency Department
-TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
 TCC_DEBUG: Using mock coordinates for toLocation: UPMC Bedford Emergency Department
 TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
 TCC_DEBUG: Using mock coordinates for toLocation: Altoona Regional Emergency Department
@@ -158,9 +167,9 @@ TCC_DEBUG: Getting agency responses with filters: {
 }
 TCC_DEBUG: Found 2 agency responses in database
 TCC_DEBUG: Returning 2 agency responses with trip details
-TCC_DEBUG: authenticateAdmin - authHeader: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtaGh1NzJ0cjAwMGc2MG81ZWgxM3FvcDMiLCJlbWFpbCI6ImNodWNrQGZlcnJlbGxob3NwaXRhbHMuY29tIiwidXNlclR5cGUiOiJIRUFMVEhDQVJFIiwiaWF0IjoxNzYyMDk4OTUwLCJleHAiOjE3NjIxODUzNTB9.-JPkQ841Kzg3dwVvLMyphQRCqTknC3xcpTjkVONDKTI
+TCC_DEBUG: authenticateAdmin - authHeader: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtaGh1NzJ0cjAwMGc2MG81ZWgxM3FvcDMiLCJlbWFpbCI6ImNodWNrQGZlcnJlbGxob3NwaXRhbHMuY29tIiwidXNlclR5cGUiOiJIRUFMVEhDQVJFIiwiaWF0IjoxNzYyMTAyOTkyLCJleHAiOjE3NjIxODkzOTJ9.9SvPwsh-cH0vsoKtdiwF-VaUZ8qMuUlq_z3rnPIP1NU
 TCC_DEBUG: authenticateAdmin - cookies: {
-  tcc_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtaGh1NzJ0cjAwMGc2MG81ZWgxM3FvcDMiLCJlbWFpbCI6ImNodWNrQGZlcnJlbGxob3NwaXRhbHMuY29tIiwidXNlclR5cGUiOiJIRUFMVEhDQVJFIiwiaWF0IjoxNzYyMDk4OTUwLCJleHAiOjE3NjIxODUzNTB9.-JPkQ841Kzg3dwVvLMyphQRCqTknC3xcpTjkVONDKTI'
+  tcc_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtaGh1NzJ0cjAwMGc2MG81ZWgxM3FvcDMiLCJlbWFpbCI6ImNodWNrQGZlcnJlbGxob3NwaXRhbHMuY29tIiwidXNlclR5cGUiOiJIRUFMVEhDQVJFIiwiaWF0IjoxNzYyMTAyOTkyLCJleHAiOjE3NjIxODkzOTJ9.9SvPwsh-cH0vsoKtdiwF-VaUZ8qMuUlq_z3rnPIP1NU'
 }
 TCC_DEBUG: authenticateAdmin - token from header: eyJhbGciOiJIUzI1NiIs...
 TCC_DEBUG: verifyToken called with JWT_SECRET: SET
@@ -211,8 +220,14 @@ TCC_FILTER_DEBUG: OR filter applied: [
     "healthcareCreatedById": "cmhhu72tr000g60o5eh13qop3"
   }
 ]
-TCC_DEBUG: Found trips: 4
+TCC_DEBUG: Found trips: 5
 TCC_DEBUG: Trips sample fields → [
+  {
+    id: 'cmhhynn3q0000h5a2qx80m94m',
+    status: 'PENDING',
+    assignedUnitId: null,
+    assignedUnit: null
+  },
   {
     id: 'cmhhwq4830000vva06b58p5ho',
     status: 'PENDING',
@@ -221,12 +236,6 @@ TCC_DEBUG: Trips sample fields → [
   },
   {
     id: 'cmhhw54u20000ln6z1ssrugkc',
-    status: 'PENDING',
-    assignedUnitId: null,
-    assignedUnit: null
-  },
-  {
-    id: 'cmhhvjqbk0005ffwt237kn5xn',
     status: 'PENDING',
     assignedUnitId: null,
     assignedUnit: null
@@ -234,18 +243,23 @@ TCC_DEBUG: Trips sample fields → [
 ]
 TCC_FILTER_DEBUG: Trips healthcareCreatedById sample → [
   {
+    id: 'cmhhynn3q0000h5a2qx80m94m',
+    healthcareCreatedById: 'cmhhu72tr000g60o5eh13qop3'
+  },
+  {
     id: 'cmhhwq4830000vva06b58p5ho',
     healthcareCreatedById: 'cmhhu72tr000g60o5eh13qop3'
   },
   {
     id: 'cmhhw54u20000ln6z1ssrugkc',
     healthcareCreatedById: 'cmhhu72tr000g60o5eh13qop3'
-  },
-  {
-    id: 'cmhhvjqbk0005ffwt237kn5xn',
-    healthcareCreatedById: 'cmhhu72tr000g60o5eh13qop3'
   }
 ]
+TCC_DEBUG: Calculating trip distance and time: {
+  fromLocation: 'Penn Highlands State College',
+  toLocation: 'Altoona Regional Emergency Department'
+}
+TCC_DEBUG: Looking up coordinates for fromLocation: Penn Highlands State College
 TCC_DEBUG: Calculating trip distance and time: {
   fromLocation: 'Penn Highlands Huntingdon',
   toLocation: 'UPMC Bedford Emergency Department'
@@ -266,6 +280,8 @@ TCC_DEBUG: Calculating trip distance and time: {
   toLocation: 'Altoona Regional Emergency Department'
 }
 TCC_DEBUG: Looking up coordinates for fromLocation: Penn Highlands Clearfield
+TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands State College
+TCC_DEBUG: Looking up coordinates for toLocation: Altoona Regional Emergency Department
 TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Huntingdon
 TCC_DEBUG: Looking up coordinates for toLocation: UPMC Bedford Emergency Department
 TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Elk
@@ -274,6 +290,8 @@ TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Connellsville
 TCC_DEBUG: Looking up coordinates for toLocation: UPMC Bedford Emergency Department
 TCC_DEBUG: Using mock coordinates for fromLocation: Penn Highlands Clearfield
 TCC_DEBUG: Looking up coordinates for toLocation: Altoona Regional Emergency Department
+TCC_DEBUG: Using mock coordinates for toLocation: Altoona Regional Emergency Department
+TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
 TCC_DEBUG: Using mock coordinates for toLocation: UPMC Bedford Emergency Department
 TCC_DEBUG: Calculated distance: 126.13463604926514 miles, estimated time: 252 minutes
 TCC_DEBUG: Using mock coordinates for toLocation: Altoona Regional Emergency Department

@@ -105,6 +105,94 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
 });
 
 /**
+ * GET /api/healthcare/agencies/trip-agencies?tripId=xxx
+ * Get available agencies for a specific trip (Phase 3)
+ * MUST come before /:id route to avoid route conflicts
+ */
+router.get('/trip-agencies', async (req: AuthenticatedRequest, res) => {
+  try {
+    // Verify user is healthcare type
+    if (req.user?.userType !== 'HEALTHCARE') {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: Healthcare users only',
+      });
+    }
+
+    const tripId = req.query.tripId as string;
+    const mode = req.query.mode as 'PREFERRED' | 'GEOGRAPHIC' | 'HYBRID' | undefined;
+    const radius = req.query.radius ? parseInt(req.query.radius as string) : undefined;
+
+    if (!tripId) {
+      return res.status(400).json({
+        success: false,
+        error: 'tripId query parameter is required',
+      });
+    }
+
+    const result = await healthcareTripDispatchService.getTripAgencies(
+      tripId,
+      req.user!.id,
+      mode,
+      radius
+    );
+
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (error: any) {
+    console.error('Get trip agencies error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to retrieve trip agencies',
+    });
+  }
+});
+
+/**
+ * GET /api/healthcare/agencies/search/:query
+ * Search agencies for the logged-in healthcare user
+ * MUST come before /:id route to avoid route conflicts
+ */
+router.get('/search/:query', async (req: AuthenticatedRequest, res) => {
+  try {
+    // Verify user is healthcare type
+    if (req.user?.userType !== 'HEALTHCARE') {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: Healthcare users only',
+      });
+    }
+
+    const { query } = req.params;
+
+    if (!query) {
+      return res.status(400).json({
+        success: false,
+        error: 'Search query is required',
+      });
+    }
+
+    const agencies = await healthcareAgencyService.searchAgenciesForHealthcareUser(
+      req.user!.id,
+      query
+    );
+
+    res.json({
+      success: true,
+      data: agencies,
+    });
+  } catch (error) {
+    console.error('Search healthcare agencies error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to search agencies',
+    });
+  }
+});
+
+/**
  * GET /api/healthcare/agencies/:id
  * Get agency by ID (only if owned by the logged-in healthcare user)
  */
@@ -285,92 +373,6 @@ router.delete('/:id', async (req: AuthenticatedRequest, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to delete agency',
-    });
-  }
-});
-
-/**
- * GET /api/healthcare/agencies/search/:query
- * Search agencies for the logged-in healthcare user
- */
-router.get('/search/:query', async (req: AuthenticatedRequest, res) => {
-  try {
-    // Verify user is healthcare type
-    if (req.user?.userType !== 'HEALTHCARE') {
-      return res.status(403).json({
-        success: false,
-        error: 'Access denied: Healthcare users only',
-      });
-    }
-
-    const { query } = req.params;
-
-    if (!query) {
-      return res.status(400).json({
-        success: false,
-        error: 'Search query is required',
-      });
-    }
-
-    const agencies = await healthcareAgencyService.searchAgenciesForHealthcareUser(
-      req.user!.id,
-      query
-    );
-
-    res.json({
-      success: true,
-      data: agencies,
-    });
-  } catch (error) {
-    console.error('Search healthcare agencies error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to search agencies',
-    });
-  }
-});
-
-/**
- * GET /api/healthcare/agencies/trip-agencies?tripId=xxx
- * Get available agencies for a specific trip (Phase 3)
- */
-router.get('/trip-agencies', async (req: AuthenticatedRequest, res) => {
-  try {
-    // Verify user is healthcare type
-    if (req.user?.userType !== 'HEALTHCARE') {
-      return res.status(403).json({
-        success: false,
-        error: 'Access denied: Healthcare users only',
-      });
-    }
-
-    const tripId = req.query.tripId as string;
-    const mode = req.query.mode as 'PREFERRED' | 'GEOGRAPHIC' | 'HYBRID' | undefined;
-    const radius = req.query.radius ? parseInt(req.query.radius as string) : undefined;
-
-    if (!tripId) {
-      return res.status(400).json({
-        success: false,
-        error: 'tripId query parameter is required',
-      });
-    }
-
-    const result = await healthcareTripDispatchService.getTripAgencies(
-      tripId,
-      req.user!.id,
-      mode,
-      radius
-    );
-
-    res.json({
-      success: true,
-      data: result,
-    });
-  } catch (error: any) {
-    console.error('Get trip agencies error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to retrieve trip agencies',
     });
   }
 });
