@@ -319,10 +319,13 @@ const HealthcareEMSAgencies: React.FC<HealthcareEMSAgenciesProps> = ({ user }) =
   };
 
   const handleDelete = async (id: string) => {
+    console.log('PHASE3_DEBUG: Delete button clicked for agency:', id);
     if (window.confirm('Are you sure you want to delete this agency?')) {
       try {
+        console.log('PHASE3_DEBUG: Calling delete API for:', id);
         await healthcareAgenciesAPI.delete(id);
         await loadAgencies();
+        console.log('PHASE3_DEBUG: Agency deleted successfully');
       } catch (err) {
         console.error('Error deleting agency:', err);
         setError('Failed to delete agency');
