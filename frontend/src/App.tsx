@@ -1,16 +1,12 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import Login from './components/Login';
 import TCCDashboard from './components/TCCDashboard';
 import HealthcareDashboard from './components/HealthcareDashboard';
 import EMSDashboard from './components/EMSDashboard';
-import PublicLogin from './components/PublicLogin';
 import UniversalLogin from './components/UniversalLogin';
 import RegistrationChoiceModal from './components/RegistrationChoiceModal';
 import HealthcareRegistration from './components/HealthcareRegistration';
 import EMSRegistration from './components/EMSRegistration';
-import HealthcareLogin from './components/HealthcareLogin';
-import EMSLogin from './components/EMSLogin';
 import { authAPI } from './services/api';
 import ErrorBoundary from './components/ErrorBoundary';
 import TripAcceptance from './components/TripAcceptance';
@@ -60,7 +56,7 @@ function AppContent() {
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
       // If user is logged in and tries to go back to login pages, redirect to root
-      if (user && (location.pathname.startsWith('/login') || location.pathname.startsWith('/register'))) {
+      if (user && location.pathname.startsWith('/register')) {
         navigate('/', { replace: true });
       }
     };
@@ -95,23 +91,6 @@ function AppContent() {
     navigate('/', { replace: true });
   };
 
-  const handleRoleSelect = (role: 'healthcare' | 'ems' | 'tcc') => {
-    if (role === 'tcc') {
-      navigate('/login');
-    } else if (role === 'healthcare') {
-      navigate('/healthcare-login');
-    } else if (role === 'ems') {
-      navigate('/ems-login');
-    }
-  };
-
-  const handleShowRegistration = (role: 'healthcare' | 'ems') => {
-    if (role === 'healthcare') {
-      navigate('/healthcare-register');
-    } else {
-      navigate('/ems-register');
-    }
-  };
 
   const handleShowRegistrationModal = () => {
     setShowRegistrationModal(true);
@@ -216,21 +195,6 @@ function AppContent() {
           <EMSRegistration 
             onBack={handleBackToPublic}
             onSuccess={handleRegistrationSuccess}
-          />
-        } />
-        <Route path="/login" element={
-          <Login onLogin={handleLogin} onBack={handleBackToPublic} />
-        } />
-        <Route path="/healthcare-login" element={
-          <HealthcareLogin 
-            onBack={handleBackToPublic}
-            onLogin={handleLogin}
-          />
-        } />
-        <Route path="/ems-login" element={
-          <EMSLogin 
-            onBack={handleBackToPublic}
-            onLogin={handleLogin}
           />
         } />
         <Route path="/test-trip-acceptance" element={
