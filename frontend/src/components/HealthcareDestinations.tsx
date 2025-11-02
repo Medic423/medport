@@ -47,6 +47,14 @@ const DESTINATION_TYPES = [
   'Other'
 ];
 
+const states = [
+  'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
+  'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
+  'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
+  'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
+  'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
+];
+
 const HealthcareDestinations: React.FC<HealthcareDestinationsProps> = ({ user }) => {
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [loading, setLoading] = useState(true);
@@ -536,10 +544,16 @@ const HealthcareDestinations: React.FC<HealthcareDestinationsProps> = ({ user })
       {/* Add Destination Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white max-h-[90vh] overflow-y-auto">
-            <div className="mt-3">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Add Destination</h3>
+          <div className="relative top-10 mx-auto border w-full max-w-4xl shadow-lg rounded-md bg-white max-h-[95vh] overflow-y-auto">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900">Add Destination</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Add a new healthcare destination for trips
+                  </p>
+                </div>
                 <button
                   onClick={handleAddCancel}
                   className="text-gray-400 hover:text-gray-600"
@@ -547,9 +561,11 @@ const HealthcareDestinations: React.FC<HealthcareDestinationsProps> = ({ user })
                   <XCircle className="h-6 w-6" />
                 </button>
               </div>
+            </div>
 
+            <div className="px-6 py-6">
               {addError && (
-                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
                   <div className="flex">
                     <XCircle className="h-5 w-5 text-red-400" />
                     <div className="ml-3">
@@ -561,113 +577,166 @@ const HealthcareDestinations: React.FC<HealthcareDestinationsProps> = ({ user })
                 </div>
               )}
 
-              <form onSubmit={handleAddSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Destination Name *</label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={addFormData.name}
-                    onChange={handleAddInputChange}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
-                    required
-                  />
+              <form onSubmit={handleAddSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="destinationName" className="block text-sm font-medium text-gray-700 mb-2">
+                      Destination Name *
+                    </label>
+                    <input
+                      type="text"
+                      id="destinationName"
+                      name="name"
+                      value={addFormData.name}
+                      onChange={handleAddInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      placeholder="Enter destination name"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="destinationType" className="block text-sm font-medium text-gray-700 mb-2">
+                      Type *
+                    </label>
+                    <select
+                      id="destinationType"
+                      name="type"
+                      value={addFormData.type}
+                      onChange={handleAddInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      required
+                    >
+                      <option value="">Select type</option>
+                      {DESTINATION_TYPES.map(type => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Type *</label>
-                  <select
-                    name="type"
-                    value={addFormData.type}
-                    onChange={handleAddInputChange}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
-                    required
-                  >
-                    <option value="">Select type</option>
-                    {DESTINATION_TYPES.map(type => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Contact Name</label>
+                  <label htmlFor="contactName" className="block text-sm font-medium text-gray-700 mb-2">
+                    Contact Name
+                  </label>
                   <input
                     type="text"
+                    id="contactName"
                     name="contactName"
                     value={addFormData.contactName}
                     onChange={handleAddInputChange}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    placeholder="Enter contact name"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Phone</label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={addFormData.phone}
-                      onChange={handleAddInputChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
-                    />
+                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                      Phone Number
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Phone className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <input
+                        type="tel"
+                        id="phone"
+                        name="phone"
+                        value={addFormData.phone}
+                        onChange={handleAddInputChange}
+                        className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        placeholder="Enter phone number"
+                      />
+                    </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Email</label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={addFormData.email}
-                      onChange={handleAddInputChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
-                    />
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Mail className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        value={addFormData.email}
+                        onChange={handleAddInputChange}
+                        className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        placeholder="Enter email address"
+                      />
+                    </div>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Address *</label>
-                  <input
-                    type="text"
-                    name="address"
-                    value={addFormData.address}
-                    onChange={handleAddInputChange}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">City *</label>
+                  <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+                    Street Address *
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <MapPin className="h-5 w-5 text-gray-400" />
+                    </div>
                     <input
                       type="text"
+                      id="address"
+                      name="address"
+                      value={addFormData.address}
+                      onChange={handleAddInputChange}
+                      className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      placeholder="Enter street address"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
+                      City *
+                    </label>
+                    <input
+                      type="text"
+                      id="city"
                       name="city"
                       value={addFormData.city}
                       onChange={handleAddInputChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      placeholder="City"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">State *</label>
-                    <input
-                      type="text"
+                    <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-2">
+                      State *
+                    </label>
+                    <select
+                      id="state"
                       name="state"
                       value={addFormData.state}
                       onChange={handleAddInputChange}
-                      maxLength={2}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                       required
-                    />
+                    >
+                      <option value="">Select State</option>
+                      {states.map(state => (
+                        <option key={state} value={state}>{state}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">ZIP *</label>
+                    <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700 mb-2">
+                      ZIP Code *
+                    </label>
                     <input
                       type="text"
+                      id="zipCode"
                       name="zipCode"
                       value={addFormData.zipCode}
                       onChange={handleAddInputChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      placeholder="12345"
                       required
                     />
                   </div>
@@ -742,13 +811,17 @@ const HealthcareDestinations: React.FC<HealthcareDestinationsProps> = ({ user })
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Notes</label>
+                  <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-2">
+                    Notes
+                  </label>
                   <textarea
+                    id="notes"
                     name="notes"
                     value={addFormData.notes}
                     onChange={handleAddInputChange}
                     rows={3}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    placeholder="Add any additional notes about this destination"
                   />
                 </div>
 
