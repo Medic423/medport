@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { GeocodingService } from '../utils/geocodingService';
 
 const prisma = new PrismaClient();
 
@@ -45,6 +46,29 @@ export class HealthcareLocationsService {
       });
     }
 
+    // ✅ NEW: Auto-geocode if coordinates not provided
+    let latitude = locationData.latitude;
+    let longitude = locationData.longitude;
+
+    if (!latitude || !longitude) {
+      console.log('MULTI_LOC: No coordinates provided, attempting geocoding...');
+      const geocodeResult = await GeocodingService.geocodeAddress(
+        locationData.address,
+        locationData.city,
+        locationData.state,
+        locationData.zipCode,
+        locationData.locationName
+      );
+      
+      if (geocodeResult.success) {
+        latitude = geocodeResult.latitude;
+        longitude = geocodeResult.longitude;
+        console.log('MULTI_LOC: Geocoding successful:', { latitude, longitude });
+      } else {
+        console.warn('MULTI_LOC: Geocoding failed:', geocodeResult.error);
+      }
+    }
+
     const location = await prisma.healthcareLocation.create({
       data: {
         healthcareUserId,
@@ -57,8 +81,8 @@ export class HealthcareLocationsService {
         facilityType: locationData.facilityType,
         isActive: locationData.isActive ?? true,
         isPrimary: locationData.isPrimary ?? false,
-        latitude: locationData.latitude,
-        longitude: locationData.longitude,
+        latitude: latitude,
+        longitude: longitude,
       },
     });
 
@@ -148,6 +172,43 @@ export class HealthcareLocationsService {
         },
         data: { isPrimary: false },
       });
+    }
+
+    // ✅ NEW: Auto-geocode if address fields changed but no new coordinates provided
+    let latitude = updateData.latitude;
+    let longitude = updateData.longitude;
+
+    // Check if address fields are being updated
+    const addressFieldsChanged = updateData.address || updateData.city || updateData.state || updateData.zipCode;
+    
+    if (addressFieldsChanged && (!latitude && !longitude)) {
+      // Fetch existing values to build complete address
+      const existing = await this.getLocationById(locationId, healthcareUserId);
+      const address = updateData.address || existing.address;
+      const city = updateData.city || existing.city;
+      const state = updateData.state || existing.state;
+      const zipCode = updateData.zipCode || existing.zipCode;
+      const locationName = updateData.locationName || existing.locationName;
+
+      console.log('MULTI_LOC: Address fields changed, attempting geocoding...');
+      const geocodeResult = await GeocodingService.geocodeAddress(
+        address,
+        city,
+        state,
+        zipCode,
+        locationName
+      );
+      
+      if (geocodeResult.success) {
+        latitude = geocodeResult.latitude;
+        longitude = geocodeResult.longitude;
+        console.log('MULTI_LOC: Geocoding successful:', { latitude, longitude });
+        // Add to updateData so it gets saved
+        updateData.latitude = latitude;
+        updateData.longitude = longitude;
+      } else {
+        console.warn('MULTI_LOC: Geocoding failed:', geocodeResult.error);
+      }
     }
 
     const location = await prisma.healthcareLocation.update({

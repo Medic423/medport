@@ -1,4 +1,5 @@
 import { databaseManager } from './databaseManager';
+import { GeocodingService } from '../utils/geocodingService';
 
 export interface HealthcareDestinationData {
   name: string;
@@ -111,6 +112,29 @@ export class HealthcareDestinationService {
   ): Promise<any> {
     const prisma = databaseManager.getPrismaClient();
 
+    // ✅ NEW: Auto-geocode if coordinates not provided
+    let latitude = data.latitude ? parseFloat(String(data.latitude)) : null;
+    let longitude = data.longitude ? parseFloat(String(data.longitude)) : null;
+
+    if (!latitude || !longitude) {
+      console.log('HEALTHCARE_DESTINATION: No coordinates provided, attempting geocoding...');
+      const geocodeResult = await GeocodingService.geocodeAddress(
+        data.address,
+        data.city,
+        data.state,
+        data.zipCode,
+        data.name
+      );
+      
+      if (geocodeResult.success) {
+        latitude = geocodeResult.latitude;
+        longitude = geocodeResult.longitude;
+        console.log('HEALTHCARE_DESTINATION: Geocoding successful:', { latitude, longitude });
+      } else {
+        console.warn('HEALTHCARE_DESTINATION: Geocoding failed:', geocodeResult.error);
+      }
+    }
+
     const destination = await prisma.healthcareDestination.create({
       data: {
         healthcareUserId,
@@ -123,8 +147,8 @@ export class HealthcareDestinationService {
         phone: data.phone,
         email: data.email,
         contactName: data.contactName,
-        latitude: data.latitude ? parseFloat(String(data.latitude)) : null,
-        longitude: data.longitude ? parseFloat(String(data.longitude)) : null,
+        latitude: latitude,
+        longitude: longitude,
         isActive: data.isActive ?? true,
         notes: data.notes,
       },

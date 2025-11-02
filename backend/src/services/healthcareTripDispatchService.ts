@@ -1,5 +1,7 @@
 import { databaseManager } from './databaseManager';
 import { DistanceService } from './distanceService';
+// TODO: Import notification service once provider is determined
+// import notificationManager from './notificationManager';
 
 const prisma = databaseManager.getPrismaClient();
 
@@ -353,10 +355,8 @@ export class HealthcareTripDispatchService {
 
       console.log('PHASE3_DEBUG: Trip status updated to PENDING');
 
-      // TODO: Send notifications to selected agencies
-      // This would use the notification service to email/SMS agencies
-      // For now, we'll log it
-      console.log('PHASE3_DEBUG: TODO - Send notifications to agencies:', dispatchData.agencyIds);
+      // Send notifications to selected agencies
+      await this.sendDispatchNotifications(tripId, trip, dispatchData.agencyIds);
 
       return {
         tripId,
@@ -371,6 +371,78 @@ export class HealthcareTripDispatchService {
     } catch (error) {
       console.error('PHASE3_DEBUG: Error dispatching trip:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Send dispatch notifications to selected agencies
+   * PLACEHOLDER: Integrate with actual notification provider once determined
+   */
+  private async sendDispatchNotifications(
+    tripId: string,
+    trip: any,
+    agencyIds: string[]
+  ): Promise<void> {
+    console.log('PHASE3_DEBUG: Sending notifications to agencies:', agencyIds);
+    
+    try {
+      // Get agency details for notifications
+      const agencies = await prisma.eMSAgency.findMany({
+        where: { id: { in: agencyIds } },
+        include: {
+          users: {
+            where: { isActive: true },
+            take: 1 // Get at least one user per agency for notification
+          }
+        }
+      });
+
+      console.log('PHASE3_DEBUG: Found', agencies.length, 'agencies to notify');
+
+      // Build trip details for notification
+      const tripDetails = {
+        tripNumber: trip.tripNumber,
+        patientId: trip.patientId,
+        fromLocation: trip.fromLocation,
+        toLocation: trip.toLocation,
+        scheduledTime: trip.scheduledTime,
+        transportLevel: trip.transportLevel,
+        urgencyLevel: trip.urgencyLevel,
+        priority: trip.priority
+      };
+
+      // TODO: Replace with actual notification service integration
+      // This is a placeholder that logs what would be sent
+      for (const agency of agencies) {
+        console.log('PHASE3_DEBUG: Would send notification to:', {
+          agencyName: agency.name,
+          email: agency.email,
+          phone: agency.phone,
+          users: agency.users.length,
+          tripDetails: tripDetails
+        });
+
+        // PLACEHOLDER: Actual implementation would be:
+        // await notificationManager.sendBulkNotification(
+        //   agency.users.map(u => u.id),
+        //   'TRIP_DISPATCH',
+        //   {
+        //     to: [agency.email],
+        //     template: 'trip-dispatch',
+        //     data: tripDetails
+        //   },
+        //   {
+        //     to: agency.phone,
+        //     message: `New trip dispatch: ${tripDetails.tripNumber} from ${tripDetails.fromLocation} to ${tripDetails.toLocation}`
+        //   }
+        // );
+      }
+
+      console.log('PHASE3_DEBUG: Notification placeholders logged (no actual notifications sent yet)');
+    } catch (error) {
+      console.error('PHASE3_DEBUG: Error preparing notifications:', error);
+      // Don't throw - dispatch should succeed even if notification preparation fails
+      // Actual notification failures will be caught by notification service
     }
   }
 }
