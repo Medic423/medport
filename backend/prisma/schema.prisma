@@ -39,6 +39,7 @@ model HealthcareUser {
   updatedAt               DateTime                      @updatedAt
   locations               HealthcareLocation[]
   agencyPreferences       HealthcareAgencyPreference[]
+  destinations            HealthcareDestination[]
 
   @@map("healthcare_users")
 }
@@ -81,6 +82,31 @@ model HealthcareAgencyPreference {
   @@index([healthcareUserId])
   @@index([agencyId])
   @@map("healthcare_agency_preferences")
+}
+
+model HealthcareDestination {
+  id                String             @id @default(cuid())
+  healthcareUserId  String
+  name              String
+  type              String
+  address           String
+  city              String
+  state             String
+  zipCode           String
+  phone             String?
+  email             String?
+  contactName       String?
+  latitude          Float?
+  longitude         Float?
+  isActive          Boolean            @default(true)
+  notes             String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  healthcareUser    HealthcareUser     @relation(fields: [healthcareUserId], references: [id], onDelete: Cascade)
+
+  @@index([healthcareUserId])
+  @@index([isActive])
+  @@map("healthcare_destinations")
 }
 
 model Hospital {

@@ -246,6 +246,24 @@ export const healthcareAgenciesAPI = {
     api.patch(`/api/healthcare/agencies/${id}/preferred`, { isPreferred }),
 };
 
+// Healthcare Destinations API
+export const healthcareDestinationsAPI = {
+  getAll: (params?: any) =>
+    api.get('/api/healthcare/destinations', { params }),
+  
+  create: (data: any) =>
+    api.post('/api/healthcare/destinations', data),
+  
+  update: (id: string, data: any) =>
+    api.put(`/api/healthcare/destinations/${id}`, data),
+  
+  delete: (id: string) =>
+    api.delete(`/api/healthcare/destinations/${id}`),
+  
+  getById: (id: string) =>
+    api.get(`/api/healthcare/destinations/${id}`),
+};
+
 // Facilities API (legacy export for compatibility)
 export const facilitiesAPI = {
   getAll: (params?: any) =>
