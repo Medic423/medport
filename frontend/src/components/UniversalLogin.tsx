@@ -38,6 +38,9 @@ const UniversalLogin: React.FC<UniversalLoginProps> = ({ onLogin, onShowRegistra
       
       if (response.data.success) {
         console.log('Universal Login: Login successful, calling onLogin');
+        if (response.data.mustChangePassword === true) {
+          try { localStorage.setItem('mustChangePassword', 'true'); } catch {}
+        }
         onLogin(response.data.user, response.data.token);
       } else {
         console.log('Universal Login: Login failed:', response.data.error);

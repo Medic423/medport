@@ -52,7 +52,8 @@ router.post('/login', async (req, res) => {
       success: true,
       message: 'Login successful',
       user: result.user,
-      token: result.token
+      token: result.token,
+      mustChangePassword: (result as any).mustChangePassword === true
     });
 
   } catch (error) {
@@ -787,7 +788,8 @@ router.post('/ems/login', async (req, res) => {
         agencyName: user.agencyName,
         agencyId: user.agencyId || user.id // Use agencyId if available, fallback to user id for legacy
       },
-      token
+      token,
+      mustChangePassword: !!(user as any).mustChangePassword
     });
 
   } catch (error) {
@@ -874,7 +876,8 @@ router.post('/healthcare/login', async (req, res) => {
         facilityType: user.facilityType,
         manageMultipleLocations: user.manageMultipleLocations // ✅ NEW: Multi-location flag
       },
-      token
+      token,
+      mustChangePassword: !!(user as any).mustChangePassword
     });
 
   } catch (error) {
