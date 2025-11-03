@@ -288,35 +288,63 @@ export class TripService {
         );
       } catch {}
 
-      // Calculate distance and time for each trip
+      // Calculate distance and time for each trip, and format location strings
       const tripsWithDistance = await Promise.all(trips.map(async (trip) => {
         try {
+          // Format fromLocation: use healthcareLocation, originFacility, or fallback to fromLocation string
+          let fromLocationStr = (trip as any).fromLocation || '';
+          if (!fromLocationStr && trip.healthcareLocation) {
+            fromLocationStr = trip.healthcareLocation.locationName || 
+              `${trip.healthcareLocation.city || ''}, ${trip.healthcareLocation.state || ''}`.trim();
+          }
+          if (!fromLocationStr && trip.originFacility) {
+            fromLocationStr = trip.originFacility.name || '';
+          }
+
+          // Format toLocation: use destinationFacility or fallback to toLocation string
+          let toLocationStr = (trip as any).toLocation || '';
+          if (!toLocationStr && trip.destinationFacility) {
+            toLocationStr = trip.destinationFacility.name || '';
+          }
+
           // Calculate distance and time if we have location data
-          if (trip.fromLocation && trip.toLocation) {
+          if (fromLocationStr && toLocationStr) {
             const distanceResult = await this.calculateTripDistanceAndTime({
-              fromLocation: trip.fromLocation,
-              toLocation: trip.toLocation
+              fromLocation: fromLocationStr,
+              toLocation: toLocationStr
             });
             
             if (distanceResult.success && distanceResult.data) {
               return {
                 ...trip,
+                fromLocation: fromLocationStr,
+                toLocation: toLocationStr,
                 distanceMiles: distanceResult.data.distance,
                 estimatedTripTimeMinutes: distanceResult.data.estimatedTimeMinutes
               };
             }
           }
           
-          // If no location data or calculation failed, return trip as-is
+          // If no location data or calculation failed, return trip with formatted locations
           return {
             ...trip,
+            fromLocation: fromLocationStr,
+            toLocation: toLocationStr,
             distanceMiles: null,
             estimatedTripTimeMinutes: null
           };
         } catch (error) {
           console.error('TCC_DEBUG: Error calculating distance for trip:', trip.id, error);
+          // Format locations even on error
+          const fromLocationStr = (trip as any).fromLocation || 
+            (trip.healthcareLocation?.locationName) || 
+            (trip.originFacility?.name) || '';
+          const toLocationStr = (trip as any).toLocation || 
+            (trip.destinationFacility?.name) || '';
           return {
             ...trip,
+            fromLocation: fromLocationStr,
+            toLocation: toLocationStr,
             distanceMiles: null,
             estimatedTripTimeMinutes: null
           };

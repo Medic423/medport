@@ -72,8 +72,20 @@ export class HealthcareTripDispatchService {
       }
 
       // Verify trip belongs to this healthcare user
-      if ((trip as any).healthcareCreatedById !== healthcareUserId) {
-        throw new Error('Trip does not belong to this healthcare user');
+      const tripCreatorId = (trip as any).healthcareCreatedById;
+      console.log('PHASE3_DEBUG: Trip creator ID:', tripCreatorId, 'Requested healthcareUserId:', healthcareUserId);
+      
+      if (!tripCreatorId) {
+        console.warn('PHASE3_DEBUG: Trip has no healthcareCreatedById - this may be an old trip');
+        // Allow access if healthcareUserId is provided (for ADMIN users dispatching on behalf)
+        // But log a warning
+      } else if (tripCreatorId !== healthcareUserId) {
+        console.error('PHASE3_DEBUG: Trip creator mismatch:', {
+          tripCreatorId,
+          healthcareUserId,
+          tripId: trip.id
+        });
+        throw new Error(`Trip does not belong to this healthcare user. Trip creator: ${tripCreatorId}, Requested user: ${healthcareUserId}`);
       }
 
       const originCoords = trip.healthcareLocation 
@@ -103,28 +115,47 @@ export class HealthcareTripDispatchService {
         }
       });
 
+      console.log('PHASE3_DEBUG: Found registered agencies:', registeredAgencies.length);
+      if (registeredAgencies.length === 0) {
+        console.warn('PHASE3_DEBUG: No registered agencies found with isActive=true and acceptsNotifications=true');
+        // Check if there are any agencies at all
+        const allAgencies = await prisma.eMSAgency.findMany({ select: { id: true, name: true, isActive: true, acceptsNotifications: true } });
+        console.log('PHASE3_DEBUG: Total agencies in database:', allAgencies.length);
+        console.log('PHASE3_DEBUG: Agencies breakdown:', {
+          total: allAgencies.length,
+          active: allAgencies.filter(a => a.isActive).length,
+          acceptsNotifications: allAgencies.filter(a => a.acceptsNotifications).length,
+          both: allAgencies.filter(a => a.isActive && a.acceptsNotifications).length
+        });
+      }
+
       // Get user's added agencies with preference status
-      const userAgencies = await prisma.eMSAgency.findMany({
-        where: {
-          addedBy: healthcareUserId,
-          isActive: true
-        },
-        include: {
-          healthcarePreferences: {
-            where: {
-              healthcareUserId: healthcareUserId
-            },
-            select: {
-              isPreferred: true
+      // Note: If healthcareUserId is null (old trip), we'll skip user agencies
+      let userAgencies: any[] = [];
+      if (healthcareUserId) {
+        userAgencies = await prisma.eMSAgency.findMany({
+          where: {
+            addedBy: healthcareUserId,
+            isActive: true
+          },
+          include: {
+            healthcarePreferences: {
+              where: {
+                healthcareUserId: healthcareUserId
+              },
+              select: {
+                isPreferred: true
+              }
             }
           }
-        }
-      });
+        });
+        console.log('PHASE3_DEBUG: Found user agencies for healthcareUserId:', healthcareUserId, 'count:', userAgencies.length);
+      } else {
+        console.warn('PHASE3_DEBUG: No healthcareUserId provided, skipping user agencies lookup');
+      }
 
-      console.log('PHASE3_DEBUG: Found registered agencies:', registeredAgencies.length);
-      console.log('PHASE3_DEBUG: Registered agencies:', registeredAgencies.map(a => ({ name: a.name, addedBy: null })));
-      console.log('PHASE3_DEBUG: Found user agencies:', userAgencies.length);
-      console.log('PHASE3_DEBUG: User agencies:', userAgencies.map(a => ({ name: a.name, addedBy: (a as any).addedBy })));
+      console.log('PHASE3_DEBUG: Registered agencies:', registeredAgencies.map(a => ({ name: a.name, id: a.id })));
+      console.log('PHASE3_DEBUG: User agencies:', userAgencies.map(a => ({ name: a.name, id: a.id, addedBy: (a as any).addedBy })));
 
       // Create a map of agencies by ID to deduplicate
       const agencyMap = new Map<string, TripAgencyInfo>();
@@ -268,6 +299,15 @@ export class HealthcareTripDispatchService {
 
       console.log('PHASE3_DEBUG: Returning agencies:', allAgencies.length, 'Preferred:', preferredCount, 'Geographic:', geographicCount);
 
+      // If no agencies after filtering and we're in PREFERRED or GEOGRAPHIC mode, 
+      // fallback to showing all registered agencies (for HYBRID-like behavior)
+      if (allAgencies.length === 0 && (dispatchMode === 'PREFERRED' || dispatchMode === 'GEOGRAPHIC')) {
+        console.log('PHASE3_DEBUG: No agencies after filtering, falling back to all registered agencies');
+        const fallbackAgencies = Array.from(agencyMap.values());
+        allAgencies = fallbackAgencies.length > 0 ? fallbackAgencies : [];
+        console.log('PHASE3_DEBUG: Fallback agencies count:', allAgencies.length);
+      }
+
       return {
         agencies: allAgencies,
         preferredCount,
@@ -306,8 +346,20 @@ export class HealthcareTripDispatchService {
       }
 
       // Verify trip belongs to this healthcare user
-      if ((trip as any).healthcareCreatedById !== healthcareUserId) {
-        throw new Error('Trip does not belong to this healthcare user');
+      const tripCreatorId = (trip as any).healthcareCreatedById;
+      console.log('PHASE3_DEBUG: Dispatch - Trip creator ID:', tripCreatorId, 'Requested healthcareUserId:', healthcareUserId);
+      
+      if (!tripCreatorId) {
+        console.warn('PHASE3_DEBUG: Dispatch - Trip has no healthcareCreatedById - this may be an old trip');
+        // Allow access if healthcareUserId is provided (for ADMIN users dispatching on behalf)
+        // But log a warning
+      } else if (tripCreatorId !== healthcareUserId) {
+        console.error('PHASE3_DEBUG: Dispatch - Trip creator mismatch:', {
+          tripCreatorId,
+          healthcareUserId,
+          tripId: trip.id
+        });
+        throw new Error(`Trip does not belong to this healthcare user. Trip creator: ${tripCreatorId}, Requested user: ${healthcareUserId}`);
       }
 
       // Verify trip status is PENDING_DISPATCH

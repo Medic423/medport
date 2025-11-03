@@ -113,15 +113,6 @@ router.get('/trip-agencies', authenticateAdmin, async (req: AuthenticatedRequest
   console.log('🚨 ROUTE HIT: GET /trip-agencies', req.query);
   console.log('🚨 User from token:', { id: req.user?.id, email: req.user?.email, userType: req.user?.userType });
   try {
-    // Verify user is healthcare type or admin (admins can view agencies for dispatch)
-    if (!req.user || (req.user.userType !== 'HEALTHCARE' && req.user.userType !== 'ADMIN')) {
-      console.log('🚨 Access denied - userType:', req.user?.userType);
-      return res.status(403).json({
-        success: false,
-        error: 'Access denied: Healthcare users or Administrators only',
-      });
-    }
-
     const tripId = req.query.tripId as string;
     const mode = req.query.mode as 'PREFERRED' | 'GEOGRAPHIC' | 'HYBRID' | undefined;
     const radius = req.query.radius ? parseInt(req.query.radius as string) : undefined;
@@ -134,25 +125,66 @@ router.get('/trip-agencies', authenticateAdmin, async (req: AuthenticatedRequest
       });
     }
 
-    // For ADMIN users, we need to get the trip's healthcareCreatedById
-    // For HEALTHCARE users, use their own ID
-    let healthcareUserId = req.user!.id;
-    if (req.user!.userType === 'ADMIN') {
-      // Fetch trip to get the healthcare user who created it
-      const prisma = (await import('../services/databaseManager')).databaseManager.getPrismaClient();
+    // For all users, we need to resolve the healthcareUserId for the trip
+    // This determines which healthcare user's agencies to use
+    let healthcareUserId: string | null = null;
+    const prisma = (await import('../services/databaseManager')).databaseManager.getPrismaClient();
+    
+    if (req.user!.userType === 'HEALTHCARE') {
+      // For HEALTHCARE users, use the trip's creator if it exists, otherwise use their own ID
+      healthcareUserId = req.user!.id;
       const trip = await prisma.transportRequest.findUnique({
         where: { id: tripId },
         select: { healthcareCreatedById: true }
       });
+      
+      if (trip?.healthcareCreatedById && trip.healthcareCreatedById !== healthcareUserId) {
+        console.log('🚨 HEALTHCARE user accessing trip created by different user:', {
+          tripCreator: trip.healthcareCreatedById,
+          currentUser: healthcareUserId
+        });
+        // Use the trip's creator ID instead
+        healthcareUserId = trip.healthcareCreatedById;
+        console.log('🚨 Using trip creator ID:', healthcareUserId);
+      }
+    } else {
+      // For ADMIN, USER, EMS, or any other user type, use the trip's healthcareCreatedById
+      const trip = await prisma.transportRequest.findUnique({
+        where: { id: tripId },
+        select: { healthcareCreatedById: true, fromLocationId: true }
+      });
+      
       if (trip?.healthcareCreatedById) {
         healthcareUserId = trip.healthcareCreatedById;
-        console.log('🚨 ADMIN user accessing trip, using healthcareCreatedById:', healthcareUserId);
+        console.log('🚨 Non-HEALTHCARE user accessing trip, using healthcareCreatedById:', healthcareUserId);
+      } else if (trip?.fromLocationId) {
+        // For old trips without healthcareCreatedById, try to find a healthcare user from the location
+        const location = await prisma.healthcareLocation.findUnique({
+          where: { id: trip.fromLocationId },
+          select: { healthcareUserId: true }
+        });
+        if (location?.healthcareUserId) {
+          healthcareUserId = location.healthcareUserId;
+          console.log('🚨 Non-HEALTHCARE user accessing old trip, using location healthcareUserId:', healthcareUserId);
+        } else {
+          return res.status(400).json({
+            success: false,
+            error: 'Trip does not have a healthcare creator assigned and could not determine from location',
+          });
+        }
       } else {
         return res.status(400).json({
           success: false,
           error: 'Trip does not have a healthcare creator assigned',
         });
       }
+    }
+    
+    if (!healthcareUserId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Could not determine healthcare user for trip agencies',
+      });
     }
 
     const result = await healthcareTripDispatchService.getTripAgencies(

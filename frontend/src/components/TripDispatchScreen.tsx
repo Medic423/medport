@@ -58,7 +58,8 @@ interface TripDispatchScreenProps {
 }
 
 const TripDispatchScreen: React.FC<TripDispatchScreenProps> = ({ tripId, trip, user, onDispatchComplete, onCancel }) => {
-  const [dispatchMode, setDispatchMode] = useState<'PREFERRED' | 'GEOGRAPHIC' | 'HYBRID'>('PREFERRED');
+  // Default to HYBRID mode to show all agencies (preferred + user-added + geographic)
+  const [dispatchMode, setDispatchMode] = useState<'PREFERRED' | 'GEOGRAPHIC' | 'HYBRID'>('HYBRID');
   const [agencies, setAgencies] = useState<TripAgency[]>([]);
   const [selectedAgencyIds, setSelectedAgencyIds] = useState<string[]>([]);
   const [notificationRadius, setNotificationRadius] = useState<number>(100);
@@ -66,6 +67,7 @@ const TripDispatchScreen: React.FC<TripDispatchScreenProps> = ({ tripId, trip, u
   const [agenciesLoading, setAgenciesLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dispatching, setDispatching] = useState(false);
+  const [success, setSuccess] = useState<{ message: string; agencyCount: number } | null>(null);
 
   // Load agencies when component mounts or mode changes
   useEffect(() => {
@@ -73,25 +75,28 @@ const TripDispatchScreen: React.FC<TripDispatchScreenProps> = ({ tripId, trip, u
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatchMode, notificationRadius, tripId]);
 
-  // Set default mode based on available agencies
+  // Auto-adjust mode if current mode returns no agencies
   useEffect(() => {
-    if (agencies.length > 0) {
-      const hasPreferred = agencies.some(a => a.isPreferred);
-      if (hasPreferred && dispatchMode === 'GEOGRAPHIC') {
-        // Only auto-set to PREFERRED if we initially loaded with GEOGRAPHIC
-        setDispatchMode('PREFERRED');
-      } else if (!hasPreferred && dispatchMode !== 'GEOGRAPHIC') {
-        setDispatchMode('GEOGRAPHIC');
+    if (agencies.length === 0 && !agenciesLoading) {
+      // If PREFERRED mode returns no agencies, try HYBRID
+      if (dispatchMode === 'PREFERRED') {
+        console.log('PHASE3_FRONTEND: No preferred agencies found, switching to HYBRID mode');
+        setDispatchMode('HYBRID');
+      }
+      // If GEOGRAPHIC mode returns no agencies, try HYBRID
+      else if (dispatchMode === 'GEOGRAPHIC') {
+        console.log('PHASE3_FRONTEND: No geographic agencies found, switching to HYBRID mode');
+        setDispatchMode('HYBRID');
       }
     }
-  }, [agencies]);
+  }, [agencies, agenciesLoading, dispatchMode]);
 
   const loadAgencies = async () => {
     try {
       setAgenciesLoading(true);
       setError(null);
       
-      console.log('PHASE3_FRONTEND: Loading agencies for trip:', tripId, 'mode:', dispatchMode);
+      console.log('PHASE3_FRONTEND: Loading agencies for trip:', tripId, 'mode:', dispatchMode, 'radius:', notificationRadius);
       
       const response = await healthcareAgenciesAPI.getForTrip(tripId, {
         mode: dispatchMode,
@@ -99,14 +104,25 @@ const TripDispatchScreen: React.FC<TripDispatchScreenProps> = ({ tripId, trip, u
       });
 
       console.log('PHASE3_FRONTEND: API response:', response.data);
+      console.log('PHASE3_FRONTEND: Agencies count:', response.data?.data?.agencies?.length || 0);
 
       if (response.data.success && response.data.data) {
-        setAgencies(response.data.data.agencies || []);
+        const agenciesList = response.data.data.agencies || [];
+        setAgencies(agenciesList);
+        
+        // If no agencies and we're in PREFERRED or GEOGRAPHIC mode, log for debugging
+        if (agenciesList.length === 0) {
+          console.warn('PHASE3_FRONTEND: No agencies returned for mode:', dispatchMode);
+          console.warn('PHASE3_FRONTEND: Response data:', response.data.data);
+        }
       } else {
-        setError('Failed to load agencies');
+        const errorMsg = response.data?.error || 'Failed to load agencies';
+        console.error('PHASE3_FRONTEND: API returned error:', errorMsg);
+        setError(errorMsg);
       }
     } catch (err: any) {
       console.error('PHASE3_FRONTEND: Error loading agencies:', err);
+      console.error('PHASE3_FRONTEND: Error response:', err.response?.data);
       setError(err.response?.data?.error || 'Failed to load agencies');
     } finally {
       setAgenciesLoading(false);
@@ -130,6 +146,7 @@ const TripDispatchScreen: React.FC<TripDispatchScreenProps> = ({ tripId, trip, u
     try {
       setDispatching(true);
       setError(null);
+      setSuccess(null); // Clear any previous success message
 
       const response = await tripsAPI.dispatch(tripId, {
         agencyIds: selectedAgencyIds,
@@ -138,14 +155,35 @@ const TripDispatchScreen: React.FC<TripDispatchScreenProps> = ({ tripId, trip, u
       });
 
       if (response.data.success) {
-        onDispatchComplete();
+        // Show success message with agency count
+        const agencyCount = selectedAgencyIds.length;
+        const agencyNames = agencies
+          .filter(a => selectedAgencyIds.includes(a.id))
+          .map(a => a.name)
+          .join(', ');
+        
+        const successMessage = agencyNames 
+          ? `Trip successfully dispatched to ${agencyCount} ${agencyCount === 1 ? 'agency' : 'agencies'}: ${agencyNames}`
+          : `Trip successfully dispatched to ${agencyCount} ${agencyCount === 1 ? 'agency' : 'agencies'}`;
+        
+        console.log('PHASE3_FRONTEND: Dispatch successful, showing message:', successMessage);
+        setSuccess({
+          message: successMessage,
+          agencyCount
+        });
+        
+        // Close modal after 3 seconds
+        setTimeout(() => {
+          console.log('PHASE3_FRONTEND: Closing dispatch modal after success');
+          onDispatchComplete();
+        }, 3000);
       } else {
         setError(response.data.error || 'Failed to dispatch trip');
+        setDispatching(false);
       }
     } catch (err: any) {
       console.error('Error dispatching trip:', err);
       setError(err.response?.data?.error || 'Failed to dispatch trip');
-    } finally {
       setDispatching(false);
     }
   };
@@ -193,6 +231,15 @@ const TripDispatchScreen: React.FC<TripDispatchScreenProps> = ({ tripId, trip, u
 
         {/* Content - Scrollable */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
+          {success && (
+            <div className="mb-4 bg-green-50 border-2 border-green-400 rounded-lg p-5 flex items-start shadow-lg">
+              <CheckCircle className="h-7 w-7 text-green-600 mr-4 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-lg font-bold text-green-900 mb-2">{success.message}</p>
+                <p className="text-sm text-green-700 font-medium">✓ Trip has been dispatched successfully. This window will close automatically in 5 seconds...</p>
+              </div>
+            </div>
+          )}
           {error && (
             <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
               <AlertCircle className="h-5 w-5 text-red-600 mr-3 mt-0.5" />
@@ -335,11 +382,19 @@ const TripDispatchScreen: React.FC<TripDispatchScreenProps> = ({ tripId, trip, u
                 <Loader2 className="h-8 w-8 animate-spin text-green-600" />
               </div>
             ) : getFilteredAgencies().length === 0 ? (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                 <AlertCircle className="h-8 w-8 text-yellow-600 mx-auto mb-2" />
-                <p className="text-sm text-yellow-800">
+                <p className="text-sm text-yellow-800 font-medium mb-2">
                   No agencies available for the selected dispatch mode.
                 </p>
+                {error && (
+                  <p className="text-xs text-yellow-700 mb-2">Error: {error}</p>
+                )}
+                <div className="text-xs text-yellow-700 space-y-1">
+                  <p>• Try switching to <strong>HYBRID</strong> mode to see all agencies</p>
+                  <p>• Increase the notification radius if using GEOGRAPHIC mode</p>
+                  <p>• Check that agencies are registered and active in the system</p>
+                </div>
               </div>
             ) : (
               <div className="space-y-3 max-h-96 overflow-y-auto">

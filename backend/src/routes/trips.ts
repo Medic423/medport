@@ -484,13 +484,16 @@ router.post('/:id/authorize', authenticateAdmin, async (req: AuthenticatedReques
       authorizedTime.setTime(now.getTime());
     }
 
-    // We need to update scheduledTime directly via Prisma
+    // We need to update scheduledTime and status directly via Prisma
     const prisma = databaseManager.getPrismaClient();
     
+    // Update scheduledTime to today and set status to PENDING_DISPATCH
+    // This makes the trip visible to EMS with Accept/Decline buttons
     const updatedTrip = await prisma.transportRequest.update({
       where: { id },
       data: {
-        scheduledTime: authorizedTime
+        scheduledTime: authorizedTime,
+        status: 'PENDING_DISPATCH' // Change status so EMS can see Accept/Decline buttons
       }
     });
 
@@ -498,12 +501,14 @@ router.post('/:id/authorize', authenticateAdmin, async (req: AuthenticatedReques
       tripId: id,
       originalTime: trip.scheduledTime,
       authorizedTime: authorizedTime,
+      originalStatus: trip.status,
+      newStatus: 'PENDING_DISPATCH',
       user: req.user?.id
     });
 
     res.json({
       success: true,
-      message: 'Trip authorized successfully. Scheduled time updated to today.',
+      message: 'Trip authorized successfully. Scheduled time updated to today and status set to PENDING_DISPATCH.',
       data: updatedTrip
     });
 
@@ -1147,15 +1152,6 @@ router.post('/:id/dispatch', authenticateAdmin, async (req: AuthenticatedRequest
   try {
     console.log('PHASE3_DEBUG: Dispatch trip request received:', req.body);
     console.log('PHASE3_DEBUG: User from token:', { id: req.user?.id, email: req.user?.email, userType: req.user?.userType });
-    
-    // Verify user is healthcare type or admin (admins can dispatch on behalf of facilities)
-    if (req.user?.userType !== 'HEALTHCARE' && req.user?.userType !== 'ADMIN') {
-      console.log('PHASE3_DEBUG: Access denied - userType:', req.user?.userType);
-      return res.status(403).json({
-        success: false,
-        error: 'Access denied: Healthcare users or Administrators only',
-      });
-    }
 
     const tripId = req.params.id;
     const { agencyIds, dispatchMode, notificationRadius } = req.body;
@@ -1175,21 +1171,62 @@ router.post('/:id/dispatch', authenticateAdmin, async (req: AuthenticatedRequest
       });
     }
 
-    // For ADMIN users, we need to get the trip's healthcareCreatedById
-    // For HEALTHCARE users, use their own ID
-    let healthcareUserId = req.user!.id;
-    if (req.user!.userType === 'ADMIN') {
-      // Fetch trip to get the healthcare user who created it
-      const trip = await tripService.getTripById(tripId);
-      if (trip.success && trip.data && (trip.data as any).healthcareCreatedById) {
-        healthcareUserId = (trip.data as any).healthcareCreatedById;
-        console.log('PHASE3_DEBUG: ADMIN user dispatching trip, using healthcareCreatedById:', healthcareUserId);
+    // For all users, we need to resolve the healthcareUserId for the trip
+    // This determines which healthcare user's agencies to use
+    let healthcareUserId: string | null = null;
+    
+    // Fetch trip to get the healthcare user who created it
+    const trip = await tripService.getTripById(tripId);
+    const tripData = trip.success && trip.data ? (trip.data as any) : null;
+    
+    if (req.user!.userType === 'HEALTHCARE') {
+      // For HEALTHCARE users, use the trip's creator if it exists, otherwise use their own ID
+      healthcareUserId = req.user!.id;
+      if (tripData?.healthcareCreatedById) {
+        if (tripData.healthcareCreatedById !== healthcareUserId) {
+          console.log('PHASE3_DEBUG: HEALTHCARE user dispatching trip created by different user:', {
+            tripCreator: tripData.healthcareCreatedById,
+            currentUser: healthcareUserId
+          });
+          // Use the trip's creator ID instead (for sub-user scenarios)
+          healthcareUserId = tripData.healthcareCreatedById;
+          console.log('PHASE3_DEBUG: Using trip creator ID:', healthcareUserId);
+        }
+      }
+    } else {
+      // For ADMIN, USER, EMS, or any other user type, use the trip's healthcareCreatedById
+      if (tripData?.healthcareCreatedById) {
+        healthcareUserId = tripData.healthcareCreatedById;
+        console.log('PHASE3_DEBUG: Non-HEALTHCARE user dispatching trip, using healthcareCreatedById:', healthcareUserId);
+      } else if (tripData?.fromLocationId) {
+        // For old trips without healthcareCreatedById, try to find a healthcare user from the location
+        const prisma = (await import('../services/databaseManager')).databaseManager.getPrismaClient();
+        const location = await prisma.healthcareLocation.findUnique({
+          where: { id: tripData.fromLocationId },
+          select: { healthcareUserId: true }
+        });
+        if (location?.healthcareUserId) {
+          healthcareUserId = location.healthcareUserId;
+          console.log('PHASE3_DEBUG: Non-HEALTHCARE user dispatching old trip, using location healthcareUserId:', healthcareUserId);
+        } else {
+          return res.status(400).json({
+            success: false,
+            error: 'Trip does not have a healthcare creator assigned and could not determine from location',
+          });
+        }
       } else {
         return res.status(400).json({
           success: false,
           error: 'Trip does not have a healthcare creator assigned',
         });
       }
+    }
+    
+    if (!healthcareUserId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Could not determine healthcare user for trip dispatch',
+      });
     }
 
     const result = await healthcareTripDispatchService.dispatchTrip(

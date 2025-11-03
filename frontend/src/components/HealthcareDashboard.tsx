@@ -13,7 +13,9 @@ import {
   Edit,
   Trash2,
   Truck,
-  MapPin
+  MapPin,
+  Send,
+  Shield
 } from 'lucide-react';
 import api from '../services/api';
 import Notifications from './Notifications';
@@ -957,15 +959,61 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                                   {trip.status}
                                 </span>
                                 <div className="flex space-x-2 ml-4">
+                                  {/* Show Dispatch button for PENDING_DISPATCH trips */}
+                                  {trip.status === 'PENDING_DISPATCH' && (
+                                    <button
+                                      title="Dispatch to Agencies"
+                                      onClick={async () => {
+                                        // Fetch full trip details to ensure we have all location data
+                                        try {
+                                          const response = await tripsAPI.getAll();
+                                          const fullTrip = response.data?.data?.find((t: any) => t.id === trip.id);
+                                          if (fullTrip) {
+                                            // Ensure trip has fromLocation/toLocation for dispatch screen
+                                            const tripForDispatch = {
+                                              ...fullTrip,
+                                              fromLocation: fullTrip.fromLocation || trip.origin || 'Unknown Origin',
+                                              toLocation: fullTrip.toLocation || trip.destination || 'Unknown Destination',
+                                              origin: trip.origin,
+                                              destination: trip.destination
+                                            };
+                                            setDispatchTrip(tripForDispatch);
+                                            setShowDispatchScreen(true);
+                                          } else {
+                                            // Fallback: use trip with mapped fields
+                                            setDispatchTrip({
+                                              ...trip,
+                                              fromLocation: trip.origin || 'Unknown Origin',
+                                              toLocation: trip.destination || 'Unknown Destination'
+                                            });
+                                            setShowDispatchScreen(true);
+                                          }
+                                        } catch (error) {
+                                          console.error('Error loading trip details:', error);
+                                          // Fallback: use trip with mapped fields
+                                          setDispatchTrip({
+                                            ...trip,
+                                            fromLocation: trip.origin || 'Unknown Origin',
+                                            toLocation: trip.destination || 'Unknown Destination'
+                                          });
+                                          setShowDispatchScreen(true);
+                                        }
+                                      }}
+                                      className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-purple-100 text-purple-800 hover:bg-purple-200"
+                                      disabled={updating}
+                                    >
+                                      <Send className="h-4 w-4" />
+                                    </button>
+                                  )}
                                   {/* Show Authorize button for future trips */}
                                   {category_actual === 'future' && (
                                     <button
-                                      title="Authorize"
+                                      title="Authorize Trip"
                                       onClick={() => handleAuthorizeTrip(trip.id)}
-                                      className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-green-100 text-green-800 hover:bg-green-200"
+                                      className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-purple-100 text-purple-800 hover:bg-purple-200"
                                       disabled={updating}
                                     >
-                                      <CheckCircle className="h-4 w-4" />
+                                      <Shield className="h-4 w-4" />
                                     </button>
                                   )}
                                   <button

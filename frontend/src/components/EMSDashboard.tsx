@@ -246,7 +246,8 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
               scheduledTimeISO: trip.scheduledTime || null, // Raw ISO for categorization
               assignedUnitId: trip.assignedUnitId, // Track if this agency already assigned a unit
               assignedUnit: trip.assignedUnit, // Include unit info if assigned
-              hasResponded: respondedTrips.has(trip.id) // Check if this agency has already responded
+              hasResponded: respondedTrips.has(trip.id), // Check if this agency has already responded
+              status: trip.status || 'PENDING' // Include status to check if trip is authorized (PENDING_DISPATCH)
             };
           }));
           setAvailableTrips(transformedAvailable);
@@ -858,8 +859,9 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
                                     PENDING
                                   </span>
                                   <div className="flex space-x-2 ml-4">
-                                    {/* Hide Accept/Decline buttons for future trips, show "Awaiting Authorization" */}
-                                    {category_actual === 'future' ? (
+                                    {/* Hide Accept/Decline buttons for future trips (not authorized), show "Awaiting Authorization" */}
+                                    {/* Show Accept/Decline if trip is authorized (PENDING_DISPATCH status) OR not in future category */}
+                                    {category_actual === 'future' && trip.status !== 'PENDING_DISPATCH' ? (
                                       <span className="text-sm text-yellow-600 font-medium">
                                         Awaiting Authorization
                                       </span>
