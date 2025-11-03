@@ -600,6 +600,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    try { document.cookie = 'tcc_token=; Max-Age=0; path=/'; } catch {}
     onLogout();
   };
 
@@ -726,7 +727,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
               { id: 'hospital-settings', name: 'Hospital Settings', icon: Building2 },
               { id: 'ems-providers', name: 'EMS Providers', icon: Truck },
               { id: 'destinations', name: 'Destinations', icon: MapPin },
-              { id: 'users', name: 'Users', icon: User }
+              { id: 'users', name: 'Team Members', icon: User }
             ].map((tab) => {
               const Icon = tab.icon;
               return (
@@ -878,6 +879,9 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                                   <p className="text-base text-gray-600">
                                     {trip.origin} → {trip.destination}
                                   </p>
+                                  {trip.createdBy && (
+                                    <p className="text-xs text-gray-500">Created by: {trip.createdBy.name} ({trip.createdBy.email})</p>
+                                  )}
                                   {trip.pickupLocation && (
                                     <p className="text-xs text-blue-600">
                                       Pickup: {trip.pickupLocation.name}{trip.pickupLocation.floor || trip.pickupLocation.room ? ': ' : ''}{trip.pickupLocation.floor && trip.pickupLocation.floor}{trip.pickupLocation.room && `${trip.pickupLocation.floor ? ' ' : ''}Room ${trip.pickupLocation.room}`}{trip.pickupLocation.contactPhone && ` Phone: ${trip.pickupLocation.contactPhone}`}{trip.pickupLocation.contactEmail && ` Email: ${trip.pickupLocation.contactEmail}`}

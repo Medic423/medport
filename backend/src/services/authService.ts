@@ -11,6 +11,7 @@ export interface User {
   agencyName?: string;
   agencyId?: string;
   manageMultipleLocations?: boolean; // ✅ NEW: Multi-location flag
+  orgAdmin?: boolean; // ✅ Org-scoped admin for Healthcare/EMS
 }
 
 export interface LoginCredentials {
@@ -141,7 +142,8 @@ export class AuthService {
         facilityName: userType === 'HEALTHCARE' ? (user as any).facilityName : undefined,
         agencyName: userType === 'EMS' ? (user as any).agencyName : undefined,
         agencyId: userType === 'EMS' ? (user as any).agencyId : undefined,
-        manageMultipleLocations: userType === 'HEALTHCARE' ? (user as any).manageMultipleLocations : undefined // ✅ NEW: Multi-location flag
+        manageMultipleLocations: userType === 'HEALTHCARE' ? (user as any).manageMultipleLocations : undefined, // ✅ NEW: Multi-location flag
+        orgAdmin: userType === 'HEALTHCARE' || userType === 'EMS' ? !!(user as any).orgAdmin : undefined
       };
 
       return {
@@ -214,7 +216,8 @@ export class AuthService {
           name: user.name,
           userType: 'EMS',
           agencyName: user.agencyName,
-          agencyId: user.agencyId
+          agencyId: user.agencyId,
+          orgAdmin: !!(user as any).orgAdmin
         };
       }
 
@@ -231,7 +234,8 @@ export class AuthService {
         facilityName: decoded.userType === 'HEALTHCARE' ? (user as any).facilityName : undefined,
         agencyName: decoded.userType === 'EMS' ? (user as any).agencyName : undefined,
         agencyId: decoded.userType === 'EMS' ? (user as any).agencyId : undefined,
-        manageMultipleLocations: decoded.userType === 'HEALTHCARE' ? (user as any).manageMultipleLocations : undefined
+        manageMultipleLocations: decoded.userType === 'HEALTHCARE' ? (user as any).manageMultipleLocations : undefined,
+        orgAdmin: decoded.userType === 'HEALTHCARE' || decoded.userType === 'EMS' ? !!(user as any).orgAdmin : undefined
       };
 
     } catch (error) {

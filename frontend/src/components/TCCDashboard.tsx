@@ -11,6 +11,7 @@ import TCCUnitsManagement from './TCCUnitsManagement';
 import TCCRouteOptimizer from './TCCRouteOptimizer';
 // import EnhancedRouteOptimizer from './EnhancedRouteOptimizer'; // Temporarily disabled - file deleted during cleanup
 import Analytics from './Analytics';
+import AdminUsersPanel from './AdminUsersPanel';
 
 interface User {
   id: string;
@@ -53,6 +54,7 @@ const TCCDashboard: React.FC<TCCDashboardProps> = ({ user, onLogout }) => {
           <Route path="/operations/route-optimization" element={<TCCRouteOptimizer />} />
           {/* <Route path="/operations/route-optimization-enhanced" element={<EnhancedRouteOptimizer />} /> */}
           <Route path="/operations/analytics" element={<Analytics />} />
+          <Route path="/admin/users" element={<AdminUsersPanel />} />
           
           {/* Legacy routes for backward compatibility */}
           <Route path="/trips" element={<TripsView user={user} />} />

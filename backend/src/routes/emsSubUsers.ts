@@ -161,6 +161,29 @@ router.post('/:id/reset-temp-password', authenticateAdmin, async (req: Authentic
   }
 });
 
+// Delete EMS sub-user
+router.delete('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
+    if (!(req.user.userType === 'EMS' || req.user.userType === 'ADMIN')) {
+      return res.status(403).json({ success: false, error: 'Forbidden' });
+    }
+    const { id } = req.params;
+    const parentId = await getParentEMSUserId(req);
+    if (!parentId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+    const db = databaseManager.getPrismaClient();
+    const sub = await db.eMSUser.findUnique({ where: { id } });
+    if (!sub || sub.parentUserId !== parentId) {
+      return res.status(404).json({ success: false, error: 'Sub-user not found' });
+    }
+    await db.eMSUser.delete({ where: { id } });
+    res.json({ success: true, message: 'Sub-user deleted' });
+  } catch (e) {
+    console.error('EMS_SUBUSERS:delete error', e);
+    res.status(500).json({ success: false, error: 'Failed to delete sub-user' });
+  }
+});
+
 export default router;
 
 

@@ -323,6 +323,28 @@ export class TripService {
         }
       }));
 
+      // Enrich with creator info for healthcare-created trips
+      try {
+        const creatorIds = Array.from(new Set(tripsWithDistance
+          .map(t => (t as any).healthcareCreatedById)
+          .filter(Boolean)));
+        if (creatorIds.length > 0) {
+          const creators = await prisma.healthcareUser.findMany({
+            where: { id: { in: creatorIds } },
+            select: { id: true, name: true, email: true }
+          });
+          const creatorMap = new Map(creators.map(c => [c.id, c]));
+          for (const t of tripsWithDistance as any[]) {
+            const cid = t.healthcareCreatedById;
+            if (cid && creatorMap.has(cid)) {
+              t.createdBy = creatorMap.get(cid);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('TCC_DEBUG: creator enrichment skipped', e);
+      }
+
       return { success: true, data: tripsWithDistance };
     } catch (error) {
       console.error('TCC_DEBUG: Error getting trips:', error);

@@ -364,6 +364,7 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    try { document.cookie = 'tcc_token=; Max-Age=0; path=/'; } catch {}
     onLogout();
   };
 

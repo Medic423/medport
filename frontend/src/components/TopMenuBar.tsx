@@ -81,7 +81,13 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
       icon: Calculator,
       hasDropdown: false,
       path: '/dashboard/operations/analytics'
-    }
+    },
+    ...(user.userType === 'ADMIN' ? [{
+      label: 'Admin Users',
+      icon: Settings,
+      hasDropdown: false,
+      path: '/dashboard/admin/users'
+    }] : [])
   ];
 
   const handleNavigation = (path: string) => {
@@ -216,14 +222,29 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
           </nav>
 
           {/* User Menu */}
-          <div className="hidden md:flex items-center space-x-4">
+            <div className="hidden md:flex items-center space-x-4">
             <div className="flex items-center space-x-3">
               <div className="h-8 w-8 bg-gray-300 rounded-full flex items-center justify-center">
                 <User className="h-4 w-4 text-gray-600" />
               </div>
               <div className="text-sm">
-                <div className="font-medium text-gray-900">{user.name}</div>
-                <div className="text-gray-500">{user.userType}</div>
+                <div className="font-medium text-gray-900 flex items-center space-x-2">
+                  <span>{user.name}</span>
+                  {/* Compact role badges */}
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${user.userType === 'ADMIN' ? 'bg-blue-100 text-blue-800' : user.userType === 'HEALTHCARE' ? 'bg-green-100 text-green-800' : user.userType === 'EMS' ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-800'}`}>{user.userType}</span>
+                  {/* Org Admin badge for Healthcare/EMS when present */}
+                  {(() => {
+                    try {
+                      const raw = localStorage.getItem('user');
+                      const u = raw ? JSON.parse(raw) : null;
+                      const isOrgAdmin = !!u?.orgAdmin && (u?.userType === 'HEALTHCARE' || u?.userType === 'EMS');
+                      return isOrgAdmin ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-purple-100 text-purple-800">Org Admin</span>
+                      ) : null;
+                    } catch { return null; }
+                  })()}
+                </div>
+                <div className="text-gray-500">{user.email}</div>
               </div>
             </div>
             <button

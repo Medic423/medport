@@ -8,6 +8,7 @@ const HealthcareSubUsersPanel: React.FC = () => {
   const [name, setName] = useState('');
   const [temp, setTemp] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isOrgAdmin, setIsOrgAdmin] = useState<boolean>(false);
 
   const load = async () => {
     setLoading(true); setError(null);
@@ -19,6 +20,15 @@ const HealthcareSubUsersPanel: React.FC = () => {
   };
 
   useEffect(() => { load(); }, []);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('user');
+      if (raw) {
+        const u = JSON.parse(raw);
+        setIsOrgAdmin(!!u?.orgAdmin);
+      }
+    } catch {}
+  }, []);
 
   const create = async (e: React.FormEvent) => {
     e.preventDefault(); setError(null); setTemp(null);
@@ -57,11 +67,20 @@ const HealthcareSubUsersPanel: React.FC = () => {
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-gray-900">Healthcare Users</h2>
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-gray-700">Team Members</div>
+        {isOrgAdmin && <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">Org Admin</span>}
+      </div>
+      {!isOrgAdmin && (
+        <div className="mb-3 p-3 bg-gray-50 border border-gray-200 rounded text-xs text-gray-700">
+          Read-only access. Contact an Org Admin to add, deactivate, or reset team members.
+        </div>
+      )}
       <form onSubmit={create} className="bg-white p-4 rounded-md border space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <input className="border rounded px-3 py-2" placeholder="Name" value={name} onChange={e => setName(e.target.value)} required />
-          <input className="border rounded px-3 py-2" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} type="email" required />
-          <button type="submit" className="bg-blue-600 text-white rounded px-4 py-2">Add Sub-User</button>
+          <input className="border rounded px-3 py-2" placeholder="Name" value={name} onChange={e => setName(e.target.value)} required disabled={!isOrgAdmin} />
+          <input className="border rounded px-3 py-2" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} type="email" required disabled={!isOrgAdmin} />
+          <button type="submit" className="bg-blue-600 text-white rounded px-4 py-2" disabled={!isOrgAdmin} title={!isOrgAdmin ? 'Org Admin required' : ''}>Add Sub-User</button>
         </div>
         {error && <div className="text-red-600 text-sm">{error}</div>}
         {temp && <div className="text-green-700 text-sm">Temporary password: <span className="font-mono">{temp}</span> (copy now)</div>}
@@ -76,8 +95,8 @@ const HealthcareSubUsersPanel: React.FC = () => {
                 <div className="text-xs text-gray-500">{u.isActive ? 'Active' : 'Inactive'}</div>
               </div>
               <div className="space-x-2">
-                <button onClick={() => toggleActive(u.id, u.isActive)} className="px-3 py-1 rounded border">{u.isActive ? 'Deactivate' : 'Activate'}</button>
-                <button onClick={() => resetTemp(u.id)} className="px-3 py-1 rounded bg-indigo-600 text-white">Reset Temp Password</button>
+                <button onClick={() => toggleActive(u.id, u.isActive)} className="px-3 py-1 rounded border" disabled={!isOrgAdmin} title={!isOrgAdmin ? 'Org Admin required' : ''}>{u.isActive ? 'Deactivate' : 'Activate'}</button>
+                <button onClick={() => resetTemp(u.id)} className="px-3 py-1 rounded bg-indigo-600 text-white" disabled={!isOrgAdmin} title={!isOrgAdmin ? 'Org Admin required' : ''}>Reset Temp Password</button>
               </div>
             </div>
           ))}

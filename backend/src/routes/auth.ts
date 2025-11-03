@@ -191,6 +191,10 @@ router.post('/healthcare/register', async (req, res) => {
       });
     }
 
+    // Determine if this is the first account for this facility (orgAdmin=true for first)
+    const existingForFacility = await hospitalDB.healthcareUser.count({ where: { facilityName } });
+    const isFirst = existingForFacility === 0;
+
     // Create new healthcare user
     console.log('MULTI_LOC: Creating healthcare user with manageMultipleLocations:', manageMultipleLocations);
     const user = await hospitalDB.healthcareUser.create({
@@ -202,7 +206,8 @@ router.post('/healthcare/register', async (req, res) => {
         facilityType,
         manageMultipleLocations: manageMultipleLocations || false, // ✅ NEW: Multi-location flag
         userType: 'HEALTHCARE',
-        isActive: false // Requires admin approval
+        isActive: false, // Requires admin approval
+        orgAdmin: isFirst
       }
     });
 
@@ -536,6 +541,10 @@ router.post('/ems/register', async (req, res) => {
       });
     }
 
+    // Determine if this is the first account for this agency (orgAdmin=true for first)
+    const existingForAgency = await db.eMSUser.count({ where: { agencyName } });
+    const isFirst = existingForAgency === 0;
+
     // Create new EMS user
     const user = await db.eMSUser.create({
       data: {
@@ -544,7 +553,8 @@ router.post('/ems/register', async (req, res) => {
         name,
         agencyName,
         userType: 'EMS',
-        isActive: true // Auto-approve new EMS registrations
+        isActive: true, // Auto-approve new EMS registrations
+        orgAdmin: isFirst
       }
     });
 
@@ -679,26 +689,50 @@ router.get('/users', authenticateAdmin, async (req: AuthenticatedRequest, res) =
       });
     }
 
-    const centerDB = (await import('../services/databaseManager')).databaseManager.getPrismaClient();
-    const users = await centerDB.centerUser.findMany({
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        userType: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
+    const db = (await import('../services/databaseManager')).databaseManager.getPrismaClient();
+    const includeSubUsers = (req.query.includeSubUsers as string | undefined) === 'true';
+    const onlySubUsers = (req.query.onlySubUsers as string | undefined) === 'true';
 
-    res.json({
-      success: true,
-      users
-    });
+    const [centers, healthcare, ems] = await Promise.all([
+      db.centerUser.findMany({
+        select: { id: true, email: true, name: true, userType: true, isActive: true, createdAt: true, updatedAt: true }
+      }),
+      db.healthcareUser.findMany({
+        select: { id: true, email: true, name: true, userType: true, isActive: true, createdAt: true, updatedAt: true, isSubUser: true, parentUserId: true, facilityName: true, orgAdmin: true }
+      }),
+      db.eMSUser.findMany({
+        select: { id: true, email: true, name: true, userType: true, isActive: true, createdAt: true, updatedAt: true, isSubUser: true, parentUserId: true, agencyName: true, orgAdmin: true }
+      })
+    ]);
+
+    let all = [
+      ...centers.map(u => ({ ...u, domain: 'CENTER', isSubUser: false, parentUserId: null })),
+      ...healthcare.map(u => ({ ...u, domain: 'HEALTHCARE' })),
+      ...ems.map(u => ({ ...u, domain: 'EMS' }))
+    ] as any[];
+
+    if (onlySubUsers) {
+      all = all.filter(u => u.isSubUser === true);
+    } else if (!includeSubUsers) {
+      // Default shows all; configure here if you want to hide sub-users by default
+    }
+
+    const parentIds = Array.from(new Set(all.map(u => u.parentUserId).filter(Boolean)));
+    const parentMap = new Map<string, any>();
+    if (parentIds.length) {
+      const [parentHC, parentEMS] = await Promise.all([
+        db.healthcareUser.findMany({ where: { id: { in: parentIds } }, select: { id: true, email: true, name: true } }),
+        db.eMSUser.findMany({ where: { id: { in: parentIds } }, select: { id: true, email: true, name: true } })
+      ]);
+      parentHC.forEach(p => parentMap.set(p.id, p));
+      parentEMS.forEach(p => parentMap.set(p.id, p));
+    }
+
+    const users = all
+      .map(u => ({ ...u, parent: u.parentUserId ? (parentMap.get(u.parentUserId) || null) : null }))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    res.json({ success: true, users });
 
   } catch (error) {
     console.error('Get users error:', error);
@@ -706,6 +740,47 @@ router.get('/users', authenticateAdmin, async (req: AuthenticatedRequest, res) =
       success: false,
       error: 'Internal server error'
     });
+  }
+});
+
+/**
+ * PATCH /api/auth/admin/users/:domain/:id
+ * Update user fields (ADMIN only). Domain: CENTER|HEALTHCARE|EMS
+ */
+router.patch('/admin/users/:domain/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    if (req.user?.userType !== 'ADMIN') {
+      return res.status(403).json({ success: false, error: 'Only administrators can update users' });
+    }
+    const { domain, id } = req.params as { domain: string; id: string };
+  const { userType, isActive, orgAdmin } = req.body || {};
+    const db = (await import('../services/databaseManager')).databaseManager.getPrismaClient();
+
+    let updated: any = null;
+    if (domain === 'CENTER') {
+      const data: any = {};
+      if (typeof userType === 'string') data.userType = userType; // e.g., ADMIN|USER
+      if (typeof isActive === 'boolean') data.isActive = isActive;
+      updated = await db.centerUser.update({ where: { id }, data, select: { id: true, email: true, name: true, userType: true, isActive: true } });
+    } else if (domain === 'HEALTHCARE') {
+      const data: any = {};
+      if (typeof isActive === 'boolean') data.isActive = isActive;
+      if (typeof orgAdmin === 'boolean') data.orgAdmin = orgAdmin;
+      // Do NOT allow changing healthcare userType to ADMIN via this route
+      updated = await db.healthcareUser.update({ where: { id }, data, select: { id: true, email: true, name: true, userType: true, isActive: true, isSubUser: true, parentUserId: true } });
+    } else if (domain === 'EMS') {
+      const data: any = {};
+      if (typeof isActive === 'boolean') data.isActive = isActive;
+      if (typeof orgAdmin === 'boolean') data.orgAdmin = orgAdmin;
+      updated = await db.eMSUser.update({ where: { id }, data, select: { id: true, email: true, name: true, userType: true, isActive: true, isSubUser: true, parentUserId: true } });
+    } else {
+      return res.status(400).json({ success: false, error: 'Invalid domain' });
+    }
+
+    res.json({ success: true, data: updated });
+  } catch (error) {
+    console.error('Admin update user error:', error);
+    res.status(500).json({ success: false, error: 'Failed to update user' });
   }
 });
 
@@ -874,7 +949,8 @@ router.post('/healthcare/login', async (req, res) => {
         userType: 'HEALTHCARE',
         facilityName: user.facilityName,
         facilityType: user.facilityType,
-        manageMultipleLocations: user.manageMultipleLocations // ✅ NEW: Multi-location flag
+        manageMultipleLocations: user.manageMultipleLocations, // ✅ NEW: Multi-location flag
+        orgAdmin: (user as any).orgAdmin === true
       },
       token,
       mustChangePassword: !!(user as any).mustChangePassword

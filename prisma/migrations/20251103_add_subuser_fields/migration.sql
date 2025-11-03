@@ -4,7 +4,8 @@
 ALTER TABLE "healthcare_users"
   ADD COLUMN IF NOT EXISTS "isSubUser" BOOLEAN NOT NULL DEFAULT false,
   ADD COLUMN IF NOT EXISTS "parentUserId" TEXT NULL,
-  ADD COLUMN IF NOT EXISTS "mustChangePassword" BOOLEAN NOT NULL DEFAULT false;
+  ADD COLUMN IF NOT EXISTS "mustChangePassword" BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS "orgAdmin" BOOLEAN NOT NULL DEFAULT false;
 
 -- Add FK for parentUserId self-reference
 DO $$ BEGIN
@@ -17,7 +18,8 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 ALTER TABLE "ems_users"
   ADD COLUMN IF NOT EXISTS "isSubUser" BOOLEAN NOT NULL DEFAULT false,
   ADD COLUMN IF NOT EXISTS "parentUserId" TEXT NULL,
-  ADD COLUMN IF NOT EXISTS "mustChangePassword" BOOLEAN NOT NULL DEFAULT false;
+  ADD COLUMN IF NOT EXISTS "mustChangePassword" BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS "orgAdmin" BOOLEAN NOT NULL DEFAULT false;
 
 -- Add FK for parentUserId self-reference
 DO $$ BEGIN

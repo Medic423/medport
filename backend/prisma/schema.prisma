@@ -38,6 +38,7 @@ model HealthcareUser {
   isSubUser               Boolean                       @default(false)
   parentUserId            String?
   mustChangePassword      Boolean                       @default(false)
+  orgAdmin                Boolean                       @default(false)
   createdAt               DateTime                      @default(now())
   updatedAt               DateTime                      @updatedAt
   locations               HealthcareLocation[]
@@ -152,6 +153,7 @@ model EMSUser {
   isSubUser  Boolean    @default(false)
   parentUserId String?
   mustChangePassword Boolean @default(false)
+  orgAdmin   Boolean    @default(false)
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
   agency     EMSAgency? @relation(fields: [agencyId], references: [id])
