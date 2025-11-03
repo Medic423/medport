@@ -121,6 +121,9 @@ export const authAPI = {
 
   getUsers: () =>
     api.get('/api/auth/users'),
+
+  changePassword: (data: { currentPassword: string; newPassword: string }) =>
+    api.put('/api/auth/password/change', data),
 };
 
 // Hospitals API

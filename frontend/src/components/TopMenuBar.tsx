@@ -13,6 +13,7 @@ import {
   X,
   Home
 } from 'lucide-react';
+import ChangePasswordModal from './ChangePasswordModal';
 
 interface TopMenuBarProps {
   user: {
@@ -30,6 +31,7 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
   const location = useLocation();
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   console.log('TCC_DEBUG: TopMenuBar component rendering');
   console.log('TCC_DEBUG: TopMenuBar user:', user);
@@ -214,6 +216,13 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
               </div>
             </div>
             <button
+              onClick={() => setShowChangePassword(true)}
+              className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+            >
+              <Settings className="h-4 w-4" />
+              <span>Change Password</span>
+            </button>
+            <button
               onClick={onLogout}
               className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
             >
@@ -329,6 +338,9 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
           onClick={() => setActiveDropdown(null)}
         />
       )}
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal isOpen={showChangePassword} onClose={() => setShowChangePassword(false)} />
     </div>
   );
 };

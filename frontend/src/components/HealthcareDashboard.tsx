@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import Notifications from './Notifications';
+import ChangePasswordModal from './ChangePasswordModal';
 import EnhancedTripForm from './EnhancedTripForm';
 import HealthcareSettingsPanel from './HealthcareSettingsPanel';
 import HealthcareEMSAgencies from './HealthcareEMSAgencies';
@@ -70,6 +71,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
 
   // Phase 3: Dispatch screen state
   const [showDispatchScreen, setShowDispatchScreen] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
   const [dispatchTrip, setDispatchTrip] = useState<any>(null);
 
   // Calculate wait time from request to pickup
@@ -688,6 +690,13 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
               >
                 <LogOut className="h-4 w-4" />
                 <span>Logout</span>
+              </button>
+              <button
+                onClick={() => setShowChangePassword(true)}
+                className="ml-2 flex items-center space-x-1 text-gray-600 hover:text-blue-700"
+              >
+                <Edit className="h-4 w-4" />
+                <span>Change Password</span>
               </button>
             </div>
           </div>
@@ -1529,6 +1538,9 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
           }}
         />
       )}
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal isOpen={showChangePassword} onClose={() => setShowChangePassword(false)} />
     </div>
   );
 };
