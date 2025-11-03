@@ -109,14 +109,16 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
  * Get available agencies for a specific trip (Phase 3)
  * MUST come before /:id route to avoid route conflicts
  */
-router.get('/trip-agencies', async (req: AuthenticatedRequest, res) => {
+router.get('/trip-agencies', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   console.log('🚨 ROUTE HIT: GET /trip-agencies', req.query);
+  console.log('🚨 User from token:', { id: req.user?.id, email: req.user?.email, userType: req.user?.userType });
   try {
-    // Verify user is healthcare type
-    if (req.user?.userType !== 'HEALTHCARE') {
+    // Verify user is healthcare type or admin (admins can view agencies for dispatch)
+    if (!req.user || (req.user.userType !== 'HEALTHCARE' && req.user.userType !== 'ADMIN')) {
+      console.log('🚨 Access denied - userType:', req.user?.userType);
       return res.status(403).json({
         success: false,
-        error: 'Access denied: Healthcare users only',
+        error: 'Access denied: Healthcare users or Administrators only',
       });
     }
 
@@ -132,9 +134,30 @@ router.get('/trip-agencies', async (req: AuthenticatedRequest, res) => {
       });
     }
 
+    // For ADMIN users, we need to get the trip's healthcareCreatedById
+    // For HEALTHCARE users, use their own ID
+    let healthcareUserId = req.user!.id;
+    if (req.user!.userType === 'ADMIN') {
+      // Fetch trip to get the healthcare user who created it
+      const prisma = (await import('../services/databaseManager')).databaseManager.getPrismaClient();
+      const trip = await prisma.transportRequest.findUnique({
+        where: { id: tripId },
+        select: { healthcareCreatedById: true }
+      });
+      if (trip?.healthcareCreatedById) {
+        healthcareUserId = trip.healthcareCreatedById;
+        console.log('🚨 ADMIN user accessing trip, using healthcareCreatedById:', healthcareUserId);
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: 'Trip does not have a healthcare creator assigned',
+        });
+      }
+    }
+
     const result = await healthcareTripDispatchService.getTripAgencies(
       tripId,
-      req.user!.id,
+      healthcareUserId,
       mode,
       radius
     );

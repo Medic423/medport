@@ -177,8 +177,19 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
       const responsesResponse = await api.get('/api/agency-responses');
       const agencyResponses = responsesResponse.data?.data || [];
       
-      // Create a set of trip IDs that this agency has already responded to
-      const respondedTrips = new Set(agencyResponses.map((r: any) => r.tripId));
+      // Get current agency ID (use agencyId if available, otherwise user.id)
+      const currentAgencyId = user.agencyId || user.id;
+      
+      // Create a set of trip IDs that THIS agency has already responded to with ACCEPTED or DECLINED
+      // (exclude PENDING responses - those are created during dispatch but not yet a real response)
+      const respondedTrips = new Set(
+        agencyResponses
+          .filter((r: any) => 
+            r.agencyId === currentAgencyId && 
+            (r.response === 'ACCEPTED' || r.response === 'DECLINED')
+          )
+          .map((r: any) => r.tripId)
+      );
       
       if (availableResponse.data) {
         const availableData = availableResponse.data;

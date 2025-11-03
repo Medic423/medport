@@ -1146,12 +1146,14 @@ router.post('/calculate-distance', async (req, res) => {
 router.post('/:id/dispatch', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     console.log('PHASE3_DEBUG: Dispatch trip request received:', req.body);
+    console.log('PHASE3_DEBUG: User from token:', { id: req.user?.id, email: req.user?.email, userType: req.user?.userType });
     
-    // Verify user is healthcare type
-    if (req.user?.userType !== 'HEALTHCARE') {
+    // Verify user is healthcare type or admin (admins can dispatch on behalf of facilities)
+    if (req.user?.userType !== 'HEALTHCARE' && req.user?.userType !== 'ADMIN') {
+      console.log('PHASE3_DEBUG: Access denied - userType:', req.user?.userType);
       return res.status(403).json({
         success: false,
-        error: 'Access denied: Healthcare users only',
+        error: 'Access denied: Healthcare users or Administrators only',
       });
     }
 
@@ -1173,9 +1175,26 @@ router.post('/:id/dispatch', authenticateAdmin, async (req: AuthenticatedRequest
       });
     }
 
+    // For ADMIN users, we need to get the trip's healthcareCreatedById
+    // For HEALTHCARE users, use their own ID
+    let healthcareUserId = req.user!.id;
+    if (req.user!.userType === 'ADMIN') {
+      // Fetch trip to get the healthcare user who created it
+      const trip = await tripService.getTripById(tripId);
+      if (trip.success && trip.data && (trip.data as any).healthcareCreatedById) {
+        healthcareUserId = (trip.data as any).healthcareCreatedById;
+        console.log('PHASE3_DEBUG: ADMIN user dispatching trip, using healthcareCreatedById:', healthcareUserId);
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: 'Trip does not have a healthcare creator assigned',
+        });
+      }
+    }
+
     const result = await healthcareTripDispatchService.dispatchTrip(
       tripId,
-      req.user!.id,
+      healthcareUserId,
       {
         agencyIds,
         dispatchMode,
