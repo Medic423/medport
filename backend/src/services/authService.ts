@@ -23,6 +23,7 @@ export interface AuthResult {
   user?: User;
   token?: string;
   error?: string;
+  mustChangePassword?: boolean;
 }
 
 export class AuthService {
@@ -46,6 +47,7 @@ export class AuthService {
       let user: any = null;
       let userType: 'ADMIN' | 'USER' | 'HEALTHCARE' | 'EMS' = 'ADMIN';
       let userData: User;
+      let mustChangePassword = false;
 
       // Try to find user in CenterUser table first
       user = await db.centerUser.findUnique({
@@ -62,6 +64,7 @@ export class AuthService {
         });
         if (user) {
           userType = 'HEALTHCARE';
+          mustChangePassword = !!(user as any).mustChangePassword;
         }
       }
 
@@ -72,6 +75,7 @@ export class AuthService {
         });
         if (user) {
           userType = 'EMS';
+          mustChangePassword = !!(user as any).mustChangePassword;
         }
       }
 
@@ -143,7 +147,8 @@ export class AuthService {
       return {
         success: true,
         user: userData,
-        token
+        token,
+        mustChangePassword
       };
 
     } catch (error) {
@@ -336,9 +341,9 @@ export class AuthService {
       if (userType === 'ADMIN' || userType === 'USER') {
         await db.centerUser.update({ where: { email }, data: { password: hashed } });
       } else if (userType === 'HEALTHCARE') {
-        await db.healthcareUser.update({ where: { email }, data: { password: hashed } });
+        await db.healthcareUser.update({ where: { email }, data: { password: hashed, mustChangePassword: false } });
       } else if (userType === 'EMS') {
-        await db.eMSUser.update({ where: { email }, data: { password: hashed } });
+        await db.eMSUser.update({ where: { email }, data: { password: hashed, mustChangePassword: false } });
       }
     } catch (err) {
       console.error('changePassword update error:', err);

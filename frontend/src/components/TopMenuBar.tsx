@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   ChevronDown, 
@@ -32,6 +32,17 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  // First-login enforcement: auto-open Change Password if flagged
+  // Check on mount and whenever the user changes (post-login)
+  useEffect(() => {
+    try {
+      const flag = localStorage.getItem('mustChangePassword');
+      if (flag === 'true') {
+        setShowChangePassword(true);
+        localStorage.removeItem('mustChangePassword');
+      }
+    } catch {}
+  }, [user?.id]);
 
   console.log('TCC_DEBUG: TopMenuBar component rendering');
   console.log('TCC_DEBUG: TopMenuBar user:', user);

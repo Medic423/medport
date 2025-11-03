@@ -35,11 +35,16 @@ model HealthcareUser {
   userType                String                        @default("HEALTHCARE")
   isActive                Boolean                       @default(true)
   manageMultipleLocations Boolean                       @default(false)
+  isSubUser               Boolean                       @default(false)
+  parentUserId            String?
+  mustChangePassword      Boolean                       @default(false)
   createdAt               DateTime                      @default(now())
   updatedAt               DateTime                      @updatedAt
   locations               HealthcareLocation[]
   agencyPreferences       HealthcareAgencyPreference[]
   destinations            HealthcareDestination[]
+  parentUser              HealthcareUser?               @relation("HealthcareUserParent", fields: [parentUserId], references: [id])
+  subUsers                HealthcareUser[]              @relation("HealthcareUserParent")
 
   @@map("healthcare_users")
 }
@@ -144,9 +149,14 @@ model EMSUser {
   agencyId   String?
   isActive   Boolean    @default(true)
   userType   String     @default("EMS")
+  isSubUser  Boolean    @default(false)
+  parentUserId String?
+  mustChangePassword Boolean @default(false)
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
   agency     EMSAgency? @relation(fields: [agencyId], references: [id])
+  parentUser EMSUser?   @relation("EMSUserParent", fields: [parentUserId], references: [id])
+  subUsers   EMSUser[]  @relation("EMSUserParent")
 
   @@map("ems_users")
 }

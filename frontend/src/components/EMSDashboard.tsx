@@ -18,6 +18,7 @@ import api from '../services/api';
 import ChangePasswordModal from './ChangePasswordModal';
 import Notifications from './Notifications';
 import AgencySettings from './AgencySettings';
+import EMSSubUsersPanel from './EMSSubUsersPanel';
 import UnitsManagement from './UnitsManagement';
 import TripStatusButtons from './TripStatusButtons';
 import EMSTripCalculator from './EMSTripCalculator';
@@ -40,6 +41,16 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
   const [activeTab, setActiveTab] = useState('available'); // Default to Available Trips (new landing page)
   const [completedTrips, setCompletedTrips] = useState<any[]>([]);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  // First-login enforcement for EMS header
+  useEffect(() => {
+    try {
+      const flag = localStorage.getItem('mustChangePassword');
+      if (flag === 'true') {
+        setShowChangePassword(true);
+        localStorage.removeItem('mustChangePassword');
+      }
+    } catch {}
+  }, [user?.id]);
   
   // Format time from minutes to hours and minutes
   const formatTime = (minutes: number | string): string => {
@@ -666,6 +677,7 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
               { id: 'accepted', name: 'My Trips', icon: CheckCircle },
               { id: 'completed', name: 'Completed Trips', icon: Archive },
               { id: 'units', name: 'Units', icon: Truck },
+              { id: 'users', name: 'Users', icon: Settings },
               { id: 'agency-info', name: 'Agency Info', icon: Settings },
               { id: 'trip-calculator', name: 'Trip Calculator', icon: Calculator }
             ].map((tab) => {
@@ -1049,6 +1061,10 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
 
         {activeTab === 'units' && (
           <UnitsManagement user={user} acceptedTrips={acceptedTrips} />
+        )}
+
+        {activeTab === 'users' && (
+          <EMSSubUsersPanel />
         )}
 
         {/* Settings tab removed - moved to TCC Admin dashboard */}

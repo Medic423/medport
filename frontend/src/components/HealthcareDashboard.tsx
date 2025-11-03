@@ -22,6 +22,7 @@ import EnhancedTripForm from './EnhancedTripForm';
 import HealthcareSettingsPanel from './HealthcareSettingsPanel';
 import HealthcareEMSAgencies from './HealthcareEMSAgencies';
 import HealthcareDestinations from './HealthcareDestinations';
+import HealthcareSubUsersPanel from './HealthcareSubUsersPanel';
 import TripDispatchScreen from './TripDispatchScreen'; // Phase 3
 import { tripsAPI, unitsAPI } from '../services/api';
 import { categorizeTripByDate, formatSectionHeader, DateCategory } from '../utils/dateUtils';
@@ -72,6 +73,16 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
   // Phase 3: Dispatch screen state
   const [showDispatchScreen, setShowDispatchScreen] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  // First-login enforcement for Healthcare header
+  useEffect(() => {
+    try {
+      const flag = localStorage.getItem('mustChangePassword');
+      if (flag === 'true') {
+        setShowChangePassword(true);
+        localStorage.removeItem('mustChangePassword');
+      }
+    } catch {}
+  }, [user?.id]);
   const [dispatchTrip, setDispatchTrip] = useState<any>(null);
 
   // Calculate wait time from request to pickup
@@ -305,12 +316,12 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
       
       // Load dropdown options from backend Hospital Settings
       const [tlRes, urgRes, diagRes, mobRes, insRes, snRes] = await Promise.all([
-        api.get('/dropdown-options/transport-level').catch(() => ({ data: { success: false, data: [] } })),
-        api.get('/dropdown-options/urgency').catch(() => ({ data: { success: false, data: [] } })),
-        api.get('/dropdown-options/diagnosis').catch(() => ({ data: { success: false, data: [] } })),
-        api.get('/dropdown-options/mobility').catch(() => ({ data: { success: false, data: [] } })),
-        api.get('/dropdown-options/insurance').catch(() => ({ data: { success: false, data: [] } })),
-        api.get('/dropdown-options/special-needs').catch(() => ({ data: { success: false, data: [] } }))
+        api.get('/api/dropdown-options/transport-level').catch(() => ({ data: { success: false, data: [] } })),
+        api.get('/api/dropdown-options/urgency').catch(() => ({ data: { success: false, data: [] } })),
+        api.get('/api/dropdown-options/diagnosis').catch(() => ({ data: { success: false, data: [] } })),
+        api.get('/api/dropdown-options/mobility').catch(() => ({ data: { success: false, data: [] } })),
+        api.get('/api/dropdown-options/insurance').catch(() => ({ data: { success: false, data: [] } })),
+        api.get('/api/dropdown-options/special-needs').catch(() => ({ data: { success: false, data: [] } }))
       ]);
 
       const toValues = (resp: any, fallback: string[]) => 
@@ -714,7 +725,8 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
               { id: 'completed', name: 'Completed Trips', icon: CheckCircle },
               { id: 'hospital-settings', name: 'Hospital Settings', icon: Building2 },
               { id: 'ems-providers', name: 'EMS Providers', icon: Truck },
-              { id: 'destinations', name: 'Destinations', icon: MapPin }
+              { id: 'destinations', name: 'Destinations', icon: MapPin },
+              { id: 'users', name: 'Users', icon: User }
             ].map((tab) => {
               const Icon = tab.icon;
               return (
@@ -1251,6 +1263,10 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
 
         {activeTab === 'destinations' && (
           <HealthcareDestinations user={user} />
+        )}
+
+        {activeTab === 'users' && (
+          <HealthcareSubUsersPanel />
         )}
       </main>
 
