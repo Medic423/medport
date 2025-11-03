@@ -1,6 +1,6 @@
 import express from 'express';
 import { authService } from '../services/authService';
-import { authenticateAdmin, AuthenticatedRequest } from '../middleware/authenticateAdmin';
+import { authenticateAdmin, authenticateToken, AuthenticatedRequest } from '../middleware/authenticateAdmin';
 import { databaseManager } from '../services/databaseManager';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -61,6 +61,41 @@ router.post('/login', async (req, res) => {
       success: false,
       error: 'Internal server error'
     });
+  }
+});
+
+/**
+ * PUT /api/auth/password/change
+ * Change password for the authenticated user
+ */
+router.put('/password/change', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body || {};
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ success: false, error: 'Current and new password are required' });
+    }
+
+    if (!req.user) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    const result = await authService.changePassword({
+      email: req.user.email,
+      userType: req.user.userType,
+      currentPassword,
+      newPassword
+    });
+
+    if (!result.success) {
+      // Weak password or wrong current password → 400; other cases may also respond 400 for simplicity
+      return res.status(400).json({ success: false, error: result.error || 'Password change failed' });
+    }
+
+    return res.json({ success: true, message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Password change error:', error);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 

@@ -279,6 +279,74 @@ export class AuthService {
   }): Promise<User> {
     return this.createUser({ ...userData, userType: 'USER' });
   }
+
+  private validatePasswordStrength(password: string): string | null {
+    if (typeof password !== 'string' || password.length < 8) {
+      return 'Password must be at least 8 characters';
+    }
+    if (!/[A-Z]/.test(password)) {
+      return 'Password must include at least one uppercase letter';
+    }
+    if (!/[a-z]/.test(password)) {
+      return 'Password must include at least one lowercase letter';
+    }
+    if (!/[0-9]/.test(password)) {
+      return 'Password must include at least one number';
+    }
+    return null;
+  }
+
+  async changePassword(params: {
+    email: string;
+    userType: 'ADMIN' | 'USER' | 'HEALTHCARE' | 'EMS';
+    currentPassword: string;
+    newPassword: string;
+  }): Promise<{ success: boolean; error?: string }> {
+    const { email, userType, currentPassword, newPassword } = params;
+
+    const validationError = this.validatePasswordStrength(newPassword);
+    if (validationError) {
+      return { success: false, error: validationError };
+    }
+
+    const db = databaseManager.getPrismaClient();
+
+    // Locate user record by table based on userType
+    let user: any = null;
+    if (userType === 'ADMIN' || userType === 'USER') {
+      user = await db.centerUser.findUnique({ where: { email } });
+    } else if (userType === 'HEALTHCARE') {
+      user = await db.healthcareUser.findUnique({ where: { email } });
+    } else if (userType === 'EMS') {
+      user = await db.eMSUser.findUnique({ where: { email } });
+    }
+
+    if (!user || !user.isActive) {
+      return { success: false, error: 'Account not found or inactive' };
+    }
+
+    const isCurrentValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isCurrentValid) {
+      return { success: false, error: 'Current password is incorrect' };
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 12);
+
+    try {
+      if (userType === 'ADMIN' || userType === 'USER') {
+        await db.centerUser.update({ where: { email }, data: { password: hashed } });
+      } else if (userType === 'HEALTHCARE') {
+        await db.healthcareUser.update({ where: { email }, data: { password: hashed } });
+      } else if (userType === 'EMS') {
+        await db.eMSUser.update({ where: { email }, data: { password: hashed } });
+      }
+    } catch (err) {
+      console.error('changePassword update error:', err);
+      return { success: false, error: 'Failed to update password' };
+    }
+
+    return { success: true };
+  }
 }
 
 export const authService = new AuthService();
