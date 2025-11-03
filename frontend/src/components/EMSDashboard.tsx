@@ -15,6 +15,7 @@ import {
   Archive
 } from 'lucide-react';
 import api from '../services/api';
+import ChangePasswordModal from './ChangePasswordModal';
 import Notifications from './Notifications';
 import AgencySettings from './AgencySettings';
 import UnitsManagement from './UnitsManagement';
@@ -38,6 +39,7 @@ interface EMSDashboardProps {
 const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
   const [activeTab, setActiveTab] = useState('available'); // Default to Available Trips (new landing page)
   const [completedTrips, setCompletedTrips] = useState<any[]>([]);
+  const [showChangePassword, setShowChangePassword] = useState(false);
   
   // Format time from minutes to hours and minutes
   const formatTime = (minutes: number | string): string => {
@@ -642,6 +644,13 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
               >
                 <LogOut className="h-4 w-4" />
                 <span>Logout</span>
+              </button>
+              <button
+                onClick={() => setShowChangePassword(true)}
+                className="ml-2 flex items-center space-x-1 text-gray-600 hover:text-blue-700"
+              >
+                <Settings className="h-4 w-4" />
+                <span>Change Password</span>
               </button>
             </div>
           </div>
@@ -1410,6 +1419,8 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
         </div>
         )}
       </main>
+      {/* Change Password Modal */}
+      <ChangePasswordModal isOpen={showChangePassword} onClose={() => setShowChangePassword(false)} />
     </div>
   );
 };
