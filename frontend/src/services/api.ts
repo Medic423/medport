@@ -72,6 +72,12 @@ api.interceptors.response.use(
       if (url?.includes('/api/tcc/agencies') || url.includes('/api/tcc/analytics') || url.includes('/api/dropdown-options') || url.includes('/trip-agencies') || url.includes('/dispatch')) {
         console.log('TCC_DEBUG: API response ←', response.status, url, 'data:', response.data);
       }
+      // First-login enforcement: capture mustChangePassword flag on any auth login
+      const path = response.config?.url || '';
+      const isLoginEndpoint = path.startsWith('/api/auth/login') || path.startsWith('/api/auth/healthcare/login') || path.startsWith('/api/auth/ems/login');
+      if (isLoginEndpoint && response.data && response.data.mustChangePassword === true) {
+        try { localStorage.setItem('mustChangePassword', 'true'); } catch {}
+      }
     } catch {}
     return response;
   },

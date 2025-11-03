@@ -27,6 +27,8 @@ import healthcareLocationsRoutes from './routes/healthcareLocations';
 import agencyTransportRoutes from './routes/agency';
 import healthcareAgenciesRoutes from './routes/healthcareAgencies';
 import healthcareDestinationsRoutes from './routes/healthcareDestinations';
+import healthcareSubUsersRoutes from './routes/healthcareSubUsers';
+import emsSubUsersRoutes from './routes/emsSubUsers';
 
 // Load environment variables
 dotenv.config();
@@ -111,6 +113,8 @@ app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/healthcare/locations', healthcareLocationsRoutes);
 app.use('/api/healthcare/agencies', healthcareAgenciesRoutes);
 app.use('/api/healthcare/destinations', healthcareDestinationsRoutes);
+app.use('/api/healthcare/sub-users', healthcareSubUsersRoutes);
+app.use('/api/ems/sub-users', emsSubUsersRoutes);
 app.use('/api/agency', agencyTransportRoutes);
 
 // Public endpoints for healthcare users
