@@ -1,0 +1,134 @@
+// Production TCC Database Schema for Render
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Center Database Models
+model CenterUser {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  userType  String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("center_users")
+}
+
+model Hospital {
+  id            String   @id @default(cuid())
+  name          String
+  address       String
+  city          String
+  state         String
+  zipCode       String
+  phone         String?
+  email         String?
+  type          String
+  capabilities  String[]
+  region        String
+  coordinates   Json?
+  latitude      Float?
+  longitude     Float?
+  operatingHours String?
+  isActive      Boolean  @default(true)
+  requiresReview Boolean @default(false)
+  approvedAt    DateTime?
+  approvedBy    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("hospitals")
+}
+
+model Agency {
+  id          String   @id @default(cuid())
+  name        String
+  type        String
+  region      String
+  contactInfo Json?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("agencies")
+}
+
+model Facility {
+  id          String   @id @default(cuid())
+  name        String
+  type        String
+  address     String
+  city        String
+  state       String
+  zipCode     String
+  phone       String?
+  email       String?
+  region      String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("facilities")
+}
+
+model Trip {
+  id                    String   @id @default(cuid())
+  tripNumber            String   @unique
+  patientName           String
+  fromLocation          String
+  toLocation            String
+  originLatitude        Float?
+  originLongitude       Float?
+  destinationLatitude   Float?
+  destinationLongitude  Float?
+  tripCost              Float?
+  distanceMiles         Float?
+  responseTimeMinutes   Int?
+  scheduledTime         DateTime
+  actualStartTime       DateTime?
+  actualEndTime         DateTime?
+  status                String
+  priority              String
+  notes                 String?
+  assignedTo            String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("trips")
+}
+
+model Unit {
+  id             String   @id @default(cuid())
+  agencyId       String
+  unitNumber     String
+  type           String
+  capabilities   String[]
+  currentStatus  String
+  currentLocation String?
+  shiftStart     String?
+  shiftEnd       String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("units")
+}
+
+model SystemAnalytics {
+  id          String   @id @default(cuid())
+  metricName  String
+  metricValue Json
+  timestamp   DateTime @default(now())
+  createdAt   DateTime @default(now())
+  userId      String?
+
+  @@map("system_analytics")
+}

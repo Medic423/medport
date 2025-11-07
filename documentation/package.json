@@ -1,0 +1,35 @@
+{
+  "name": "tcc-application",
+  "version": "1.0.0",
+  "description": "TCC Emergency Medical Services Management System",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\"",
+    "dev:clean": "pkill -f 'node|npm|vite|nodemon|ts-node' && sleep 3 && npm run dev",
+    "dev:health": "./scripts/check-server-health.sh",
+    "dev:safe": "npm run dev:health && npm run dev:clean",
+    "build": "npm run build --workspace=frontend && npm run build --workspace=backend",
+    "start": "npm run start --workspace=backend",
+    "test": "npm run test --workspace=backend && npm run test --workspace=frontend",
+    "contract:test:dev": "API_URL=http://localhost:5001 node test-api-simple.js",
+    "contract:test:prod": "API_URL=https://vercel-bqfo02a73-chuck-ferrells-projects.vercel.app node test-api-simple.js",
+    "monitor:dev": "API_URL=http://localhost:5001 INTERVAL=60 bash scripts/monitor-feeds.sh",
+    "monitor:prod": "API_URL=https://vercel-bqfo02a73-chuck-ferrells-projects.vercel.app INTERVAL=60 bash scripts/monitor-feeds.sh"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "prisma": "^6.19.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "dependencies": {
+    "axios": "^1.12.2",
+    "bcryptjs": "^3.0.2"
+  }
+}
