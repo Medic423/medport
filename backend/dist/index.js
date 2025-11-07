@@ -29,6 +29,10 @@ const backup_1 = __importDefault(require("./routes/backup"));
 const maintenance_1 = __importDefault(require("./routes/maintenance"));
 const healthcareLocations_1 = __importDefault(require("./routes/healthcareLocations"));
 const agency_1 = __importDefault(require("./routes/agency"));
+const healthcareAgencies_1 = __importDefault(require("./routes/healthcareAgencies"));
+const healthcareDestinations_1 = __importDefault(require("./routes/healthcareDestinations"));
+const healthcareSubUsers_1 = __importDefault(require("./routes/healthcareSubUsers"));
+const emsSubUsers_1 = __importDefault(require("./routes/emsSubUsers"));
 // Load environment variables
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -104,6 +108,10 @@ app.use('/api/ems/analytics', emsAnalytics_1.default);
 app.use('/api/backup', backup_1.default);
 app.use('/api/maintenance', maintenance_1.default);
 app.use('/api/healthcare/locations', healthcareLocations_1.default);
+app.use('/api/healthcare/agencies', healthcareAgencies_1.default);
+app.use('/api/healthcare/destinations', healthcareDestinations_1.default);
+app.use('/api/healthcare/sub-users', healthcareSubUsers_1.default);
+app.use('/api/ems/sub-users', emsSubUsers_1.default);
 app.use('/api/agency', agency_1.default);
 // Public endpoints for healthcare users
 app.get('/api/public/categories', async (req, res) => {
@@ -135,50 +143,29 @@ app.get('/api/public/categories', async (req, res) => {
 app.get('/api/public/hospitals', async (req, res) => {
     try {
         const prisma = databaseManager_1.databaseManager.getPrismaClient();
-        // Load BOTH facilities and hospitals to support all user types
-        const [facilities, hospitals] = await Promise.all([
-            prisma.facility.findMany({
-                where: { isActive: true },
-                select: {
-                    id: true,
-                    name: true,
-                    address: true,
-                    city: true,
-                    state: true,
-                    zipCode: true,
-                    phone: true,
-                    email: true,
-                    type: true,
-                    latitude: true,
-                    longitude: true
-                }
-            }),
-            prisma.hospital.findMany({
-                where: { isActive: true },
-                select: {
-                    id: true,
-                    name: true,
-                    address: true,
-                    city: true,
-                    state: true,
-                    zipCode: true,
-                    phone: true,
-                    email: true,
-                    type: true,
-                    latitude: true,
-                    longitude: true
-                }
-            })
-        ]);
-        // Merge both arrays and remove duplicates by name
-        const allFacilities = [...facilities, ...hospitals];
-        const uniqueFacilities = allFacilities.filter((facility, index, self) => index === self.findIndex((f) => f.name === facility.name));
+        // Only query hospitals table for production data (schema uses Hospital model)
+        const hospitals = await prisma.hospital.findMany({
+            where: { isActive: true },
+            select: {
+                id: true,
+                name: true,
+                address: true,
+                city: true,
+                state: true,
+                zipCode: true,
+                phone: true,
+                email: true,
+                type: true,
+                latitude: true,
+                longitude: true
+            }
+        });
         // Sort by name
-        uniqueFacilities.sort((a, b) => a.name.localeCompare(b.name));
-        console.log('TCC_DEBUG: Public hospitals endpoint - Facilities:', facilities.length, 'Hospitals:', hospitals.length, 'Total unique:', uniqueFacilities.length);
+        hospitals.sort((a, b) => a.name.localeCompare(b.name));
+        console.log('TCC_DEBUG: Public hospitals endpoint - Hospitals:', hospitals.length);
         res.json({
             success: true,
-            data: uniqueFacilities,
+            data: hospitals,
             message: 'Hospitals retrieved successfully'
         });
     }
@@ -203,10 +190,15 @@ app.get('/api/test-db', async (req, res) => {
         // Try a simple connection test first
         await databaseManager_1.databaseManager.getPrismaClient().$connect();
         const result = await databaseManager_1.databaseManager.getPrismaClient().$queryRaw `SELECT version() as version, now() as current_time`;
+        const hospitalCount = await databaseManager_1.databaseManager.getPrismaClient().hospital.count();
+        const hospitals = await databaseManager_1.databaseManager.getPrismaClient().hospital.findMany({ take: 2 });
         res.json({
             success: true,
             message: 'Database connection successful',
-            data: result
+            data: result,
+            hospitalCount: hospitalCount,
+            sampleHospitals: hospitals,
+            databaseUrl: process.env.DATABASE_URL ? process.env.DATABASE_URL.substring(0, 30) + '...' : 'Not set'
         });
     }
     catch (error) {

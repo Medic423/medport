@@ -13,7 +13,7 @@ export interface CreateTripRequest {
     createdById: string | null;
 }
 export interface UpdateTripStatusRequest {
-    status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+    status: 'PENDING' | 'PENDING_DISPATCH' | 'ACCEPTED' | 'DECLINED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
     assignedAgencyId?: string;
     assignedUnitId?: string;
     acceptedTimestamp?: string;
@@ -42,6 +42,8 @@ export interface EnhancedCreateTripRequest {
     patientWeight?: string;
     specialNeeds?: string;
     insuranceCompany?: string;
+    patientAgeYears?: number;
+    patientAgeCategory?: 'NEWBORN' | 'INFANT' | 'TODDLER' | 'ADULT';
     fromLocation: string;
     fromLocationId?: string;
     pickupLocationId?: string;
@@ -59,6 +61,7 @@ export interface EnhancedCreateTripRequest {
     notes?: string;
     priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
     healthcareUserId?: string;
+    status?: 'PENDING' | 'PENDING_DISPATCH';
     createdByTCCUserId?: string;
     createdByTCCUserEmail?: string;
     createdVia?: string;
@@ -111,6 +114,8 @@ export declare class TripService {
             isolation: boolean;
             bariatric: boolean;
             notes: string | null;
+            patientAgeYears: number | null;
+            patientAgeCategory: string | null;
         };
         error?: undefined;
     } | {
@@ -130,7 +135,9 @@ export declare class TripService {
         healthcareUserId?: string;
     }): Promise<{
         success: boolean;
-        data: ({
+        data: {
+            fromLocation: any;
+            toLocation: any;
             distanceMiles: number;
             estimatedTripTimeMinutes: number;
             healthcareLocation: {
@@ -139,7 +146,7 @@ export declare class TripService {
                 city: string;
                 state: string;
                 locationName: string;
-            } | null;
+            };
             assignedUnit: {
                 id: string;
                 agency: {
@@ -148,25 +155,25 @@ export declare class TripService {
                 };
                 type: string;
                 unitNumber: string;
-            } | null;
+            };
             destinationFacility: {
                 id: string;
                 name: string;
                 type: string;
-            } | null;
+            };
             originFacility: {
                 id: string;
                 name: string;
                 type: string;
-            } | null;
+            };
             pickupLocation: {
                 id: string;
                 name: string;
-                contactPhone: string | null;
-                contactEmail: string | null;
-                floor: string | null;
-                room: string | null;
-            } | null;
+                contactPhone: string;
+                contactEmail: string;
+                floor: string;
+                room: string;
+            };
             id: string;
             createdAt: Date;
             updatedAt: Date;
@@ -177,8 +184,6 @@ export declare class TripService {
             specialNeeds: string | null;
             originFacilityId: string | null;
             destinationFacilityId: string | null;
-            fromLocation: string | null;
-            toLocation: string | null;
             fromLocationId: string | null;
             isMultiLocationFacility: boolean;
             scheduledTime: Date | null;
@@ -208,85 +213,9 @@ export declare class TripService {
             isolation: boolean;
             bariatric: boolean;
             notes: string | null;
-        } | {
-            distanceMiles: null;
-            estimatedTripTimeMinutes: null;
-            healthcareLocation: {
-                id: string;
-                facilityType: string;
-                city: string;
-                state: string;
-                locationName: string;
-            } | null;
-            assignedUnit: {
-                id: string;
-                agency: {
-                    id: string;
-                    name: string;
-                };
-                type: string;
-                unitNumber: string;
-            } | null;
-            destinationFacility: {
-                id: string;
-                name: string;
-                type: string;
-            } | null;
-            originFacility: {
-                id: string;
-                name: string;
-                type: string;
-            } | null;
-            pickupLocation: {
-                id: string;
-                name: string;
-                contactPhone: string | null;
-                contactEmail: string | null;
-                floor: string | null;
-                room: string | null;
-            } | null;
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            status: string;
-            tripNumber: string | null;
-            patientId: string;
-            patientWeight: string | null;
-            specialNeeds: string | null;
-            originFacilityId: string | null;
-            destinationFacilityId: string | null;
-            fromLocation: string | null;
-            toLocation: string | null;
-            fromLocationId: string | null;
-            isMultiLocationFacility: boolean;
-            scheduledTime: Date | null;
-            transportLevel: string;
-            urgencyLevel: string | null;
-            priority: string;
-            specialRequirements: string | null;
-            diagnosis: string | null;
-            mobilityLevel: string | null;
-            oxygenRequired: boolean;
-            monitoringRequired: boolean;
-            generateQRCode: boolean;
-            qrCodeData: string | null;
-            selectedAgencies: string[];
-            notificationRadius: number | null;
-            requestTimestamp: Date;
-            acceptedTimestamp: Date | null;
-            pickupTimestamp: Date | null;
-            arrivalTimestamp: Date | null;
-            departureTimestamp: Date | null;
-            completionTimestamp: Date | null;
-            pickupLocationId: string | null;
-            assignedAgencyId: string | null;
-            assignedUnitId: string | null;
-            createdById: string | null;
-            healthcareCreatedById: string | null;
-            isolation: boolean;
-            bariatric: boolean;
-            notes: string | null;
-        })[];
+            patientAgeYears: number | null;
+            patientAgeCategory: string | null;
+        }[];
         error?: undefined;
     } | {
         success: boolean;
@@ -311,25 +240,25 @@ export declare class TripService {
                 };
                 type: string;
                 unitNumber: string;
-            } | null;
+            };
             destinationFacility: {
                 id: string;
                 name: string;
                 type: string;
-            } | null;
+            };
             originFacility: {
                 id: string;
                 name: string;
                 type: string;
-            } | null;
+            };
             pickupLocation: {
                 id: string;
                 name: string;
-                contactPhone: string | null;
-                contactEmail: string | null;
-                floor: string | null;
-                room: string | null;
-            } | null;
+                contactPhone: string;
+                contactEmail: string;
+                floor: string;
+                room: string;
+            };
         } & {
             id: string;
             createdAt: Date;
@@ -372,6 +301,8 @@ export declare class TripService {
             isolation: boolean;
             bariatric: boolean;
             notes: string | null;
+            patientAgeYears: number | null;
+            patientAgeCategory: string | null;
         };
         error?: undefined;
     }>;
@@ -401,7 +332,7 @@ export declare class TripService {
                 lastMaintenance: Date | null;
                 nextMaintenance: Date | null;
                 lastStatusUpdate: Date;
-            } | null;
+            };
             destinationFacility: {
                 email: string | null;
                 id: string;
@@ -424,7 +355,7 @@ export declare class TripService {
                 requiresReview: boolean;
                 approvedAt: Date | null;
                 approvedBy: string | null;
-            } | null;
+            };
             originFacility: {
                 email: string | null;
                 id: string;
@@ -447,7 +378,7 @@ export declare class TripService {
                 requiresReview: boolean;
                 approvedAt: Date | null;
                 approvedBy: string | null;
-            } | null;
+            };
             pickupLocation: {
                 id: string;
                 name: string;
@@ -460,7 +391,7 @@ export declare class TripService {
                 contactEmail: string | null;
                 floor: string | null;
                 room: string | null;
-            } | null;
+            };
         } & {
             id: string;
             createdAt: Date;
@@ -503,6 +434,8 @@ export declare class TripService {
             isolation: boolean;
             bariatric: boolean;
             notes: string | null;
+            patientAgeYears: number | null;
+            patientAgeCategory: string | null;
         };
         error?: undefined;
     } | {
@@ -545,7 +478,7 @@ export declare class TripService {
                 city: string;
                 state: string;
                 locationName: string;
-            } | null;
+            };
         } & {
             id: string;
             createdAt: Date;
@@ -588,6 +521,8 @@ export declare class TripService {
             isolation: boolean;
             bariatric: boolean;
             notes: string | null;
+            patientAgeYears: number | null;
+            patientAgeCategory: string | null;
         };
         error?: undefined;
     }>;
@@ -646,6 +581,8 @@ export declare class TripService {
             isolation: boolean;
             bariatric: boolean;
             notes: string | null;
+            patientAgeYears: number | null;
+            patientAgeCategory: string | null;
         }[];
         error?: undefined;
     } | {
@@ -682,8 +619,8 @@ export declare class TripService {
         smsNotifications: boolean;
         newTripAlerts: boolean;
         statusUpdates: boolean;
-        emailAddress: null;
-        phoneNumber: null;
+        emailAddress: any;
+        phoneNumber: any;
     }>;
     /**
      * Update notification settings for a user
@@ -691,7 +628,7 @@ export declare class TripService {
     updateNotificationSettings(userId: string, settings: any): Promise<{
         success: boolean;
         data: any;
-        error: null;
+        error: any;
     }>;
     /**
      * Update trip times
@@ -744,6 +681,8 @@ export declare class TripService {
             isolation: boolean;
             bariatric: boolean;
             notes: string | null;
+            patientAgeYears: number | null;
+            patientAgeCategory: string | null;
         };
         error?: undefined;
     } | {
@@ -802,7 +741,7 @@ export declare class TripService {
                 city: string;
                 state: string;
                 locationName: string;
-            } | null;
+            };
         } & {
             id: string;
             createdAt: Date;
@@ -845,6 +784,8 @@ export declare class TripService {
             isolation: boolean;
             bariatric: boolean;
             notes: string | null;
+            patientAgeYears: number | null;
+            patientAgeCategory: string | null;
         };
         error?: undefined;
     }>;
@@ -895,6 +836,8 @@ export declare class TripService {
             isolation: boolean;
             bariatric: boolean;
             notes: string | null;
+            patientAgeYears: number | null;
+            patientAgeCategory: string | null;
         };
         error?: undefined;
     } | {
@@ -953,6 +896,8 @@ export declare class TripService {
             isolation: boolean;
             bariatric: boolean;
             notes: string | null;
+            patientAgeYears: number | null;
+            patientAgeCategory: string | null;
         };
         error?: undefined;
     }>;
@@ -967,7 +912,7 @@ export declare class TripService {
             declinedResponses: number;
             pendingResponses: number;
         };
-        error: null;
+        error: any;
     }>;
     /**
      * Create agency response
@@ -987,10 +932,10 @@ export declare class TripService {
             estimatedArrival: Date | null;
             isSelected: boolean;
         };
-        error: null;
+        error: any;
     } | {
         success: boolean;
-        data: null;
+        data: any;
         error: any;
     }>;
     /**
@@ -1019,7 +964,7 @@ export declare class TripService {
                 lastMaintenance: Date | null;
                 nextMaintenance: Date | null;
                 lastStatusUpdate: Date;
-            } | null;
+            };
         } & {
             id: string;
             createdAt: Date;
@@ -1033,10 +978,10 @@ export declare class TripService {
             estimatedArrival: Date | null;
             isSelected: boolean;
         };
-        error: null;
+        error: any;
     } | {
         success: boolean;
-        data: null;
+        data: any;
         error: string;
     }>;
     /**
@@ -1055,14 +1000,14 @@ export declare class TripService {
             response: string;
             responseTimestamp: Date;
             responseNotes: string;
-            estimatedArrival: Date | null;
+            estimatedArrival: Date;
             isSelected: boolean;
-            assignedUnitId: string | null;
+            assignedUnitId: string;
             assignedUnit: {
                 id: string;
                 unitNumber: string;
                 type: string;
-            } | null;
+            };
             createdAt: Date;
             updatedAt: Date;
             trip: {
@@ -1072,7 +1017,7 @@ export declare class TripService {
                 toLocation: any;
                 transportLevel: any;
                 urgencyLevel: any;
-            } | null;
+            };
         }[];
         error?: undefined;
     } | {
@@ -1089,14 +1034,14 @@ export declare class TripService {
             id: string;
             response: string;
         };
-        error: null;
+        error: any;
     }>;
     /**
      * Select agency for trip
      */
     selectAgencyForTrip(responseId: string): Promise<{
         success: boolean;
-        data: null;
+        data: any;
         error: string;
     } | {
         success: boolean;
@@ -1104,7 +1049,7 @@ export declare class TripService {
             tripId: string;
             responseId: string;
         };
-        error: null;
+        error: any;
     }>;
     /**
      * Validate unit assignment

@@ -23,8 +23,9 @@ class AuthService {
             let user = null;
             let userType = 'ADMIN';
             let userData;
+            let mustChangePassword = false;
             // Try to find user in CenterUser table first
-            user = await db.centerUser.findUnique({
+            user = await db.centerUser?.findUnique({
                 where: { email }
             });
             if (user) {
@@ -32,20 +33,22 @@ class AuthService {
             }
             // If not found, try HealthcareUser table
             if (!user) {
-                user = await db.healthcareUser.findUnique({
+                user = await db.healthcareUser?.findUnique({
                     where: { email }
                 });
                 if (user) {
                     userType = 'HEALTHCARE';
+                    mustChangePassword = !!user.mustChangePassword;
                 }
             }
             // If still not found, try EMSUser table
             if (!user) {
-                user = await db.eMSUser.findUnique({
+                user = await db.eMSUser?.findUnique({
                     where: { email }
                 });
                 if (user) {
                     userType = 'EMS';
+                    mustChangePassword = !!user.mustChangePassword;
                 }
             }
             console.log('TCC_DEBUG: User found in database:', user ? { id: user.id, email: user.email, name: user.name, isActive: user.isActive, userType } : 'null');
@@ -100,12 +103,14 @@ class AuthService {
                 facilityName: userType === 'HEALTHCARE' ? user.facilityName : undefined,
                 agencyName: userType === 'EMS' ? user.agencyName : undefined,
                 agencyId: userType === 'EMS' ? user.agencyId : undefined,
-                manageMultipleLocations: userType === 'HEALTHCARE' ? user.manageMultipleLocations : undefined // ✅ NEW: Multi-location flag
+                manageMultipleLocations: userType === 'HEALTHCARE' ? user.manageMultipleLocations : undefined, // ✅ NEW: Multi-location flag
+                orgAdmin: userType === 'HEALTHCARE' || userType === 'EMS' ? !!user.orgAdmin : undefined
             };
             return {
                 success: true,
                 user: userData,
-                token
+                token,
+                mustChangePassword
             };
         }
         catch (error) {
@@ -165,7 +170,8 @@ class AuthService {
                     name: user.name,
                     userType: 'EMS',
                     agencyName: user.agencyName,
-                    agencyId: user.agencyId
+                    agencyId: user.agencyId,
+                    orgAdmin: !!user.orgAdmin
                 };
             }
             if (!user || !user.isActive) {
@@ -180,7 +186,8 @@ class AuthService {
                 facilityName: decoded.userType === 'HEALTHCARE' ? user.facilityName : undefined,
                 agencyName: decoded.userType === 'EMS' ? user.agencyName : undefined,
                 agencyId: decoded.userType === 'EMS' ? user.agencyId : undefined,
-                manageMultipleLocations: decoded.userType === 'HEALTHCARE' ? user.manageMultipleLocations : undefined
+                manageMultipleLocations: decoded.userType === 'HEALTHCARE' ? user.manageMultipleLocations : undefined,
+                orgAdmin: decoded.userType === 'HEALTHCARE' || decoded.userType === 'EMS' ? !!user.orgAdmin : undefined
             };
         }
         catch (error) {
@@ -213,6 +220,64 @@ class AuthService {
     }
     async createRegularUser(userData) {
         return this.createUser({ ...userData, userType: 'USER' });
+    }
+    validatePasswordStrength(password) {
+        if (typeof password !== 'string' || password.length < 8) {
+            return 'Password must be at least 8 characters';
+        }
+        if (!/[A-Z]/.test(password)) {
+            return 'Password must include at least one uppercase letter';
+        }
+        if (!/[a-z]/.test(password)) {
+            return 'Password must include at least one lowercase letter';
+        }
+        if (!/[0-9]/.test(password)) {
+            return 'Password must include at least one number';
+        }
+        return null;
+    }
+    async changePassword(params) {
+        const { email, userType, currentPassword, newPassword } = params;
+        const validationError = this.validatePasswordStrength(newPassword);
+        if (validationError) {
+            return { success: false, error: validationError };
+        }
+        const db = databaseManager_1.databaseManager.getPrismaClient();
+        // Locate user record by table based on userType
+        let user = null;
+        if (userType === 'ADMIN' || userType === 'USER') {
+            user = await db.centerUser.findUnique({ where: { email } });
+        }
+        else if (userType === 'HEALTHCARE') {
+            user = await db.healthcareUser.findUnique({ where: { email } });
+        }
+        else if (userType === 'EMS') {
+            user = await db.eMSUser.findUnique({ where: { email } });
+        }
+        if (!user || !user.isActive) {
+            return { success: false, error: 'Account not found or inactive' };
+        }
+        const isCurrentValid = await bcryptjs_1.default.compare(currentPassword, user.password);
+        if (!isCurrentValid) {
+            return { success: false, error: 'Current password is incorrect' };
+        }
+        const hashed = await bcryptjs_1.default.hash(newPassword, 12);
+        try {
+            if (userType === 'ADMIN' || userType === 'USER') {
+                await db.centerUser.update({ where: { email }, data: { password: hashed } });
+            }
+            else if (userType === 'HEALTHCARE') {
+                await db.healthcareUser.update({ where: { email }, data: { password: hashed, mustChangePassword: false } });
+            }
+            else if (userType === 'EMS') {
+                await db.eMSUser.update({ where: { email }, data: { password: hashed, mustChangePassword: false } });
+            }
+        }
+        catch (err) {
+            console.error('changePassword update error:', err);
+            return { success: false, error: 'Failed to update password' };
+        }
+        return { success: true };
     }
 }
 exports.AuthService = AuthService;

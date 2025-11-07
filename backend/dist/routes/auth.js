@@ -82,7 +82,8 @@ router.post('/login', async (req, res) => {
             success: true,
             message: 'Login successful',
             user: result.user,
-            token: result.token
+            token: result.token,
+            mustChangePassword: result.mustChangePassword === true
         });
     }
     catch (error) {
@@ -91,6 +92,36 @@ router.post('/login', async (req, res) => {
             success: false,
             error: 'Internal server error'
         });
+    }
+});
+/**
+ * PUT /api/auth/password/change
+ * Change password for the authenticated user
+ */
+router.put('/password/change', authenticateAdmin_1.authenticateToken, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body || {};
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ success: false, error: 'Current and new password are required' });
+        }
+        if (!req.user) {
+            return res.status(401).json({ success: false, error: 'Unauthorized' });
+        }
+        const result = await authService_1.authService.changePassword({
+            email: req.user.email,
+            userType: req.user.userType,
+            currentPassword,
+            newPassword
+        });
+        if (!result.success) {
+            // Weak password or wrong current password → 400; other cases may also respond 400 for simplicity
+            return res.status(400).json({ success: false, error: result.error || 'Password change failed' });
+        }
+        return res.json({ success: true, message: 'Password updated successfully' });
+    }
+    catch (error) {
+        console.error('Password change error:', error);
+        return res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 /**
@@ -160,6 +191,9 @@ router.post('/healthcare/register', async (req, res) => {
                 error: 'A facility with this name already exists. Please use a different facility name.'
             });
         }
+        // Determine if this is the first account for this facility (orgAdmin=true for first)
+        const existingForFacility = await hospitalDB.healthcareUser.count({ where: { facilityName } });
+        const isFirst = existingForFacility === 0;
         // Create new healthcare user
         console.log('MULTI_LOC: Creating healthcare user with manageMultipleLocations:', manageMultipleLocations);
         const user = await hospitalDB.healthcareUser.create({
@@ -171,7 +205,8 @@ router.post('/healthcare/register', async (req, res) => {
                 facilityType,
                 manageMultipleLocations: manageMultipleLocations || false, // ✅ NEW: Multi-location flag
                 userType: 'HEALTHCARE',
-                isActive: false // Requires admin approval
+                isActive: false, // Requires admin approval
+                orgAdmin: isFirst
             }
         });
         // Also create a corresponding Hospital record in Center database for TCC dashboard
@@ -451,6 +486,9 @@ router.post('/ems/register', async (req, res) => {
                 error: 'An agency with this name already exists. Please use a different agency name.'
             });
         }
+        // Determine if this is the first account for this agency (orgAdmin=true for first)
+        const existingForAgency = await db.eMSUser.count({ where: { agencyName } });
+        const isFirst = existingForAgency === 0;
         // Create new EMS user
         const user = await db.eMSUser.create({
             data: {
@@ -459,7 +497,8 @@ router.post('/ems/register', async (req, res) => {
                 name,
                 agencyName,
                 userType: 'EMS',
-                isActive: true // Auto-approve new EMS registrations
+                isActive: true, // Auto-approve new EMS registrations
+                orgAdmin: isFirst
             }
         });
         // Also create a corresponding EMSAgency record in Center database for TCC dashboard
@@ -580,25 +619,45 @@ router.get('/users', authenticateAdmin_1.authenticateAdmin, async (req, res) => 
                 error: 'Only administrators can view all users'
             });
         }
-        const centerDB = (await Promise.resolve().then(() => __importStar(require('../services/databaseManager')))).databaseManager.getPrismaClient();
-        const users = await centerDB.centerUser.findMany({
-            select: {
-                id: true,
-                email: true,
-                name: true,
-                userType: true,
-                isActive: true,
-                createdAt: true,
-                updatedAt: true
-            },
-            orderBy: {
-                createdAt: 'desc'
-            }
-        });
-        res.json({
-            success: true,
-            users
-        });
+        const db = (await Promise.resolve().then(() => __importStar(require('../services/databaseManager')))).databaseManager.getPrismaClient();
+        const includeSubUsers = req.query.includeSubUsers === 'true';
+        const onlySubUsers = req.query.onlySubUsers === 'true';
+        const [centers, healthcare, ems] = await Promise.all([
+            db.centerUser.findMany({
+                select: { id: true, email: true, name: true, userType: true, isActive: true, createdAt: true, updatedAt: true }
+            }),
+            db.healthcareUser.findMany({
+                select: { id: true, email: true, name: true, userType: true, isActive: true, createdAt: true, updatedAt: true, isSubUser: true, parentUserId: true, facilityName: true, orgAdmin: true }
+            }),
+            db.eMSUser.findMany({
+                select: { id: true, email: true, name: true, userType: true, isActive: true, createdAt: true, updatedAt: true, isSubUser: true, parentUserId: true, agencyName: true, orgAdmin: true }
+            })
+        ]);
+        let all = [
+            ...centers.map(u => ({ ...u, domain: 'CENTER', isSubUser: false, parentUserId: null })),
+            ...healthcare.map(u => ({ ...u, domain: 'HEALTHCARE' })),
+            ...ems.map(u => ({ ...u, domain: 'EMS' }))
+        ];
+        if (onlySubUsers) {
+            all = all.filter(u => u.isSubUser === true);
+        }
+        else if (!includeSubUsers) {
+            // Default shows all; configure here if you want to hide sub-users by default
+        }
+        const parentIds = Array.from(new Set(all.map(u => u.parentUserId).filter(Boolean)));
+        const parentMap = new Map();
+        if (parentIds.length) {
+            const [parentHC, parentEMS] = await Promise.all([
+                db.healthcareUser.findMany({ where: { id: { in: parentIds } }, select: { id: true, email: true, name: true } }),
+                db.eMSUser.findMany({ where: { id: { in: parentIds } }, select: { id: true, email: true, name: true } })
+            ]);
+            parentHC.forEach(p => parentMap.set(p.id, p));
+            parentEMS.forEach(p => parentMap.set(p.id, p));
+        }
+        const users = all
+            .map(u => ({ ...u, parent: u.parentUserId ? (parentMap.get(u.parentUserId) || null) : null }))
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        res.json({ success: true, users });
     }
     catch (error) {
         console.error('Get users error:', error);
@@ -606,6 +665,54 @@ router.get('/users', authenticateAdmin_1.authenticateAdmin, async (req, res) => 
             success: false,
             error: 'Internal server error'
         });
+    }
+});
+/**
+ * PATCH /api/auth/admin/users/:domain/:id
+ * Update user fields (ADMIN only). Domain: CENTER|HEALTHCARE|EMS
+ */
+router.patch('/admin/users/:domain/:id', authenticateAdmin_1.authenticateAdmin, async (req, res) => {
+    try {
+        if (req.user?.userType !== 'ADMIN') {
+            return res.status(403).json({ success: false, error: 'Only administrators can update users' });
+        }
+        const { domain, id } = req.params;
+        const { userType, isActive, orgAdmin } = req.body || {};
+        const db = (await Promise.resolve().then(() => __importStar(require('../services/databaseManager')))).databaseManager.getPrismaClient();
+        let updated = null;
+        if (domain === 'CENTER') {
+            const data = {};
+            if (typeof userType === 'string')
+                data.userType = userType; // e.g., ADMIN|USER
+            if (typeof isActive === 'boolean')
+                data.isActive = isActive;
+            updated = await db.centerUser.update({ where: { id }, data, select: { id: true, email: true, name: true, userType: true, isActive: true } });
+        }
+        else if (domain === 'HEALTHCARE') {
+            const data = {};
+            if (typeof isActive === 'boolean')
+                data.isActive = isActive;
+            if (typeof orgAdmin === 'boolean')
+                data.orgAdmin = orgAdmin;
+            // Do NOT allow changing healthcare userType to ADMIN via this route
+            updated = await db.healthcareUser.update({ where: { id }, data, select: { id: true, email: true, name: true, userType: true, isActive: true, isSubUser: true, parentUserId: true } });
+        }
+        else if (domain === 'EMS') {
+            const data = {};
+            if (typeof isActive === 'boolean')
+                data.isActive = isActive;
+            if (typeof orgAdmin === 'boolean')
+                data.orgAdmin = orgAdmin;
+            updated = await db.eMSUser.update({ where: { id }, data, select: { id: true, email: true, name: true, userType: true, isActive: true, isSubUser: true, parentUserId: true } });
+        }
+        else {
+            return res.status(400).json({ success: false, error: 'Invalid domain' });
+        }
+        res.json({ success: true, data: updated });
+    }
+    catch (error) {
+        console.error('Admin update user error:', error);
+        res.status(500).json({ success: false, error: 'Failed to update user' });
     }
 });
 /**
@@ -675,7 +782,8 @@ router.post('/ems/login', async (req, res) => {
                 agencyName: user.agencyName,
                 agencyId: user.agencyId || user.id // Use agencyId if available, fallback to user id for legacy
             },
-            token
+            token,
+            mustChangePassword: !!user.mustChangePassword
         });
     }
     catch (error) {
@@ -747,9 +855,11 @@ router.post('/healthcare/login', async (req, res) => {
                 userType: 'HEALTHCARE',
                 facilityName: user.facilityName,
                 facilityType: user.facilityType,
-                manageMultipleLocations: user.manageMultipleLocations // ✅ NEW: Multi-location flag
+                manageMultipleLocations: user.manageMultipleLocations, // ✅ NEW: Multi-location flag
+                orgAdmin: user.orgAdmin === true
             },
-            token
+            token,
+            mustChangePassword: !!user.mustChangePassword
         });
     }
     catch (error) {

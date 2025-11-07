@@ -39,6 +39,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const tripService_1 = require("../services/tripService");
 const authenticateAdmin_1 = require("../middleware/authenticateAdmin");
+const dateUtils_1 = require("../utils/dateUtils");
+const databaseManager_1 = require("../services/databaseManager");
+const healthcareTripDispatchService_1 = require("../services/healthcareTripDispatchService");
 const router = express_1.default.Router();
 /**
  * POST /api/trips
@@ -113,7 +116,7 @@ router.post('/enhanced', authenticateAdmin_1.authenticateAdmin, async (req, res)
     try {
         console.log('TCC_DEBUG: Create enhanced trip request received:', req.body);
         console.log('TCC_DEBUG: Authenticated user:', req.user);
-        const { patientId, patientWeight, specialNeeds, insuranceCompany, fromLocation, fromLocationId, pickupLocationId, toLocation, scheduledTime, transportLevel, urgencyLevel, diagnosis, mobilityLevel, oxygenRequired, monitoringRequired, generateQRCode, selectedAgencies, notificationRadius, notes, priority, 
+        const { patientId, patientWeight, specialNeeds, insuranceCompany, fromLocation, fromLocationId, pickupLocationId, toLocation, scheduledTime, transportLevel, urgencyLevel, diagnosis, mobilityLevel, oxygenRequired, monitoringRequired, generateQRCode, selectedAgencies, notificationRadius, notes, priority, status, // ✅ Phase 3: Allow custom status for dispatch workflow
         // TCC Command: Audit trail fields
         createdByTCCUserId, createdByTCCUserEmail, createdVia } = req.body;
         // Validation
@@ -158,6 +161,7 @@ router.post('/enhanced', authenticateAdmin_1.authenticateAdmin, async (req, res)
             notificationRadius: notificationRadius || 100,
             notes,
             priority,
+            status, // ✅ Phase 3: Allow custom status for dispatch workflow (PENDING_DISPATCH)
             healthcareUserId: req.user?.userType === 'HEALTHCARE' ? req.user.id : undefined, // ✅ CRITICAL: Set healthcare user ID
             // ✅ TCC Command: Audit trail
             createdByTCCUserId,
@@ -305,10 +309,10 @@ router.put('/:id/status', async (req, res) => {
                 error: 'Status is required'
             });
         }
-        if (!['PENDING', 'ACCEPTED', 'DECLINED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'].includes(status)) {
+        if (!['PENDING', 'PENDING_DISPATCH', 'ACCEPTED', 'DECLINED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'].includes(status)) {
             return res.status(400).json({
                 success: false,
-                error: 'Invalid status. Must be PENDING, ACCEPTED, DECLINED, IN_PROGRESS, COMPLETED, or CANCELLED'
+                error: 'Invalid status. Must be PENDING, PENDING_DISPATCH, ACCEPTED, DECLINED, IN_PROGRESS, COMPLETED, or CANCELLED'
             });
         }
         const updateData = {
@@ -345,6 +349,83 @@ router.put('/:id/status', async (req, res) => {
     }
     catch (error) {
         console.error('TCC_DEBUG: Update trip status error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Internal server error'
+        });
+    }
+});
+/**
+ * POST /api/trips/:id/authorize
+ * Authorize a future trip to be scheduled for today
+ * Moves a trip from "Future" section to "Today's" section
+ */
+router.post('/:id/authorize', authenticateAdmin_1.authenticateAdmin, async (req, res) => {
+    try {
+        console.log('TCC_DEBUG: Authorize trip request:', { id: req.params.id, user: req.user });
+        const { id } = req.params;
+        // Get the trip to verify it exists
+        const getTripResult = await tripService_1.tripService.getTripById(id);
+        if (!getTripResult.success || !getTripResult.data) {
+            return res.status(404).json({
+                success: false,
+                error: 'Trip not found'
+            });
+        }
+        const trip = getTripResult.data;
+        // Verify the trip has a scheduledTime
+        if (!trip.scheduledTime) {
+            return res.status(400).json({
+                success: false,
+                error: 'Cannot authorize trip without a scheduled time'
+            });
+        }
+        // Verify the trip is in the future category
+        const category = (0, dateUtils_1.getDateCategory)(new Date(trip.scheduledTime));
+        if (category !== 'future') {
+            return res.status(400).json({
+                success: false,
+                error: `Cannot authorize trip. Trip is in '${category}' category, only 'future' trips can be authorized`
+            });
+        }
+        // Update the scheduledTime to today's date/time
+        // Keep the same time portion but change the date to today
+        const now = new Date();
+        // Create a new Date with today's date and keep the original time
+        const originalScheduledTime = new Date(trip.scheduledTime);
+        const authorizedTime = new Date(now);
+        authorizedTime.setHours(originalScheduledTime.getHours(), originalScheduledTime.getMinutes(), 0, 0);
+        // If the time has already passed today, set it to now instead
+        if (authorizedTime < now) {
+            authorizedTime.setTime(now.getTime());
+        }
+        // We need to update scheduledTime and status directly via Prisma
+        const prisma = databaseManager_1.databaseManager.getPrismaClient();
+        // Update scheduledTime to today and set status to PENDING_DISPATCH
+        // This makes the trip visible to EMS with Accept/Decline buttons
+        const updatedTrip = await prisma.transportRequest.update({
+            where: { id },
+            data: {
+                scheduledTime: authorizedTime,
+                status: 'PENDING_DISPATCH' // Change status so EMS can see Accept/Decline buttons
+            }
+        });
+        console.log('TCC_DEBUG: Trip authorized successfully:', {
+            tripId: id,
+            originalTime: trip.scheduledTime,
+            authorizedTime: authorizedTime,
+            originalStatus: trip.status,
+            newStatus: 'PENDING_DISPATCH',
+            user: req.user?.id
+        });
+        res.json({
+            success: true,
+            message: 'Trip authorized successfully. Scheduled time updated to today and status set to PENDING_DISPATCH.',
+            data: updatedTrip
+        });
+    }
+    catch (error) {
+        console.error('TCC_DEBUG: Authorize trip error:', error);
         res.status(500).json({
             success: false,
             error: 'Internal server error'
@@ -550,51 +631,11 @@ router.get('/agencies/:hospitalId', authenticateAdmin_1.authenticateAdmin, async
  * Assign a unit to a trip
  */
 router.put('/:id/assign-unit', async (req, res) => {
-    try {
-        console.log('TCC_DEBUG: Assign unit request:', { id: req.params.id, body: req.body });
-        const { id } = req.params;
-        const { unitId, agencyId } = req.body;
-        if (!unitId) {
-            return res.status(400).json({
-                success: false,
-                error: 'Unit ID is required'
-            });
-        }
-        // Get current trip to preserve status
-        const currentTrip = await tripService_1.tripService.getTripById(id);
-        if (!currentTrip.success) {
-            return res.status(404).json({
-                success: false,
-                error: 'Trip not found'
-            });
-        }
-        // Use the existing updateTripStatus method to assign the unit
-        // DO NOT change status to ACCEPTED - leave it PENDING until healthcare selects an agency
-        const currentStatus = currentTrip.data?.status || 'PENDING';
-        const result = await tripService_1.tripService.updateTripStatus(id, {
-            status: currentStatus, // Preserve current status (should be PENDING)
-            assignedUnitId: unitId,
-            assignedAgencyId: agencyId
-        });
-        if (!result.success) {
-            return res.status(400).json({
-                success: false,
-                error: result.error
-            });
-        }
-        res.json({
-            success: true,
-            message: 'Unit assigned successfully',
-            data: result.data
-        });
-    }
-    catch (error) {
-        console.error('TCC_DEBUG: Assign unit error:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to assign unit to trip'
-        });
-    }
+    // Unit assignment is disabled in Option B. Return 410 Gone.
+    return res.status(410).json({
+        success: false,
+        error: 'Unit assignment is no longer supported. Use agency-level acceptance only.'
+    });
 });
 /**
  * PUT /api/trips/:id/times
@@ -926,6 +967,106 @@ router.post('/calculate-distance', async (req, res) => {
         res.status(500).json({
             success: false,
             error: 'Internal server error'
+        });
+    }
+});
+/**
+ * POST /api/trips/:id/dispatch
+ * Dispatch trip to selected agencies (Phase 3)
+ */
+router.post('/:id/dispatch', authenticateAdmin_1.authenticateAdmin, async (req, res) => {
+    try {
+        console.log('PHASE3_DEBUG: Dispatch trip request received:', req.body);
+        console.log('PHASE3_DEBUG: User from token:', { id: req.user?.id, email: req.user?.email, userType: req.user?.userType });
+        const tripId = req.params.id;
+        const { agencyIds, dispatchMode, notificationRadius } = req.body;
+        // Validation
+        if (!agencyIds || !Array.isArray(agencyIds) || agencyIds.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'agencyIds is required and must be a non-empty array',
+            });
+        }
+        if (!dispatchMode || !['PREFERRED', 'GEOGRAPHIC', 'HYBRID'].includes(dispatchMode)) {
+            return res.status(400).json({
+                success: false,
+                error: 'dispatchMode is required and must be PREFERRED, GEOGRAPHIC, or HYBRID',
+            });
+        }
+        // For all users, we need to resolve the healthcareUserId for the trip
+        // This determines which healthcare user's agencies to use
+        let healthcareUserId = null;
+        // Fetch trip to get the healthcare user who created it
+        const trip = await tripService_1.tripService.getTripById(tripId);
+        const tripData = trip.success && trip.data ? trip.data : null;
+        if (req.user.userType === 'HEALTHCARE') {
+            // For HEALTHCARE users, use the trip's creator if it exists, otherwise use their own ID
+            healthcareUserId = req.user.id;
+            if (tripData?.healthcareCreatedById) {
+                if (tripData.healthcareCreatedById !== healthcareUserId) {
+                    console.log('PHASE3_DEBUG: HEALTHCARE user dispatching trip created by different user:', {
+                        tripCreator: tripData.healthcareCreatedById,
+                        currentUser: healthcareUserId
+                    });
+                    // Use the trip's creator ID instead (for sub-user scenarios)
+                    healthcareUserId = tripData.healthcareCreatedById;
+                    console.log('PHASE3_DEBUG: Using trip creator ID:', healthcareUserId);
+                }
+            }
+        }
+        else {
+            // For ADMIN, USER, EMS, or any other user type, use the trip's healthcareCreatedById
+            if (tripData?.healthcareCreatedById) {
+                healthcareUserId = tripData.healthcareCreatedById;
+                console.log('PHASE3_DEBUG: Non-HEALTHCARE user dispatching trip, using healthcareCreatedById:', healthcareUserId);
+            }
+            else if (tripData?.fromLocationId) {
+                // For old trips without healthcareCreatedById, try to find a healthcare user from the location
+                const prisma = (await Promise.resolve().then(() => __importStar(require('../services/databaseManager')))).databaseManager.getPrismaClient();
+                const location = await prisma.healthcareLocation.findUnique({
+                    where: { id: tripData.fromLocationId },
+                    select: { healthcareUserId: true }
+                });
+                if (location?.healthcareUserId) {
+                    healthcareUserId = location.healthcareUserId;
+                    console.log('PHASE3_DEBUG: Non-HEALTHCARE user dispatching old trip, using location healthcareUserId:', healthcareUserId);
+                }
+                else {
+                    return res.status(400).json({
+                        success: false,
+                        error: 'Trip does not have a healthcare creator assigned and could not determine from location',
+                    });
+                }
+            }
+            else {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Trip does not have a healthcare creator assigned',
+                });
+            }
+        }
+        if (!healthcareUserId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Could not determine healthcare user for trip dispatch',
+            });
+        }
+        const result = await healthcareTripDispatchService_1.healthcareTripDispatchService.dispatchTrip(tripId, healthcareUserId, {
+            agencyIds,
+            dispatchMode,
+            notificationRadius
+        });
+        res.json({
+            success: true,
+            message: 'Trip dispatched successfully',
+            data: result
+        });
+    }
+    catch (error) {
+        console.error('PHASE3_DEBUG: Error dispatching trip:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to dispatch trip'
         });
     }
 });

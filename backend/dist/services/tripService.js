@@ -26,7 +26,7 @@ class TripService {
                 urgencyLevel: data.urgencyLevel || 'Routine',
                 priority: data.priority,
                 status: 'PENDING',
-                assignedUnitId: 'PENDING', // Default to PENDING - unit assignment is optional
+                // assignedUnitId removed from default; units are not used in trip lifecycle
                 specialRequirements: data.specialNeeds || null,
                 diagnosis: null,
                 mobilityLevel: null,
@@ -191,39 +191,87 @@ class TripService {
                 })));
             }
             catch { }
-            // Calculate distance and time for each trip
+            // Calculate distance and time for each trip, and format location strings
             const tripsWithDistance = await Promise.all(trips.map(async (trip) => {
                 try {
+                    // Format fromLocation: use healthcareLocation, originFacility, or fallback to fromLocation string
+                    let fromLocationStr = trip.fromLocation || '';
+                    if (!fromLocationStr && trip.healthcareLocation) {
+                        fromLocationStr = trip.healthcareLocation.locationName ||
+                            `${trip.healthcareLocation.city || ''}, ${trip.healthcareLocation.state || ''}`.trim();
+                    }
+                    if (!fromLocationStr && trip.originFacility) {
+                        fromLocationStr = trip.originFacility.name || '';
+                    }
+                    // Format toLocation: use destinationFacility or fallback to toLocation string
+                    let toLocationStr = trip.toLocation || '';
+                    if (!toLocationStr && trip.destinationFacility) {
+                        toLocationStr = trip.destinationFacility.name || '';
+                    }
                     // Calculate distance and time if we have location data
-                    if (trip.fromLocation && trip.toLocation) {
+                    if (fromLocationStr && toLocationStr) {
                         const distanceResult = await this.calculateTripDistanceAndTime({
-                            fromLocation: trip.fromLocation,
-                            toLocation: trip.toLocation
+                            fromLocation: fromLocationStr,
+                            toLocation: toLocationStr
                         });
                         if (distanceResult.success && distanceResult.data) {
                             return {
                                 ...trip,
+                                fromLocation: fromLocationStr,
+                                toLocation: toLocationStr,
                                 distanceMiles: distanceResult.data.distance,
                                 estimatedTripTimeMinutes: distanceResult.data.estimatedTimeMinutes
                             };
                         }
                     }
-                    // If no location data or calculation failed, return trip as-is
+                    // If no location data or calculation failed, return trip with formatted locations
                     return {
                         ...trip,
+                        fromLocation: fromLocationStr,
+                        toLocation: toLocationStr,
                         distanceMiles: null,
                         estimatedTripTimeMinutes: null
                     };
                 }
                 catch (error) {
                     console.error('TCC_DEBUG: Error calculating distance for trip:', trip.id, error);
+                    // Format locations even on error
+                    const fromLocationStr = trip.fromLocation ||
+                        (trip.healthcareLocation?.locationName) ||
+                        (trip.originFacility?.name) || '';
+                    const toLocationStr = trip.toLocation ||
+                        (trip.destinationFacility?.name) || '';
                     return {
                         ...trip,
+                        fromLocation: fromLocationStr,
+                        toLocation: toLocationStr,
                         distanceMiles: null,
                         estimatedTripTimeMinutes: null
                     };
                 }
             }));
+            // Enrich with creator info for healthcare-created trips
+            try {
+                const creatorIds = Array.from(new Set(tripsWithDistance
+                    .map(t => t.healthcareCreatedById)
+                    .filter(Boolean)));
+                if (creatorIds.length > 0) {
+                    const creators = await prisma.healthcareUser.findMany({
+                        where: { id: { in: creatorIds } },
+                        select: { id: true, name: true, email: true }
+                    });
+                    const creatorMap = new Map(creators.map(c => [c.id, c]));
+                    for (const t of tripsWithDistance) {
+                        const cid = t.healthcareCreatedById;
+                        if (cid && creatorMap.has(cid)) {
+                            t.createdBy = creatorMap.get(cid);
+                        }
+                    }
+                }
+            }
+            catch (e) {
+                console.warn('TCC_DEBUG: creator enrichment skipped', e);
+            }
             return { success: true, data: tripsWithDistance };
         }
         catch (error) {
@@ -302,16 +350,7 @@ class TripService {
             assignedAgencyId: data.assignedAgencyId
         });
         try {
-            // Validate unit assignment if provided
-            if (data.assignedUnitId) {
-                console.log('EMS_UNIT_ASSIGN: Starting unit validation...');
-                const unit = await this.validateUnitAssignment(data.assignedUnitId, data.assignedAgencyId);
-                if (!unit) {
-                    console.log('EMS_UNIT_ASSIGN: Unit validation FAILED - returning error');
-                    return { success: false, error: 'Invalid unit assignment or unit not available' };
-                }
-                console.log('EMS_UNIT_ASSIGN: Unit validation PASSED');
-            }
+            // Ignore assignedUnitId: unit assignment is disabled (Option B)
             const updateData = {
                 status: data.status,
                 updatedAt: new Date()
@@ -416,10 +455,7 @@ class TripService {
                     console.log('TCC_EDIT_DEBUG: No existing pickup location found, skipping update');
                 }
             }
-            // Handle unit assignment
-            if (data.assignedUnitId) {
-                updateData.assignedUnitId = data.assignedUnitId;
-            }
+            // Do not set assignedUnitId
             if (data.assignedAgencyId) {
                 updateData.assignedAgencyId = data.assignedAgencyId;
             }
@@ -439,14 +475,7 @@ class TripService {
             if (data.completionTimestamp) {
                 updateData.completionTimestamp = new Date(data.completionTimestamp);
             }
-            // Update unit status if assigning to a trip
-            if (data.assignedUnitId && data.status === 'ACCEPTED') {
-                await this.updateUnitStatus(data.assignedUnitId, 'COMMITTED');
-            }
-            // Update unit status if completing/cancelling a trip
-            if (data.assignedUnitId && (data.status === 'COMPLETED' || data.status === 'CANCELLED')) {
-                await this.updateUnitStatus(data.assignedUnitId, 'AVAILABLE');
-            }
+            // Do not update unit status; units are not in workflow
             // TCC_EDIT_DEBUG: Log final update data before Prisma call
             console.log('TCC_EDIT_DEBUG: Final updateData to be sent to Prisma:', JSON.stringify(updateData, null, 2));
             const trip = await prisma.transportRequest.update({
@@ -523,6 +552,8 @@ class TripService {
                 patientId: data.patientId || 'PAT-UNKNOWN',
                 patientWeight: data.patientWeight || null,
                 specialNeeds: data.specialNeeds || null,
+                patientAgeYears: data.patientAgeCategory === 'ADULT' ? (data.patientAgeYears ?? null) : null,
+                patientAgeCategory: data.patientAgeCategory || null,
                 fromLocation: data.fromLocation,
                 isMultiLocationFacility, // ✅ NEW: Analytics flag
                 toLocation: data.toLocation,
@@ -530,7 +561,7 @@ class TripService {
                 transportLevel: data.transportLevel,
                 urgencyLevel: data.urgencyLevel,
                 priority: data.priority || 'MEDIUM',
-                status: 'PENDING',
+                status: data.status || 'PENDING', // ✅ Phase 3: Use provided status or default to PENDING
                 specialRequirements: data.specialNeeds || null,
                 diagnosis: data.diagnosis || null,
                 mobilityLevel: data.mobilityLevel || null,
@@ -902,10 +933,7 @@ class TripService {
             if (data.estimatedArrival !== undefined) {
                 updateData.estimatedArrival = data.estimatedArrival ? new Date(data.estimatedArrival) : null;
             }
-            if (data.assignedUnitId !== undefined) {
-                updateData.assignedUnitId = data.assignedUnitId;
-                console.log('TCC_DEBUG: Setting assignedUnitId on agency response:', data.assignedUnitId);
-            }
+            // Ignore assignedUnitId on agency responses
             console.log('TCC_DEBUG: Update data for agency response:', updateData);
             const response = await prisma.agencyResponse.update({
                 where: { id },

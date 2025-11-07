@@ -7,6 +7,7 @@ export interface User {
     agencyName?: string;
     agencyId?: string;
     manageMultipleLocations?: boolean;
+    orgAdmin?: boolean;
 }
 export interface LoginCredentials {
     email: string;
@@ -17,6 +18,7 @@ export interface AuthResult {
     user?: User;
     token?: string;
     error?: string;
+    mustChangePassword?: boolean;
 }
 export declare class AuthService {
     private jwtSecret;
@@ -40,6 +42,16 @@ export declare class AuthService {
         password: string;
         name: string;
     }): Promise<User>;
+    private validatePasswordStrength;
+    changePassword(params: {
+        email: string;
+        userType: 'ADMIN' | 'USER' | 'HEALTHCARE' | 'EMS';
+        currentPassword: string;
+        newPassword: string;
+    }): Promise<{
+        success: boolean;
+        error?: string;
+    }>;
 }
 export declare const authService: AuthService;
 export default authService;
