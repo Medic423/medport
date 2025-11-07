@@ -9,10 +9,10 @@ on:
       - feature/ps-refactor
 
 env:
-  APP_NAME: TraccEms-Dev-Frontend
-  SLOT_NAME: production
-  FOLDER_PATH: /frontend
-  PACKAGE_PATH: /frontend/dist
+  APP_NAME: 'TraccEms-Dev-Frontend'
+  SLOT_NAME: 'production'
+  FOLDER_PATH: './frontend'
+  PACKAGE_PATH: './frontend/dist'
 
 jobs:
   build-and-deploy:
