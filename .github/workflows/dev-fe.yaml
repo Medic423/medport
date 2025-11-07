@@ -12,7 +12,6 @@ env:
   APP_NAME: 'TraccEms-Dev-Frontend'
   SLOT_NAME: 'production'
   FOLDER_PATH: './frontend'
-  PACKAGE_PATH: './frontend/dist'
 
 jobs:
   build-and-deploy:
@@ -46,4 +45,4 @@ jobs:
           action: "upload"
           app_location: "${{ env.FOLDER_PATH }}" # Location of your React app
           api_location: "" # Leave empty if no API
-          output_location: '${{ env.PACKAGE_PATH}}' # Output directory of your React app build
+          output_location: 'dist' # Output directory of your React app build
