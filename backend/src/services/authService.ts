@@ -45,6 +45,16 @@ export class AuthService {
 
       // Use unified database to find user
       const db = databaseManager.getPrismaClient(); // ✅ FIXED: Use unified database
+      
+      // Defensive check: ensure database client is available
+      if (!db) {
+        console.error('❌ AuthService.login: Database client is undefined');
+        return {
+          success: false,
+          error: 'Database connection unavailable. Please contact support.'
+        };
+      }
+      
       let user: any = null;
       let userType: 'ADMIN' | 'USER' | 'HEALTHCARE' | 'EMS' = 'ADMIN';
       let userData: User;

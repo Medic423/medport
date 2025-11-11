@@ -8,7 +8,7 @@ const { databaseManager } = require('../backend/dist/services/databaseManager');
 const bcrypt = require('bcryptjs');
 
 async function checkAdminPassword() {
-  let prisma;
+  let prisma;z
   try {
     console.log('Checking admin@tcc.com credentials...\n');
     
@@ -66,4 +66,8 @@ async function checkAdminPassword() {
 }
 
 checkAdminPassword();
+
+
+
+
 

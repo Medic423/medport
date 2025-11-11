@@ -341,6 +341,103 @@ router.put('/healthcare/facility/update', authenticateAdmin, async (req: Authent
 });
 
 /**
+ * GET /api/auth/ems/agency/info
+ * Get current EMS agency information (Authenticated)
+ */
+router.get('/ems/agency/info', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!req.user?.email) {
+      return res.status(401).json({
+        success: false,
+        error: 'User not authenticated'
+      });
+    }
+
+    const db = databaseManager.getPrismaClient();
+    const centerDB = databaseManager.getPrismaClient();
+
+    // Find EMS user by email
+    const emsUser = await db.eMSUser.findUnique({
+      where: { email: req.user.email }
+    });
+
+    if (!emsUser) {
+      return res.status(404).json({
+        success: false,
+        error: 'EMS user not found'
+      });
+    }
+
+    // Find agency record
+    const agencyId = emsUser.agencyId || emsUser.id;
+    const agency = await centerDB.eMSAgency.findFirst({
+      where: { email: emsUser.email }
+    });
+
+    if (!agency) {
+      // Return user data with empty agency fields
+      return res.json({
+        success: true,
+        data: {
+          agencyName: emsUser.agencyName,
+          contactName: emsUser.name,
+          email: emsUser.email,
+          phone: '',
+          address: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          capabilities: [],
+          operatingHours: '24/7'
+        }
+      });
+    }
+
+    // Parse operating hours if it's a string like "00:00 - 23:59"
+    let operatingHoursStart = '00:00';
+    let operatingHoursEnd = '23:59';
+    if (agency.operatingHours) {
+      if (typeof agency.operatingHours === 'string') {
+        const match = agency.operatingHours.match(/(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})/);
+        if (match) {
+          operatingHoursStart = match[1];
+          operatingHoursEnd = match[2];
+        } else if (agency.operatingHours !== '24/7') {
+          // Try to parse other formats
+          operatingHoursStart = '00:00';
+          operatingHoursEnd = '23:59';
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        agencyName: agency.name,
+        contactName: agency.contactName,
+        email: agency.email,
+        phone: agency.phone || '',
+        address: agency.address || '',
+        city: agency.city || '',
+        state: agency.state || '',
+        zipCode: agency.zipCode || '',
+        capabilities: agency.capabilities || [],
+        operatingHours: {
+          start: operatingHoursStart,
+          end: operatingHoursEnd
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get EMS agency info error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve agency information'
+    });
+  }
+});
+
+/**
  * PUT /api/auth/ems/agency/update
  * Update EMS agency information (Authenticated)
  */
@@ -389,6 +486,9 @@ router.put('/ems/agency/update', authenticateAdmin, async (req: AuthenticatedReq
     }
     
     console.log('TCC_DEBUG: Found EMS user:', existingUser.id);
+    const previousEmail = existingUser.email;
+    const agencyId = existingUser.agencyId || existingUser.id;
+    const emailChanged = typeof updateData.email === 'string' && updateData.email !== previousEmail;
     
     // Update EMS user record using the found user ID
     const updatedUser = await db.eMSUser.update({
@@ -405,10 +505,22 @@ router.put('/ems/agency/update', authenticateAdmin, async (req: AuthenticatedReq
 
     console.log('TCC_DEBUG: Attempting to find existing Agency record in Center database...');
     
-    // Check if agency record exists
-    const existingAgency = await centerDB.eMSAgency.findFirst({
-      where: { email: updateData.email }
+    // Check if agency record exists - try by previous email first, then new email, then by agencyId
+    let existingAgency = await centerDB.eMSAgency.findFirst({
+      where: { email: previousEmail }
     });
+    
+    if (!existingAgency && updateData.email !== previousEmail) {
+      existingAgency = await centerDB.eMSAgency.findFirst({
+        where: { email: updateData.email }
+      });
+    }
+    
+    if (!existingAgency && agencyId) {
+      existingAgency = await centerDB.eMSAgency.findUnique({
+        where: { id: agencyId }
+      });
+    }
 
     let agencyUpdateResult;
     if (existingAgency) {
@@ -453,10 +565,46 @@ router.put('/ems/agency/update', authenticateAdmin, async (req: AuthenticatedReq
 
     console.log('TCC_DEBUG: Agency record operation result:', agencyUpdateResult);
 
+    let newToken: string | undefined;
+    if (emailChanged) {
+      try {
+        newToken = jwt.sign(
+          {
+            id: agencyId,
+            email: updatedUser.email,
+            userType: 'EMS',
+            agencyId
+          },
+          process.env.JWT_SECRET || 'fallback-secret',
+          { expiresIn: '24h' }
+        );
+        res.cookie('tcc_token', newToken, {
+          httpOnly: true,
+          sameSite: 'lax',
+          secure: process.env.NODE_ENV === 'production',
+          maxAge: 24 * 60 * 60 * 1000
+        });
+      } catch (tokenError) {
+        console.error('TCC_DEBUG: Failed to issue new token after email change:', tokenError);
+      }
+    }
+
+    const responseUser = {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      name: updatedUser.name,
+      userType: 'EMS' as const,
+      agencyName: updatedUser.agencyName,
+      agencyId,
+      orgAdmin: !!(updatedUser as any).orgAdmin
+    };
+
     res.json({
       success: true,
       message: 'Agency information updated successfully',
-      data: updatedUser
+      data: responseUser,
+      token: newToken,
+      emailChanged
     });
 
   } catch (error) {

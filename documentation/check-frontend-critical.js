@@ -75,3 +75,7 @@ if (results.length === 0) {
   console.log('\n💡 Review these files to see if "Critical" is being set as a default or hardcoded value');
 }
 
+
+
+
+

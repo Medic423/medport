@@ -57,3 +57,7 @@ rm -f backend-live.pid backend.pid frontend-live.pid frontend.pid 2>/dev/null ||
 echo "✅ TCC dev services stopped"
 
 
+
+
+
+
