@@ -1,1 +1,68 @@
+# Dependencies
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build outputs
+dist/
+build/
+**/dist/
+**/build/
+*.map
+*.js.map
+*.d.ts.map
+*.css.map
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+**/.env
+**/.env.local
+**/.env.*.local
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.log
+
+# Deployment
+.vercel/
 .vercel
+vercel.json
+
+# Temporary files
+*.tmp
+*.temp
+*.pid
+*.zip
+*.tar.gz
+*.backup
+
+# Database
+*.sqlite
+*.db
+*.sql.backup
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+.nyc_output/
+*.test.js.snap
+
+# Prisma
+prisma/migrations/*.sql.backup
