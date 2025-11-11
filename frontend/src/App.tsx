@@ -84,6 +84,14 @@ function AppContent() {
     }
   };
 
+  const handleUserUpdate = (updatedUser: User, token?: string) => {
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    if (token) {
+      localStorage.setItem('token', token);
+    }
+  };
+
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('token');
@@ -141,7 +149,7 @@ function AppContent() {
     if (user.userType === 'HEALTHCARE') {
       return <HealthcareDashboard user={user} onLogout={handleLogout} />;
     } else if (user.userType === 'EMS') {
-      return <EMSDashboard user={user} onLogout={handleLogout} />;
+      return <EMSDashboard user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} />;
     } else {
       // ADMIN and USER types go to TCC Dashboard
       return (

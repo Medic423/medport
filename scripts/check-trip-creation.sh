@@ -100,3 +100,7 @@ else
     echo -e "${RED}❌ Some smoke tests failed! Trip creation may not work.${NC}"
     exit 1
 fi
+
+
+
+

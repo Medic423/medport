@@ -101,3 +101,7 @@ async function addHospitals() {
 addHospitals()
   .finally(() => prisma.$disconnect());
 
+
+
+
+

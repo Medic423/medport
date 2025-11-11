@@ -26,21 +26,33 @@ import { categorizeTripByDate, formatSectionHeader, DateCategory } from '../util
 // import RevenueSettings from './RevenueSettings'; // Replaced by AgencySettings
 // import EMSAnalytics from './EMSAnalytics'; // Moved to backup - will move to Admin later
 
-interface EMSDashboardProps {
-  user: {
-    id: string;
-    email: string;
-    name: string;
-    userType: string;
-    agencyName?: string;
-  };
-  onLogout: () => void;
+interface EMSUser {
+  id: string;
+  email: string;
+  name: string;
+  userType: string;
+  agencyName?: string;
+  agencyId?: string;
+  orgAdmin?: boolean;
 }
 
-const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
+interface AgencySaveResult {
+  user: EMSUser;
+  token?: string;
+  emailChanged?: boolean;
+}
+
+interface EMSDashboardProps {
+  user: EMSUser;
+  onLogout: () => void;
+  onUserUpdate?: (user: EMSUser, token?: string) => void;
+}
+
+const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdate }) => {
   const [activeTab, setActiveTab] = useState('available'); // Default to Available Trips (new landing page)
   const [completedTrips, setCompletedTrips] = useState<any[]>([]);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   // First-login enforcement for EMS header
   useEffect(() => {
     try {
@@ -52,6 +64,12 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
     } catch {}
   }, [user?.id]);
   
+  useEffect(() => {
+    if (!alert) return;
+    const timeout = setTimeout(() => setAlert(null), 5000);
+    return () => clearTimeout(timeout);
+  }, [alert]);
+
   // Format time from minutes to hours and minutes
   const formatTime = (minutes: number | string): string => {
     const totalMinutes = typeof minutes === 'string' ? parseInt(minutes) : minutes;
@@ -84,6 +102,15 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [settingsSuccess, setSettingsSuccess] = useState(false);
+
+  useEffect(() => {
+    setSettingsData(prev => ({
+      ...prev,
+      agencyName: user.agencyName || '',
+      email: user.email || '',
+      contactName: user.name || ''
+    }));
+  }, [user.agencyName, user.email, user.name]);
   
   // Revenue calculation settings
   const [revenueSettings, setRevenueSettings] = useState({
@@ -508,6 +535,30 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
     });
   };
 
+  const handleAgencySaveSuccess = (result: AgencySaveResult) => {
+    const updatedUser = result.user;
+
+    if (onUserUpdate) {
+      onUserUpdate(updatedUser, result.token);
+    }
+
+    setSettingsData(prev => ({
+      ...prev,
+      agencyName: updatedUser.agencyName || prev.agencyName,
+      email: updatedUser.email,
+      contactName: updatedUser.name
+    }));
+
+    setAlert({
+      type: 'success',
+      message: result.emailChanged
+        ? 'Agency settings saved. Your login email has been updated.'
+        : 'Agency settings saved successfully.'
+    });
+
+    setActiveTab('available');
+  };
+
   // Calculate revenue preview on component mount
   useEffect(() => {
     calculateRevenuePreview();
@@ -719,6 +770,25 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {alert && (
+          <div
+            className={`mb-6 flex items-start justify-between rounded-md border px-4 py-3 ${
+              alert.type === 'success'
+                ? 'border-green-200 bg-green-50 text-green-800'
+                : 'border-red-200 bg-red-50 text-red-800'
+            }`}
+          >
+            <span className="text-sm font-medium">{alert.message}</span>
+            <button
+              type="button"
+              onClick={() => setAlert(null)}
+              className="ml-4 text-sm font-medium underline"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         {/* Unit selection modal removed (units not used) */}
         {/* Overview tab removed - Available Trips is now the landing page */}
 
@@ -1065,7 +1135,7 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
         {activeTab === 'agency-info' && (
           <AgencySettings 
             user={user} 
-            onSaveSuccess={() => setActiveTab('available')} 
+            onSaveSuccess={handleAgencySaveSuccess} 
           />
         )}
 

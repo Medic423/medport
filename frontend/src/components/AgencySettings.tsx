@@ -1,16 +1,26 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { CheckCircle, AlertCircle } from 'lucide-react';
 import api from '../services/api';
 
+interface AgencySettingsUser {
+  id: string;
+  email: string;
+  name: string;
+  userType: string;
+  agencyName?: string;
+  agencyId?: string;
+  orgAdmin?: boolean;
+}
+
+interface AgencySaveSuccessPayload {
+  user: AgencySettingsUser;
+  token?: string;
+  emailChanged?: boolean;
+}
+
 interface AgencySettingsProps {
-  user: {
-    id: string;
-    email: string;
-    name: string;
-    userType: string;
-    agencyName?: string;
-  };
-  onSaveSuccess?: () => void;
+  user: AgencySettingsUser;
+  onSaveSuccess?: (payload: AgencySaveSuccessPayload) => void;
 }
 
 interface AgencyInfo {
@@ -53,6 +63,7 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('Agency settings saved successfully!');
 
   const states = [
     'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
@@ -72,6 +83,55 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
     'Bariatric',
     'Isolation'
   ];
+
+  // Load agency data on mount
+  useEffect(() => {
+    const loadAgencyData = async () => {
+      try {
+        const response = await api.get('/api/auth/ems/agency/info');
+        if (response.data?.success && response.data?.data) {
+          const data = response.data.data;
+          setAgencyInfo(prev => ({
+            ...prev,
+            agencyName: data.agencyName || user.agencyName || '',
+            contactName: data.contactName || user.name || '',
+            email: data.email || user.email || '',
+            phone: data.phone || '',
+            address: data.address || '',
+            city: data.city || '',
+            state: data.state || prev.state || 'PA',
+            zipCode: data.zipCode || '',
+            capabilities: Array.isArray(data.capabilities) ? data.capabilities : [],
+            operatingHours: data.operatingHours && typeof data.operatingHours === 'object'
+              ? {
+                  start: data.operatingHours.start || '00:00',
+                  end: data.operatingHours.end || '23:59'
+                }
+              : prev.operatingHours
+          }));
+        } else {
+          // Fallback to user data if API fails
+          setAgencyInfo(prev => ({
+            ...prev,
+            agencyName: user.agencyName || '',
+            contactName: user.name || '',
+            email: user.email || ''
+          }));
+        }
+      } catch (error) {
+        console.error('Error loading agency data:', error);
+        // Fallback to user data on error
+        setAgencyInfo(prev => ({
+          ...prev,
+          agencyName: user.agencyName || '',
+          contactName: user.name || '',
+          email: user.email || ''
+        }));
+      }
+    };
+
+    loadAgencyData();
+  }, [user.agencyName, user.name, user.email]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -138,16 +198,71 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
       const response = await api.put('/api/auth/ems/agency/update', payload);
       console.log('TCC_DEBUG: Success response:', response.data);
 
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
-      
-      // Navigate to Available Trips tab after successful save
-      if (onSaveSuccess) {
-        setTimeout(() => onSaveSuccess(), 1000); // Small delay to show success message
+      if (response.data?.success) {
+        setSuccessMessage(response.data.emailChanged ? 'Agency settings saved. Login email updated successfully.' : 'Agency settings saved successfully!');
+        setSuccess(true);
+        setTimeout(() => setSuccess(false), 4000);
+
+        // Reload agency data to get updated capabilities and other fields
+        try {
+          const reloadResponse = await api.get('/api/auth/ems/agency/info');
+          if (reloadResponse.data?.success && reloadResponse.data?.data) {
+            const data = reloadResponse.data.data;
+            setAgencyInfo(prev => ({
+              ...prev,
+              agencyName: data.agencyName || prev.agencyName,
+              contactName: data.contactName || prev.contactName,
+              email: data.email || prev.email,
+              phone: data.phone || prev.phone,
+              address: data.address || prev.address,
+              city: data.city || prev.city,
+              state: data.state || prev.state,
+              zipCode: data.zipCode || prev.zipCode,
+              capabilities: Array.isArray(data.capabilities) ? data.capabilities : prev.capabilities,
+              operatingHours: data.operatingHours && typeof data.operatingHours === 'object'
+                ? {
+                    start: data.operatingHours.start || prev.operatingHours.start,
+                    end: data.operatingHours.end || prev.operatingHours.end
+                  }
+                : prev.operatingHours
+            }));
+          }
+        } catch (reloadError) {
+          console.error('Error reloading agency data after save:', reloadError);
+          // Continue even if reload fails
+        }
+
+        if (response.data?.data) {
+          const updatedUser: AgencySettingsUser = {
+            id: response.data.data.id,
+            email: response.data.data.email,
+            name: response.data.data.name,
+            userType: response.data.data.userType,
+            agencyName: response.data.data.agencyName,
+            agencyId: response.data.data.agencyId,
+            orgAdmin: response.data.data.orgAdmin,
+          };
+
+          onSaveSuccess?.({
+            user: updatedUser,
+            token: response.data.token,
+            emailChanged: response.data.emailChanged,
+          });
+        } else {
+          onSaveSuccess?.({
+            user,
+            token: response.data.token,
+            emailChanged: response.data.emailChanged,
+          });
+        }
+      } else {
+        const apiError = response.data?.error || 'Failed to save settings. Please try again.';
+        setError(apiError);
+        throw new Error(apiError);
       }
     } catch (err: any) {
       console.error('Error saving settings:', err);
-      setError(err.message || 'Failed to save settings. Please try again.');
+      setError(err.response?.data?.error || err.message || 'Failed to save settings. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -168,7 +283,7 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
                 <CheckCircle className="h-5 w-5 text-green-400" />
                 <div className="ml-3">
                   <p className="text-sm font-medium text-green-800">
-                    Agency settings saved successfully!
+                    {successMessage}
                   </p>
                 </div>
               </div>
@@ -348,7 +463,7 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label htmlFor="operatingHours.start" className="block text-sm text-gray-600">
-                    Start Time
+                    Start Time (24-hour format)
                   </label>
                   <input
                     type="time"
@@ -356,12 +471,13 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
                     name="operatingHours.start"
                     value={agencyInfo.operatingHours.start}
                     onChange={handleInputChange}
+                    step="60"
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
                   />
                 </div>
                 <div>
                   <label htmlFor="operatingHours.end" className="block text-sm text-gray-600">
-                    End Time
+                    End Time (24-hour format)
                   </label>
                   <input
                     type="time"
@@ -369,11 +485,17 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
                     name="operatingHours.end"
                     value={agencyInfo.operatingHours.end}
                     onChange={handleInputChange}
+                    step="60"
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
                   />
                 </div>
               </div>
-              <p className="mt-1 text-xs text-gray-500">Set to 00:00 - 23:59 for 24/7 operation</p>
+              <p className="mt-1 text-xs text-gray-500">
+                Use 24-hour format (00:00 to 23:59). Set to 00:00 - 23:59 for 24/7 operation.
+                {typeof window !== 'undefined' && /Mac|iPhone|iPod|iPad/i.test(navigator.userAgent) && (
+                  <span className="block mt-1 text-orange-600">Note: Your browser may display times in 12-hour format, but values are stored in 24-hour format.</span>
+                )}
+              </p>
             </div>
 
             {/* Notification Preferences */}

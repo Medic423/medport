@@ -9,7 +9,21 @@ const DEFAULT_DEV_URL = 'http://localhost:5001';
 // Backend production URL (ensure this matches the latest Vercel backend deployment or set VITE_API_URL)
 const DEFAULT_PROD_URL = 'https://backend-i8skd8g0y-chuck-ferrells-projects.vercel.app';
 
-let API_BASE_URL = EXPLICIT_API_URL || (import.meta.env.DEV ? '' : DEFAULT_PROD_URL);
+// Runtime config via public/config.js → window.__TCC_CONFIG__
+type TCCRuntimeConfig = { apiBaseUrl?: string } | undefined;
+function readRuntimeConfig(): TCCRuntimeConfig {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const g: any = typeof window !== 'undefined' ? (window as any) : undefined;
+    return g && g.__TCC_CONFIG__ ? (g.__TCC_CONFIG__ as TCCRuntimeConfig) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+const RUNTIME_API_URL = readRuntimeConfig()?.apiBaseUrl;
+
+let API_BASE_URL = RUNTIME_API_URL || EXPLICIT_API_URL || (import.meta.env.DEV ? '' : DEFAULT_PROD_URL);
 
 // Guard against accidental cross-environment use
 try {
@@ -130,6 +144,9 @@ export const authAPI = {
 
   changePassword: (data: { currentPassword: string; newPassword: string }) =>
     api.put('/api/auth/password/change', data),
+
+  getEMSAgencyInfo: () =>
+    api.get('/api/auth/ems/agency/info'),
 };
 
 // Hospitals API
