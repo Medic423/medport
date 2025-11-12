@@ -4,9 +4,10 @@ import { authAPI } from '../services/api';
 interface ChangePasswordModalProps {
   isOpen: boolean;
   onClose: () => void;
+  userName?: string;
 }
 
-const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClose }) => {
+const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClose, userName }) => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -74,7 +75,9 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
       <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Change Password</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          Changing Password for {userName || 'User'}
+        </h2>
 
         {error && (
           <div className="mb-3 p-3 rounded border border-red-200 bg-red-50 text-sm text-red-800">{error}</div>

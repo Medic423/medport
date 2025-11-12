@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Key, Copy, Check } from 'lucide-react';
 import api from '../services/api';
 
 interface AdminUserItem {
@@ -27,6 +28,9 @@ const AdminUsersPanel: React.FC = () => {
   const [includeSub, setIncludeSub] = useState(true);
   const [onlySub, setOnlySub] = useState(false);
   const [filter, setFilter] = useState<'ALL' | 'CENTER' | 'HEALTHCARE' | 'EMS'>('ALL');
+  const [resetPasswordModal, setResetPasswordModal] = useState<{ user: AdminUserItem; tempPassword: string } | null>(null);
+  const [resetLoading, setResetLoading] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const load = async () => {
     setLoading(true); setError(null);
@@ -66,6 +70,40 @@ const AdminUsersPanel: React.FC = () => {
       }
     } catch (e: any) {
       setError(e?.response?.data?.error || 'Update failed');
+    }
+  };
+
+  const resetPassword = async (user: AdminUserItem) => {
+    if (!confirm(`Reset password for ${user.name} (${user.email})? They will need to change it on next login.`)) {
+      return;
+    }
+
+    setResetLoading(user.id);
+    try {
+      const res = await api.post(`/api/auth/admin/users/${user.domain}/${user.id}/reset-password`);
+      if (res.data?.success) {
+        setResetPasswordModal({
+          user,
+          tempPassword: res.data.data.tempPassword
+        });
+        setCopied(false);
+      } else {
+        setError(res.data?.error || 'Failed to reset password');
+      }
+    } catch (e: any) {
+      setError(e?.response?.data?.error || 'Failed to reset password');
+    } finally {
+      setResetLoading(null);
+    }
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
     }
   };
 
@@ -132,6 +170,15 @@ const AdminUsersPanel: React.FC = () => {
                   </label>
                 )}
                 <button
+                  onClick={() => resetPassword(u)}
+                  disabled={resetLoading === u.id}
+                  className="ml-2 px-2 py-1 text-xs rounded bg-blue-100 text-blue-800 hover:bg-blue-200 disabled:opacity-50 flex items-center space-x-1"
+                  title="Reset password (generates temporary password)"
+                >
+                  <Key className="h-3 w-3" />
+                  <span>{resetLoading === u.id ? 'Resetting...' : 'Reset Password'}</span>
+                </button>
+                <button
                   onClick={() => updateUser(u, { isActive: !u.isActive })}
                   className={`ml-2 px-2 py-1 text-xs rounded ${u.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
                   title="Toggle active"
@@ -141,6 +188,66 @@ const AdminUsersPanel: React.FC = () => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Reset Password Modal */}
+      {resetPasswordModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Password Reset for {resetPasswordModal.user.name}
+            </h2>
+            <p className="text-sm text-gray-600 mb-4">
+              A temporary password has been generated. The user will be required to change it on their next login.
+            </p>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Temporary Password (copy this - it will only be shown once)
+              </label>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={resetPasswordModal.tempPassword}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 font-mono text-sm"
+                />
+                <button
+                  onClick={() => copyToClipboard(resetPasswordModal.tempPassword)}
+                  className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 flex items-center space-x-1"
+                  title="Copy to clipboard"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="h-4 w-4 text-green-600" />
+                      <span className="text-sm text-green-600">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4" />
+                      <span className="text-sm">Copy</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mb-4">
+              <p className="text-sm text-yellow-800">
+                <strong>Important:</strong> This password is shown only once. Make sure to copy it before closing this dialog.
+              </p>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                onClick={() => setResetPasswordModal(null)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
