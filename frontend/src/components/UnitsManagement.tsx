@@ -14,7 +14,6 @@ import {
   RefreshCw,
   Eye,
   MoreVertical,
-  Navigation
 } from 'lucide-react';
 import api from '../services/api';
 // import UnitLocationManager from './UnitLocationManager'; // Temporarily disabled - file deleted during cleanup
@@ -53,7 +52,6 @@ const UnitsManagement: React.FC<UnitsManagementProps> = ({ user, acceptedTrips =
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<UnitStatus | 'ALL'>('ALL');
   const [typeFilter, setTypeFilter] = useState<UnitType | 'ALL'>('ALL');
-  const [activeTab, setActiveTab] = useState<'units' | 'locations'>('units');
 
   // Form state
   const [formData, setFormData] = useState<UnitFormData>({
@@ -315,54 +313,17 @@ const UnitsManagement: React.FC<UnitsManagementProps> = ({ user, acceptedTrips =
           <h2 className="text-2xl font-bold text-gray-900">Units Management</h2>
           <p className="text-gray-600">Manage your EMS units and track their status</p>
         </div>
-        {activeTab === 'units' && (
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center space-x-2 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Add Unit</span>
-          </button>
-        )}
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="flex items-center space-x-2 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors"
+        >
+          <Plus className="h-4 w-4" />
+          <span>Add Unit</span>
+        </button>
       </div>
-
-      {/* Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-          <button
-            onClick={() => setActiveTab('units')}
-            className={`${
-              activeTab === 'units'
-                ? 'border-orange-500 text-orange-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
-          >
-            <Truck className="h-5 w-5 mr-2" />
-            Units List
-          </button>
-          <button
-            onClick={() => setActiveTab('locations')}
-            className={`${
-              activeTab === 'locations'
-                ? 'border-orange-500 text-orange-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
-          >
-            <Navigation className="h-5 w-5 mr-2" />
-            Unit Locations
-          </button>
-        </nav>
-      </div>
-
 
       {/* Tab Content */}
-      {activeTab === 'locations' ? (
-        <div className="p-4 text-center text-gray-500">
-          <p>Unit location management feature is temporarily disabled.</p>
-          <p className="text-sm mt-2">This feature will be restored in a future update.</p>
-        </div>
-      ) : (
-        <>
+      <>
           {/* Analytics Cards */}
           {analytics && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -671,17 +632,6 @@ const UnitsManagement: React.FC<UnitsManagementProps> = ({ user, acceptedTrips =
                   </div>
                 )}
 
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={formData.isActive}
-                    onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                    className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-                  />
-                  <label className="ml-2 text-sm text-gray-700">On Duty</label>
-                  <p className="ml-2 text-xs text-gray-500">Check if unit is currently on duty</p>
-                </div>
-
                 {formError && (
                   <div className="bg-red-50 border border-red-200 rounded-md p-3">
                     <p className="text-sm text-red-700">{formError}</p>
@@ -715,7 +665,6 @@ const UnitsManagement: React.FC<UnitsManagementProps> = ({ user, acceptedTrips =
         </div>
       )}
         </>
-      )}
     </div>
   );
 };

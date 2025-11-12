@@ -164,30 +164,42 @@ class UnitService {
    */
   async getUnitById(unitId: string): Promise<Unit | null> {
     try {
-      // TODO: Implement proper Unit model in Prisma schema
-      // For now, return mock data
       console.log('TCC_DEBUG: getUnitById called with unitId:', unitId);
       
-      const mockUnit: Unit = {
-        id: unitId,
-        agencyId: 'mock-agency',
-        unitNumber: 'U001',
-        type: 'AMBULANCE',
-        capabilities: ['BLS'],
-        currentStatus: 'AVAILABLE',
-        currentLocation: 'Station 1',
-        crew: ['John Doe', 'Jane Smith'],
-        isActive: true,
-        totalTripsCompleted: 0,
-        averageResponseTime: 0,
-        lastMaintenanceDate: new Date(),
-        nextMaintenanceDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        lastStatusUpdate: new Date(),
-        createdAt: new Date(),
-        updatedAt: new Date()
+      const prisma = databaseManager.getPrismaClient();
+      const unit = await prisma.unit.findUnique({
+        where: { id: unitId },
+        include: {
+          analytics: true,
+          agency: true
+        }
+      });
+
+      if (!unit) {
+        return null;
+      }
+
+      // Transform Prisma unit to our Unit interface
+      const transformedUnit: Unit = {
+        id: unit.id,
+        agencyId: unit.agencyId,
+        unitNumber: unit.unitNumber,
+        type: unit.type as any,
+        capabilities: unit.capabilities || [],
+        currentStatus: (unit.currentStatus || unit.status) as any,
+        currentLocation: unit.currentLocation || 'Unknown',
+        crew: [], // Will be populated from separate crew management
+        isActive: unit.isActive,
+        totalTripsCompleted: unit.analytics?.totalTripsCompleted || 0,
+        averageResponseTime: unit.analytics?.averageResponseTime?.toNumber() || 0,
+        lastMaintenanceDate: unit.lastMaintenance || new Date(),
+        nextMaintenanceDate: unit.nextMaintenance || new Date(),
+        lastStatusUpdate: unit.lastStatusUpdate || unit.updatedAt || new Date(),
+        createdAt: unit.createdAt,
+        updatedAt: unit.updatedAt
       };
 
-      return mockUnit;
+      return transformedUnit;
     } catch (error) {
       console.error('Error getting unit by ID:', error);
       throw new Error('Failed to retrieve unit');
@@ -203,6 +215,9 @@ class UnitService {
       
       const prisma = databaseManager.getPrismaClient();
       
+      // Determine initial status
+      const initialStatus = unitData.status || unitData.currentStatus || 'AVAILABLE';
+      
       // Create the unit in the database
       const newUnit = await prisma.unit.create({
         data: {
@@ -210,12 +225,14 @@ class UnitService {
           unitNumber: unitData.unitNumber,
           type: unitData.type,
           capabilities: unitData.capabilities,
-          status: 'AVAILABLE',
+          status: initialStatus,
+          currentStatus: initialStatus,
           crewSize: 2, // Default crew size
           equipment: [], // Default empty equipment array
           isActive: unitData.isActive,
           lastMaintenance: new Date(),
-          nextMaintenance: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+          nextMaintenance: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+          lastStatusUpdate: new Date()
         },
         include: {
           analytics: true

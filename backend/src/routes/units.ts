@@ -46,8 +46,54 @@ router.get('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
  * Create a new unit for the authenticated agency
  */
 router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
-  // Unit mutations are disabled in Option B. Return 410 Gone.
-  return res.status(410).json({ success: false, error: 'Unit creation is disabled. Units are inventory-only.' });
+  try {
+    const user = req.user;
+    const unitData: UnitFormData = req.body;
+    
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: 'User not authenticated'
+      });
+    }
+    
+    // Determine agencyId based on user type
+    let agencyId: string;
+    
+    if (user.userType === 'EMS') {
+      // For EMS users, use their agencyId
+      agencyId = user.agencyId || user.id;
+      console.log('🔍 Units API: Creating unit for EMS agency:', agencyId);
+    } else if (user.userType === 'ADMIN') {
+      // For admin users, require agencyId in request body (if not provided, use first available agency)
+      agencyId = (unitData as any).agencyId;
+      if (!agencyId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Agency ID is required for admin users'
+        });
+      }
+    } else {
+      return res.status(403).json({
+        success: false,
+        error: 'Unauthorized to create units'
+      });
+    }
+    
+    // Create the unit
+    const newUnit = await unitService.createUnit(unitData, agencyId);
+    
+    res.json({
+      success: true,
+      data: newUnit
+    });
+  } catch (error: any) {
+    console.error('Error creating unit:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to create unit'
+    });
+  }
 });
 
 /**
@@ -154,7 +200,49 @@ router.get('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => 
  * Update unit details
  */
 router.put('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
-  return res.status(410).json({ success: false, error: 'Unit updates are disabled. Units are inventory-only.' });
+  try {
+    const { id } = req.params;
+    const user = req.user;
+    const unitData: UnitFormData = req.body;
+    
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: 'User not authenticated'
+      });
+    }
+    
+    // Determine agencyId for ownership verification
+    let agencyId: string | undefined;
+    
+    if (user.userType === 'EMS') {
+      // For EMS users, verify they own the unit
+      agencyId = user.agencyId || user.id;
+      console.log('🔍 Units API: Updating unit for EMS agency:', agencyId);
+    } else if (user.userType === 'ADMIN') {
+      // Admin users can update any unit (no agencyId restriction)
+      agencyId = undefined;
+    } else {
+      return res.status(403).json({
+        success: false,
+        error: 'Unauthorized to update units'
+      });
+    }
+    
+    // Update the unit
+    const updatedUnit = await unitService.updateUnit(id, unitData, agencyId);
+    
+    res.json({
+      success: true,
+      data: updatedUnit
+    });
+  } catch (error: any) {
+    console.error('Error updating unit:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to update unit'
+    });
+  }
 });
 
 /**
@@ -200,7 +288,53 @@ router.put('/:id/status', authenticateAdmin, async (req: AuthenticatedRequest, r
  * Delete a unit
  */
 router.delete('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
-  return res.status(410).json({ success: false, error: 'Unit deletion is disabled. Units are inventory-only.' });
+  try {
+    const { id } = req.params;
+    const user = req.user;
+    
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: 'User not authenticated'
+      });
+    }
+    
+    // For EMS users, verify they own the unit before deletion
+    if (user.userType === 'EMS') {
+      const agencyId = user.agencyId || user.id;
+      
+      // Get the unit to verify ownership
+      const unit = await unitService.getUnitById(id);
+      if (!unit) {
+        return res.status(404).json({
+          success: false,
+          error: 'Unit not found'
+        });
+      }
+      
+      if (unit.agencyId !== agencyId) {
+        return res.status(403).json({
+          success: false,
+          error: 'You can only delete units belonging to your agency'
+        });
+      }
+    }
+    // Admin users can delete any unit
+    
+    // Delete the unit
+    await unitService.deleteUnit(id);
+    
+    res.json({
+      success: true,
+      message: 'Unit deleted successfully'
+    });
+  } catch (error: any) {
+    console.error('Error deleting unit:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to delete unit'
+    });
+  }
 });
 
 /**
