@@ -5,7 +5,9 @@
 
 set -e
 
-ROOT_DIR="/Users/scooper/Code/tcc-new-project"
+# Get script directory and project root
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 START_SCRIPT="$ROOT_DIR/start-dev.sh"
 HEALTH_URL="http://localhost:5001/health"
 API_BASE="http://localhost:5001"
@@ -13,10 +15,19 @@ API_BASE="http://localhost:5001"
 echo "🚀 TCC Complete Dev Startup"
 echo "==========================="
 
-# Optional pre-clean: rely on start-dev.sh cleanup logic
+# Check for start-dev.sh in root first, then fallback to documentation
 if [ ! -x "$START_SCRIPT" ]; then
-  echo "❌ start-dev.sh not executable or missing at $START_SCRIPT"
-  exit 1
+  # Try documentation location as fallback
+  DOC_START_SCRIPT="$ROOT_DIR/documentation/start-dev.sh"
+  if [ -x "$DOC_START_SCRIPT" ]; then
+    START_SCRIPT="$DOC_START_SCRIPT"
+    echo "⚠️  Using start-dev.sh from documentation folder"
+  else
+    echo "❌ start-dev.sh not found at:"
+    echo "   $START_SCRIPT"
+    echo "   or $DOC_START_SCRIPT"
+    exit 1
+  fi
 fi
 
 echo "▶️  Launching start-dev.sh..."
