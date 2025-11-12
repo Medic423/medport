@@ -933,6 +933,83 @@ router.patch('/admin/users/:domain/:id', authenticateAdmin, async (req: Authenti
 });
 
 /**
+ * Generate temporary password (12 characters: 1 upper, 1 lower, 1 digit, 9 random)
+ */
+function generateTempPassword(): string {
+  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const lower = 'abcdefghijkmnopqrstuvwxyz';
+  const digits = '23456789';
+  const all = upper + lower + digits;
+  let out = '';
+  out += upper[Math.floor(Math.random() * upper.length)];
+  out += lower[Math.floor(Math.random() * lower.length)];
+  out += digits[Math.floor(Math.random() * digits.length)];
+  for (let i = 0; i < 9; i++) out += all[Math.floor(Math.random() * all.length)];
+  return out;
+}
+
+/**
+ * POST /api/auth/admin/users/:domain/:id/reset-password
+ * Reset password for any user (ADMIN only). Generates temporary password.
+ * Domain: CENTER|HEALTHCARE|EMS
+ */
+router.post('/admin/users/:domain/:id/reset-password', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    if (req.user?.userType !== 'ADMIN') {
+      return res.status(403).json({ success: false, error: 'Only administrators can reset passwords' });
+    }
+    
+    const { domain, id } = req.params as { domain: string; id: string };
+    const db = (await import('../services/databaseManager')).databaseManager.getPrismaClient();
+    const bcrypt = (await import('bcryptjs')).default;
+
+    // Generate temporary password
+    const tempPassword = generateTempPassword();
+    const hash = await bcrypt.hash(tempPassword, 12);
+
+    let updated: any = null;
+    if (domain === 'CENTER') {
+      updated = await db.centerUser.update({
+        where: { id },
+        data: { password: hash },
+        select: { id: true, email: true, name: true, userType: true, isActive: true }
+      });
+    } else if (domain === 'HEALTHCARE') {
+      updated = await db.healthcareUser.update({
+        where: { id },
+        data: { password: hash, mustChangePassword: true, isActive: true },
+        select: { id: true, email: true, name: true, userType: true, isActive: true }
+      });
+    } else if (domain === 'EMS') {
+      updated = await db.eMSUser.update({
+        where: { id },
+        data: { password: hash, mustChangePassword: true, isActive: true },
+        select: { id: true, email: true, name: true, userType: true, isActive: true }
+      });
+    } else {
+      return res.status(400).json({ success: false, error: 'Invalid domain' });
+    }
+
+    // Return temp password (one-time display)
+    res.json({ 
+      success: true, 
+      data: { 
+        id: updated.id, 
+        email: updated.email, 
+        name: updated.name,
+        tempPassword 
+      } 
+    });
+  } catch (error: any) {
+    console.error('Admin reset password error:', error);
+    if (error.code === 'P2025') {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+    res.status(500).json({ success: false, error: 'Failed to reset password' });
+  }
+});
+
+/**
  * POST /api/auth/ems/login
  * EMS Agency login endpoint
  */

@@ -185,12 +185,12 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
     setFilteredAvailableTrips(filtered);
   }, [availableTrips, filters]);
 
-  // Load trips from API
+  // Load trips from API with auto-refresh every 10 seconds
   useEffect(() => {
     loadTrips();
     const interval = setInterval(() => {
       loadTrips();
-    }, 30000);
+    }, 10000); // Refresh every 10 seconds
     return () => clearInterval(interval);
   }, []);
 
