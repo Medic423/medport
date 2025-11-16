@@ -34,3 +34,6 @@ ALTER TABLE "healthcare_destinations" ADD CONSTRAINT "healthcare_destinations_he
 
 
 
+
+
+

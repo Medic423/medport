@@ -22,14 +22,16 @@ export interface CreateTripRequest {
 }
 
 export interface UpdateTripStatusRequest {
-  status: 'PENDING' | 'PENDING_DISPATCH' | 'ACCEPTED' | 'DECLINED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  status: 'PENDING' | 'PENDING_DISPATCH' | 'ACCEPTED' | 'DECLINED' | 'IN_PROGRESS' | 'HEALTHCARE_COMPLETED' | 'COMPLETED' | 'CANCELLED';
   assignedAgencyId?: string;
   assignedUnitId?: string;
   acceptedTimestamp?: string;
   pickupTimestamp?: string;
   arrivalTimestamp?: string;
   departureTimestamp?: string;
-  completionTimestamp?: string;
+  completionTimestamp?: string;  // Keep for backward compatibility
+  healthcareCompletionTimestamp?: string;  // NEW: Healthcare completion (patient leaves hospital)
+  emsCompletionTimestamp?: string;  // NEW: EMS completion (arrives at destination)
   urgencyLevel?: 'Routine' | 'Urgent' | 'Emergent';
   transportLevel?: string;
   diagnosis?: string;
@@ -445,22 +447,54 @@ export class TripService {
   /**
    * Update trip status
    */
-  async updateTripStatus(id: string, data: UpdateTripStatusRequest) {
-    console.log('TCC_DEBUG: Updating trip status:', { id, data });
+  async updateTripStatus(id: string, data: UpdateTripStatusRequest, userType?: string) {
+    console.log('TCC_DEBUG: Updating trip status:', { id, data, userType });
     console.log('EMS_UNIT_ASSIGN: updateTripStatus called with:', {
       tripId: id,
       status: data.status,
       assignedUnitId: data.assignedUnitId,
-      assignedAgencyId: data.assignedAgencyId
+      assignedAgencyId: data.assignedAgencyId,
+      userType: userType
     });
     
     try {
       // Ignore assignedUnitId: unit assignment is disabled (Option B)
 
       const updateData: any = {
-        status: data.status,
         updatedAt: new Date()
       };
+
+      // Handle completion based on user type
+      // Defensive logic: Prevent wrong user types from setting wrong completion statuses
+      if (userType === 'HEALTHCARE' && data.status === 'HEALTHCARE_COMPLETED') {
+        // Healthcare completion: set healthcareCompletionTimestamp and status
+        updateData.healthcareCompletionTimestamp = data.healthcareCompletionTimestamp 
+          ? new Date(data.healthcareCompletionTimestamp) 
+          : new Date();
+        updateData.status = 'HEALTHCARE_COMPLETED';
+        console.log('TCC_DEBUG: Healthcare completion - setting healthcareCompletionTimestamp:', updateData.healthcareCompletionTimestamp);
+      } else if (userType === 'HEALTHCARE' && data.status === 'COMPLETED') {
+        // Healthcare user trying to use old COMPLETED status - convert to HEALTHCARE_COMPLETED
+        console.log('TCC_DEBUG: Healthcare user sent COMPLETED status, converting to HEALTHCARE_COMPLETED');
+        updateData.healthcareCompletionTimestamp = data.healthcareCompletionTimestamp || data.completionTimestamp
+          ? new Date(data.healthcareCompletionTimestamp || data.completionTimestamp) 
+          : new Date();
+        updateData.status = 'HEALTHCARE_COMPLETED';
+      } else if (userType === 'EMS' && data.status === 'COMPLETED') {
+        // EMS completion (final state): set emsCompletionTimestamp and status
+        updateData.emsCompletionTimestamp = data.emsCompletionTimestamp 
+          ? new Date(data.emsCompletionTimestamp) 
+          : new Date();
+        updateData.status = 'COMPLETED';
+        console.log('TCC_DEBUG: EMS completion - setting emsCompletionTimestamp:', updateData.emsCompletionTimestamp);
+      } else if (userType === 'EMS' && data.status === 'HEALTHCARE_COMPLETED') {
+        // EMS user cannot set HEALTHCARE_COMPLETED status - reject or ignore
+        console.warn('TCC_DEBUG: EMS user attempted to set HEALTHCARE_COMPLETED status - ignoring');
+        updateData.status = data.status; // Allow status update but don't set timestamp
+      } else {
+        // Other status updates (or if userType doesn't match completion status)
+        updateData.status = data.status;
+      }
 
       // TCC_EDIT_DEBUG: Log incoming payload for validation
       console.log('TCC_EDIT_DEBUG: Incoming update payload:', {
@@ -588,8 +622,16 @@ export class TripService {
       if (data.departureTimestamp) {
         updateData.departureTimestamp = new Date(data.departureTimestamp);
       }
+      // Handle completion timestamps (backward compatibility and explicit setting)
       if (data.completionTimestamp) {
         updateData.completionTimestamp = new Date(data.completionTimestamp);
+      }
+      // Handle new completion timestamp fields (if explicitly provided and not already set above)
+      if (data.healthcareCompletionTimestamp && !updateData.healthcareCompletionTimestamp) {
+        updateData.healthcareCompletionTimestamp = new Date(data.healthcareCompletionTimestamp);
+      }
+      if (data.emsCompletionTimestamp && !updateData.emsCompletionTimestamp) {
+        updateData.emsCompletionTimestamp = new Date(data.emsCompletionTimestamp);
       }
 
       // Do not update unit status; units are not in workflow

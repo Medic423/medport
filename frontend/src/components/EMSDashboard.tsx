@@ -200,12 +200,13 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
       // Load available trips (PENDING status)
       const availableResponse = await api.get('/api/trips?status=PENDING');
       
-      // Load agency responses for this agency to check if we've already responded to each trip
-      const responsesResponse = await api.get('/api/agency-responses');
-      const agencyResponses = responsesResponse.data?.data || [];
-      
       // Get current agency ID (use agencyId if available, otherwise user.id)
       const currentAgencyId = user.agencyId || user.id;
+      
+      // Load agency responses for this agency to check if we've already responded to each trip
+      // Filter by agencyId on the backend for better performance
+      const responsesResponse = await api.get(`/api/agency-responses?agencyId=${currentAgencyId}`);
+      const agencyResponses = responsesResponse.data?.data || [];
       
       // Create a set of trip IDs that THIS agency has already responded to with ACCEPTED or DECLINED
       // (exclude PENDING responses - those are created during dispatch but not yet a real response)
@@ -214,6 +215,18 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
           .filter((r: any) => 
             r.agencyId === currentAgencyId && 
             (r.response === 'ACCEPTED' || r.response === 'DECLINED')
+          )
+          .map((r: any) => r.tripId)
+      );
+      
+      // Create a set of trip IDs that THIS agency has ACCEPTED AND been SELECTED for (for filtering "My Trips")
+      // Only trips where healthcare selected this agency should appear in "My Trips"
+      const acceptedTripsByThisAgency = new Set(
+        agencyResponses
+          .filter((r: any) => 
+            r.agencyId === currentAgencyId && 
+            r.response === 'ACCEPTED' &&
+            r.isSelected === true  // Only include trips where THIS agency was selected by healthcare
           )
           .map((r: any) => r.tripId)
       );
@@ -316,8 +329,16 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
       if (acceptedResponse.data) {
         const acceptedData = acceptedResponse.data;
         if (acceptedData.success && acceptedData.data) {
+          // Filter to only show trips that THIS agency has accepted
+          const tripsAcceptedByThisAgency = acceptedData.data.filter((trip: any) => 
+            acceptedTripsByThisAgency.has(trip.id)
+          );
+          
+          console.log('TCC_DEBUG: Filtering accepted trips - Total:', acceptedData.data.length, 'Accepted and selected by this agency:', tripsAcceptedByThisAgency.length, 'Agency ID:', currentAgencyId);
+          console.log('TCC_DEBUG: Agency responses for this agency:', agencyResponses.filter((r: any) => r.agencyId === currentAgencyId && r.response === 'ACCEPTED').map((r: any) => ({ tripId: r.tripId, isSelected: r.isSelected })));
+          
           // Calculate distance and time for each accepted trip
-          const transformedAccepted = await Promise.all(acceptedData.data.map(async (trip: any) => {
+          const transformedAccepted = await Promise.all(tripsAcceptedByThisAgency.map(async (trip: any) => {
             let distance = 'N/A';
             let estimatedTime = 'N/A';
             
@@ -372,23 +393,32 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
       }
 
       // Load completed trips separately
-      const completedResponse = await api.get('/api/trips?status=COMPLETED');
+      // Filter by EMS completion timestamp instead of status
+      const completedResponse = await api.get('/api/trips');
       
       if (completedResponse.data) {
         const completedData = completedResponse.data;
         if (completedData.success && completedData.data) {
-          const transformedCompleted = completedData.data.map((trip: any) => ({
-            id: trip.id,
-            patientId: trip.patientId,
-            origin: trip.fromLocation || 'Unknown Origin',
-            destination: trip.toLocation || 'Unknown Destination',
-            transportLevel: trip.transportLevel || 'BLS',
-            urgencyLevel: trip.urgencyLevel || 'Routine',
-            status: trip.status,
-            requestTime: new Date(trip.createdAt).toLocaleString(),
-            completionTime: trip.completionTimestamp ? new Date(trip.completionTimestamp).toLocaleString() : null,
-            scheduledTime: trip.scheduledTime
-          }));
+          const transformedCompleted = completedData.data
+            .filter((trip: any) => trip.emsCompletionTimestamp !== null)
+            .map((trip: any) => ({
+              id: trip.id,
+              patientId: trip.patientId,
+              origin: trip.fromLocation || 'Unknown Origin',
+              destination: trip.toLocation || 'Unknown Destination',
+              transportLevel: trip.transportLevel || 'BLS',
+              urgencyLevel: trip.urgencyLevel || 'Routine',
+              status: trip.status,
+              requestTime: new Date(trip.createdAt).toLocaleString(),
+              completionTime: trip.emsCompletionTimestamp 
+                ? new Date(trip.emsCompletionTimestamp).toLocaleString() 
+                : null,
+              emsCompletionTime: trip.emsCompletionTimestamp 
+                ? new Date(trip.emsCompletionTimestamp).toLocaleString() 
+                : null,
+              emsCompletionTimestampISO: trip.emsCompletionTimestamp || null,
+              scheduledTime: trip.scheduledTime
+            }));
           setCompletedTrips(transformedCompleted);
         }
       }
@@ -669,7 +699,7 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
       const payload = {
         status: newStatus,
         ...(newStatus === 'IN_PROGRESS' && { pickupTimestamp: new Date().toISOString() }),
-        ...(newStatus === 'COMPLETED' && { completionTimestamp: new Date().toISOString() })
+        ...(newStatus === 'COMPLETED' && { emsCompletionTimestamp: new Date().toISOString() })
       };
       console.log('TCC_DEBUG: Sending API request to /api/trips/' + tripId + '/status with payload:', payload);
       

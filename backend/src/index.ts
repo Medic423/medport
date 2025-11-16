@@ -31,7 +31,9 @@ import healthcareSubUsersRoutes from './routes/healthcareSubUsers';
 import emsSubUsersRoutes from './routes/emsSubUsers';
 
 // Load environment variables
+// Load .env first, then .env.local (which will override .env values)
 dotenv.config();
+dotenv.config({ path: '.env.local', override: true });
 
 const app = express();
 const PORT = process.env.PORT || 5001;

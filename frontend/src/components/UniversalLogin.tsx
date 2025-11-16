@@ -67,15 +67,13 @@ const UniversalLogin: React.FC<UniversalLoginProps> = ({ onLogin, onShowRegistra
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <div className="mx-auto h-16 w-16 bg-blue-600 rounded-full flex items-center justify-center shadow-lg">
-            <LogIn className="h-8 w-8 text-white" />
+          <div className="mx-auto mb-6">
+            <img 
+              src="/tracc-banner.png" 
+              alt="Tracc Logo" 
+              className="w-full max-w-md mx-auto"
+            />
           </div>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            Welcome to TCC
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Sign in to your account
-          </p>
         </div>
 
         {/* Login Form */}
