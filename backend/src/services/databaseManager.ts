@@ -1,4 +1,10 @@
 import { PrismaClient } from '@prisma/client';
+import dotenv from 'dotenv';
+
+// Load environment variables before initializing database
+// Load .env first, then .env.local (which will override .env values)
+dotenv.config();
+dotenv.config({ path: '.env.local', override: true });
 
 class DatabaseManager {
   private static instance: DatabaseManager;
