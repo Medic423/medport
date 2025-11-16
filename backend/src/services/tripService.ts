@@ -185,28 +185,35 @@ export class TripService {
       if (filters?.healthcareUserId && !filters?.fromLocationId) {
         console.log('TCC_FILTER_DEBUG: Filtering trips for healthcareUserId:', filters.healthcareUserId);
         
-        // Get all location IDs for this user
-        const locations = await prisma.healthcareLocation.findMany({
-          where: { healthcareUserId: filters.healthcareUserId },
-          select: { id: true }
-        });
-        const locationIds = locations.map(loc => loc.id);
-        
-        console.log('TCC_FILTER_DEBUG: Found', locationIds.length, 'locations for user');
-        
-        if (locationIds.length > 0) {
-          // Multi-location user: filter by their locations OR trips they created
-          where.OR = [
-            { fromLocationId: { in: locationIds } },
-            { healthcareCreatedById: filters.healthcareUserId }
-          ];
-          console.log('MULTI_LOC: Filtering by user locations OR created trips:', locationIds.length, 'locations');
-          console.log('TCC_FILTER_DEBUG: OR filter applied:', JSON.stringify(where.OR, null, 2));
-        } else {
-          // Single-facility user: filter by trips they created
+        try {
+          // Get all location IDs for this user
+          const locations = await prisma.healthcareLocation.findMany({
+            where: { healthcareUserId: filters.healthcareUserId },
+            select: { id: true }
+          });
+          const locationIds = locations.map(loc => loc.id);
+          
+          console.log('TCC_FILTER_DEBUG: Found', locationIds.length, 'locations for user');
+          
+          if (locationIds.length > 0) {
+            // Multi-location user: filter by their locations OR trips they created
+            where.OR = [
+              { fromLocationId: { in: locationIds } },
+              { healthcareCreatedById: filters.healthcareUserId }
+            ];
+            console.log('MULTI_LOC: Filtering by user locations OR created trips:', locationIds.length, 'locations');
+            console.log('TCC_FILTER_DEBUG: OR filter applied:', JSON.stringify(where.OR, null, 2));
+          } else {
+            // Single-facility user: filter by trips they created
+            where.healthcareCreatedById = filters.healthcareUserId;
+            console.log('SINGLE_LOC: Filtering by created user ID:', filters.healthcareUserId);
+            console.log('TCC_FILTER_DEBUG: Filter applied - healthcareCreatedById:', filters.healthcareUserId);
+          }
+        } catch (locationError: any) {
+          console.error('TCC_DEBUG: Error fetching healthcare locations:', locationError);
+          // If location query fails, fall back to filtering by healthcareCreatedById only
           where.healthcareCreatedById = filters.healthcareUserId;
-          console.log('SINGLE_LOC: Filtering by created user ID:', filters.healthcareUserId);
-          console.log('TCC_FILTER_DEBUG: Filter applied - healthcareCreatedById:', filters.healthcareUserId);
+          console.log('TCC_DEBUG: Fallback to healthcareCreatedById filter due to location query error');
         }
       }
       if (filters?.transportLevel) {
@@ -288,10 +295,16 @@ export class TripService {
             healthcareCreatedById: (t as any).healthcareCreatedById
           }))
         );
-      } catch {}
+      } catch (e) {
+        console.warn('TCC_DEBUG: Error logging trip samples:', e);
+      }
+      
+      console.log('TCC_DEBUG: Starting trip transformation...');
 
       // Calculate distance and time for each trip, and format location strings
-      const tripsWithDistance = await Promise.all(trips.map(async (trip) => {
+      console.log('TCC_DEBUG: Processing', trips.length, 'trips for distance calculation...');
+      const tripsWithDistance = await Promise.all(trips.map(async (trip, index) => {
+        if (index === 0) console.log('TCC_DEBUG: Processing first trip:', trip.id);
         try {
           // Format fromLocation: use healthcareLocation, originFacility, or fallback to fromLocation string
           let fromLocationStr = (trip as any).fromLocation || '';
@@ -352,6 +365,8 @@ export class TripService {
           };
         }
       }));
+      
+      console.log('TCC_DEBUG: Trip transformation complete. Processed', tripsWithDistance.length, 'trips');
 
       // Enrich with creator info for healthcare-created trips
       try {
@@ -375,10 +390,32 @@ export class TripService {
         console.warn('TCC_DEBUG: creator enrichment skipped', e);
       }
 
-      return { success: true, data: tripsWithDistance };
-    } catch (error) {
+      console.log('TCC_DEBUG: About to return trips. Sample trip keys:', tripsWithDistance.length > 0 ? Object.keys(tripsWithDistance[0] || {}) : 'no trips');
+      console.log('TCC_DEBUG: Returning', tripsWithDistance.length, 'trips');
+      
+      // Serialize to ensure all data is JSON-compatible (Prisma Date objects need conversion)
+      const serializedTrips = tripsWithDistance.map(trip => {
+        const serialized: any = { ...trip };
+        // Convert Date objects to ISO strings for JSON serialization
+        ['createdAt', 'updatedAt', 'scheduledTime', 'requestTimestamp', 'acceptedTimestamp', 
+         'pickupTimestamp', 'completionTimestamp', 'healthcareCompletionTimestamp', 'emsCompletionTimestamp'].forEach(field => {
+          if (serialized[field] && serialized[field] instanceof Date) {
+            serialized[field] = serialized[field].toISOString();
+          }
+        });
+        return serialized;
+      });
+
+      return { success: true, data: serializedTrips };
+    } catch (error: any) {
       console.error('TCC_DEBUG: Error getting trips:', error);
-      return { success: false, error: 'Failed to fetch transport requests' };
+      console.error('TCC_DEBUG: Error details:', {
+        message: error?.message,
+        stack: error?.stack,
+        name: error?.name,
+        code: error?.code
+      });
+      return { success: false, error: error?.message || 'Failed to fetch transport requests' };
     }
   }
 

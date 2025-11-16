@@ -27,7 +27,7 @@ interface Trip {
   patientId: string;
   fromLocation: string;
   toLocation: string;
-  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  status: 'PENDING' | 'PENDING_DISPATCH' | 'ACCEPTED' | 'DECLINED' | 'IN_PROGRESS' | 'COMPLETED' | 'HEALTHCARE_COMPLETED' | 'CANCELLED';
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   transportLevel: 'BLS' | 'ALS' | 'CCT' | 'Other';
   scheduledTime: string;
@@ -240,16 +240,40 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
   const fetchTrips = async () => {
     try {
       setLoading(true);
+      setError('');
+      console.log('TCC_DEBUG: TripsView - Fetching trips...');
       const response = await tripsAPI.getAll();
+      console.log('TCC_DEBUG: TripsView - API response:', {
+        success: response.data.success,
+        dataLength: response.data.data?.length || 0,
+        data: response.data.data?.slice(0, 3) || []
+      });
       if (response.data.success) {
-        setTrips(response.data.data);
-        setFilteredTrips(response.data.data);
+        const tripsData = response.data.data || [];
+        console.log('TCC_DEBUG: TripsView - Setting trips:', tripsData.length, 'trips');
+        console.log('TCC_DEBUG: TripsView - Status breakdown:', {
+          total: tripsData.length,
+          pending: tripsData.filter((t: any) => t.status === 'PENDING' || t.status === 'PENDING_DISPATCH').length,
+          accepted: tripsData.filter((t: any) => t.status === 'ACCEPTED').length,
+          inProgress: tripsData.filter((t: any) => t.status === 'IN_PROGRESS').length,
+          completed: tripsData.filter((t: any) => t.status === 'COMPLETED' || t.status === 'HEALTHCARE_COMPLETED').length,
+          cancelled: tripsData.filter((t: any) => t.status === 'CANCELLED').length
+        });
+        setTrips(tripsData);
+        setFilteredTrips(tripsData);
         setLastRefresh(new Date());
       } else {
-        setError(response.data.error || 'Failed to fetch trips');
+        const errorMsg = response.data.error || 'Failed to fetch trips';
+        console.error('TCC_DEBUG: TripsView - API returned error:', errorMsg);
+        setError(errorMsg);
       }
     } catch (error: any) {
-      setError(error.response?.data?.error || 'Failed to fetch trips');
+      console.error('TCC_DEBUG: TripsView - Fetch error:', error);
+      console.error('TCC_DEBUG: TripsView - Error response:', error.response?.data);
+      console.error('TCC_DEBUG: TripsView - Error status:', error.response?.status);
+      console.error('TCC_DEBUG: TripsView - Full error:', JSON.stringify(error.response?.data, null, 2));
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to fetch trips';
+      setError(`${errorMessage} (Status: ${error.response?.status || 'Unknown'})`);
     } finally {
       setLoading(false);
     }
@@ -284,7 +308,18 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
 
     // Status filter
     if (statusFilter !== 'ALL') {
-      filtered = filtered.filter(trip => trip.status === statusFilter);
+      if (statusFilter === 'PENDING') {
+        // Include both PENDING and PENDING_DISPATCH for PENDING filter
+        filtered = filtered.filter(trip => trip.status === 'PENDING' || trip.status === 'PENDING_DISPATCH');
+      } else if (statusFilter === 'COMPLETED') {
+        // Include both COMPLETED and HEALTHCARE_COMPLETED for COMPLETED filter
+        filtered = filtered.filter(trip => trip.status === 'COMPLETED' || trip.status === 'HEALTHCARE_COMPLETED');
+      } else if (statusFilter === 'IN_PROGRESS') {
+        // Include both IN_PROGRESS and ACCEPTED for In Progress filter
+        filtered = filtered.filter(trip => trip.status === 'IN_PROGRESS' || trip.status === 'ACCEPTED');
+      } else {
+        filtered = filtered.filter(trip => trip.status === statusFilter);
+      }
     }
 
     // Priority filter
@@ -465,12 +500,30 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
 
   return (
     <div className="space-y-6">
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <AlertCircle className="h-5 w-5 text-red-400" />
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Error loading trips</h3>
+              <div className="mt-2 text-sm text-red-700">
+                <p>{error}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Trip Management</h1>
           <p className="mt-1 text-sm text-gray-500">
             Manage and monitor all transport requests
+            {trips.length > 0 && ` (${trips.length} total trips)`}
           </p>
         </div>
         <div className="flex items-center space-x-3">
@@ -589,7 +642,7 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Pending</dt>
                   <dd className="text-2xl font-semibold text-gray-900">
-                    {trips.filter(t => t.status === 'PENDING').length}
+                    {trips.filter(t => t.status === 'PENDING' || t.status === 'PENDING_DISPATCH').length}
                   </dd>
                 </dl>
               </div>
@@ -609,7 +662,7 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">In Progress</dt>
                   <dd className="text-2xl font-semibold text-gray-900">
-                    {trips.filter(t => t.status === 'IN_PROGRESS').length}
+                    {trips.filter(t => t.status === 'IN_PROGRESS' || t.status === 'ACCEPTED').length}
                   </dd>
                 </dl>
               </div>
@@ -629,7 +682,7 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Completed</dt>
                   <dd className="text-2xl font-semibold text-gray-900">
-                    {trips.filter(t => t.status === 'COMPLETED').length}
+                    {trips.filter(t => t.status === 'COMPLETED' || t.status === 'HEALTHCARE_COMPLETED').length}
                   </dd>
                 </dl>
               </div>
@@ -682,9 +735,11 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
                 >
                   <option value="ALL">All Statuses</option>
                   <option value="PENDING">Pending</option>
+                  <option value="PENDING_DISPATCH">Pending Dispatch</option>
                   <option value="ACCEPTED">Accepted</option>
                   <option value="IN_PROGRESS">In Progress</option>
                   <option value="COMPLETED">Completed</option>
+                  <option value="HEALTHCARE_COMPLETED">Healthcare Completed</option>
                   <option value="CANCELLED">Cancelled</option>
                 </select>
               </div>

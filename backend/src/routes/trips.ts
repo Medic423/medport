@@ -236,9 +236,12 @@ router.get('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
     const result = await tripService.getTrips(filters);
 
     if (!result.success) {
+      console.error('TCC_DEBUG: getTrips returned error:', result.error);
+      console.error('TCC_DEBUG: Filters used:', filters);
+      console.error('TCC_DEBUG: User type:', req.user?.userType);
       return res.status(400).json({
         success: false,
-        error: result.error
+        error: result.error || 'Failed to fetch trips'
       });
     }
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle, AlertCircle } from 'lucide-react';
+import { CheckCircle, AlertCircle, MapPin, RefreshCw } from 'lucide-react';
 import api from '../services/api';
 
 interface AgencySettingsUser {
@@ -32,6 +32,8 @@ interface AgencyInfo {
   city: string;
   state: string;
   zipCode: string;
+  latitude: number | null;
+  longitude: number | null;
   capabilities: string[];
   operatingHours: {
     start: string;
@@ -51,6 +53,8 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
     city: '',
     state: 'PA',
     zipCode: '',
+    latitude: null,
+    longitude: null,
     capabilities: [],
     operatingHours: {
       start: '00:00',
@@ -64,6 +68,8 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('Agency settings saved successfully!');
+  const [geocoding, setGeocoding] = useState(false);
+  const [geocodeError, setGeocodeError] = useState<string | null>(null);
 
   const states = [
     'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
@@ -101,6 +107,8 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
             city: data.city || '',
             state: data.state || prev.state || 'PA',
             zipCode: data.zipCode || '',
+            latitude: data.latitude || null,
+            longitude: data.longitude || null,
             capabilities: Array.isArray(data.capabilities) ? data.capabilities : [],
             operatingHours: data.operatingHours && typeof data.operatingHours === 'object'
               ? {
@@ -167,6 +175,59 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
     }));
   };
 
+  // Geocode address to get coordinates
+  const geocodeAddress = async () => {
+    if (!agencyInfo.address || !agencyInfo.city || !agencyInfo.state) {
+      setGeocodeError('Please fill in address, city, and state before geocoding.');
+      return;
+    }
+
+    setGeocoding(true);
+    setGeocodeError(null);
+
+    try {
+      const fullAddress = `${agencyInfo.address}, ${agencyInfo.city}, ${agencyInfo.state} ${agencyInfo.zipCode}`.trim();
+      console.log('TCC_DEBUG: Geocoding address:', fullAddress);
+
+      // Use Nominatim (OpenStreetMap) geocoding service
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&limit=1`,
+        {
+          headers: {
+            'User-Agent': 'TCC-EMS-System/1.0' // Required by Nominatim
+          }
+        }
+      );
+
+      const data = await response.json();
+
+      if (data && data.length > 0) {
+        const result = data[0];
+        const lat = parseFloat(result.lat);
+        const lon = parseFloat(result.lon);
+
+        if (lat && lon) {
+          setAgencyInfo(prev => ({
+            ...prev,
+            latitude: lat,
+            longitude: lon
+          }));
+          setGeocodeError(null);
+          console.log('TCC_DEBUG: Geocoding successful:', { lat, lon });
+        } else {
+          throw new Error('Invalid coordinates returned from geocoding service');
+        }
+      } else {
+        throw new Error('No results found for this address');
+      }
+    } catch (error: any) {
+      console.error('TCC_DEBUG: Geocoding error:', error);
+      setGeocodeError(error.message || 'Failed to geocode address. Please enter coordinates manually.');
+    } finally {
+      setGeocoding(false);
+    }
+  };
+
   const handleSaveSettings = async () => {
     setLoading(true);
     setError(null);
@@ -189,6 +250,8 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
         city: agencyInfo.city || '',
         state: agencyInfo.state || '',
         zipCode: agencyInfo.zipCode || '',
+        latitude: agencyInfo.latitude,
+        longitude: agencyInfo.longitude,
         capabilities: agencyInfo.capabilities,
         operatingHours: operatingHoursString,
       };
@@ -218,6 +281,8 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
               city: data.city || prev.city,
               state: data.state || prev.state,
               zipCode: data.zipCode || prev.zipCode,
+              latitude: data.latitude !== undefined ? data.latitude : prev.latitude,
+              longitude: data.longitude !== undefined ? data.longitude : prev.longitude,
               capabilities: Array.isArray(data.capabilities) ? data.capabilities : prev.capabilities,
               operatingHours: data.operatingHours && typeof data.operatingHours === 'object'
                 ? {
@@ -433,6 +498,130 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
                   className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
                 />
               </div>
+            </div>
+
+            {/* Geolocation Section */}
+            <div className="border-t pt-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h4 className="text-md font-medium text-gray-900 flex items-center">
+                    <MapPin className="h-5 w-5 mr-2 text-orange-600" />
+                    Home Base Coordinates
+                  </h4>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Required for route optimization. Coordinates are used to calculate return trip distances.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={geocodeAddress}
+                  disabled={geocoding || !agencyInfo.address || !agencyInfo.city || !agencyInfo.state}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {geocoding ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Geocoding...
+                    </>
+                  ) : (
+                    <>
+                      <MapPin className="h-4 w-4 mr-2" />
+                      Get Coordinates from Address
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {geocodeError && (
+                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <div className="flex">
+                    <AlertCircle className="h-5 w-5 text-yellow-400" />
+                    <div className="ml-3">
+                      <p className="text-sm text-yellow-800">{geocodeError}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="latitude" className="block text-sm font-medium text-gray-700">
+                    Latitude *
+                  </label>
+                  <input
+                    type="number"
+                    id="latitude"
+                    name="latitude"
+                    value={agencyInfo.latitude ?? ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setAgencyInfo(prev => ({
+                        ...prev,
+                        latitude: value === '' ? null : parseFloat(value)
+                      }));
+                    }}
+                    step="any"
+                    placeholder="40.123456"
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Decimal degrees (e.g., 40.123456)
+                  </p>
+                </div>
+
+                <div>
+                  <label htmlFor="longitude" className="block text-sm font-medium text-gray-700">
+                    Longitude *
+                  </label>
+                  <input
+                    type="number"
+                    id="longitude"
+                    name="longitude"
+                    value={agencyInfo.longitude ?? ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setAgencyInfo(prev => ({
+                        ...prev,
+                        longitude: value === '' ? null : parseFloat(value)
+                      }));
+                    }}
+                    step="any"
+                    placeholder="-78.123456"
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Decimal degrees (e.g., -78.123456)
+                  </p>
+                </div>
+              </div>
+
+              {agencyInfo.latitude && agencyInfo.longitude && (
+                <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
+                  <div className="flex items-center">
+                    <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+                    <div>
+                      <p className="text-sm font-medium text-green-900">Coordinates Set</p>
+                      <p className="text-xs text-green-700 mt-1">
+                        {agencyInfo.latitude.toFixed(6)}, {agencyInfo.longitude.toFixed(6)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {(!agencyInfo.latitude || !agencyInfo.longitude) && (
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <div className="flex items-start">
+                    <AlertCircle className="h-5 w-5 text-yellow-600 mr-2 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-yellow-900">Coordinates Required</p>
+                      <p className="text-xs text-yellow-700 mt-1">
+                        Home base coordinates are required for route optimization features. Click "Get Coordinates from Address" to automatically geocode your address, or enter coordinates manually.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Transport Capabilities */}

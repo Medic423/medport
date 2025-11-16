@@ -86,6 +86,26 @@ export class AgencyService {
         orderBy: { name: 'asc' },
         skip,
         take: limit,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          address: true,
+          city: true,
+          state: true,
+          zipCode: true,
+          latitude: true,
+          longitude: true,
+          capabilities: true,
+          serviceArea: true,
+          isActive: true,
+          status: true,
+          contactName: true,
+          operatingHours: true,
+          createdAt: true,
+          updatedAt: true
+        }
       }),
       prisma.eMSAgency.count({ where })
     ]);
