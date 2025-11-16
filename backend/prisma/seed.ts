@@ -150,6 +150,29 @@ async function main() {
     });
     console.log('✅ EMS Agency created:', agency3.name);
 
+    // Create Duncansville EMS Agency
+    const agency4 = await prisma.eMSAgency.create({
+      data: {
+        name: 'Duncansville EMS',
+        contactName: 'Test User',
+        phone: '(814) 555-0404',
+        email: 'test@duncansvilleems.org',
+        address: '321 Pine Street',
+        city: 'Duncansville',
+        state: 'PA',
+        zipCode: '16635',
+        serviceArea: ['BLAIR COUNTY', 'ALTOONA'],
+        operatingHours: { start: '00:00', end: '23:59' },
+        capabilities: ['BLS', 'ALS'],
+        pricingStructure: { baseRate: 140, perMileRate: 2.40 },
+        latitude: 40.4250,
+        longitude: -78.4333,
+        isActive: true,
+        status: 'ACTIVE'
+      }
+    });
+    console.log('✅ EMS Agency created:', agency4.name);
+
     // Create EMS users
     const emsUser1 = await prisma.eMSUser.upsert({
       where: { email: 'doe@elkcoems.com' },
@@ -195,6 +218,21 @@ async function main() {
       }
     });
     console.log('✅ EMS User created:', emsUser3.email);
+
+    const emsUser4 = await prisma.eMSUser.upsert({
+      where: { email: 'test@duncansvilleems.org' },
+      update: {},
+      create: {
+        email: 'test@duncansvilleems.org',
+        password: await bcrypt.hash('duncansville123', 12),
+        name: 'Test Duncansville User',
+        agencyName: 'Duncansville EMS',
+        agencyId: agency4.id,
+        isActive: true,
+        userType: 'EMS'
+      }
+    });
+    console.log('✅ EMS User created:', emsUser4.email);
 
     // Create sample facilities
     const facility1 = await prisma.facility.create({
