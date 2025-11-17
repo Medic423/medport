@@ -183,7 +183,9 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
       console.log('PHASE_A: Reloading facilities with showAllStates:', showAllStates);
       
       // Get the user's primary healthcare location for origin coordinates
-      const healthcareLocationsResponse = await api.get('/api/healthcare/locations/active');
+      // Add cache-busting timestamp to ensure fresh data
+      const cacheBuster1 = `_t=${Date.now()}`;
+      const healthcareLocationsResponse = await api.get(`/api/healthcare/locations/active?${cacheBuster1}`);
       if (healthcareLocationsResponse.data?.success && Array.isArray(healthcareLocationsResponse.data.data)) {
         const healthcareLocations = healthcareLocationsResponse.data.data;
         const primaryLocation = healthcareLocations.find(loc => loc.isPrimary) || healthcareLocations[0];
@@ -243,8 +245,53 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
     console.log('MULTI_LOC: EnhancedTripForm useEffect triggered');
     console.log('MULTI_LOC: User object:', user);
     console.log('MULTI_LOC: user.manageMultipleLocations:', user.manageMultipleLocations);
+    console.log('TCC_DEBUG: EnhancedTripForm mounting/remounting, loading fresh form options...');
+    
+    // Reset form data and options to clear any stale state
+    setFormData({
+      patientId: '',
+      ageYears: '',
+      isNewborn: false,
+      isInfant: false,
+      isToddler: false,
+      patientWeight: '',
+      specialNeeds: '',
+      insuranceCompany: '',
+      generateQRCode: false,
+      fromLocation: user.facilityName || '',
+      fromLocationId: '',
+      pickupLocationId: '',
+      toLocation: '',
+      scheduledTime: new Date().toISOString().slice(0, 16),
+      transportLevel: 'BLS',
+      urgencyLevel: 'Routine',
+      diagnosis: '',
+      mobilityLevel: 'Ambulatory',
+      oxygenRequired: false,
+      monitoringRequired: false,
+      selectedAgencies: [],
+      notificationRadius: 100,
+      assignedUnitId: 'N/A',
+      notes: ''
+    });
+    
+    // Clear form options to prevent showing stale dropdown data
+    setFormOptions({
+      diagnosis: [],
+      mobility: [],
+      transportLevel: [],
+      urgency: [],
+      insurance: [],
+      specialNeeds: [],
+      facilities: [],
+      agencies: [],
+      pickupLocations: [],
+      healthcareLocations: [],
+      availableUnits: []
+    });
     
     // Always reload form options when component mounts or remounts
+    // Cache-busting is added to API calls to ensure fresh data
     loadFormOptions();
     // Note: loadHealthcareLocations is now handled within loadFormOptions
     
@@ -252,7 +299,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
     if (user.userType === 'ADMIN' || user.userType === 'USER') {
       loadTCCHealthcareFacilities();
     }
-  }, []);
+  }, [user.id]); // Re-run if user changes (e.g., switching accounts/tabs)
   
   // TCC Command: Fetch all healthcare facilities for facility selection
   const loadTCCHealthcareFacilities = async () => {
@@ -368,10 +415,12 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
         console.log('PHASE_A: Loading healthcare locations and facilities for Penn Highlands user');
         
         // Get the user's healthcare locations for the "From Location" dropdown
-        const healthcareLocationsResponse = await api.get('/api/healthcare/locations/active');
+        // Add cache-busting timestamp to ensure fresh data
+        const cacheBuster = `_t=${Date.now()}`;
+        const healthcareLocationsResponse = await api.get(`/api/healthcare/locations/active?${cacheBuster}`);
         if (healthcareLocationsResponse.data?.success && Array.isArray(healthcareLocationsResponse.data.data)) {
           healthcareLocations = healthcareLocationsResponse.data.data;
-          console.log('MULTI_LOC: Loaded', healthcareLocations.length, 'healthcare locations for form options:', healthcareLocations);
+          console.log('MULTI_LOC: Loaded', healthcareLocations.length, 'healthcare locations for form options:', healthcareLocations.map(l => l.locationName));
           
           const primaryLocation = healthcareLocations.find(loc => loc.isPrimary) || healthcareLocations[0];
           
@@ -387,6 +436,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
                   originLat: primaryLocation.latitude,
                   originLng: primaryLocation.longitude,
                   radius: 100,
+                  _t: Date.now(), // Cache-busting
                   isActive: true
                 }
               });
@@ -421,7 +471,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
             // Fallback to PA facilities only without geographic filtering
             try {
               const facilitiesResponse = await api.get('/api/tcc/facilities', {
-                params: { state: 'PA', isActive: true }
+                params: { state: 'PA', isActive: true, _t: Date.now() } // Cache-busting
               });
               if (facilitiesResponse.data?.success && Array.isArray(facilitiesResponse.data.data)) {
                 facilities = facilitiesResponse.data.data;
@@ -490,7 +540,9 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
       
       try {
         // Load healthcare locations (Hospital Settings -> Manage Locations)
-        const locationsResponse = await api.get('/api/healthcare/locations/active');
+        // Add cache-busting timestamp to ensure fresh data
+        const cacheBuster2 = `_t=${Date.now()}`;
+        const locationsResponse = await api.get(`/api/healthcare/locations/active?${cacheBuster2}`);
         if (locationsResponse.data?.success && Array.isArray(locationsResponse.data.data)) {
           healthcareLocationsForDestinations = locationsResponse.data.data.map((loc: any) => ({
             id: `loc_${loc.id}`,

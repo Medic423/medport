@@ -854,6 +854,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                     setActiveTab(tab.id);
                     // Increment form key when switching to create tab to force remount and reload options
                     if (tab.id === 'create') {
+                      console.log('TCC_DEBUG: Switching to create tab, incrementing form key to force refresh');
                       setCreateFormKey(prev => prev + 1);
                     }
                   }}

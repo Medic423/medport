@@ -18,9 +18,15 @@ import {
   User,
   ChevronDown,
   ChevronUp,
-  Plus
+  Plus,
+  Send,
+  Radio,
+  Trash2,
+  Shield,
+  Archive
 } from 'lucide-react';
 import { tripsAPI } from '../services/api';
+import TripDispatchScreen from './TripDispatchScreen';
 
 interface Trip {
   id: string;
@@ -55,11 +61,38 @@ interface Trip {
       name: string;
     };
   };
+  // Healthcare facility fields
+  healthcareFacilityName?: string;
+  healthcareLocation?: {
+    id: string;
+    locationName: string;
+    city?: string;
+    state?: string;
+    facilityType?: string;
+  };
+  createdBy?: {
+    id: string;
+    name: string;
+    email: string;
+    facilityName?: string;
+  };
   // Distance and time fields
   distanceMiles?: number;
   estimatedTripTimeMinutes?: number;
   createdAt: string;
   updatedAt: string;
+  // Agency responses
+  agencyResponses?: Array<{
+    id: string;
+    agencyId: string;
+    response: string;
+    responseTimestamp?: string;
+    isSelected?: boolean;
+    agency?: {
+      id: string;
+      name: string;
+    };
+  }>;
 }
 
 interface TripsViewProps {
@@ -83,11 +116,35 @@ interface TripCardProps {
   onEdit?: (tripId: string) => void;
 }
 
-const TripCard: React.FC<TripCardProps> = ({ trip, user, onRefresh, onEdit }) => {
+const TripCard: React.FC<TripCardProps> = ({ trip, user, onRefresh, onEdit, onDispatch }) => {
   const [loading, setLoading] = useState(false);
 
   const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
+    if (!dateString) return 'Not scheduled';
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
+  };
+  
+  const formatDateShort = (dateString: string) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
   };
 
   const handleAcceptTrip = async (trip: Trip) => {
@@ -220,73 +277,119 @@ const TripCard: React.FC<TripCardProps> = ({ trip, user, onRefresh, onEdit }) =>
     }
   };
 
+  // Count accepted agencies
+  const acceptedAgenciesCount = trip.agencyResponses?.filter((r: any) => r.response === 'ACCEPTED').length || 0;
+  const hasSelectedAgency = trip.agencyResponses?.some((r: any) => r.isSelected === true && r.response === 'ACCEPTED') || false;
+
   return (
     <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-      <div className="flex items-center space-x-4">
-        <div>
-          <h4 className="text-lg font-medium text-gray-900">
-            Patient {trip.patientId} - {trip.transportLevel} - {formatDateTime(trip.scheduledTime)}
-          </h4>
-          <p className="text-base text-gray-600">
-            {trip.fromLocation} → {trip.toLocation}
-          </p>
-          {trip.pickupLocation && (
-            <p className="text-xs text-blue-600">
-              Pickup: {trip.pickupLocation.name}
-              {trip.pickupLocation.floor && ` (Floor ${trip.pickupLocation.floor})`}
-              {trip.pickupLocation.room && ` - Room ${trip.pickupLocation.room}`}
-              {trip.pickupLocation.contactPhone && ` • ${trip.pickupLocation.contactPhone}`}
-            </p>
-          )}
-          <div className="mt-2 flex items-center space-x-6 text-sm text-gray-500">
-            <div>
-              <span className="font-medium">Priority:</span> {formatPriority(trip.priority)}
-            </div>
-            <div>
-              <span className="font-medium">Distance:</span> {trip.distanceMiles ? `${trip.distanceMiles.toFixed(1)} miles` : 'Calculating...'}
-            </div>
-            <div>
-              <span className="font-medium">Time:</span> {trip.estimatedTripTimeMinutes ? `${Math.round(trip.estimatedTripTimeMinutes)} min` : 'Calculating...'}
-            </div>
+      <div className="flex-1">
+        <h4 className="text-lg font-medium text-gray-900">
+          Patient {trip.patientId} - Requested Pickup Time: {formatDateTime(trip.scheduledTime)}
+        </h4>
+        <p className="text-base text-gray-600 mt-1">
+          {trip.fromLocation} → {trip.toLocation}
+        </p>
+        <p className="text-sm text-gray-500 mt-1">
+          {trip.transportLevel} - Ticket Created At: {formatDateShort(trip.createdAt)}
+        </p>
+        
+        {/* Agency Responses Badge */}
+        {trip.agencyResponses && trip.agencyResponses.length > 0 && (
+          <div className="mt-2 flex items-center space-x-2">
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              {acceptedAgenciesCount} {acceptedAgenciesCount === 1 ? 'agency' : 'agencies'} accepted
+            </span>
+            {hasSelectedAgency && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                Selected
+              </span>
+            )}
           </div>
-        </div>
+        )}
+        
+        {/* Facility Name */}
+        {trip.healthcareFacilityName && (
+          <p className="text-sm text-gray-700 font-medium mt-2">
+            Facility: {trip.healthcareFacilityName}
+          </p>
+        )}
+        
+        {/* Pickup Location */}
+        {trip.pickupLocation && (
+          <p className="text-xs text-blue-600 mt-1">
+            Pickup: {trip.pickupLocation.name}
+            {trip.pickupLocation.floor && ` • Floor ${trip.pickupLocation.floor}`}
+            {trip.pickupLocation.room && ` • Room ${trip.pickupLocation.room}`}
+            {trip.pickupLocation.contactPhone && ` • (${trip.pickupLocation.contactPhone})`}
+          </p>
+        )}
       </div>
-      <div className="flex items-center space-x-2">
-        <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getStatusColor(trip.status)}`}>
+      
+      <div className="flex items-center space-x-2 ml-4">
+        {/* Status Badge */}
+        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(trip.status)}`}>
           {trip.status.replace('_', ' ')}
         </span>
-        <div className="flex space-x-2">
-          <button 
-            onClick={() => handleAcceptTrip(trip)}
-            disabled={loading || trip.status === 'CANCELLED' || trip.status === 'COMPLETED' || trip.status === 'HEALTHCARE_COMPLETED'}
-            className="bg-green-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title={trip.status === 'PENDING_DISPATCH' ? 'Trip already authorized' : 'Authorize trip for dispatch'}
-          >
-            {loading ? '...' : trip.status === 'PENDING_DISPATCH' ? 'Authorized' : 'Authorize'}
-          </button>
-          <button 
-            onClick={() => handleDeclineTrip(trip)}
-            disabled={loading || trip.status === 'CANCELLED' || trip.status === 'COMPLETED' || trip.status === 'HEALTHCARE_COMPLETED'}
-            className="bg-red-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Cancel trip"
-          >
-            {loading ? '...' : trip.status === 'CANCELLED' ? 'Cancelled' : 'Cancel'}
-          </button>
-          <button 
-            onClick={() => handleEditTrip(trip)}
-            disabled={loading || trip.status === 'COMPLETED' || trip.status === 'HEALTHCARE_COMPLETED'}
-            className="bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Edit trip details"
-          >
-            Edit
-          </button>
+        
+        {/* Action Buttons - Small Circular Icons */}
+        <div className="flex space-x-1">
+          {/* Dispatch button - only show for PENDING_DISPATCH trips */}
+          {trip.status === 'PENDING_DISPATCH' && onDispatch && (
+            <button 
+              onClick={() => onDispatch(trip)}
+              disabled={loading}
+              className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-purple-100 text-purple-800 hover:bg-purple-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Dispatch trip to EMS agencies"
+            >
+              <Send className="h-4 w-4" />
+            </button>
+          )}
+          
+          {/* Authorize button */}
+          {trip.status !== 'PENDING_DISPATCH' && trip.status !== 'CANCELLED' && trip.status !== 'COMPLETED' && trip.status !== 'HEALTHCARE_COMPLETED' && (
+            <button 
+              onClick={() => handleAcceptTrip(trip)}
+              disabled={loading}
+              className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-green-100 text-green-800 hover:bg-green-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Authorize trip for dispatch"
+            >
+              <CheckCircle className="h-4 w-4" />
+            </button>
+          )}
+          
+          {/* Cancel button */}
+          {trip.status !== 'CANCELLED' && trip.status !== 'COMPLETED' && trip.status !== 'HEALTHCARE_COMPLETED' && (
+            <button 
+              onClick={() => handleDeclineTrip(trip)}
+              disabled={loading}
+              className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-red-100 text-red-800 hover:bg-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Cancel trip"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+          
+          {/* Edit button */}
+          {trip.status !== 'COMPLETED' && trip.status !== 'HEALTHCARE_COMPLETED' && (
+            <button 
+              onClick={() => handleEditTrip(trip)}
+              disabled={loading}
+              className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Edit trip details"
+            >
+              <Edit className="h-4 w-4" />
+            </button>
+          )}
+          
+          {/* Delete button */}
           <button 
             onClick={() => handleDeleteTrip(trip)}
             disabled={loading}
-            className="bg-gray-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Permanently delete trip"
+            className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-gray-100 text-gray-800 hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Delete trip"
           >
-            {loading ? '...' : 'Delete'}
+            <Trash2 className="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -297,10 +400,15 @@ const TripCard: React.FC<TripCardProps> = ({ trip, user, onRefresh, onEdit }) =>
 const TripsView: React.FC<TripsViewProps> = ({ user }) => {
   const navigate = useNavigate();
   const [trips, setTrips] = useState<Trip[]>([]);
+  const [activeTrips, setActiveTrips] = useState<Trip[]>([]);
+  const [completedTrips, setCompletedTrips] = useState<any[]>([]);
   const [filteredTrips, setFilteredTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -308,7 +416,7 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
   const [priorityFilter, setPriorityFilter] = useState('ALL');
   const [transportFilter, setTransportFilter] = useState('ALL');
   const [dateFilter, setDateFilter] = useState('ALL');
-  const [hospitalFilter, setHospitalFilter] = useState('ALL');
+  const [healthcareFacilityFilter, setHealthcareFacilityFilter] = useState('ALL');
   
   // UI states
   const [showFilters, setShowFilters] = useState(false);
@@ -316,6 +424,10 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
   const [showTripModal, setShowTripModal] = useState(false);
   const [sortField, setSortField] = useState<keyof Trip>('createdAt');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  
+  // Dispatch screen state
+  const [dispatchTrip, setDispatchTrip] = useState<Trip | null>(null);
+  const [showDispatchScreen, setShowDispatchScreen] = useState(false);
 
   // Fetch trips data
   const fetchTrips = async () => {
@@ -331,17 +443,120 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
       });
       if (response.data.success) {
         const tripsData = response.data.data || [];
+        
+        // Fetch agency responses for all trips
+        try {
+          // Fetch all agency responses (API doesn't support multiple tripIds, so we fetch all and filter)
+          const responsesResponse = await api.get('/api/agency-responses');
+          const allResponses = responsesResponse.data?.data || [];
+          
+          // Create a set of trip IDs for quick lookup
+          const tripIdSet = new Set(tripsData.map((t: any) => t.id));
+          
+          // Group responses by trip ID (only for trips we're displaying)
+          const responsesByTrip = new Map<string, any[]>();
+          allResponses.forEach((response: any) => {
+            if (tripIdSet.has(response.tripId)) {
+              if (!responsesByTrip.has(response.tripId)) {
+                responsesByTrip.set(response.tripId, []);
+              }
+              responsesByTrip.get(response.tripId)!.push(response);
+            }
+          });
+          
+          // Attach agency responses to trips
+          tripsData.forEach((trip: any) => {
+            trip.agencyResponses = responsesByTrip.get(trip.id) || [];
+          });
+          
+          console.log('TCC_DEBUG: TripsView - Loaded agency responses for', responsesByTrip.size, 'trips');
+        } catch (responsesError: any) {
+          console.warn('TCC_DEBUG: Failed to load agency responses:', responsesError);
+          // Continue without agency responses - not critical
+        }
+        
+        // Separate active and completed trips
+        // Active trips: exclude COMPLETED, HEALTHCARE_COMPLETED, CANCELLED, and trips with completion timestamps
+        const active = tripsData.filter((trip: any) => {
+          // Exclude cancelled trips
+          if (trip.status === 'CANCELLED') return false;
+          // Exclude completed statuses
+          if (trip.status === 'COMPLETED' || trip.status === 'HEALTHCARE_COMPLETED') return false;
+          // Exclude trips with completion timestamps (even if status isn't set correctly)
+          if (trip.healthcareCompletionTimestamp || trip.emsCompletionTimestamp) return false;
+          return true;
+        });
+        
+        // Completed trips: include COMPLETED, HEALTHCARE_COMPLETED (but NOT CANCELLED)
+        const completed = tripsData
+          .filter((trip: any) => {
+            // Include completed statuses
+            if (trip.status === 'COMPLETED' || trip.status === 'HEALTHCARE_COMPLETED') return true;
+            // Include trips with completion timestamps
+            if (trip.healthcareCompletionTimestamp || trip.emsCompletionTimestamp) return true;
+            // Exclude cancelled (they stay separate)
+            return false;
+          })
+          .map((trip: any) => {
+            // Transform for display (similar to HealthcareDashboard)
+            const selectedResponse = trip.agencyResponses?.find((r: any) => r.isSelected === true && r.response === 'ACCEPTED');
+            let acceptanceTime = null;
+            
+            if (selectedResponse) {
+              const responseTime = selectedResponse.responseTimestamp || selectedResponse.createdAt;
+              if (responseTime && trip.createdAt) {
+                const requestTime = new Date(trip.createdAt).getTime();
+                const acceptTime = new Date(responseTime).getTime();
+                const diffMs = acceptTime - requestTime;
+                const diffMins = Math.floor(diffMs / 60000);
+                if (diffMins >= 0) {
+                  acceptanceTime = `${diffMins} min`;
+                }
+              }
+            }
+            
+            // Calculate wait time (request to pickup)
+            let waitTime = null;
+            if (trip.pickupTimestamp && trip.createdAt) {
+              const requestTime = new Date(trip.createdAt).getTime();
+              const pickupTime = new Date(trip.pickupTimestamp).getTime();
+              const diffMs = pickupTime - requestTime;
+              const diffMins = Math.floor(diffMs / 60000);
+              if (diffMins >= 0) {
+                waitTime = `${diffMins} min`;
+              }
+            }
+            
+            return {
+              ...trip,
+              requestTime: trip.createdAt ? new Date(trip.createdAt).toLocaleString() : 'N/A',
+              requestTimeISO: trip.createdAt,
+              pickupTime: trip.pickupTimestamp ? new Date(trip.pickupTimestamp).toLocaleString() : null,
+              pickupTimeISO: trip.pickupTimestamp,
+              acceptanceTime: acceptanceTime,
+              waitTime: waitTime,
+              healthcareCompletionTime: trip.healthcareCompletionTimestamp 
+                ? new Date(trip.healthcareCompletionTimestamp).toLocaleString() 
+                : null,
+              emsCompletionTime: trip.emsCompletionTimestamp 
+                ? new Date(trip.emsCompletionTimestamp).toLocaleString() 
+                : null,
+              origin: trip.fromLocation,
+              destination: trip.toLocation
+            };
+          });
+        
         console.log('TCC_DEBUG: TripsView - Setting trips:', tripsData.length, 'trips');
         console.log('TCC_DEBUG: TripsView - Status breakdown:', {
           total: tripsData.length,
-          pending: tripsData.filter((t: any) => t.status === 'PENDING' || t.status === 'PENDING_DISPATCH').length,
-          accepted: tripsData.filter((t: any) => t.status === 'ACCEPTED').length,
-          inProgress: tripsData.filter((t: any) => t.status === 'IN_PROGRESS').length,
-          completed: tripsData.filter((t: any) => t.status === 'COMPLETED' || t.status === 'HEALTHCARE_COMPLETED').length,
+          active: active.length,
+          completed: completed.length,
           cancelled: tripsData.filter((t: any) => t.status === 'CANCELLED').length
         });
         setTrips(tripsData);
-        setFilteredTrips(tripsData);
+        setActiveTrips(active);
+        setCompletedTrips(completed);
+        setFilteredTrips(active);
         setLastRefresh(new Date());
       } else {
         const errorMsg = response.data.error || 'Failed to fetch trips';
@@ -371,9 +586,14 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
     return () => clearInterval(interval);
   }, []);
 
-  // Apply filters
+  // Apply filters (only to active trips)
   useEffect(() => {
-    let filtered = [...trips];
+    if (activeTab === 'completed') {
+      // For completed tab, no filtering needed (or add filters later if needed)
+      return;
+    }
+    
+    let filtered = [...activeTrips];
 
     // Search filter
     if (searchTerm) {
@@ -383,7 +603,8 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
         trip.patientId.toLowerCase().includes(term) ||
         trip.fromLocation.toLowerCase().includes(term) ||
         trip.toLocation.toLowerCase().includes(term) ||
-        (trip.assignedAgency?.name || '').toLowerCase().includes(term)
+        (trip.assignedAgency?.name || '').toLowerCase().includes(term) ||
+        (trip.healthcareFacilityName || '').toLowerCase().includes(term)
       );
     }
 
@@ -442,6 +663,13 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
       );
     }
 
+    // Healthcare facility filter
+    if (healthcareFacilityFilter !== 'ALL') {
+      filtered = filtered.filter(trip => 
+        trip.healthcareFacilityName === healthcareFacilityFilter
+      );
+    }
+
     // Sort
     filtered.sort((a, b) => {
       const aVal = a[sortField];
@@ -453,7 +681,7 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
     });
 
     setFilteredTrips(filtered);
-  }, [trips, searchTerm, statusFilter, priorityFilter, transportFilter, dateFilter, hospitalFilter, sortField, sortDirection, user]);
+  }, [activeTrips, searchTerm, statusFilter, priorityFilter, transportFilter, dateFilter, healthcareFacilityFilter, sortField, sortDirection, user, activeTab]);
 
   // Handle sort
   const handleSort = (field: keyof Trip) => {
@@ -516,11 +744,12 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
     });
   };
 
-  // Export to CSV
+  // Export active trips to CSV
   const exportToCSV = () => {
     const headers = [
       'Trip Number',
       'Patient ID',
+      'Healthcare Facility',
       'From Location',
       'Pickup Location',
       'Pickup Floor',
@@ -538,6 +767,7 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
     const csvData = filteredTrips.map(trip => [
       trip.tripNumber,
       trip.patientId,
+      trip.healthcareFacilityName || 'N/A',
       trip.fromLocation,
       trip.pickupLocation?.name || 'N/A',
       trip.pickupLocation?.floor || 'N/A',
@@ -560,7 +790,71 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `trips-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `active-trips-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  // Export completed trips to CSV
+  const exportCompletedTripsToCSV = () => {
+    if (completedTrips.length === 0) {
+      alert('No completed trips to export');
+      return;
+    }
+
+    const csvHeaders = [
+      'Patient ID',
+      'Agency',
+      'Origin Facility',
+      'Destination Facility',
+      'Transport Level',
+      'Urgency Level',
+      'Request Time',
+      'Acceptance Time',
+      'Pickup Time',
+      'Wait Time',
+      'Completion Time',
+      'Status',
+      'Healthcare Facility'
+    ];
+
+    const csvData = completedTrips.map(trip => {
+      // Get agency name (same logic as display)
+      let agencyName = 'No Agency';
+      const selectedResponse = trip.agencyResponses?.find((r: any) => r.isSelected === true && r.response === 'ACCEPTED');
+      if (selectedResponse) {
+        agencyName = selectedResponse.agency?.name || 'Unknown Agency';
+      } else if (trip.assignedAgencyId) {
+        const agencyResponse = trip.agencyResponses?.find((r: any) => r.agencyId === trip.assignedAgencyId);
+        agencyName = agencyResponse?.agency?.name || 'Agency Assigned';
+      }
+
+      return [
+        trip.patientId,
+        agencyName,
+        trip.origin || trip.fromLocation || 'N/A',
+        trip.destination || trip.toLocation || 'N/A',
+        trip.transportLevel || 'N/A',
+        trip.urgencyLevel || 'Routine',
+        trip.requestTime || 'N/A',
+        trip.acceptanceTime || 'N/A',
+        trip.pickupTime || 'N/A',
+        trip.waitTime || 'N/A',
+        trip.healthcareCompletionTime || trip.emsCompletionTime || 'N/A',
+        trip.status,
+        trip.healthcareFacilityName || 'N/A'
+      ];
+    });
+
+    const csvContent = [csvHeaders, ...csvData]
+      .map(row => row.map(field => `"${field}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `completed-trips-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
   };
@@ -604,7 +898,8 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
           <h1 className="text-2xl font-bold text-gray-900">Trip Management</h1>
           <p className="mt-1 text-sm text-gray-500">
             Manage and monitor all transport requests
-            {trips.length > 0 && ` (${trips.length} total trips)`}
+            {activeTab === 'active' && activeTrips.length > 0 && ` (${activeTrips.length} active trips)`}
+            {activeTab === 'completed' && completedTrips.length > 0 && ` (${completedTrips.length} completed trips)`}
           </p>
         </div>
         <div className="flex items-center space-x-3">
@@ -615,13 +910,52 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
             <RefreshCw className="w-4 h-4 mr-2" />
             Refresh
           </button>
-          <button
-            onClick={exportToCSV}
-            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Export CSV
-          </button>
+          {activeTab === 'active' && (
+            <button
+              onClick={exportToCSV}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export CSV
+            </button>
+          )}
+          {activeTab === 'completed' && (
+            <button
+              onClick={exportCompletedTripsToCSV}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export CSV
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Navigation Tabs */}
+      <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <nav className="flex space-x-8">
+            {[
+              { id: 'active', name: 'Active Trips', icon: Clock },
+              { id: 'completed', name: 'Completed Trips', icon: Archive }
+            ].map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as 'active' | 'completed')}
+                  className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === tab.id
+                      ? 'border-primary-500 text-primary-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{tab.name}</span>
+                </button>
+              );
+            })}
+          </nav>
         </div>
       </div>
 
@@ -691,101 +1025,104 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
         </button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="p-3 rounded-md bg-blue-500">
-                  <Truck className="h-6 w-6 text-white" />
+      {/* Stats Cards - Only show for Active tab */}
+      {activeTab === 'active' && (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="p-3 rounded-md bg-blue-500">
+                    <Truck className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Total Active</dt>
+                    <dd className="text-2xl font-semibold text-gray-900">{activeTrips.length}</dd>
+                  </dl>
                 </div>
               </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total Trips</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">{trips.length}</dd>
-                </dl>
+            </div>
+          </div>
+
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="p-3 rounded-md bg-yellow-500">
+                    <Clock className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Pending</dt>
+                    <dd className="text-2xl font-semibold text-gray-900">
+                      {activeTrips.filter(t => t.status === 'PENDING' || t.status === 'PENDING_DISPATCH').length}
+                    </dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="p-3 rounded-md bg-purple-500">
+                    <Truck className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">In Progress</dt>
+                    <dd className="text-2xl font-semibold text-gray-900">
+                      {activeTrips.filter(t => t.status === 'IN_PROGRESS' || t.status === 'ACCEPTED').length}
+                    </dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="p-3 rounded-md bg-green-500">
+                    <Archive className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Completed</dt>
+                    <dd className="text-2xl font-semibold text-gray-900">
+                      {completedTrips.length}
+                    </dd>
+                  </dl>
+                </div>
               </div>
             </div>
           </div>
         </div>
+      )}
 
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="p-3 rounded-md bg-yellow-500">
-                  <Clock className="h-6 w-6 text-white" />
-                </div>
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Pending</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">
-                    {trips.filter(t => t.status === 'PENDING' || t.status === 'PENDING_DISPATCH').length}
-                  </dd>
-                </dl>
-              </div>
+      {/* Filters - Only show for Active tab */}
+      {activeTab === 'active' && (
+        <div className="bg-white shadow rounded-lg">
+          <div className="px-4 py-5 sm:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg leading-6 font-medium text-gray-900">Filters</h3>
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+              >
+                <Filter className="w-4 h-4 mr-2" />
+                {showFilters ? 'Hide Filters' : 'Show Filters'}
+                {showFilters ? <ChevronUp className="w-4 h-4 ml-2" /> : <ChevronDown className="w-4 h-4 ml-2" />}
+              </button>
             </div>
-          </div>
-        </div>
-
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="p-3 rounded-md bg-purple-500">
-                  <Truck className="h-6 w-6 text-white" />
-                </div>
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">In Progress</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">
-                    {trips.filter(t => t.status === 'IN_PROGRESS' || t.status === 'ACCEPTED').length}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="p-3 rounded-md bg-green-500">
-                  <CheckCircle className="h-6 w-6 text-white" />
-                </div>
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Completed</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">
-                    {trips.filter(t => t.status === 'COMPLETED' || t.status === 'HEALTHCARE_COMPLETED').length}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg leading-6 font-medium text-gray-900">Filters</h3>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-            >
-              <Filter className="w-4 h-4 mr-2" />
-              {showFilters ? 'Hide Filters' : 'Show Filters'}
-              {showFilters ? <ChevronUp className="w-4 h-4 ml-2" /> : <ChevronDown className="w-4 h-4 ml-2" />}
-            </button>
-          </div>
 
           {showFilters && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -872,64 +1209,192 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
                 </select>
               </div>
 
-              {/* Hospital Filter (Admin only) */}
-              {user.userType === 'ADMIN' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Hospital</label>
-                  <select
-                    value={hospitalFilter}
-                    onChange={(e) => setHospitalFilter(e.target.value)}
-                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
-                  >
-                    <option value="ALL">All Hospitals</option>
-                    {/* Add hospital options here */}
-                  </select>
+              {/* Healthcare Facility Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Healthcare Facility</label>
+                <select
+                  value={healthcareFacilityFilter}
+                  onChange={(e) => setHealthcareFacilityFilter(e.target.value)}
+                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+                >
+                  <option value="ALL">All Facilities</option>
+                  {Array.from(new Set(trips
+                    .map(t => t.healthcareFacilityName)
+                    .filter(Boolean) as string[]))
+                    .sort()
+                    .map(facility => (
+                      <option key={facility} value={facility}>{facility}</option>
+                    ))}
+                </select>
+              </div>
+            </div>
+          )}
+          </div>
+        </div>
+      )}
+
+      {/* Active Trips Tab Content */}
+      {activeTab === 'active' && (
+        <>
+          {/* Results Summary */}
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-700">
+              Showing <span className="font-medium">{filteredTrips.length}</span> of{' '}
+              <span className="font-medium">{activeTrips.length}</span> active trips
+            </p>
+            <p className="text-sm text-gray-500">
+              Last updated: {lastRefresh.toLocaleTimeString()}
+            </p>
+          </div>
+
+          {/* Trip Cards */}
+          <div className="space-y-4">
+            {filteredTrips.map((trip) => (
+              <TripCard 
+                key={trip.id} 
+                trip={trip} 
+                user={user}
+                onRefresh={fetchTrips}
+                onEdit={(tripId) => {
+                  // Navigate to edit page - for now show trip details modal
+                  setSelectedTrip(trips.find(t => t.id === tripId) || null);
+                  setShowTripModal(true);
+                }}
+                onDispatch={(trip) => {
+                  // Map Trip to TransportRequest format expected by TripDispatchScreen
+                  const tripForDispatch = {
+                    id: trip.id,
+                    patientId: trip.patientId,
+                    fromLocation: trip.fromLocation,
+                    toLocation: trip.toLocation,
+                    scheduledTime: trip.scheduledTime,
+                    transportLevel: trip.transportLevel,
+                    urgencyLevel: trip.urgencyLevel,
+                    diagnosis: trip.diagnosis,
+                    mobilityLevel: trip.mobilityLevel,
+                    oxygenRequired: trip.oxygenRequired,
+                    monitoringRequired: trip.monitoringRequired,
+                    notes: '',
+                    tripNumber: trip.tripNumber
+                  };
+                  setDispatchTrip(tripForDispatch as any);
+                  setShowDispatchScreen(true);
+                }}
+              />
+            ))}
+
+            {filteredTrips.length === 0 && (
+              <div className="text-center py-12">
+                <Truck className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No active trips found</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  {searchTerm || statusFilter !== 'ALL' || priorityFilter !== 'ALL' || transportFilter !== 'ALL' || dateFilter !== 'ALL'
+                    ? 'Try adjusting your filters to see more results.'
+                    : 'No active trips at this time.'}
+                </p>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Completed Trips Tab Content */}
+      {activeTab === 'completed' && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-lg shadow">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">
+                Completed Transport Requests ({completedTrips.length})
+              </h3>
+            </div>
+            <div className="p-6">
+              {completedTrips.length > 0 ? (
+                <div className="space-y-4">
+                  {completedTrips.map((trip) => (
+                    <div key={trip.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-4">
+                            <div>
+                              <h4 className="text-lg font-medium text-gray-900">
+                                Patient {trip.patientId} - Agency: {(() => {
+                                  // Find the selected agency response
+                                  const selectedResponse = trip.agencyResponses?.find((r: any) => r.isSelected === true && r.response === 'ACCEPTED');
+                                  if (selectedResponse) {
+                                    return selectedResponse.agency?.name || 'Unknown Agency';
+                                  }
+                                  // Fallback: check if there's an assigned agency ID
+                                  if (trip.assignedAgencyId) {
+                                    // Try to find agency name from responses
+                                    const agencyResponse = trip.agencyResponses?.find((r: any) => r.agencyId === trip.assignedAgencyId);
+                                    return agencyResponse?.agency?.name || 'Agency Assigned';
+                                  }
+                                  return 'No Agency';
+                                })()} - Urgency: {trip.urgencyLevel || 'Routine'} - {trip.transportLevel}
+                              </h4>
+                              <p className="text-base text-gray-600">
+                                {trip.origin || trip.fromLocation} → {trip.destination || trip.toLocation}
+                              </p>
+                              {trip.healthcareFacilityName && (
+                                <p className="text-sm text-gray-700 font-medium mt-1">
+                                  Facility: {trip.healthcareFacilityName}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="mt-2 grid grid-cols-5 gap-4 text-sm">
+                            <div>
+                              <div className="font-bold text-gray-800">Request Time:</div>
+                              <div className="text-gray-500">{trip.requestTime}</div>
+                            </div>
+                            {trip.acceptanceTime ? (
+                              <div>
+                                <div className="font-bold text-gray-800">Acceptance Time:</div>
+                                <div className="text-blue-600">{trip.acceptanceTime}</div>
+                              </div>
+                            ) : (
+                              <div>
+                                <div className="font-bold text-gray-800">Acceptance Time:</div>
+                                <div className="text-blue-600">N/A</div>
+                              </div>
+                            )}
+                            {trip.pickupTime && (
+                              <div>
+                                <div className="font-bold text-gray-800">Pickup Time:</div>
+                                <div className="text-gray-500">{trip.pickupTime}</div>
+                              </div>
+                            )}
+                            {trip.waitTime && (
+                              <div>
+                                <div className="font-bold text-gray-800">Wait Time:</div>
+                                <div className="text-green-600 font-semibold">{trip.waitTime}</div>
+                              </div>
+                            )}
+                            <div>
+                              <div className="font-bold text-gray-800">Completion Time:</div>
+                              <div className="text-gray-500">
+                                {trip.healthcareCompletionTime || trip.emsCompletionTime || 'N/A'}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <CheckCircle className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No completed trips</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Completed trips will appear here once they are finished.
+                  </p>
                 </div>
               )}
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* Results Summary */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-700">
-          Showing <span className="font-medium">{filteredTrips.length}</span> of{' '}
-          <span className="font-medium">{trips.length}</span> trips
-        </p>
-        <p className="text-sm text-gray-500">
-          Last updated: {lastRefresh.toLocaleTimeString()}
-        </p>
-      </div>
-
-      {/* Trip Cards */}
-      <div className="space-y-4">
-        {filteredTrips.map((trip) => (
-          <TripCard 
-            key={trip.id} 
-            trip={trip} 
-            user={user}
-            onRefresh={fetchTrips}
-            onEdit={(tripId) => {
-              // Navigate to edit page - for now show trip details modal
-              setSelectedTrip(trips.find(t => t.id === tripId) || null);
-              setShowTripModal(true);
-            }}
-          />
-        ))}
-
-        {filteredTrips.length === 0 && (
-          <div className="text-center py-12">
-            <Truck className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No trips found</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              {searchTerm || statusFilter !== 'ALL' || priorityFilter !== 'ALL' || transportFilter !== 'ALL' || dateFilter !== 'ALL'
-                ? 'Try adjusting your filters to see more results.'
-                : 'No trips have been created yet.'}
-            </p>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Trip Details Modal */}
       {showTripModal && selectedTrip && (
@@ -1059,6 +1524,35 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dispatch Screen Modal */}
+      {showDispatchScreen && dispatchTrip && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <TripDispatchScreen
+              tripId={dispatchTrip.id}
+              trip={dispatchTrip}
+              user={{
+                id: user.id,
+                email: user.email || '',
+                name: user.name || '',
+                userType: user.userType
+              }}
+              onDispatchComplete={() => {
+                console.log('TCC_DEBUG: Dispatch completed, refreshing trips...');
+                setShowDispatchScreen(false);
+                setDispatchTrip(null);
+                fetchTrips(); // Refresh trip list
+              }}
+              onCancel={() => {
+                console.log('TCC_DEBUG: Dispatch cancelled');
+                setShowDispatchScreen(false);
+                setDispatchTrip(null);
+              }}
+            />
           </div>
         </div>
       )}

@@ -368,7 +368,7 @@ export class TripService {
       
       console.log('TCC_DEBUG: Trip transformation complete. Processed', tripsWithDistance.length, 'trips');
 
-      // Enrich with creator info for healthcare-created trips
+      // Enrich with creator info for healthcare-created trips (including facility name)
       try {
         const creatorIds = Array.from(new Set(tripsWithDistance
           .map(t => (t as any).healthcareCreatedById)
@@ -376,7 +376,7 @@ export class TripService {
         if (creatorIds.length > 0) {
           const creators = await prisma.healthcareUser.findMany({
             where: { id: { in: creatorIds } },
-            select: { id: true, name: true, email: true }
+            select: { id: true, name: true, email: true, facilityName: true }
           });
           const creatorMap = new Map(creators.map(c => [c.id, c]));
           for (const t of tripsWithDistance as any[]) {
@@ -388,6 +388,22 @@ export class TripService {
         }
       } catch (e) {
         console.warn('TCC_DEBUG: creator enrichment skipped', e);
+      }
+
+      // Add healthcareFacilityName field to each trip
+      for (const trip of tripsWithDistance as any[]) {
+        // Priority: healthcareLocation.locationName > healthcareUser.facilityName > "TCC Created"
+        if (trip.healthcareLocation?.locationName) {
+          trip.healthcareFacilityName = trip.healthcareLocation.locationName;
+        } else if (trip.createdBy?.facilityName) {
+          trip.healthcareFacilityName = trip.createdBy.facilityName;
+        } else if (trip.healthcareCreatedById) {
+          // Trip was created by healthcare user but we don't have facility name
+          trip.healthcareFacilityName = 'Unknown Facility';
+        } else {
+          // Trip created by TCC/admin or no healthcare creator
+          trip.healthcareFacilityName = 'TCC Created';
+        }
       }
 
       console.log('TCC_DEBUG: About to return trips. Sample trip keys:', tripsWithDistance.length > 0 ? Object.keys(tripsWithDistance[0] || {}) : 'no trips');
