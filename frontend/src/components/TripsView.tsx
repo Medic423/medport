@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../services/api';
 import { 
   Search, 
   Filter, 
@@ -71,35 +72,107 @@ interface TripsViewProps {
 
 
 // Trip Card Component
-const TripCard: React.FC<{ trip: Trip; user: User }> = ({ trip, user }) => {
+interface TripCardProps {
+  trip: Trip;
+  user: {
+    id: string;
+    userType: 'ADMIN' | 'USER' | 'HEALTHCARE' | 'EMS';
+    facilityName?: string;
+  };
+  onRefresh: () => void;
+  onEdit?: (tripId: string) => void;
+}
+
+const TripCard: React.FC<TripCardProps> = ({ trip, user, onRefresh, onEdit }) => {
+  const [loading, setLoading] = useState(false);
 
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleString();
   };
 
-  const handleAcceptTrip = (trip: Trip) => {
-    // TODO: Implement accept functionality
-    console.log('Accept trip:', trip.id);
-    // This would call an API to accept the trip
+  const handleAcceptTrip = async (trip: Trip) => {
+    if (loading) return;
+    
+    // For TCC users, "Accept" means authorizing the trip for dispatch to agencies
+    // Update status to PENDING_DISPATCH to authorize it for dispatch
+    if (window.confirm(`Authorize trip ${trip.tripNumber || trip.patientId} for dispatch to agencies?`)) {
+      setLoading(true);
+      try {
+        const response = await tripsAPI.updateStatus(trip.id, {
+          status: 'PENDING_DISPATCH'
+        });
+        
+        if (response.data.success) {
+          onRefresh();
+        } else {
+          alert(response.data.error || 'Failed to authorize trip');
+        }
+      } catch (error: any) {
+        console.error('Error authorizing trip:', error);
+        alert(error.response?.data?.error || 'Failed to authorize trip');
+      } finally {
+        setLoading(false);
+      }
+    }
   };
 
-  const handleDeclineTrip = (trip: Trip) => {
-    // TODO: Implement decline functionality
-    console.log('Decline trip:', trip.id);
-    // This would call an API to decline the trip
+  const handleDeclineTrip = async (trip: Trip) => {
+    if (loading) return;
+    
+    // For TCC users, "Decline" means cancelling the trip
+    if (window.confirm(`Are you sure you want to cancel trip ${trip.tripNumber || trip.patientId}?`)) {
+      setLoading(true);
+      try {
+        const response = await tripsAPI.updateStatus(trip.id, {
+          status: 'CANCELLED'
+        });
+        
+        if (response.data.success) {
+          onRefresh();
+        } else {
+          alert(response.data.error || 'Failed to cancel trip');
+        }
+      } catch (error: any) {
+        console.error('Error cancelling trip:', error);
+        alert(error.response?.data?.error || 'Failed to cancel trip');
+      } finally {
+        setLoading(false);
+      }
+    }
   };
 
   const handleEditTrip = (trip: Trip) => {
-    // TODO: Implement edit functionality
-    console.log('Edit trip:', trip.id);
-    // This could open a modal or navigate to an edit page
+    if (onEdit) {
+      onEdit(trip.id);
+    } else {
+      // Fallback: show alert if callback not provided
+      alert('Edit functionality not available. Please use the trip details modal.');
+    }
   };
 
-  const handleDeleteTrip = (trip: Trip) => {
-    // TODO: Implement delete functionality
-    if (window.confirm(`Are you sure you want to delete trip ${trip.tripNumber}?`)) {
-      console.log('Delete trip:', trip.id);
-      // This would call an API to delete the trip
+  const handleDeleteTrip = async (trip: Trip) => {
+    if (loading) return;
+    
+    // Note: Currently using CANCELLED status as soft delete since DELETE endpoint doesn't exist
+    // For true permanent deletion, a DELETE endpoint would need to be added to the backend
+    if (window.confirm(`Are you sure you want to cancel/delete trip ${trip.tripNumber || trip.patientId}? This will mark the trip as cancelled.`)) {
+      setLoading(true);
+      try {
+        const response = await tripsAPI.updateStatus(trip.id, {
+          status: 'CANCELLED'
+        });
+        
+        if (response.data.success) {
+          onRefresh();
+        } else {
+          alert(response.data.error || 'Failed to cancel trip');
+        }
+      } catch (error: any) {
+        console.error('Error cancelling trip:', error);
+        alert(error.response?.data?.error || 'Failed to cancel trip');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -185,27 +258,35 @@ const TripCard: React.FC<{ trip: Trip; user: User }> = ({ trip, user }) => {
         <div className="flex space-x-2">
           <button 
             onClick={() => handleAcceptTrip(trip)}
-            className="bg-green-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-green-700 transition-colors"
+            disabled={loading || trip.status === 'CANCELLED' || trip.status === 'COMPLETED' || trip.status === 'HEALTHCARE_COMPLETED'}
+            className="bg-green-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title={trip.status === 'PENDING_DISPATCH' ? 'Trip already authorized' : 'Authorize trip for dispatch'}
           >
-            Accept
+            {loading ? '...' : trip.status === 'PENDING_DISPATCH' ? 'Authorized' : 'Authorize'}
           </button>
           <button 
             onClick={() => handleDeclineTrip(trip)}
-            className="bg-red-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-red-700 transition-colors"
+            disabled={loading || trip.status === 'CANCELLED' || trip.status === 'COMPLETED' || trip.status === 'HEALTHCARE_COMPLETED'}
+            className="bg-red-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Cancel trip"
           >
-            Decline
+            {loading ? '...' : trip.status === 'CANCELLED' ? 'Cancelled' : 'Cancel'}
           </button>
           <button 
             onClick={() => handleEditTrip(trip)}
-            className="bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-blue-700 transition-colors"
+            disabled={loading || trip.status === 'COMPLETED' || trip.status === 'HEALTHCARE_COMPLETED'}
+            className="bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Edit trip details"
           >
             Edit
           </button>
           <button 
             onClick={() => handleDeleteTrip(trip)}
-            className="bg-gray-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-gray-700 transition-colors"
+            disabled={loading}
+            className="bg-gray-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Permanently delete trip"
           >
-            Delete
+            {loading ? '...' : 'Delete'}
           </button>
         </div>
       </div>
@@ -824,7 +905,17 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
       {/* Trip Cards */}
       <div className="space-y-4">
         {filteredTrips.map((trip) => (
-          <TripCard key={trip.id} trip={trip} user={user} />
+          <TripCard 
+            key={trip.id} 
+            trip={trip} 
+            user={user}
+            onRefresh={fetchTrips}
+            onEdit={(tripId) => {
+              // Navigate to edit page - for now show trip details modal
+              setSelectedTrip(trips.find(t => t.id === tripId) || null);
+              setShowTripModal(true);
+            }}
+          />
         ))}
 
         {filteredTrips.length === 0 && (
