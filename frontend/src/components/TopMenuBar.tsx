@@ -10,7 +10,8 @@ import {
   LogOut,
   Menu,
   X,
-  Home
+  Home,
+  List
 } from 'lucide-react';
 import ChangePasswordModal from './ChangePasswordModal';
 
@@ -48,6 +49,12 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
 
   const menuItems = [
     {
+      label: 'Trip Management',
+      icon: List,
+      hasDropdown: false,
+      path: '/dashboard/operations/trips'
+    },
+    {
       label: 'Healthcare',
       icon: Building2,
       hasDropdown: true,
@@ -65,13 +72,8 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
         { label: 'Add Agency', path: '/ems-register' },
         { label: 'Units Management', path: '/dashboard/ems/units' },
         { label: 'Route Optimization', path: '/dashboard/operations/route-optimization' },
+        { label: 'Trip Calculator', path: '/dashboard/operations/analytics' },
       ]
-    },
-    {
-      label: 'Trip Calculator',
-      icon: Calculator,
-      hasDropdown: false,
-      path: '/dashboard/operations/analytics'
     },
     ...(user.userType === 'ADMIN' ? [{
       label: 'Admin Users',
@@ -127,11 +129,12 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
   const getActiveSection = () => {
     const path = location.pathname;
     if (path === '/' || path === '/dashboard') return null;
-    if (path.startsWith('/dashboard/operations/trips')) return null; // Trip Management is now only via Home icon
+    if (path.startsWith('/dashboard/operations/trips')) return 'Trip Management';
     if (path.startsWith('/dashboard/healthcare')) return 'Healthcare';
     if (path.startsWith('/dashboard/ems')) return 'EMS';
     if (path.startsWith('/dashboard/operations/route-optimization')) return 'EMS'; // Route Optimization moved to EMS
-    if (path.startsWith('/dashboard/operations')) return 'Trip Calculator';
+    if (path.startsWith('/dashboard/operations/analytics')) return 'EMS'; // Trip Calculator moved to EMS dropdown
+    if (path.startsWith('/dashboard/operations')) return 'EMS'; // Other operations routes
     if (path.startsWith('/dashboard/admin/users')) return 'Admin Users';
     return null;
   };
