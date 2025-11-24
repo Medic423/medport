@@ -12,7 +12,8 @@ import {
   Settings,
   BarChart3,
   Calculator,
-  Archive
+  Archive,
+  HelpCircle
 } from 'lucide-react';
 import api from '../services/api';
 import ChangePasswordModal from './ChangePasswordModal';
@@ -23,6 +24,7 @@ import UnitsManagement from './UnitsManagement';
 import TripStatusButtons from './TripStatusButtons';
 import EMSTripCalculator from './EMSTripCalculator';
 import { categorizeTripByDate, formatSectionHeader, DateCategory } from '../utils/dateUtils';
+import { HelpModal } from './HelpSystem';
 // import RevenueSettings from './RevenueSettings'; // Replaced by AgencySettings
 // import EMSAnalytics from './EMSAnalytics'; // Moved to backup - will move to Admin later
 
@@ -53,6 +55,8 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
   const [completedTrips, setCompletedTrips] = useState<any[]>([]);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [showHelp, setShowHelp] = useState(false);
+  const [helpTopic, setHelpTopic] = useState<string | null>(null);
   // First-login enforcement for EMS header
   useEffect(() => {
     try {
@@ -739,6 +743,27 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
             
             <div className="flex items-center space-x-4">
               <Notifications user={user} />
+              <button
+                onClick={() => {
+                  // Map current tab to help topic
+                  const topicMap: Record<string, string> = {
+                    'available': 'available-trips',
+                    'accepted': 'my-trips',
+                    'completed': 'completed-trips',
+                    'units': 'units',
+                    'users': 'users',
+                    'agency-info': 'agency-info',
+                    'trip-calculator': 'trip-calculator',
+                  };
+                  setHelpTopic(topicMap[activeTab] || 'index');
+                  setShowHelp(true);
+                }}
+                className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-gray-50 rounded-md transition-colors"
+                title="Help"
+              >
+                <HelpCircle className="h-4 w-4" />
+                <span>Help</span>
+              </button>
               <div className="flex items-center space-x-2">
                 <User className="h-5 w-5 text-gray-400" />
                 <span className="text-sm text-gray-700">{user.name}</span>
@@ -1551,6 +1576,14 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
       </main>
       {/* Change Password Modal */}
       <ChangePasswordModal isOpen={showChangePassword} onClose={() => setShowChangePassword(false)} />
+
+      {/* Help Modal */}
+      <HelpModal
+        isOpen={showHelp}
+        onClose={() => setShowHelp(false)}
+        userType="EMS"
+        topic={helpTopic || undefined}
+      />
     </div>
   );
 };

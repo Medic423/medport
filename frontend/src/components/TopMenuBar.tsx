@@ -11,9 +11,11 @@ import {
   Menu,
   X,
   Home,
-  List
+  List,
+  HelpCircle
 } from 'lucide-react';
 import ChangePasswordModal from './ChangePasswordModal';
+import { HelpModal } from './HelpSystem';
 
 interface TopMenuBarProps {
   user: {
@@ -32,6 +34,8 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [helpTopic, setHelpTopic] = useState<string | null>(null);
   // First-login enforcement: auto-open Change Password if flagged
   // Check on mount and whenever the user changes (post-login)
   useEffect(() => {
@@ -75,6 +79,12 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
         { label: 'Trip Calculator', path: '/dashboard/operations/analytics' },
       ]
     },
+    {
+      label: 'Help',
+      icon: HelpCircle,
+      hasDropdown: false,
+      path: 'HELP' // Special path to trigger help modal
+    },
     ...(user.userType === 'ADMIN' ? [{
       label: 'Admin Users',
       icon: Settings,
@@ -92,6 +102,25 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
     // Handle special actions
     if (path === 'CHANGE_PASSWORD') {
       setShowChangePassword(true);
+      setActiveDropdown(null);
+      setMobileMenuOpen(false);
+      return;
+    }
+    
+    if (path === 'HELP') {
+      // Determine help topic based on current route
+      const pathToTopic: Record<string, string> = {
+        '/dashboard/operations/trips': 'trip-management',
+        '/dashboard/healthcare/facilities': 'healthcare-facilities',
+        '/dashboard/ems/agencies': 'ems-agencies',
+        '/dashboard/ems/units': 'units',
+        '/dashboard/operations/route-optimization': 'route-optimization',
+        '/dashboard/operations/analytics': 'analytics',
+        '/dashboard/admin/users': 'user-management',
+      };
+      const currentPath = location.pathname;
+      setHelpTopic(pathToTopic[currentPath] || 'index');
+      setShowHelp(true);
       setActiveDropdown(null);
       setMobileMenuOpen(false);
       return;
@@ -375,6 +404,14 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
         isOpen={showChangePassword} 
         onClose={() => setShowChangePassword(false)} 
         userName={user.name}
+      />
+
+      {/* Help Modal */}
+      <HelpModal
+        isOpen={showHelp}
+        onClose={() => setShowHelp(false)}
+        userType="ADMIN"
+        topic={helpTopic || undefined}
       />
     </div>
   );

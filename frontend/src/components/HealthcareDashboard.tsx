@@ -15,7 +15,8 @@ import {
   Truck,
   MapPin,
   Send,
-  Shield
+  Shield,
+  HelpCircle
 } from 'lucide-react';
 import api from '../services/api';
 import Notifications from './Notifications';
@@ -28,6 +29,7 @@ import HealthcareSubUsersPanel from './HealthcareSubUsersPanel';
 import TripDispatchScreen from './TripDispatchScreen'; // Phase 3
 import { tripsAPI, unitsAPI } from '../services/api';
 import { categorizeTripByDate, formatSectionHeader, DateCategory } from '../utils/dateUtils';
+import { HelpModal } from './HelpSystem';
 
 interface HealthcareDashboardProps {
   user: {
@@ -76,6 +78,8 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
   // Phase 3: Dispatch screen state
   const [showDispatchScreen, setShowDispatchScreen] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [helpTopic, setHelpTopic] = useState<string | null>(null);
   // First-login enforcement for Healthcare header
   useEffect(() => {
     try {
@@ -809,6 +813,28 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
             
             <div className="flex items-center space-x-4">
               <Notifications user={user} />
+              <button
+                onClick={() => {
+                  // Map current tab to help topic
+                  const topicMap: Record<string, string> = {
+                    'create': 'helpfile01_create-request',
+                    'trips': 'transport-requests',
+                    'in-progress': 'in-progress',
+                    'completed': 'completed-trips',
+                    'hospital-settings': 'hospital-settings',
+                    'ems-providers': 'ems-providers',
+                    'destinations': 'destinations',
+                    'users': 'team-members',
+                  };
+                  setHelpTopic(topicMap[activeTab] || 'index');
+                  setShowHelp(true);
+                }}
+                className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
+                title="Help"
+              >
+                <HelpCircle className="h-4 w-4" />
+                <span>Help</span>
+              </button>
               <div className="flex items-center space-x-2">
                 <User className="h-5 w-5 text-gray-400" />
                 <span className="text-sm text-gray-700">{user.name}</span>
@@ -1797,6 +1823,14 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
 
       {/* Change Password Modal */}
       <ChangePasswordModal isOpen={showChangePassword} onClose={() => setShowChangePassword(false)} />
+
+      {/* Help Modal */}
+      <HelpModal
+        isOpen={showHelp}
+        onClose={() => setShowHelp(false)}
+        userType="HEALTHCARE"
+        topic={helpTopic || undefined}
+      />
     </div>
   );
 };
