@@ -103,8 +103,20 @@ api.interceptors.response.use(
       }
     } catch {}
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      const path = error.response?.config?.url || '';
+      // Don't redirect on login/auth endpoints - let the component handle the error
+      const isAuthEndpoint = path.startsWith('/api/auth/login') || 
+                            path.startsWith('/api/auth/healthcare/login') || 
+                            path.startsWith('/api/auth/ems/login') ||
+                            path.startsWith('/api/auth/register') ||
+                            path.startsWith('/api/auth/healthcare/register') ||
+                            path.startsWith('/api/auth/ems/register');
+      
+      if (!isAuthEndpoint) {
+        // Only redirect for authenticated endpoints, not login failures
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
