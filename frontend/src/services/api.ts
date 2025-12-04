@@ -159,6 +159,12 @@ export const authAPI = {
 
   getEMSAgencyInfo: () =>
     api.get('/api/auth/ems/agency/info'),
+
+  getEMSAgencyAvailability: () =>
+    api.get('/api/auth/ems/agency/availability'),
+
+  updateEMSAgencyAvailability: (data: { isAvailable: boolean; availableLevels: string[] }) =>
+    api.put('/api/auth/ems/agency/availability', data),
 };
 
 // Hospitals API

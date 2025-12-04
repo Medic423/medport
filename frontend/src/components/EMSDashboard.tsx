@@ -13,7 +13,8 @@ import {
   BarChart3,
   Calculator,
   Archive,
-  HelpCircle
+  HelpCircle,
+  Radio
 } from 'lucide-react';
 import api from '../services/api';
 import ChangePasswordModal from './ChangePasswordModal';
@@ -23,6 +24,7 @@ import EMSSubUsersPanel from './EMSSubUsersPanel';
 import UnitsManagement from './UnitsManagement';
 import TripStatusButtons from './TripStatusButtons';
 import EMSTripCalculator from './EMSTripCalculator';
+import EMSAgencyAvailabilityStatus from './EMSAgencyAvailabilityStatus';
 import { categorizeTripByDate, formatSectionHeader, DateCategory } from '../utils/dateUtils';
 import { HelpModal } from './HelpSystem';
 // import RevenueSettings from './RevenueSettings'; // Replaced by AgencySettings
@@ -796,6 +798,7 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
               { id: 'accepted', name: 'My Trips', icon: CheckCircle },
               { id: 'completed', name: 'Completed Trips', icon: Archive },
               { id: 'units', name: 'Units', icon: Truck },
+              { id: 'availability-status', name: 'Availability Status', icon: Radio },
               { id: 'users', name: 'Users', icon: Settings },
               { id: 'agency-info', name: 'Agency Info', icon: Settings },
               { id: 'trip-calculator', name: 'Trip Calculator', icon: Calculator }
@@ -1200,6 +1203,10 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
 
         {activeTab === 'units' && (
           <UnitsManagement user={user} acceptedTrips={acceptedTrips} />
+        )}
+
+        {activeTab === 'availability-status' && (
+          <EMSAgencyAvailabilityStatus user={user} />
         )}
 
         {activeTab === 'users' && (
