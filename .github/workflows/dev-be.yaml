@@ -36,6 +36,12 @@ jobs:
         run: npx prisma generate # Install project dependencies
         working-directory: '${{ env.FOLDER_PATH }}'
 
+      - name: Run Database Migrations
+        run: npx prisma migrate deploy
+        working-directory: '${{ env.FOLDER_PATH }}'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
       - name: Build application (if applicable)
         run: npm run build # Run your build script if you have one
         working-directory: '${{ env.FOLDER_PATH }}'

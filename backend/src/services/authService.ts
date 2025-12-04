@@ -60,59 +60,75 @@ export class AuthService {
       let userData: User;
       let mustChangePassword = false;
 
-      // Try to find user in CenterUser table first
-      user = await db.centerUser?.findUnique({
+      // Try to find user in CenterUser table first (check all users, including deleted)
+      let foundUser: any = null;
+      foundUser = await db.centerUser?.findFirst({
         where: { email }
       });
-      if (user) {
-        userType = user.userType as 'ADMIN' | 'USER';
+      if (foundUser) {
+        userType = foundUser.userType as 'ADMIN' | 'USER';
+        user = foundUser;
       }
 
       // If not found, try HealthcareUser table
-      if (!user) {
-        user = await db.healthcareUser?.findUnique({
+      if (!foundUser) {
+        foundUser = await db.healthcareUser?.findFirst({
           where: { email }
         });
-        if (user) {
+        if (foundUser) {
           userType = 'HEALTHCARE';
-          mustChangePassword = !!(user as any).mustChangePassword;
+          mustChangePassword = !!(foundUser as any).mustChangePassword;
+          user = foundUser;
         }
       }
 
       // If still not found, try EMSUser table
-      if (!user) {
-        user = await db.eMSUser?.findUnique({
+      if (!foundUser) {
+        foundUser = await db.eMSUser?.findFirst({
           where: { email }
         });
-        if (user) {
+        if (foundUser) {
           userType = 'EMS';
-          mustChangePassword = !!(user as any).mustChangePassword;
+          mustChangePassword = !!(foundUser as any).mustChangePassword;
+          user = foundUser;
         }
       }
 
-      console.log('TCC_DEBUG: User found in database:', user ? { id: user.id, email: user.email, name: user.name, isActive: user.isActive, userType } : 'null');
+      console.log('TCC_DEBUG: User found in database:', user ? { id: user.id, email: user.email, name: user.name, isActive: user.isActive, isDeleted: (user as any).isDeleted, userType } : 'null');
 
+      // Check if user exists at all
       if (!user) {
         console.log('TCC_DEBUG: No user found for email:', email);
         return {
           success: false,
-          error: 'Invalid email or password'
+          error: 'No account found with this email address. Please check your email or contact support.'
         };
       }
 
+      // Check if user is deleted
+      if ((user as any).isDeleted) {
+        console.log('TCC_DEBUG: User account has been deleted:', email);
+        return {
+          success: false,
+          error: 'This account has been deleted. Please contact support if you believe this is an error.'
+        };
+      }
+
+      // Check if user is inactive
       if (!user.isActive) {
         return {
           success: false,
-          error: 'Account is deactivated'
+          error: 'This account has been deactivated. Please contact support to reactivate your account.'
         };
       }
 
-      // Verify password
+      // Verify password (only check password if user exists and is not deleted/inactive)
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
+        console.log('TCC_DEBUG: Password mismatch for user:', email);
         return {
           success: false,
-          error: 'Invalid email or password'
+          error: 'Incorrect password. Please check your password and try again.'
         };
       }
 
@@ -207,11 +223,14 @@ export class AuthService {
           return null;
         }
         
-        user = await db.eMSUser.findUnique({
-          where: { email: decoded.email }
+        user = await db.eMSUser.findFirst({
+          where: { 
+            email: decoded.email,
+            isDeleted: false
+          }
         });
 
-        if (!user || !user.isActive) {
+        if (!user || !user.isActive || (user as any).isDeleted) {
           console.log('TCC_DEBUG: EMS user not found or inactive:', { 
             email: decoded.email, 
             found: !!user,
@@ -333,14 +352,29 @@ export class AuthService {
     // Locate user record by table based on userType
     let user: any = null;
     if (userType === 'ADMIN' || userType === 'USER') {
-      user = await db.centerUser.findUnique({ where: { email } });
+      user = await db.centerUser.findFirst({ 
+        where: { 
+          email,
+          isDeleted: false
+        } 
+      });
     } else if (userType === 'HEALTHCARE') {
-      user = await db.healthcareUser.findUnique({ where: { email } });
+      user = await db.healthcareUser.findFirst({ 
+        where: { 
+          email,
+          isDeleted: false
+        } 
+      });
     } else if (userType === 'EMS') {
-      user = await db.eMSUser.findUnique({ where: { email } });
+      user = await db.eMSUser.findFirst({ 
+        where: { 
+          email,
+          isDeleted: false
+        } 
+      });
     }
 
-    if (!user || !user.isActive) {
+    if (!user || !user.isActive || (user as any).isDeleted) {
       return { success: false, error: 'Account not found or inactive' };
     }
 

@@ -31,6 +31,8 @@ const AdminUsersPanel: React.FC = () => {
   const [resetPasswordModal, setResetPasswordModal] = useState<{ user: AdminUserItem; tempPassword: string } | null>(null);
   const [resetLoading, setResetLoading] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [deleteModal, setDeleteModal] = useState<{ user: AdminUserItem; tripCount?: number; subUserCount?: number } | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true); setError(null);
@@ -104,6 +106,65 @@ const AdminUsersPanel: React.FC = () => {
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error('Failed to copy:', err);
+    }
+  };
+
+  const handleDeleteUser = async (user: AdminUserItem) => {
+    // First, check for sub-users and trips
+    let tripCount = 0;
+    let subUserCount = 0;
+
+    if (user.domain === 'HEALTHCARE') {
+      // Count trips created by this user
+      try {
+        const tripsRes = await api.get('/api/trips', { params: { healthcareCreatedById: user.id } });
+        tripCount = tripsRes.data?.data?.length || 0;
+      } catch (e) {
+        console.error('Error counting trips:', e);
+      }
+      // Count sub-users
+      try {
+        const subUsersRes = await api.get('/api/auth/users', { params: { onlySubUsers: 'true' } });
+        const allSubUsers = subUsersRes.data?.users || [];
+        subUserCount = allSubUsers.filter((su: AdminUserItem) => su.parentUserId === user.id).length;
+      } catch (e) {
+        console.error('Error counting sub-users:', e);
+      }
+    } else if (user.domain === 'EMS') {
+      // Count sub-users for EMS
+      try {
+        const subUsersRes = await api.get('/api/auth/users', { params: { onlySubUsers: 'true' } });
+        const allSubUsers = subUsersRes.data?.users || [];
+        subUserCount = allSubUsers.filter((su: AdminUserItem) => su.parentUserId === user.id).length;
+      } catch (e) {
+        console.error('Error counting sub-users:', e);
+      }
+    }
+
+    setDeleteModal({ user, tripCount, subUserCount });
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!deleteModal) return;
+
+    const { user } = deleteModal;
+    setDeleteLoading(user.id);
+
+    try {
+      const res = await api.delete(`/api/auth/admin/users/${user.domain}/${user.id}`);
+      if (res.data?.success) {
+        setDeleteModal(null);
+        await load();
+        setError(null);
+      } else {
+        setError(res.data?.error || 'Failed to delete user');
+        setDeleteModal(null);
+      }
+    } catch (e: any) {
+      setError(e?.response?.data?.error || 'Failed to delete user');
+      setDeleteModal(null);
+    } finally {
+      setDeleteLoading(null);
     }
   };
 
@@ -185,9 +246,70 @@ const AdminUsersPanel: React.FC = () => {
                 >
                   {u.isActive ? 'Active' : 'Inactive'}
                 </button>
+                <button
+                  onClick={() => handleDeleteUser(u)}
+                  disabled={deleteLoading === u.id}
+                  className="ml-2 px-2 py-1 text-xs rounded bg-red-100 text-red-800 hover:bg-red-200 disabled:opacity-50"
+                  title="Delete user (soft delete)"
+                >
+                  {deleteLoading === u.id ? 'Deleting...' : 'Delete'}
+                </button>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Delete User Modal */}
+      {deleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Delete User: {deleteModal.user.name}
+            </h2>
+            <p className="text-sm text-gray-600 mb-4">
+              Are you sure you want to delete <strong>{deleteModal.user.name}</strong> ({deleteModal.user.email})?
+            </p>
+
+            <div className="mb-4 space-y-2">
+              {deleteModal.subUserCount !== undefined && deleteModal.subUserCount > 0 && (
+                <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                  <p className="text-sm text-red-800">
+                    <strong>Warning:</strong> This user has {deleteModal.subUserCount} sub-user(s). You must delete sub-users first.
+                  </p>
+                </div>
+              )}
+              {deleteModal.tripCount !== undefined && deleteModal.tripCount > 0 && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                  <p className="text-sm text-yellow-800">
+                    <strong>Note:</strong> This user has created {deleteModal.tripCount} trip(s). The trips will remain in the system, but the user will be marked as deleted.
+                  </p>
+                </div>
+              )}
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                <p className="text-sm text-blue-800">
+                  <strong>Soft Delete:</strong> The user will be marked as deleted but their data will be preserved. They will not be able to log in or appear in user lists.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setDeleteModal(null)}
+                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium"
+                disabled={deleteLoading === deleteModal.user.id}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteUser}
+                disabled={deleteLoading === deleteModal.user.id || (deleteModal.subUserCount !== undefined && deleteModal.subUserCount > 0)}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+              >
+                {deleteLoading === deleteModal.user.id ? 'Deleting...' : 'Delete User'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

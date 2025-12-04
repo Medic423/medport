@@ -849,12 +849,15 @@ router.get('/users', authenticateAdmin, async (req: AuthenticatedRequest, res) =
 
     const [centers, healthcare, ems] = await Promise.all([
       db.centerUser.findMany({
+        where: { isDeleted: false },
         select: { id: true, email: true, name: true, userType: true, isActive: true, createdAt: true, updatedAt: true }
       }),
       db.healthcareUser.findMany({
+        where: { isDeleted: false },
         select: { id: true, email: true, name: true, userType: true, isActive: true, createdAt: true, updatedAt: true, isSubUser: true, parentUserId: true, facilityName: true, orgAdmin: true }
       }),
       db.eMSUser.findMany({
+        where: { isDeleted: false },
         select: { id: true, email: true, name: true, userType: true, isActive: true, createdAt: true, updatedAt: true, isSubUser: true, parentUserId: true, agencyName: true, orgAdmin: true }
       })
     ]);
@@ -1016,6 +1019,125 @@ router.post('/admin/users/:domain/:id/reset-password', authenticateAdmin, async 
 });
 
 /**
+ * DELETE /api/auth/admin/users/:domain/:id
+ * Soft delete a user (ADMIN only). Domain: CENTER|HEALTHCARE|EMS
+ * Soft delete sets isDeleted=true, deletedAt=now(), and isActive=false
+ */
+router.delete('/admin/users/:domain/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    if (req.user?.userType !== 'ADMIN') {
+      return res.status(403).json({ success: false, error: 'Only administrators can delete users' });
+    }
+    
+    const { domain, id } = req.params as { domain: string; id: string };
+    const db = (await import('../services/databaseManager')).databaseManager.getPrismaClient();
+
+    // Check if user exists and get details for validation
+    let user: any = null;
+    let subUserCount = 0;
+    let tripCount = 0;
+
+    if (domain === 'CENTER') {
+      user = await db.centerUser.findUnique({ where: { id } });
+      if (!user) {
+        return res.status(404).json({ success: false, error: 'User not found' });
+      }
+      if (user.isDeleted) {
+        return res.status(400).json({ success: false, error: 'User is already deleted' });
+      }
+    } else if (domain === 'HEALTHCARE') {
+      user = await db.healthcareUser.findUnique({ where: { id } });
+      if (!user) {
+        return res.status(404).json({ success: false, error: 'User not found' });
+      }
+      if (user.isDeleted) {
+        return res.status(400).json({ success: false, error: 'User is already deleted' });
+      }
+      // Check for sub-users
+      subUserCount = await db.healthcareUser.count({ where: { parentUserId: id, isDeleted: false } });
+      if (subUserCount > 0) {
+        return res.status(400).json({ 
+          success: false, 
+          error: `Cannot delete user: ${subUserCount} sub-user(s) exist. Please delete sub-users first.` 
+        });
+      }
+      // Count trips created by this user
+      tripCount = await db.transportRequest.count({ where: { healthcareCreatedById: id } });
+    } else if (domain === 'EMS') {
+      user = await db.eMSUser.findUnique({ where: { id } });
+      if (!user) {
+        return res.status(404).json({ success: false, error: 'User not found' });
+      }
+      if (user.isDeleted) {
+        return res.status(400).json({ success: false, error: 'User is already deleted' });
+      }
+      // Check for sub-users
+      subUserCount = await db.eMSUser.count({ where: { parentUserId: id, isDeleted: false } });
+      if (subUserCount > 0) {
+        return res.status(400).json({ 
+          success: false, 
+          error: `Cannot delete user: ${subUserCount} sub-user(s) exist. Please delete sub-users first.` 
+        });
+      }
+    } else {
+      return res.status(400).json({ success: false, error: 'Invalid domain' });
+    }
+
+    // Perform soft delete
+    const deletedAt = new Date();
+    let deleted: any = null;
+
+    if (domain === 'CENTER') {
+      deleted = await db.centerUser.update({
+        where: { id },
+        data: { 
+          isDeleted: true,
+          deletedAt: deletedAt,
+          isActive: false
+        },
+        select: { id: true, email: true, name: true, userType: true, isActive: true, isDeleted: true, deletedAt: true }
+      });
+    } else if (domain === 'HEALTHCARE') {
+      deleted = await db.healthcareUser.update({
+        where: { id },
+        data: { 
+          isDeleted: true,
+          deletedAt: deletedAt,
+          isActive: false
+        },
+        select: { id: true, email: true, name: true, userType: true, isActive: true, isDeleted: true, deletedAt: true }
+      });
+    } else if (domain === 'EMS') {
+      deleted = await db.eMSUser.update({
+        where: { id },
+        data: { 
+          isDeleted: true,
+          deletedAt: deletedAt,
+          isActive: false
+        },
+        select: { id: true, email: true, name: true, userType: true, isActive: true, isDeleted: true, deletedAt: true }
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'User deleted successfully',
+      data: {
+        ...deleted,
+        tripsCreated: tripCount,
+        subUsersDeleted: subUserCount
+      }
+    });
+  } catch (error: any) {
+    console.error('Admin delete user error:', error);
+    if (error.code === 'P2025') {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+    res.status(500).json({ success: false, error: 'Failed to delete user' });
+  }
+});
+
+/**
  * POST /api/auth/ems/login
  * EMS Agency login endpoint
  */
@@ -1037,19 +1159,35 @@ router.post('/ems/login', async (req, res) => {
 
     const db = databaseManager.getPrismaClient();
     console.log('TCC_DEBUG: Looking for EMS user with email:', email);
+    
+    // First check if user exists at all (including deleted)
     const user = await db.eMSUser.findFirst({
-      where: { 
-        email,
-        isActive: true
-      }
+      where: { email }
     });
-    console.log('TCC_DEBUG: EMS user lookup result:', user ? { id: user.id, email: user.email, name: user.name } : 'NOT FOUND');
+    console.log('TCC_DEBUG: EMS user lookup result:', user ? { id: user.id, email: user.email, name: user.name, isDeleted: user.isDeleted, isActive: user.isActive } : 'NOT FOUND');
 
     if (!user) {
       console.log('TCC_DEBUG: No EMS user found for email:', email);
       return res.status(401).json({
         success: false,
-        error: 'Invalid credentials'
+        error: 'No account found with this email address. Please check your email or contact support.'
+      });
+    }
+
+    // Check if user is deleted
+    if (user.isDeleted) {
+      console.log('TCC_DEBUG: EMS user account has been deleted:', email);
+      return res.status(401).json({
+        success: false,
+        error: 'This account has been deleted. Please contact support if you believe this is an error.'
+      });
+    }
+
+    // Check if user is inactive
+    if (!user.isActive) {
+      return res.status(401).json({
+        success: false,
+        error: 'This account has been deactivated. Please contact support to reactivate your account.'
       });
     }
 
@@ -1059,7 +1197,7 @@ router.post('/ems/login', async (req, res) => {
       console.log('TCC_DEBUG: Password mismatch for user:', email);
       return res.status(401).json({
         success: false,
-        error: 'Invalid credentials'
+        error: 'Incorrect password. Please check your password and try again.'
       });
     }
 
@@ -1128,26 +1266,43 @@ router.post('/healthcare/login', async (req, res) => {
     }
 
     const db = databaseManager.getPrismaClient();
+    
+    // First check if user exists at all (including deleted)
     const user = await db.healthcareUser.findFirst({
-      where: { 
-        email,
-        isActive: true
-      }
+      where: { email }
     });
 
     if (!user) {
       console.log('TCC_DEBUG: No Healthcare user found for email:', email);
       return res.status(401).json({
         success: false,
-        error: 'Invalid credentials'
+        error: 'No account found with this email address. Please check your email or contact support.'
+      });
+    }
+
+    // Check if user is deleted
+    if (user.isDeleted) {
+      console.log('TCC_DEBUG: Healthcare user account has been deleted:', email);
+      return res.status(401).json({
+        success: false,
+        error: 'This account has been deleted. Please contact support if you believe this is an error.'
+      });
+    }
+
+    // Check if user is inactive
+    if (!user.isActive) {
+      return res.status(401).json({
+        success: false,
+        error: 'This account has been deactivated. Please contact support to reactivate your account.'
       });
     }
 
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
+      console.log('TCC_DEBUG: Password mismatch for Healthcare user:', email);
       return res.status(401).json({
         success: false,
-        error: 'Invalid credentials'
+        error: 'Incorrect password. Please check your password and try again.'
       });
     }
 

@@ -17,11 +17,14 @@ model CenterUser {
   emailNotifications      Boolean                  @default(true)
   smsNotifications        Boolean                  @default(false)
   isActive                Boolean                  @default(true)
+  deletedAt               DateTime?
+  isDeleted               Boolean                  @default(false)
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
   notificationLogs        NotificationLog[]
   notificationPreferences NotificationPreference[]
 
+  @@index([isDeleted])
   @@map("center_users")
 }
 
@@ -39,6 +42,8 @@ model HealthcareUser {
   parentUserId            String?
   mustChangePassword      Boolean                      @default(false)
   orgAdmin                Boolean                      @default(false)
+  deletedAt               DateTime?
+  isDeleted               Boolean                      @default(false)
   createdAt               DateTime                     @default(now())
   updatedAt               DateTime                     @updatedAt
   locations               HealthcareLocation[]
@@ -47,6 +52,7 @@ model HealthcareUser {
   parentUser              HealthcareUser?              @relation("HealthcareUserParent", fields: [parentUserId], references: [id])
   subUsers                HealthcareUser[]             @relation("HealthcareUserParent")
 
+  @@index([isDeleted])
   @@map("healthcare_users")
 }
 
@@ -154,12 +160,15 @@ model EMSUser {
   parentUserId       String?
   mustChangePassword Boolean    @default(false)
   orgAdmin           Boolean    @default(false)
+  deletedAt          DateTime?
+  isDeleted          Boolean    @default(false)
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
   agency             EMSAgency? @relation(fields: [agencyId], references: [id])
   parentUser         EMSUser?   @relation("EMSUserParent", fields: [parentUserId], references: [id])
   subUsers           EMSUser[]  @relation("EMSUserParent")
 
+  @@index([isDeleted])
   @@map("ems_users")
 }
 
