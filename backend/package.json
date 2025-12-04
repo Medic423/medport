@@ -8,9 +8,10 @@
     "dev:clean": "pkill -f nodemon 2>/dev/null || true; pkill -f 'ts-node src/index.ts' 2>/dev/null || true; lsof -ti:5001 | xargs kill -9 2>/dev/null || true; sleep 2; npm run dev",
     "dev:health": "../scripts/check-server-health.sh",
     "dev:safe": "npm run dev:health && npm run dev:clean",
-    "build": "prisma generate && tsc",
-    "build:prod": "prisma generate && tsc",
-    "postinstall": "prisma generate --schema=prisma/schema-production.prisma",
+    "build": "npx tsc",
+    "build:prod": "tsc",
+    "postbuild": "prisma generate --schema=prisma/schema.prisma",
+    "postbuild:prod": "prisma generate --schema=prisma/schema-production.prisma",
     "start": "node dist/index.js",
     "start:prod": "node dist/production-index.js",
     "setup-db": "node setup-db.js",
@@ -21,7 +22,7 @@
     "db:seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
-    "@prisma/client": "^5.7.1",
+    "@prisma/client": "^5.22.0",
     "@sendgrid/mail": "^8.1.6",
     "@types/bcryptjs": "^2.4.6",
     "@types/cookie-parser": "^1.4.9",

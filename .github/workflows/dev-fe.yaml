@@ -1,0 +1,48 @@
+# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
+name: develop - Deploy Dev Frontend
+
+on:
+  push:
+    branches:
+      - develop
+
+env:
+  APP_NAME: 'TraccEms-Dev-Frontend'
+  SLOT_NAME: 'production'
+  FOLDER_PATH: './frontend'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read #This is required for actions/checkout
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x' # Specify the Node.js version
+
+      - name: Install dependencies
+        run: npm install # Install project dependencies
+        working-directory: ${{ env.FOLDER_PATH }}
+
+      - name: Build React App
+        run: npm run build # Run your build script if you have one
+        working-directory: ${{ env.FOLDER_PATH }}
+
+      - name: Deploy to Azure Static Web Apps
+        id: builddeploy
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_FRONTEND_API_TOKEN }}
+          repo_token: ${{ secrets.PAT_TOKEN }} # Used for GitHub deployment
+          action: "upload"
+          app_location: "${{ env.FOLDER_PATH }}" # Location of your React app
+          api_location: "" # Leave empty if no API
+          output_location: 'dist' # Output directory of your React app build

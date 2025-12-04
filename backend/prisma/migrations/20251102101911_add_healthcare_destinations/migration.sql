@@ -30,3 +30,10 @@ CREATE INDEX IF NOT EXISTS "healthcare_destinations_is_active_idx" ON "healthcar
 -- AddForeignKey
 ALTER TABLE "healthcare_destinations" ADD CONSTRAINT "healthcare_destinations_healthcare_user_id_fkey" FOREIGN KEY ("healthcare_user_id") REFERENCES "healthcare_users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+
+
+
+
+
+
+

@@ -68,33 +68,46 @@ const TripDispatchScreen: React.FC<TripDispatchScreenProps> = ({ tripId, trip, u
   const [error, setError] = useState<string | null>(null);
   const [dispatching, setDispatching] = useState(false);
   const [success, setSuccess] = useState<{ message: string; agencyCount: number } | null>(null);
+  const [userSelectedMode, setUserSelectedMode] = useState(false); // Track if user manually selected mode
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false); // Track initial load
 
   // Load agencies when component mounts or mode changes
   useEffect(() => {
+    console.log('PHASE3_FRONTEND: useEffect triggered - mode:', dispatchMode, 'tripId:', tripId, 'radius:', notificationRadius);
     loadAgencies();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatchMode, notificationRadius, tripId]);
 
-  // Auto-adjust mode if current mode returns no agencies
+  // Auto-adjust mode ONLY on initial load if no agencies found
+  // Don't auto-adjust if user has manually selected a mode
   useEffect(() => {
-    if (agencies.length === 0 && !agenciesLoading) {
-      // If PREFERRED mode returns no agencies, try HYBRID
-      if (dispatchMode === 'PREFERRED') {
-        console.log('PHASE3_FRONTEND: No preferred agencies found, switching to HYBRID mode');
+    if (!initialLoadComplete && agencies.length === 0 && !agenciesLoading) {
+      console.log('PHASE3_FRONTEND: Initial load complete, no agencies found. Current mode:', dispatchMode);
+      // Only auto-adjust on initial load, not after user selections
+      if (dispatchMode === 'PREFERRED' && !userSelectedMode) {
+        console.log('PHASE3_FRONTEND: Auto-adjusting from PREFERRED to HYBRID on initial load');
         setDispatchMode('HYBRID');
-      }
-      // If GEOGRAPHIC mode returns no agencies, try HYBRID
-      else if (dispatchMode === 'GEOGRAPHIC') {
-        console.log('PHASE3_FRONTEND: No geographic agencies found, switching to HYBRID mode');
+        setInitialLoadComplete(true);
+      } else if (dispatchMode === 'GEOGRAPHIC' && !userSelectedMode) {
+        console.log('PHASE3_FRONTEND: Auto-adjusting from GEOGRAPHIC to HYBRID on initial load');
         setDispatchMode('HYBRID');
+        setInitialLoadComplete(true);
+      } else if (dispatchMode === 'HYBRID') {
+        // HYBRID mode loaded, mark initial load complete
+        setInitialLoadComplete(true);
       }
+    } else if (agencies.length > 0 && !initialLoadComplete) {
+      // Agencies loaded successfully, mark initial load complete
+      setInitialLoadComplete(true);
     }
-  }, [agencies, agenciesLoading, dispatchMode]);
+  }, [agencies, agenciesLoading, dispatchMode, initialLoadComplete, userSelectedMode]);
 
   const loadAgencies = async () => {
     try {
       setAgenciesLoading(true);
       setError(null);
+      // Keep existing agencies visible while loading to prevent flicker/disappearing
+      const previousAgencies = agencies;
       
       console.log('PHASE3_FRONTEND: Loading agencies for trip:', tripId, 'mode:', dispatchMode, 'radius:', notificationRadius);
       
@@ -108,22 +121,50 @@ const TripDispatchScreen: React.FC<TripDispatchScreenProps> = ({ tripId, trip, u
 
       if (response.data.success && response.data.data) {
         const agenciesList = response.data.data.agencies || [];
-        setAgencies(agenciesList);
         
-        // If no agencies and we're in PREFERRED or GEOGRAPHIC mode, log for debugging
-        if (agenciesList.length === 0) {
+        // Only update agencies if we got a valid response
+        // If list is empty but we had agencies before, keep the previous ones (might be a temporary API issue)
+        if (agenciesList.length > 0) {
+          setAgencies(agenciesList);
+          setError(null); // Clear any previous errors
+        } else {
+          // No agencies returned
           console.warn('PHASE3_FRONTEND: No agencies returned for mode:', dispatchMode);
           console.warn('PHASE3_FRONTEND: Response data:', response.data.data);
+          
+          // If we had agencies before and this is a mode change (not initial load), keep previous agencies
+          if (previousAgencies.length > 0 && initialLoadComplete) {
+            console.log('PHASE3_FRONTEND: Keeping previous agencies to prevent disappearing');
+            // Keep previous agencies, but show warning
+            setError(`No agencies available for ${dispatchMode} mode. Showing previous agencies. Try switching to HYBRID mode or increasing the notification radius.`);
+          } else {
+            // First load or no previous agencies - set empty and show error
+            setAgencies([]);
+            if (userSelectedMode || initialLoadComplete) {
+              setError(`No agencies available for ${dispatchMode} mode. Try switching to HYBRID mode or increasing the notification radius.`);
+            }
+          }
         }
       } else {
         const errorMsg = response.data?.error || 'Failed to load agencies';
         console.error('PHASE3_FRONTEND: API returned error:', errorMsg);
-        setError(errorMsg);
+        // Don't clear agencies on error - keep what we had
+        if (previousAgencies.length === 0) {
+          setError(errorMsg);
+        } else {
+          setError(`${errorMsg}. Showing previously loaded agencies.`);
+        }
       }
     } catch (err: any) {
       console.error('PHASE3_FRONTEND: Error loading agencies:', err);
       console.error('PHASE3_FRONTEND: Error response:', err.response?.data);
-      setError(err.response?.data?.error || 'Failed to load agencies');
+      // Don't clear agencies on error - keep what we had
+      const errorMsg = err.response?.data?.error || 'Failed to load agencies';
+      if (previousAgencies.length === 0) {
+        setError(errorMsg);
+      } else {
+        setError(`${errorMsg}. Showing previously loaded agencies.`);
+      }
     } finally {
       setAgenciesLoading(false);
     }
@@ -316,8 +357,13 @@ const TripDispatchScreen: React.FC<TripDispatchScreenProps> = ({ tripId, trip, u
                   name="dispatchMode"
                   value="PREFERRED"
                   checked={dispatchMode === 'PREFERRED'}
-                  onChange={(e) => setDispatchMode(e.target.value as any)}
-                  className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300"
+                  onChange={(e) => {
+                    console.log('PHASE3_FRONTEND: User selected PREFERRED mode');
+                    setUserSelectedMode(true);
+                    setDispatchMode(e.target.value as any);
+                  }}
+                  disabled={agenciesLoading || dispatching}
+                  className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <span className="ml-2 text-sm font-medium text-gray-700">
                   Preferred Providers
@@ -329,8 +375,13 @@ const TripDispatchScreen: React.FC<TripDispatchScreenProps> = ({ tripId, trip, u
                   name="dispatchMode"
                   value="GEOGRAPHIC"
                   checked={dispatchMode === 'GEOGRAPHIC'}
-                  onChange={(e) => setDispatchMode(e.target.value as any)}
-                  className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300"
+                  onChange={(e) => {
+                    console.log('PHASE3_FRONTEND: User selected GEOGRAPHIC mode');
+                    setUserSelectedMode(true);
+                    setDispatchMode(e.target.value as any);
+                  }}
+                  disabled={agenciesLoading || dispatching}
+                  className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <span className="ml-2 text-sm font-medium text-gray-700">
                   Geographic Radius
@@ -342,8 +393,13 @@ const TripDispatchScreen: React.FC<TripDispatchScreenProps> = ({ tripId, trip, u
                   name="dispatchMode"
                   value="HYBRID"
                   checked={dispatchMode === 'HYBRID'}
-                  onChange={(e) => setDispatchMode(e.target.value as any)}
-                  className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300"
+                  onChange={(e) => {
+                    console.log('PHASE3_FRONTEND: User selected HYBRID mode');
+                    setUserSelectedMode(true);
+                    setDispatchMode(e.target.value as any);
+                  }}
+                  disabled={agenciesLoading || dispatching}
+                  className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <span className="ml-2 text-sm font-medium text-gray-700">
                   Hybrid

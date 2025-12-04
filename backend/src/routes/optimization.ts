@@ -6,6 +6,8 @@ import { databaseManager } from '../services/databaseManager';
 import { authenticateAdmin, AuthenticatedRequest } from '../middleware/authenticateAdmin';
 import { authService } from '../services/authService';
 import { coordinateService } from '../services/coordinateService';
+import { returnTripOptimizer } from '../services/returnTripOptimizer';
+import { DistanceService } from '../services/distanceService';
 
 const router = express.Router();
 
@@ -1412,5 +1414,517 @@ function calculateBackhaulEfficiency(request1: any, request2: any): number {
   // Higher efficiency for shorter total distance
   return totalDistance > 0 ? 100 / totalDistance : 0;
 }
+
+// ============================================================================
+// PHASE 1: Agency Context & Trip Detection Endpoints
+// ============================================================================
+
+/**
+ * Helper function to resolve EMS agency context from authenticated request
+ */
+async function resolveEMSAgencyContext(req: AuthenticatedRequest): Promise<{ agencyId: string | null; agencyName: string | null }> {
+  const prisma = databaseManager.getPrismaClient();
+  let agencyId = req.user?.id || null; // For EMS tokens, this should already be agencyId
+  let agencyName: string | null = null;
+
+  try {
+    // If user is EMS type, id should be agencyId
+    if (req.user?.userType === 'EMS') {
+      agencyId = req.user.id || req.user.agencyId || null;
+    } else if (!agencyId && req.user?.email) {
+      // Fallback: find EMS user by email
+      const emsUser = await prisma.eMSUser.findUnique({ 
+        where: { email: req.user.email } 
+      });
+      agencyId = emsUser?.agencyId || null;
+    }
+
+    if (agencyId) {
+      const agency = await prisma.eMSAgency.findUnique({ 
+        where: { id: agencyId },
+        select: { id: true, name: true }
+      });
+      agencyName = agency?.name || null;
+    }
+  } catch (error) {
+    console.error('TCC_DEBUG: EMS agency resolution error:', error);
+  }
+
+  return { agencyId, agencyName };
+}
+
+/**
+ * GET /api/optimize/agency/home-base
+ * Get EMS agency home base coordinates
+ */
+router.get('/agency/home-base', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    // Check if agencyId is provided as query parameter (for TCC/Admin users)
+    const queryAgencyId = req.query.agencyId as string | undefined;
+    
+    console.log('TCC_DEBUG: /agency/home-base called with queryAgencyId:', queryAgencyId);
+    console.log('TCC_DEBUG: req.query:', req.query);
+    
+    let agencyId: string | null = null;
+    let agencyName: string | null = null;
+    
+    if (queryAgencyId) {
+      // TCC/Admin user selecting an agency
+      agencyId = queryAgencyId;
+      console.log('TCC_DEBUG: Using provided agencyId:', agencyId);
+    } else {
+      // EMS user - resolve from their context
+      const context = await resolveEMSAgencyContext(req);
+      agencyId = context.agencyId;
+      agencyName = context.agencyName;
+      console.log('TCC_DEBUG: Resolved agencyId from context:', agencyId);
+    }
+    
+    if (!agencyId) {
+      console.error('TCC_DEBUG: No agencyId resolved');
+      return res.status(400).json({
+        success: false,
+        error: 'Unable to resolve EMS agency. Please provide agencyId parameter or log in as EMS user.'
+      });
+    }
+
+    const prisma = databaseManager.getPrismaClient();
+    console.log('TCC_DEBUG: Looking up agency with id:', agencyId);
+    
+    const agency = await prisma.eMSAgency.findUnique({
+      where: { id: agencyId },
+      select: {
+        id: true,
+        name: true,
+        latitude: true,
+        longitude: true,
+        address: true,
+        city: true,
+        state: true,
+        zipCode: true
+      }
+    });
+
+    console.log('TCC_DEBUG: Agency found:', agency ? { id: agency.id, name: agency.name, hasLat: !!agency.latitude, hasLng: !!agency.longitude } : 'null');
+
+    if (!agency) {
+      console.error('TCC_DEBUG: Agency not found for id:', agencyId);
+      return res.status(404).json({
+        success: false,
+        error: `Agency not found with ID: ${agencyId}`
+      });
+    }
+
+    if (!agency.latitude || !agency.longitude) {
+      console.warn('TCC_DEBUG: Agency found but missing coordinates:', {
+        agencyId: agency.id,
+        agencyName: agency.name,
+        latitude: agency.latitude,
+        longitude: agency.longitude
+      });
+      return res.status(400).json({
+        success: false,
+        error: 'Agency home base coordinates not set. Please update agency settings with location coordinates.',
+        data: {
+          agencyId: agency.id,
+          agencyName: agency.name,
+          address: `${agency.address || ''}, ${agency.city || ''}, ${agency.state || ''} ${agency.zipCode || ''}`.trim()
+        }
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        lat: agency.latitude,
+        lng: agency.longitude,
+        agencyId: agency.id,
+        agencyName: agency.name,
+        address: `${agency.address}, ${agency.city}, ${agency.state} ${agency.zipCode}`
+      }
+    });
+  } catch (error) {
+    console.error('TCC_DEBUG: Error getting agency home base:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve agency home base'
+    });
+  }
+});
+
+/**
+ * GET /api/optimize/agency/current-trips
+ * Get agency's active/completed trips (where agency has ACCEPTED and isSelected)
+ */
+router.get('/agency/current-trips', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    // Check if agencyId is provided as query parameter (for TCC/Admin users)
+    const queryAgencyId = req.query.agencyId as string | undefined;
+    
+    let agencyId: string | null = null;
+    let agencyName: string | null = null;
+    
+    if (queryAgencyId) {
+      // TCC/Admin user selecting an agency
+      agencyId = queryAgencyId;
+    } else {
+      // EMS user - resolve from their context
+      const context = await resolveEMSAgencyContext(req);
+      agencyId = context.agencyId;
+      agencyName = context.agencyName;
+    }
+    
+    if (!agencyId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Unable to resolve EMS agency. Please provide agencyId parameter or log in as EMS user.'
+      });
+    }
+    
+    // Get agency name if not already resolved
+    if (!agencyName) {
+      const prisma = databaseManager.getPrismaClient();
+      const agency = await prisma.eMSAgency.findUnique({
+        where: { id: agencyId },
+        select: { name: true }
+      });
+      agencyName = agency?.name || null;
+    }
+
+    const prisma = databaseManager.getPrismaClient();
+    
+    console.log('TCC_DEBUG: Looking for current trips for agencyId:', agencyId);
+    
+    // Find trips where this agency has ACCEPTED response and isSelected = true
+    const agencyResponses = await prisma.agencyResponse.findMany({
+      where: {
+        agencyId: agencyId,
+        response: 'ACCEPTED',
+        isSelected: true
+      },
+      include: {
+        trip: {
+          include: {
+            destinationFacility: {
+              select: {
+                id: true,
+                name: true,
+                latitude: true,
+                longitude: true,
+                address: true,
+                city: true,
+                state: true
+              }
+            },
+            healthcareLocation: {
+              select: {
+                id: true,
+                locationName: true,
+                latitude: true,
+                longitude: true,
+                city: true,
+                state: true
+              }
+            },
+            originFacility: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: {
+        responseTimestamp: 'desc'
+      }
+    });
+
+    console.log('TCC_DEBUG: Found', agencyResponses.length, 'agency responses with ACCEPTED and isSelected=true');
+
+    // Filter to only include trips with status ACCEPTED, IN_PROGRESS, or COMPLETED
+    const activeTrips = agencyResponses
+      .map(response => response.trip)
+      .filter(trip => 
+        trip && 
+        ['ACCEPTED', 'IN_PROGRESS', 'COMPLETED'].includes(trip.status)
+      )
+      .map(trip => {
+        // Get destination coordinates
+        let destinationLat: number | null = null;
+        let destinationLng: number | null = null;
+        let destinationName: string = 'Unknown';
+
+        if (trip.destinationFacility?.latitude && trip.destinationFacility?.longitude) {
+          destinationLat = trip.destinationFacility.latitude;
+          destinationLng = trip.destinationFacility.longitude;
+          destinationName = trip.destinationFacility.name || 'Unknown';
+        } else if (trip.healthcareLocation?.latitude && trip.healthcareLocation?.longitude) {
+          // Fallback to healthcare location if facility doesn't have coordinates
+          destinationLat = trip.healthcareLocation.latitude;
+          destinationLng = trip.healthcareLocation.longitude;
+          destinationName = trip.healthcareLocation.locationName || 'Unknown';
+        }
+
+        return {
+          id: trip.id,
+          patientId: trip.patientId,
+          status: trip.status,
+          transportLevel: trip.transportLevel,
+          urgencyLevel: trip.urgencyLevel,
+          priority: trip.priority,
+          createdAt: trip.createdAt,
+          acceptedTimestamp: trip.acceptedTimestamp,
+          pickupTimestamp: trip.pickupTimestamp,
+          completionTimestamp: trip.completionTimestamp,
+          destination: {
+            name: destinationName,
+            lat: destinationLat,
+            lng: destinationLng,
+            facilityId: trip.destinationFacility?.id || null,
+            address: trip.destinationFacility?.address 
+              ? `${trip.destinationFacility.address}, ${trip.destinationFacility.city}, ${trip.destinationFacility.state}`
+              : null
+          },
+          origin: {
+            name: trip.originFacility?.name || 'Unknown',
+            facilityId: trip.originFacility?.id || null
+          }
+        };
+      });
+
+    console.log('TCC_DEBUG: Returning', activeTrips.length, 'active trips for agency', agencyId);
+    console.log('TCC_DEBUG: Active trip statuses:', activeTrips.map(t => t.status));
+
+    res.json({
+      success: true,
+      data: activeTrips
+    });
+  } catch (error) {
+    console.error('TCC_DEBUG: Error getting agency current trips:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve agency current trips'
+    });
+  }
+});
+
+/**
+ * POST /api/optimize/return-opportunities
+ * Find return trip opportunities based on current location and home base
+ * Returns both single-leg and multi-leg sequences
+ */
+router.post('/return-opportunities', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { currentLocation, homeBase, proximityRadius, maxLegs } = req.body;
+
+    // Validation
+    if (!currentLocation || !currentLocation.lat || !currentLocation.lng) {
+      return res.status(400).json({
+        success: false,
+        error: 'currentLocation with lat and lng is required'
+      });
+    }
+
+    if (!homeBase || !homeBase.lat || !homeBase.lng) {
+      return res.status(400).json({
+        success: false,
+        error: 'homeBase with lat and lng is required'
+      });
+    }
+
+    const proximityMiles = proximityRadius || 25; // Default 25 miles
+    const maxLegsCount = maxLegs || 3; // Default 3 legs max
+
+    const prisma = databaseManager.getPrismaClient();
+    
+    console.log('TCC_DEBUG: Finding return opportunities with:', {
+      currentLocation,
+      homeBase,
+      proximityRadius: proximityMiles,
+      maxLegs: maxLegsCount
+    });
+    
+    // Get all available trips (PENDING, PENDING_DISPATCH, ACCEPTED status)
+    const availableTrips = await prisma.transportRequest.findMany({
+      where: {
+        status: {
+          in: ['PENDING', 'PENDING_DISPATCH', 'ACCEPTED']
+        }
+      },
+      include: {
+        originFacility: {
+          select: {
+            id: true,
+            name: true,
+            latitude: true,
+            longitude: true,
+            address: true,
+            city: true,
+            state: true
+          }
+        },
+        destinationFacility: {
+          select: {
+            id: true,
+            name: true,
+            latitude: true,
+            longitude: true,
+            address: true,
+            city: true,
+            state: true
+          }
+        },
+        healthcareLocation: {
+          select: {
+            id: true,
+            locationName: true,
+            latitude: true,
+            longitude: true,
+            city: true,
+            state: true
+          }
+        }
+      }
+    });
+
+    console.log('TCC_DEBUG: Found', availableTrips.length, 'available trips for return optimization');
+    console.log('TCC_DEBUG: Trip statuses:', availableTrips.map(t => ({ id: t.id, status: t.status, hasOriginCoords: !!(t.originFacility?.latitude && t.originFacility?.longitude), hasDestCoords: !!(t.destinationFacility?.latitude && t.destinationFacility?.longitude) })));
+
+    // Use returnTripOptimizer to find single-leg opportunities
+    const singleLegOpportunities = await returnTripOptimizer.findSingleLegOpportunities(
+      currentLocation,
+      homeBase,
+      proximityMiles,
+      availableTrips
+    );
+
+    console.log('TCC_DEBUG: Found', singleLegOpportunities.length, 'single-leg opportunities');
+
+    // Format single-leg opportunities for response
+    const formattedSingleLeg = singleLegOpportunities.map(opp => {
+      const directReturnDistance = DistanceService.calculateDistance(
+        { latitude: currentLocation.lat, longitude: currentLocation.lng },
+        { latitude: homeBase.lat, longitude: homeBase.lng }
+      );
+      const totalDistance = opp.pickup.distanceFromPrevious + opp.tripDistance + opp.dropoff.distanceToNext;
+      const deadheadSavings = directReturnDistance - (opp.pickup.distanceFromPrevious + opp.dropoff.distanceToNext);
+      const deadheadCost = (opp.pickup.distanceFromPrevious + opp.dropoff.distanceToNext) * 2.0;
+      const efficiencyScore = totalDistance > 0 ? (opp.estimatedRevenue - deadheadCost) / totalDistance : 0;
+
+      return {
+        type: 'single-leg',
+        tripId: opp.tripId,
+        patientId: opp.patientId,
+        transportLevel: opp.transportLevel,
+        urgencyLevel: opp.urgencyLevel,
+        priority: opp.priority,
+        status: opp.status,
+        pickup: {
+          name: opp.pickup.name,
+          lat: opp.pickup.lat,
+          lng: opp.pickup.lng,
+          distanceFromCurrent: opp.pickup.distanceFromPrevious
+        },
+        dropoff: {
+          name: opp.dropoff.name,
+          lat: opp.dropoff.lat,
+          lng: opp.dropoff.lng,
+          distanceToHome: opp.dropoff.distanceToNext
+        },
+        estimatedRevenue: Math.round(opp.estimatedRevenue * 100) / 100,
+        deadheadSavings: Math.round(deadheadSavings * 10) / 10,
+        totalDistance: Math.round(totalDistance * 10) / 10,
+        efficiencyScore: Math.round(efficiencyScore * 100) / 100,
+        route: {
+          currentToPickup: opp.pickup.distanceFromPrevious,
+          pickupToDropoff: opp.tripDistance,
+          dropoffToHome: opp.dropoff.distanceToNext
+        }
+      };
+    });
+
+    // Find multi-leg sequences if maxLegs > 1
+    let multiLegSequences: any[] = [];
+    if (maxLegsCount > 1 && singleLegOpportunities.length > 0) {
+      console.log('TCC_DEBUG: Finding multi-leg sequences (max', maxLegsCount, 'legs)...');
+      const sequences = await returnTripOptimizer.findMultiLegSequences(
+        currentLocation,
+        homeBase,
+        proximityMiles,
+        maxLegsCount,
+        availableTrips
+      );
+      
+      console.log('TCC_DEBUG: Found', sequences.length, 'multi-leg sequences');
+
+      // Format multi-leg sequences for response
+      multiLegSequences = sequences.map(seq => ({
+        type: 'multi-leg',
+        legCount: seq.legs.length,
+        legs: seq.legs.map((leg, index) => ({
+          legNumber: index + 1,
+          tripId: leg.tripId,
+          patientId: leg.patientId,
+          transportLevel: leg.transportLevel,
+          urgencyLevel: leg.urgencyLevel,
+          priority: leg.priority,
+          pickup: {
+            name: leg.pickup.name,
+            lat: leg.pickup.lat,
+            lng: leg.pickup.lng,
+            distanceFromPrevious: leg.pickup.distanceFromPrevious
+          },
+          dropoff: {
+            name: leg.dropoff.name,
+            lat: leg.dropoff.lat,
+            lng: leg.dropoff.lng,
+            distanceToNext: leg.dropoff.distanceToNext
+          },
+          estimatedRevenue: Math.round(leg.estimatedRevenue * 100) / 100,
+          tripDistance: leg.tripDistance
+        })),
+        totalRevenue: seq.totalRevenue,
+        totalDistance: seq.totalDistance,
+        deadheadSavings: seq.deadheadSavings,
+        efficiencyScore: seq.efficiencyScore,
+        route: {
+          startLocation: seq.route.startLocation,
+          endLocation: seq.route.endLocation,
+          legDistances: seq.route.legDistances,
+          totalDeadheadMiles: seq.route.totalDeadheadMiles
+        }
+      }));
+    }
+
+    // Combine and sort all opportunities by efficiency score
+    const allOpportunities = [...formattedSingleLeg, ...multiLegSequences];
+    allOpportunities.sort((a, b) => b.efficiencyScore - a.efficiencyScore);
+
+    res.json({
+      success: true,
+      data: {
+        singleLeg: formattedSingleLeg,
+        multiLeg: multiLegSequences,
+        allOpportunities: allOpportunities,
+        counts: {
+          singleLeg: formattedSingleLeg.length,
+          multiLeg: multiLegSequences.length,
+          total: allOpportunities.length
+        },
+        proximityRadius: proximityMiles,
+        maxLegs: maxLegsCount,
+        currentLocation,
+        homeBase
+      }
+    });
+  } catch (error) {
+    console.error('TCC_DEBUG: Error finding return opportunities:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to find return trip opportunities'
+    });
+  }
+});
 
 export default router;

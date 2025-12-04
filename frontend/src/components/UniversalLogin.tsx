@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { LogIn, UserPlus } from 'lucide-react';
 import { authAPI } from '../services/api';
 
@@ -21,11 +21,27 @@ const UniversalLogin: React.FC<UniversalLoginProps> = ({ onLogin, onShowRegistra
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const errorRef = useRef<HTMLDivElement>(null);
+  
+  // Debug: Log when error state changes
+  useEffect(() => {
+    if (error) {
+      console.log('Universal Login: Error state is:', error);
+    }
+  }, [error]);
+
+  // Scroll to error when it appears
+  useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [error]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    // Don't clear error at start - only clear on successful login or when user types
+    // setError('');
 
     try {
       // Clear any existing session before attempting login
@@ -38,28 +54,60 @@ const UniversalLogin: React.FC<UniversalLoginProps> = ({ onLogin, onShowRegistra
       
       if (response.data.success) {
         console.log('Universal Login: Login successful, calling onLogin');
+        setError(''); // Clear error on successful login
         if (response.data.mustChangePassword === true) {
           try { localStorage.setItem('mustChangePassword', 'true'); } catch {}
         }
         onLogin(response.data.user, response.data.token);
       } else {
         console.log('Universal Login: Login failed:', response.data.error);
-        setError(response.data.error || 'Login failed');
+        const errorMsg = response.data.error || 'Login failed';
+        setError(errorMsg);
+        setLoading(false);
+        return; // Prevent any further execution
       }
     } catch (error: any) {
       console.log('Universal Login: Login error:', error);
       console.log('Universal Login: Error response:', error.response?.data);
-      setError(error.response?.data?.error || 'Login failed. Please check your credentials.');
-    } finally {
+      const errorMessage = error.response?.data?.error || 'Login failed. Please check your credentials.';
+      console.log('Universal Login: Setting error message:', errorMessage);
+      
+      // Set error message
+      console.log('Universal Login: Setting error state to:', errorMessage);
+      setError(errorMessage);
+      
+      // Ensure loading is set to false AFTER error is set
       setLoading(false);
+      
+      // Double-check error is set after a brief delay
+      setTimeout(() => {
+        console.log('Universal Login: Error state after timeout - checking...');
+      }, 200);
+      
+      return; // Prevent any further execution
     }
+    
+    // This should not be reached if there's an error
+    setLoading(false);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
+    const newValue = e.target.value;
+    const fieldName = e.target.name as keyof typeof formData;
+    const oldValue = formData[fieldName];
+    
+    // Only update form data if value actually changed
+    if (newValue !== oldValue) {
+      // Clear error when user starts typing (better UX)
+      if (error) {
+        console.log('Universal Login: Clearing error because user is typing in', fieldName);
+        setError('');
+      }
+      setFormData(prev => ({
+        ...prev,
+        [fieldName]: newValue
+      }));
+    }
   };
 
   return (
@@ -67,15 +115,13 @@ const UniversalLogin: React.FC<UniversalLoginProps> = ({ onLogin, onShowRegistra
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <div className="mx-auto h-16 w-16 bg-blue-600 rounded-full flex items-center justify-center shadow-lg">
-            <LogIn className="h-8 w-8 text-white" />
+          <div className="mx-auto mb-6">
+            <img 
+              src="/tracc-banner.png" 
+              alt="Tracc Logo" 
+              className="w-full max-w-md mx-auto"
+            />
           </div>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            Welcome to TCC
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Sign in to your account
-          </p>
         </div>
 
         {/* Login Form */}
@@ -117,15 +163,24 @@ const UniversalLogin: React.FC<UniversalLoginProps> = ({ onLogin, onShowRegistra
 
           {/* Error Message */}
           {error && (
-            <div className="rounded-md bg-red-50 p-4 border border-red-200">
+            <div 
+              ref={errorRef}
+              className="rounded-md bg-red-50 p-4 border-2 border-red-300 shadow-md"
+              style={{ 
+                animation: 'fadeIn 0.3s ease-in',
+                minHeight: '60px'
+              }}
+              role="alert"
+              aria-live="assertive"
+            >
               <div className="flex">
                 <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <svg className="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                   </svg>
                 </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-red-800">{error}</p>
+                <div className="ml-3 flex-1">
+                  <p className="text-sm font-semibold text-red-900">{error}</p>
                 </div>
               </div>
             </div>

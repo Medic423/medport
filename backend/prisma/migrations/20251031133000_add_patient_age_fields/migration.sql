@@ -8,3 +8,10 @@ ALTER TABLE "trips"
   ADD COLUMN IF NOT EXISTS "patientAgeCategory" TEXT;
 
 
+
+
+
+
+
+
+

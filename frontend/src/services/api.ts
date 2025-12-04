@@ -7,9 +7,23 @@ const DEFAULT_DEV_URL = 'http://localhost:5001';
 // NOTE: Prefer setting VITE_API_URL in env. This fallback should point to the
 // stable production API domain. Updated to latest Vercel backend deployment.
 // Backend production URL (ensure this matches the latest Vercel backend deployment or set VITE_API_URL)
-const DEFAULT_PROD_URL = 'https://backend-i8skd8g0y-chuck-ferrells-projects.vercel.app';
+const DEFAULT_PROD_URL = 'https://dev-api.traccems.com';
 
-let API_BASE_URL = EXPLICIT_API_URL || (import.meta.env.DEV ? '' : DEFAULT_PROD_URL);
+// Runtime config via public/config.js → window.__TCC_CONFIG__
+type TCCRuntimeConfig = { apiBaseUrl?: string } | undefined;
+function readRuntimeConfig(): TCCRuntimeConfig {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const g: any = typeof window !== 'undefined' ? (window as any) : undefined;
+    return g && g.__TCC_CONFIG__ ? (g.__TCC_CONFIG__ as TCCRuntimeConfig) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+const RUNTIME_API_URL = readRuntimeConfig()?.apiBaseUrl;
+
+let API_BASE_URL = RUNTIME_API_URL || EXPLICIT_API_URL || (import.meta.env.DEV ? '' : DEFAULT_PROD_URL);
 
 // Guard against accidental cross-environment use
 try {
@@ -89,8 +103,20 @@ api.interceptors.response.use(
       }
     } catch {}
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      const path = error.response?.config?.url || '';
+      // Don't redirect on login/auth endpoints - let the component handle the error
+      const isAuthEndpoint = path.startsWith('/api/auth/login') || 
+                            path.startsWith('/api/auth/healthcare/login') || 
+                            path.startsWith('/api/auth/ems/login') ||
+                            path.startsWith('/api/auth/register') ||
+                            path.startsWith('/api/auth/healthcare/register') ||
+                            path.startsWith('/api/auth/ems/register');
+      
+      if (!isAuthEndpoint) {
+        // Only redirect for authenticated endpoints, not login failures
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -130,6 +156,15 @@ export const authAPI = {
 
   changePassword: (data: { currentPassword: string; newPassword: string }) =>
     api.put('/api/auth/password/change', data),
+
+  getEMSAgencyInfo: () =>
+    api.get('/api/auth/ems/agency/info'),
+
+  getEMSAgencyAvailability: () =>
+    api.get('/api/auth/ems/agency/availability'),
+
+  updateEMSAgencyAvailability: (data: { isAvailable: boolean; availableLevels: string[] }) =>
+    api.put('/api/auth/ems/agency/availability', data),
 };
 
 // Hospitals API
@@ -266,6 +301,10 @@ export const healthcareAgenciesAPI = {
     if (params?.radius) queryParams.set('radius', params.radius.toString());
     return api.get(`/api/healthcare/agencies/trip-agencies?${queryParams.toString()}`);
   },
+
+  // Get available agencies (marked as available by EMS users)
+  getAvailable: (params?: { radius?: string }) =>
+    api.get('/api/healthcare/agencies/available', { params }),
 };
 
 // Healthcare Destinations API

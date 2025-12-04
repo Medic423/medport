@@ -12,7 +12,9 @@ import {
   Settings,
   BarChart3,
   Calculator,
-  Archive
+  Archive,
+  HelpCircle,
+  Radio
 } from 'lucide-react';
 import api from '../services/api';
 import ChangePasswordModal from './ChangePasswordModal';
@@ -22,25 +24,41 @@ import EMSSubUsersPanel from './EMSSubUsersPanel';
 import UnitsManagement from './UnitsManagement';
 import TripStatusButtons from './TripStatusButtons';
 import EMSTripCalculator from './EMSTripCalculator';
+import EMSAgencyAvailabilityStatus from './EMSAgencyAvailabilityStatus';
 import { categorizeTripByDate, formatSectionHeader, DateCategory } from '../utils/dateUtils';
+import { HelpModal } from './HelpSystem';
 // import RevenueSettings from './RevenueSettings'; // Replaced by AgencySettings
 // import EMSAnalytics from './EMSAnalytics'; // Moved to backup - will move to Admin later
 
-interface EMSDashboardProps {
-  user: {
-    id: string;
-    email: string;
-    name: string;
-    userType: string;
-    agencyName?: string;
-  };
-  onLogout: () => void;
+interface EMSUser {
+  id: string;
+  email: string;
+  name: string;
+  userType: string;
+  agencyName?: string;
+  agencyId?: string;
+  orgAdmin?: boolean;
 }
 
-const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
+interface AgencySaveResult {
+  user: EMSUser;
+  token?: string;
+  emailChanged?: boolean;
+}
+
+interface EMSDashboardProps {
+  user: EMSUser;
+  onLogout: () => void;
+  onUserUpdate?: (user: EMSUser, token?: string) => void;
+}
+
+const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdate }) => {
   const [activeTab, setActiveTab] = useState('available'); // Default to Available Trips (new landing page)
   const [completedTrips, setCompletedTrips] = useState<any[]>([]);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [showHelp, setShowHelp] = useState(false);
+  const [helpTopic, setHelpTopic] = useState<string | null>(null);
   // First-login enforcement for EMS header
   useEffect(() => {
     try {
@@ -52,6 +70,12 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
     } catch {}
   }, [user?.id]);
   
+  useEffect(() => {
+    if (!alert) return;
+    const timeout = setTimeout(() => setAlert(null), 5000);
+    return () => clearTimeout(timeout);
+  }, [alert]);
+
   // Format time from minutes to hours and minutes
   const formatTime = (minutes: number | string): string => {
     const totalMinutes = typeof minutes === 'string' ? parseInt(minutes) : minutes;
@@ -84,6 +108,15 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [settingsSuccess, setSettingsSuccess] = useState(false);
+
+  useEffect(() => {
+    setSettingsData(prev => ({
+      ...prev,
+      agencyName: user.agencyName || '',
+      email: user.email || '',
+      contactName: user.name || ''
+    }));
+  }, [user.agencyName, user.email, user.name]);
   
   // Revenue calculation settings
   const [revenueSettings, setRevenueSettings] = useState({
@@ -158,12 +191,12 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
     setFilteredAvailableTrips(filtered);
   }, [availableTrips, filters]);
 
-  // Load trips from API
+  // Load trips from API with auto-refresh every 10 seconds
   useEffect(() => {
     loadTrips();
     const interval = setInterval(() => {
       loadTrips();
-    }, 30000);
+    }, 10000); // Refresh every 10 seconds
     return () => clearInterval(interval);
   }, []);
 
@@ -173,12 +206,13 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
       // Load available trips (PENDING status)
       const availableResponse = await api.get('/api/trips?status=PENDING');
       
-      // Load agency responses for this agency to check if we've already responded to each trip
-      const responsesResponse = await api.get('/api/agency-responses');
-      const agencyResponses = responsesResponse.data?.data || [];
-      
       // Get current agency ID (use agencyId if available, otherwise user.id)
       const currentAgencyId = user.agencyId || user.id;
+      
+      // Load agency responses for this agency to check if we've already responded to each trip
+      // Filter by agencyId on the backend for better performance
+      const responsesResponse = await api.get(`/api/agency-responses?agencyId=${currentAgencyId}`);
+      const agencyResponses = responsesResponse.data?.data || [];
       
       // Create a set of trip IDs that THIS agency has already responded to with ACCEPTED or DECLINED
       // (exclude PENDING responses - those are created during dispatch but not yet a real response)
@@ -187,6 +221,18 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
           .filter((r: any) => 
             r.agencyId === currentAgencyId && 
             (r.response === 'ACCEPTED' || r.response === 'DECLINED')
+          )
+          .map((r: any) => r.tripId)
+      );
+      
+      // Create a set of trip IDs that THIS agency has ACCEPTED AND been SELECTED for (for filtering "My Trips")
+      // Only trips where healthcare selected this agency should appear in "My Trips"
+      const acceptedTripsByThisAgency = new Set(
+        agencyResponses
+          .filter((r: any) => 
+            r.agencyId === currentAgencyId && 
+            r.response === 'ACCEPTED' &&
+            r.isSelected === true  // Only include trips where THIS agency was selected by healthcare
           )
           .map((r: any) => r.tripId)
       );
@@ -289,8 +335,16 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
       if (acceptedResponse.data) {
         const acceptedData = acceptedResponse.data;
         if (acceptedData.success && acceptedData.data) {
+          // Filter to only show trips that THIS agency has accepted
+          const tripsAcceptedByThisAgency = acceptedData.data.filter((trip: any) => 
+            acceptedTripsByThisAgency.has(trip.id)
+          );
+          
+          console.log('TCC_DEBUG: Filtering accepted trips - Total:', acceptedData.data.length, 'Accepted and selected by this agency:', tripsAcceptedByThisAgency.length, 'Agency ID:', currentAgencyId);
+          console.log('TCC_DEBUG: Agency responses for this agency:', agencyResponses.filter((r: any) => r.agencyId === currentAgencyId && r.response === 'ACCEPTED').map((r: any) => ({ tripId: r.tripId, isSelected: r.isSelected })));
+          
           // Calculate distance and time for each accepted trip
-          const transformedAccepted = await Promise.all(acceptedData.data.map(async (trip: any) => {
+          const transformedAccepted = await Promise.all(tripsAcceptedByThisAgency.map(async (trip: any) => {
             let distance = 'N/A';
             let estimatedTime = 'N/A';
             
@@ -345,23 +399,32 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
       }
 
       // Load completed trips separately
-      const completedResponse = await api.get('/api/trips?status=COMPLETED');
+      // Filter by EMS completion timestamp instead of status
+      const completedResponse = await api.get('/api/trips');
       
       if (completedResponse.data) {
         const completedData = completedResponse.data;
         if (completedData.success && completedData.data) {
-          const transformedCompleted = completedData.data.map((trip: any) => ({
-            id: trip.id,
-            patientId: trip.patientId,
-            origin: trip.fromLocation || 'Unknown Origin',
-            destination: trip.toLocation || 'Unknown Destination',
-            transportLevel: trip.transportLevel || 'BLS',
-            urgencyLevel: trip.urgencyLevel || 'Routine',
-            status: trip.status,
-            requestTime: new Date(trip.createdAt).toLocaleString(),
-            completionTime: trip.completionTimestamp ? new Date(trip.completionTimestamp).toLocaleString() : null,
-            scheduledTime: trip.scheduledTime
-          }));
+          const transformedCompleted = completedData.data
+            .filter((trip: any) => trip.emsCompletionTimestamp !== null)
+            .map((trip: any) => ({
+              id: trip.id,
+              patientId: trip.patientId,
+              origin: trip.fromLocation || 'Unknown Origin',
+              destination: trip.toLocation || 'Unknown Destination',
+              transportLevel: trip.transportLevel || 'BLS',
+              urgencyLevel: trip.urgencyLevel || 'Routine',
+              status: trip.status,
+              requestTime: new Date(trip.createdAt).toLocaleString(),
+              completionTime: trip.emsCompletionTimestamp 
+                ? new Date(trip.emsCompletionTimestamp).toLocaleString() 
+                : null,
+              emsCompletionTime: trip.emsCompletionTimestamp 
+                ? new Date(trip.emsCompletionTimestamp).toLocaleString() 
+                : null,
+              emsCompletionTimestampISO: trip.emsCompletionTimestamp || null,
+              scheduledTime: trip.scheduledTime
+            }));
           setCompletedTrips(transformedCompleted);
         }
       }
@@ -508,6 +571,30 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
     });
   };
 
+  const handleAgencySaveSuccess = (result: AgencySaveResult) => {
+    const updatedUser = result.user;
+
+    if (onUserUpdate) {
+      onUserUpdate(updatedUser, result.token);
+    }
+
+    setSettingsData(prev => ({
+      ...prev,
+      agencyName: updatedUser.agencyName || prev.agencyName,
+      email: updatedUser.email,
+      contactName: updatedUser.name
+    }));
+
+    setAlert({
+      type: 'success',
+      message: result.emailChanged
+        ? 'Agency settings saved. Your login email has been updated.'
+        : 'Agency settings saved successfully.'
+    });
+
+    setActiveTab('available');
+  };
+
   // Calculate revenue preview on component mount
   useEffect(() => {
     calculateRevenuePreview();
@@ -618,7 +705,7 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
       const payload = {
         status: newStatus,
         ...(newStatus === 'IN_PROGRESS' && { pickupTimestamp: new Date().toISOString() }),
-        ...(newStatus === 'COMPLETED' && { completionTimestamp: new Date().toISOString() })
+        ...(newStatus === 'COMPLETED' && { emsCompletionTimestamp: new Date().toISOString() })
       };
       console.log('TCC_DEBUG: Sending API request to /api/trips/' + tripId + '/status with payload:', payload);
       
@@ -658,6 +745,27 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
             
             <div className="flex items-center space-x-4">
               <Notifications user={user} />
+              <button
+                onClick={() => {
+                  // Map current tab to help topic
+                  const topicMap: Record<string, string> = {
+                    'available': 'available-trips',
+                    'accepted': 'my-trips',
+                    'completed': 'completed-trips',
+                    'units': 'units',
+                    'users': 'users',
+                    'agency-info': 'agency-info',
+                    'trip-calculator': 'trip-calculator',
+                  };
+                  setHelpTopic(topicMap[activeTab] || 'index');
+                  setShowHelp(true);
+                }}
+                className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-gray-50 rounded-md transition-colors"
+                title="Help"
+              >
+                <HelpCircle className="h-4 w-4" />
+                <span>Help</span>
+              </button>
               <div className="flex items-center space-x-2">
                 <User className="h-5 w-5 text-gray-400" />
                 <span className="text-sm text-gray-700">{user.name}</span>
@@ -690,6 +798,7 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
               { id: 'accepted', name: 'My Trips', icon: CheckCircle },
               { id: 'completed', name: 'Completed Trips', icon: Archive },
               { id: 'units', name: 'Units', icon: Truck },
+              { id: 'availability-status', name: 'Availability Status', icon: Radio },
               { id: 'users', name: 'Users', icon: Settings },
               { id: 'agency-info', name: 'Agency Info', icon: Settings },
               { id: 'trip-calculator', name: 'Trip Calculator', icon: Calculator }
@@ -719,6 +828,25 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {alert && (
+          <div
+            className={`mb-6 flex items-start justify-between rounded-md border px-4 py-3 ${
+              alert.type === 'success'
+                ? 'border-green-200 bg-green-50 text-green-800'
+                : 'border-red-200 bg-red-50 text-red-800'
+            }`}
+          >
+            <span className="text-sm font-medium">{alert.message}</span>
+            <button
+              type="button"
+              onClick={() => setAlert(null)}
+              className="ml-4 text-sm font-medium underline"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         {/* Unit selection modal removed (units not used) */}
         {/* Overview tab removed - Available Trips is now the landing page */}
 
@@ -1065,7 +1193,7 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
         {activeTab === 'agency-info' && (
           <AgencySettings 
             user={user} 
-            onSaveSuccess={() => setActiveTab('available')} 
+            onSaveSuccess={handleAgencySaveSuccess} 
           />
         )}
 
@@ -1075,6 +1203,10 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
 
         {activeTab === 'units' && (
           <UnitsManagement user={user} acceptedTrips={acceptedTrips} />
+        )}
+
+        {activeTab === 'availability-status' && (
+          <EMSAgencyAvailabilityStatus user={user} />
         )}
 
         {activeTab === 'users' && (
@@ -1451,6 +1583,14 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout }) => {
       </main>
       {/* Change Password Modal */}
       <ChangePasswordModal isOpen={showChangePassword} onClose={() => setShowChangePassword(false)} />
+
+      {/* Help Modal */}
+      <HelpModal
+        isOpen={showHelp}
+        onClose={() => setShowHelp(false)}
+        userType="EMS"
+        topic={helpTopic || undefined}
+      />
     </div>
   );
 };

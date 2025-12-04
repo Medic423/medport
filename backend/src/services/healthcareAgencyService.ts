@@ -352,6 +352,146 @@ export class HealthcareAgencyService {
       orderBy: { name: 'asc' },
     });
   }
+
+  /**
+   * Get available agencies for a healthcare user (agencies marked as available)
+   * Returns only agencies where availabilityStatus.isAvailable = true
+   * Includes both registered agencies (with EMS accounts) and user-added agencies
+   * Filters by distance from healthcare user's primary facility location
+   */
+  async getAvailableAgenciesForHealthcareUser(
+    healthcareUserId: string,
+    radiusMiles?: number | null
+  ): Promise<any[]> {
+    const prisma = databaseManager.getPrismaClient();
+    const { DistanceService } = await import('./distanceService');
+
+    // Get healthcare user's primary location (or first active location)
+    const primaryLocation = await prisma.healthcareLocation.findFirst({
+      where: {
+        healthcareUserId: healthcareUserId,
+        isActive: true,
+        OR: [
+          { isPrimary: true },
+          { isPrimary: false } // If no primary, get first active
+        ]
+      },
+      orderBy: [
+        { isPrimary: 'desc' }, // Primary first
+        { createdAt: 'asc' } // Then oldest
+      ]
+    });
+
+    // Get all agencies: both registered agencies (with EMS accounts) and user-added agencies
+    // Registered agencies have addedBy = null (they have EMS user accounts)
+    // User-added agencies have addedBy = healthcareUserId (manually added by healthcare user)
+    const agencies = await prisma.eMSAgency.findMany({
+      where: {
+        OR: [
+          { addedBy: null }, // Registered agencies with EMS accounts
+          { addedBy: healthcareUserId } // Agencies manually added by this healthcare user
+        ],
+        isActive: true,
+      },
+      include: {
+        healthcarePreferences: {
+          where: {
+            healthcareUserId: healthcareUserId,
+          },
+          select: {
+            isPreferred: true,
+          },
+        },
+      },
+    });
+
+    // Filter to only available agencies, calculate distances, and transform
+    const availableAgenciesWithDistance = agencies
+      .filter((agency: any) => {
+        // Check if agency has availabilityStatus and isAvailable is true
+        if (!agency.availabilityStatus) {
+          return false;
+        }
+        
+        try {
+          const status = typeof agency.availabilityStatus === 'string'
+            ? JSON.parse(agency.availabilityStatus)
+            : agency.availabilityStatus;
+          
+          return status.isAvailable === true;
+        } catch (error) {
+          console.error('Error parsing availabilityStatus:', error);
+          return false;
+        }
+      })
+      .map((agency: any) => {
+        // Parse availabilityStatus to get availableLevels
+        let availableLevels: string[] = [];
+        try {
+          const status = typeof agency.availabilityStatus === 'string'
+            ? JSON.parse(agency.availabilityStatus)
+            : agency.availabilityStatus;
+          availableLevels = Array.isArray(status.availableLevels) ? status.availableLevels : [];
+        } catch (error) {
+          console.error('Error parsing availableLevels:', error);
+        }
+
+        // Calculate distance from healthcare facility to agency
+        let distance: number | null = null;
+        if (primaryLocation?.latitude && primaryLocation?.longitude && 
+            agency.latitude && agency.longitude) {
+          try {
+            distance = DistanceService.calculateDistance(
+              { latitude: primaryLocation.latitude, longitude: primaryLocation.longitude },
+              { latitude: agency.latitude, longitude: agency.longitude }
+            );
+          } catch (error) {
+            console.error('Error calculating distance:', error);
+          }
+        }
+
+        return {
+          ...agency,
+          isPreferred: agency.healthcarePreferences?.[0]?.isPreferred || false,
+          availableLevels,
+          distance,
+          healthcarePreferences: undefined, // Remove nested preferences
+        };
+      })
+      .filter((agency: any) => {
+        // Filter by radius if specified (null means show all)
+        if (radiusMiles === null || radiusMiles === undefined) {
+          return true; // Show all if no radius specified
+        }
+        if (agency.distance === null) {
+          return true; // Include agencies without distance (no coordinates)
+        }
+        return agency.distance <= radiusMiles;
+      });
+
+    // Sort by preferred status first, then by distance, then alphabetically
+    availableAgenciesWithDistance.sort((a: any, b: any) => {
+      // Preferred agencies first
+      if (a.isPreferred && !b.isPreferred) return -1;
+      if (!a.isPreferred && b.isPreferred) return 1;
+      
+      // Then by distance (closest first)
+      if (a.distance !== null && b.distance !== null) {
+        if (a.distance !== b.distance) {
+          return a.distance - b.distance;
+        }
+      } else if (a.distance !== null && b.distance === null) {
+        return -1; // Agencies with distance come before those without
+      } else if (a.distance === null && b.distance !== null) {
+        return 1;
+      }
+      
+      // Finally alphabetically by name
+      return a.name.localeCompare(b.name);
+    });
+
+    return availableAgenciesWithDistance;
+  }
 }
 
 export const healthcareAgencyService = new HealthcareAgencyService();

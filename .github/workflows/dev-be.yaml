@@ -1,0 +1,55 @@
+# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
+name: develop - Deploy Dev Backend
+
+on:
+  push:
+    branches:
+      - develop
+
+env:
+  APP_NAME: 'TraccEms-Dev-Backend'
+  SLOT_NAME: 'production'
+  FOLDER_PATH: './backend'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read #This is required for actions/checkout
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x' # Specify the Node.js version
+
+      - name: Install dependencies
+        run: npm install # Install project dependencies
+        working-directory: '${{ env.FOLDER_PATH }}'
+        
+      - name: Generate Prisma Models
+        run: npx prisma generate # Install project dependencies
+        working-directory: '${{ env.FOLDER_PATH }}'
+
+      - name: Run Database Migrations
+        run: npx prisma migrate deploy
+        working-directory: '${{ env.FOLDER_PATH }}'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Build application (if applicable)
+        run: npm run build # Run your build script if you have one
+        working-directory: '${{ env.FOLDER_PATH }}'
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v2 # Action for deploying to Azure Web Apps
+        with:
+          app-name: '${{ env.APP_NAME }}' # Replace with your Azure App Service name
+          slot-name: '${{ env.SLOT_NAME }}' # Or your desired slot name (e.g., 'staging')
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }} # Secret containing your Azure publish profile
+          package: '${{ env.FOLDER_PATH }}' # Path to your application package (defaults to current directory)

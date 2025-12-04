@@ -22,14 +22,16 @@ export interface CreateTripRequest {
 }
 
 export interface UpdateTripStatusRequest {
-  status: 'PENDING' | 'PENDING_DISPATCH' | 'ACCEPTED' | 'DECLINED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  status: 'PENDING' | 'PENDING_DISPATCH' | 'ACCEPTED' | 'DECLINED' | 'IN_PROGRESS' | 'HEALTHCARE_COMPLETED' | 'COMPLETED' | 'CANCELLED';
   assignedAgencyId?: string;
   assignedUnitId?: string;
   acceptedTimestamp?: string;
   pickupTimestamp?: string;
   arrivalTimestamp?: string;
   departureTimestamp?: string;
-  completionTimestamp?: string;
+  completionTimestamp?: string;  // Keep for backward compatibility
+  healthcareCompletionTimestamp?: string;  // NEW: Healthcare completion (patient leaves hospital)
+  emsCompletionTimestamp?: string;  // NEW: EMS completion (arrives at destination)
   urgencyLevel?: 'Routine' | 'Urgent' | 'Emergent';
   transportLevel?: string;
   diagnosis?: string;
@@ -183,28 +185,35 @@ export class TripService {
       if (filters?.healthcareUserId && !filters?.fromLocationId) {
         console.log('TCC_FILTER_DEBUG: Filtering trips for healthcareUserId:', filters.healthcareUserId);
         
-        // Get all location IDs for this user
-        const locations = await prisma.healthcareLocation.findMany({
-          where: { healthcareUserId: filters.healthcareUserId },
-          select: { id: true }
-        });
-        const locationIds = locations.map(loc => loc.id);
-        
-        console.log('TCC_FILTER_DEBUG: Found', locationIds.length, 'locations for user');
-        
-        if (locationIds.length > 0) {
-          // Multi-location user: filter by their locations OR trips they created
-          where.OR = [
-            { fromLocationId: { in: locationIds } },
-            { healthcareCreatedById: filters.healthcareUserId }
-          ];
-          console.log('MULTI_LOC: Filtering by user locations OR created trips:', locationIds.length, 'locations');
-          console.log('TCC_FILTER_DEBUG: OR filter applied:', JSON.stringify(where.OR, null, 2));
-        } else {
-          // Single-facility user: filter by trips they created
+        try {
+          // Get all location IDs for this user
+          const locations = await prisma.healthcareLocation.findMany({
+            where: { healthcareUserId: filters.healthcareUserId },
+            select: { id: true }
+          });
+          const locationIds = locations.map(loc => loc.id);
+          
+          console.log('TCC_FILTER_DEBUG: Found', locationIds.length, 'locations for user');
+          
+          if (locationIds.length > 0) {
+            // Multi-location user: filter by their locations OR trips they created
+            where.OR = [
+              { fromLocationId: { in: locationIds } },
+              { healthcareCreatedById: filters.healthcareUserId }
+            ];
+            console.log('MULTI_LOC: Filtering by user locations OR created trips:', locationIds.length, 'locations');
+            console.log('TCC_FILTER_DEBUG: OR filter applied:', JSON.stringify(where.OR, null, 2));
+          } else {
+            // Single-facility user: filter by trips they created
+            where.healthcareCreatedById = filters.healthcareUserId;
+            console.log('SINGLE_LOC: Filtering by created user ID:', filters.healthcareUserId);
+            console.log('TCC_FILTER_DEBUG: Filter applied - healthcareCreatedById:', filters.healthcareUserId);
+          }
+        } catch (locationError: any) {
+          console.error('TCC_DEBUG: Error fetching healthcare locations:', locationError);
+          // If location query fails, fall back to filtering by healthcareCreatedById only
           where.healthcareCreatedById = filters.healthcareUserId;
-          console.log('SINGLE_LOC: Filtering by created user ID:', filters.healthcareUserId);
-          console.log('TCC_FILTER_DEBUG: Filter applied - healthcareCreatedById:', filters.healthcareUserId);
+          console.log('TCC_DEBUG: Fallback to healthcareCreatedById filter due to location query error');
         }
       }
       if (filters?.transportLevel) {
@@ -286,10 +295,16 @@ export class TripService {
             healthcareCreatedById: (t as any).healthcareCreatedById
           }))
         );
-      } catch {}
+      } catch (e) {
+        console.warn('TCC_DEBUG: Error logging trip samples:', e);
+      }
+      
+      console.log('TCC_DEBUG: Starting trip transformation...');
 
       // Calculate distance and time for each trip, and format location strings
-      const tripsWithDistance = await Promise.all(trips.map(async (trip) => {
+      console.log('TCC_DEBUG: Processing', trips.length, 'trips for distance calculation...');
+      const tripsWithDistance = await Promise.all(trips.map(async (trip, index) => {
+        if (index === 0) console.log('TCC_DEBUG: Processing first trip:', trip.id);
         try {
           // Format fromLocation: use healthcareLocation, originFacility, or fallback to fromLocation string
           let fromLocationStr = (trip as any).fromLocation || '';
@@ -350,8 +365,10 @@ export class TripService {
           };
         }
       }));
+      
+      console.log('TCC_DEBUG: Trip transformation complete. Processed', tripsWithDistance.length, 'trips');
 
-      // Enrich with creator info for healthcare-created trips
+      // Enrich with creator info for healthcare-created trips (including facility name)
       try {
         const creatorIds = Array.from(new Set(tripsWithDistance
           .map(t => (t as any).healthcareCreatedById)
@@ -359,7 +376,7 @@ export class TripService {
         if (creatorIds.length > 0) {
           const creators = await prisma.healthcareUser.findMany({
             where: { id: { in: creatorIds } },
-            select: { id: true, name: true, email: true }
+            select: { id: true, name: true, email: true, facilityName: true }
           });
           const creatorMap = new Map(creators.map(c => [c.id, c]));
           for (const t of tripsWithDistance as any[]) {
@@ -373,10 +390,48 @@ export class TripService {
         console.warn('TCC_DEBUG: creator enrichment skipped', e);
       }
 
-      return { success: true, data: tripsWithDistance };
-    } catch (error) {
+      // Add healthcareFacilityName field to each trip
+      for (const trip of tripsWithDistance as any[]) {
+        // Priority: healthcareLocation.locationName > healthcareUser.facilityName > "TCC Created"
+        if (trip.healthcareLocation?.locationName) {
+          trip.healthcareFacilityName = trip.healthcareLocation.locationName;
+        } else if (trip.createdBy?.facilityName) {
+          trip.healthcareFacilityName = trip.createdBy.facilityName;
+        } else if (trip.healthcareCreatedById) {
+          // Trip was created by healthcare user but we don't have facility name
+          trip.healthcareFacilityName = 'Unknown Facility';
+        } else {
+          // Trip created by TCC/admin or no healthcare creator
+          trip.healthcareFacilityName = 'TCC Created';
+        }
+      }
+
+      console.log('TCC_DEBUG: About to return trips. Sample trip keys:', tripsWithDistance.length > 0 ? Object.keys(tripsWithDistance[0] || {}) : 'no trips');
+      console.log('TCC_DEBUG: Returning', tripsWithDistance.length, 'trips');
+      
+      // Serialize to ensure all data is JSON-compatible (Prisma Date objects need conversion)
+      const serializedTrips = tripsWithDistance.map(trip => {
+        const serialized: any = { ...trip };
+        // Convert Date objects to ISO strings for JSON serialization
+        ['createdAt', 'updatedAt', 'scheduledTime', 'requestTimestamp', 'acceptedTimestamp', 
+         'pickupTimestamp', 'completionTimestamp', 'healthcareCompletionTimestamp', 'emsCompletionTimestamp'].forEach(field => {
+          if (serialized[field] && serialized[field] instanceof Date) {
+            serialized[field] = serialized[field].toISOString();
+          }
+        });
+        return serialized;
+      });
+
+      return { success: true, data: serializedTrips };
+    } catch (error: any) {
       console.error('TCC_DEBUG: Error getting trips:', error);
-      return { success: false, error: 'Failed to fetch transport requests' };
+      console.error('TCC_DEBUG: Error details:', {
+        message: error?.message,
+        stack: error?.stack,
+        name: error?.name,
+        code: error?.code
+      });
+      return { success: false, error: error?.message || 'Failed to fetch transport requests' };
     }
   }
 
@@ -445,22 +500,54 @@ export class TripService {
   /**
    * Update trip status
    */
-  async updateTripStatus(id: string, data: UpdateTripStatusRequest) {
-    console.log('TCC_DEBUG: Updating trip status:', { id, data });
+  async updateTripStatus(id: string, data: UpdateTripStatusRequest, userType?: string) {
+    console.log('TCC_DEBUG: Updating trip status:', { id, data, userType });
     console.log('EMS_UNIT_ASSIGN: updateTripStatus called with:', {
       tripId: id,
       status: data.status,
       assignedUnitId: data.assignedUnitId,
-      assignedAgencyId: data.assignedAgencyId
+      assignedAgencyId: data.assignedAgencyId,
+      userType: userType
     });
     
     try {
       // Ignore assignedUnitId: unit assignment is disabled (Option B)
 
       const updateData: any = {
-        status: data.status,
         updatedAt: new Date()
       };
+
+      // Handle completion based on user type
+      // Defensive logic: Prevent wrong user types from setting wrong completion statuses
+      if (userType === 'HEALTHCARE' && data.status === 'HEALTHCARE_COMPLETED') {
+        // Healthcare completion: set healthcareCompletionTimestamp and status
+        updateData.healthcareCompletionTimestamp = data.healthcareCompletionTimestamp 
+          ? new Date(data.healthcareCompletionTimestamp) 
+          : new Date();
+        updateData.status = 'HEALTHCARE_COMPLETED';
+        console.log('TCC_DEBUG: Healthcare completion - setting healthcareCompletionTimestamp:', updateData.healthcareCompletionTimestamp);
+      } else if (userType === 'HEALTHCARE' && data.status === 'COMPLETED') {
+        // Healthcare user trying to use old COMPLETED status - convert to HEALTHCARE_COMPLETED
+        console.log('TCC_DEBUG: Healthcare user sent COMPLETED status, converting to HEALTHCARE_COMPLETED');
+        updateData.healthcareCompletionTimestamp = data.healthcareCompletionTimestamp || data.completionTimestamp
+          ? new Date(data.healthcareCompletionTimestamp || data.completionTimestamp) 
+          : new Date();
+        updateData.status = 'HEALTHCARE_COMPLETED';
+      } else if (userType === 'EMS' && data.status === 'COMPLETED') {
+        // EMS completion (final state): set emsCompletionTimestamp and status
+        updateData.emsCompletionTimestamp = data.emsCompletionTimestamp 
+          ? new Date(data.emsCompletionTimestamp) 
+          : new Date();
+        updateData.status = 'COMPLETED';
+        console.log('TCC_DEBUG: EMS completion - setting emsCompletionTimestamp:', updateData.emsCompletionTimestamp);
+      } else if (userType === 'EMS' && data.status === 'HEALTHCARE_COMPLETED') {
+        // EMS user cannot set HEALTHCARE_COMPLETED status - reject or ignore
+        console.warn('TCC_DEBUG: EMS user attempted to set HEALTHCARE_COMPLETED status - ignoring');
+        updateData.status = data.status; // Allow status update but don't set timestamp
+      } else {
+        // Other status updates (or if userType doesn't match completion status)
+        updateData.status = data.status;
+      }
 
       // TCC_EDIT_DEBUG: Log incoming payload for validation
       console.log('TCC_EDIT_DEBUG: Incoming update payload:', {
@@ -588,8 +675,16 @@ export class TripService {
       if (data.departureTimestamp) {
         updateData.departureTimestamp = new Date(data.departureTimestamp);
       }
+      // Handle completion timestamps (backward compatibility and explicit setting)
       if (data.completionTimestamp) {
         updateData.completionTimestamp = new Date(data.completionTimestamp);
+      }
+      // Handle new completion timestamp fields (if explicitly provided and not already set above)
+      if (data.healthcareCompletionTimestamp && !updateData.healthcareCompletionTimestamp) {
+        updateData.healthcareCompletionTimestamp = new Date(data.healthcareCompletionTimestamp);
+      }
+      if (data.emsCompletionTimestamp && !updateData.emsCompletionTimestamp) {
+        updateData.emsCompletionTimestamp = new Date(data.emsCompletionTimestamp);
       }
 
       // Do not update unit status; units are not in workflow

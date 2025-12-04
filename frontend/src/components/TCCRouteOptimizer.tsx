@@ -24,27 +24,45 @@ import {
 
 const TCCRouteOptimizer: React.FC = () => {
   // State management
-  const [selectedUnit, setSelectedUnit] = useState<string>('');
-  const [unitLocation, setUnitLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [startingLocation, setStartingLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [matchedFacility, setMatchedFacility] = useState<string | null>(null);
   const [gettingLocation, setGettingLocation] = useState(false);
   const [locationMode, setLocationMode] = useState<'gps' | 'manual'>('gps');
   const [manualAddress, setManualAddress] = useState('');
   const [facilities, setFacilities] = useState<any[]>([]);
   const [filteredFacilities, setFilteredFacilities] = useState<any[]>([]);
-  const [availableUnits, setAvailableUnits] = useState<Unit[]>([]);
-  const [pendingRequests, setPendingRequests] = useState<TransportRequest[]>([]);
-  const [selectedRequests, setSelectedRequests] = useState<string[]>([]);
+  const [availableTrips, setAvailableTrips] = useState<any[]>([]);
+  const [selectedTrips, setSelectedTrips] = useState<string[]>([]);
   const [optimizationResults, setOptimizationResults] = useState<OptimizationResponse | null>(null);
   const [backhaulAnalysis, setBackhaulAnalysis] = useState<BackhaulAnalysisResponse | null>(null);
   const [revenueAnalytics, setRevenueAnalytics] = useState<RevenueAnalyticsResponse | null>(null);
   const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetricsResponse | null>(null);
   
+  // Phase 3: Agency context state
+  const [selectedAgencyId, setSelectedAgencyId] = useState<string | null>(null);
+  const [availableAgencies, setAvailableAgencies] = useState<any[]>([]);
+  const [loadingAgencies, setLoadingAgencies] = useState(false);
+  const [homeBase, setHomeBase] = useState<{ lat: number; lng: number; agencyName?: string; address?: string } | null>(null);
+  const [currentTrip, setCurrentTrip] = useState<any | null>(null);
+  const [currentTrips, setCurrentTrips] = useState<any[]>([]);
+  const [returnOpportunities, setReturnOpportunities] = useState<any[]>([]);
+  
+  // Phase 4: Proximity settings state
+  const [proximityRadius, setProximityRadius] = useState<number>(25); // Default 25 miles
+  const [maxLegs, setMaxLegs] = useState<number>(3); // Default 3 legs max
+  
+  // Phase 5: Expanded multi-leg sequences
+  const [expandedSequences, setExpandedSequences] = useState<Set<string>>(new Set());
+  
+  // Phase 6: Revenue & Savings calculations
+  const [showComparison, setShowComparison] = useState(false);
+  
   // Loading states
   const [loading, setLoading] = useState(false);
-  const [loadingUnits, setLoadingUnits] = useState(false);
-  const [loadingRequests, setLoadingRequests] = useState(false);
+  const [loadingTrips, setLoadingTrips] = useState(false);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  const [loadingAgencyContext, setLoadingAgencyContext] = useState(false);
+  const [loadingReturnOpportunities, setLoadingReturnOpportunities] = useState(false);
   
   // Error states
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +93,34 @@ const TCCRouteOptimizer: React.FC = () => {
     loadInitialData();
     loadSavedSettings();
     loadFacilities();
+    loadAvailableAgencies();
   }, []);
+
+  // Load agency context when agency is selected
+  useEffect(() => {
+    if (selectedAgencyId) {
+      loadAgencyContext();
+    } else {
+      // Clear agency context when no agency selected
+      setHomeBase(null);
+      setCurrentTrip(null);
+      setCurrentTrips([]);
+      setReturnOpportunities([]);
+    }
+  }, [selectedAgencyId]);
+
+  // Auto-refresh when enabled
+  useEffect(() => {
+    if (optimizationSettings.autoOptimize) {
+      const interval = setInterval(() => {
+        if (startingLocation && selectedTrips.length > 0) {
+          handleOptimize();
+        }
+      }, optimizationSettings.refreshInterval * 1000);
+
+      return () => clearInterval(interval);
+    }
+  }, [optimizationSettings.autoOptimize, optimizationSettings.refreshInterval, startingLocation, selectedTrips]);
 
   // Filter facilities based on manual address input
   useEffect(() => {
@@ -99,23 +144,20 @@ const TCCRouteOptimizer: React.FC = () => {
         setOptimizationSettings(prev => ({ ...prev, ...parsed }));
         console.log('TCC_DEBUG: Loaded saved optimization settings');
       }
+      
+      // Phase 4: Load saved proximity settings
+      const savedProximity = localStorage.getItem('tcc_proximity_settings');
+      if (savedProximity) {
+        const parsed = JSON.parse(savedProximity);
+        if (parsed.proximityRadius) setProximityRadius(parsed.proximityRadius);
+        if (parsed.maxLegs) setMaxLegs(parsed.maxLegs);
+        console.log('TCC_DEBUG: Loaded saved proximity settings');
+      }
     } catch (error) {
       console.error('TCC_DEBUG: Error loading saved settings:', error);
     }
   };
 
-  // Auto-refresh when enabled
-  useEffect(() => {
-    if (optimizationSettings.autoOptimize) {
-      const interval = setInterval(() => {
-        if (selectedUnit && selectedRequests.length > 0) {
-          handleOptimize();
-        }
-      }, optimizationSettings.refreshInterval * 1000);
-
-      return () => clearInterval(interval);
-    }
-  }, [optimizationSettings.autoOptimize, optimizationSettings.refreshInterval, selectedUnit, selectedRequests]);
 
   // Load all facilities for location matching
   const loadFacilities = async () => {
@@ -165,7 +207,7 @@ const TCCRouteOptimizer: React.FC = () => {
           lat: position.coords.latitude,
           lng: position.coords.longitude
         };
-        setUnitLocation(location);
+        setStartingLocation(location);
         checkFacilityMatch(location.lat, location.lng);
         setGettingLocation(false);
         console.log('TCC_DEBUG: Got current location:', location);
@@ -200,7 +242,7 @@ const TCCRouteOptimizer: React.FC = () => {
   // Set location from manual selection (facility or custom)
   const setManualLocation = (facility: any) => {
     if (facility.latitude && facility.longitude) {
-      setUnitLocation({
+      setStartingLocation({
         lat: facility.latitude,
         lng: facility.longitude
       });
@@ -234,7 +276,7 @@ const TCCRouteOptimizer: React.FC = () => {
           lat: parseFloat(data[0].lat),
           lng: parseFloat(data[0].lon)
         };
-        setUnitLocation(location);
+        setStartingLocation(location);
         checkFacilityMatch(location.lat, location.lng);
         setManualAddress('');
         console.log('TCC_DEBUG: Geocoded address:', address, 'to', location);
@@ -251,104 +293,251 @@ const TCCRouteOptimizer: React.FC = () => {
 
   const loadInitialData = async () => {
     try {
+      console.log('TCC_DEBUG: Refresh button clicked - reloading all data');
       await Promise.all([
-        loadUnits(),
-        loadPendingRequests(),
-        loadAnalytics()
+        loadTrips(),
+        loadAnalytics(),
+        loadAvailableAgencies()
       ]);
+      
+      // If agency is selected, reload agency context
+      if (selectedAgencyId) {
+        console.log('TCC_DEBUG: Reloading agency context for selected agency');
+        await loadAgencyContext();
+      }
+      
+      // If starting location and home base are set, reload return opportunities
+      if (startingLocation && homeBase) {
+        console.log('TCC_DEBUG: Reloading return opportunities');
+        await findReturnOpportunities();
+      }
     } catch (error) {
       console.error('TCC_DEBUG: Error loading initial data:', error);
       setError('Failed to load initial data');
     }
   };
 
-  const loadUnits = async () => {
-    setLoadingUnits(true);
+  // Load available EMS agencies for TCC/Admin users
+  const loadAvailableAgencies = async () => {
+    setLoadingAgencies(true);
     try {
-      console.log('TCC_DEBUG: Loading system-wide units for TCC optimization');
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
-        throw new Error('No authentication token found');
+      console.log('TCC_DEBUG: Loading available EMS agencies...');
+      // Try /api/tcc/agencies first (for TCC users), fallback to /api/ems-agencies
+      let response;
+      try {
+        response = await api.get('/api/tcc/agencies');
+      } catch (err) {
+        // Fallback if endpoint doesn't exist
+        response = await api.get('/api/ems-agencies');
       }
-
-      const response = await api.get('/api/tcc/units');
-
-      if (!response.data?.success) {
-        throw new Error(`Failed to fetch units: ${response.data?.message || 'Unknown error'}`);
-      }
-
-      const data = response.data;
-      console.log('TCC_DEBUG: Units API response:', data);
       
-      if (data.success) {
-        console.log('TCC_DEBUG: Units loaded:', data.data?.length || 0);
-        setAvailableUnits(data.data || []);
+      if (response.data?.success || response.data?.data) {
+        const agencies = response.data.data || response.data || [];
+        console.log('TCC_DEBUG: Raw agencies response:', JSON.stringify(agencies, null, 2));
+        console.log('TCC_DEBUG: Agencies with coordinates:', agencies.map((a: any) => ({
+          id: a.id,
+          name: a.name,
+          hasLat: !!a.latitude,
+          hasLng: !!a.longitude,
+          lat: a.latitude,
+          lng: a.longitude
+        })));
+        setAvailableAgencies(agencies);
+        console.log('TCC_DEBUG: Loaded', agencies.length, 'EMS agencies');
+        
+        // Auto-select first agency if only one available
+        if (agencies.length === 1) {
+          setSelectedAgencyId(agencies[0].id);
+        }
       } else {
-        throw new Error(data.error || 'Failed to load units');
+        console.warn('TCC_DEBUG: Failed to load agencies:', response.data?.error);
       }
-    } catch (err) {
-      setError('Failed to load units');
-      console.error('TCC_DEBUG: Units loading error:', err);
+    } catch (error) {
+      console.error('TCC_DEBUG: Error loading agencies:', error);
+      // Don't set error - user might be EMS user who doesn't need to select
     } finally {
-      setLoadingUnits(false);
+      setLoadingAgencies(false);
     }
   };
 
-  const loadPendingRequests = async () => {
-    setLoadingRequests(true);
+  // Phase 3: Load agency context (home base and current trips) for selected agency
+  const loadAgencyContext = async () => {
+    if (!selectedAgencyId) {
+      return;
+    }
+
+    setLoadingAgencyContext(true);
     try {
-      console.log('TCC_DEBUG: Loading system-wide pending requests for TCC optimization');
+      console.log('TCC_DEBUG: Loading agency context for agency:', selectedAgencyId);
+      
+      // Load home base and current trips in parallel, passing agencyId
+      const [homeBaseResult, currentTripsResult] = await Promise.all([
+        optimizationApi.getAgencyHomeBase(selectedAgencyId),
+        optimizationApi.getCurrentTrips(selectedAgencyId)
+      ]);
+
+      console.log('TCC_DEBUG: Home base result:', JSON.stringify(homeBaseResult, null, 2));
+      console.log('TCC_DEBUG: Selected agencyId:', selectedAgencyId);
+      
+      if (homeBaseResult.success && homeBaseResult.data) {
+        if (homeBaseResult.data.lat && homeBaseResult.data.lng) {
+          setHomeBase({
+            lat: homeBaseResult.data.lat,
+            lng: homeBaseResult.data.lng,
+            agencyName: homeBaseResult.data.agencyName,
+            address: homeBaseResult.data.address
+          });
+          console.log('TCC_DEBUG: Home base loaded successfully:', homeBaseResult.data);
+          setError(null); // Clear any previous errors
+        } else {
+          console.warn('TCC_DEBUG: Home base data missing coordinates:', homeBaseResult.data);
+          const agencyName = homeBaseResult.data.agencyName || 'the selected agency';
+          setError(`Home base coordinates are not set for ${agencyName}. Please contact administrator to set latitude and longitude in agency settings.`);
+        }
+      } else {
+        // Check if we got data even though success is false (coordinates not set)
+        if (homeBaseResult.data && homeBaseResult.data.agencyName) {
+          console.warn('TCC_DEBUG: Agency found but coordinates not set:', homeBaseResult.data);
+          setError(`Home base coordinates are not set for ${homeBaseResult.data.agencyName}. Please contact administrator to set latitude and longitude in agency settings.`);
+        } else {
+          console.warn('TCC_DEBUG: Failed to load home base. Error:', homeBaseResult.error);
+          console.warn('TCC_DEBUG: Full response:', homeBaseResult);
+          const errorMsg = homeBaseResult.error || 'Unknown error';
+          setError(`Unable to load home base: ${errorMsg}. Please ensure the selected agency has home base coordinates configured in settings.`);
+        }
+      }
+
+      if (currentTripsResult.success && currentTripsResult.data) {
+        const trips = currentTripsResult.data || [];
+        setCurrentTrips(trips);
+        console.log('TCC_DEBUG: Current trips loaded:', trips.length);
+
+        // Auto-select most recent trip (first in array since they're sorted by responseTimestamp desc)
+        if (trips.length > 0) {
+          const mostRecentTrip = trips[0];
+          setCurrentTrip(mostRecentTrip);
+
+          // Auto-set starting location to trip destination if coordinates are available
+          if (mostRecentTrip.destination?.lat && mostRecentTrip.destination?.lng) {
+            setStartingLocation({
+              lat: mostRecentTrip.destination.lat,
+              lng: mostRecentTrip.destination.lng
+            });
+            setMatchedFacility(mostRecentTrip.destination.name || null);
+            console.log('TCC_DEBUG: Auto-set starting location from current trip:', mostRecentTrip.destination);
+          }
+        }
+      } else {
+        console.warn('TCC_DEBUG: Failed to load current trips:', currentTripsResult.error);
+        // Don't set error - this might be expected for non-EMS users or if no active trips
+      }
+    } catch (error) {
+      console.error('TCC_DEBUG: Error loading agency context:', error);
+      // Don't set error - this might be expected for non-EMS users
+    } finally {
+      setLoadingAgencyContext(false);
+    }
+  };
+
+  // Phase 3: Find return opportunities when starting location and home base are set
+  // Phase 4: Updated to use proximityRadius and maxLegs state
+  const findReturnOpportunities = async () => {
+    if (!startingLocation || !homeBase) {
+      console.warn('TCC_DEBUG: Cannot find return opportunities - missing starting location or home base');
+      return;
+    }
+
+    setLoadingReturnOpportunities(true);
+    setError(null);
+    try {
+      console.log('TCC_DEBUG: Finding return opportunities...', {
+        startingLocation,
+        homeBase,
+        proximityRadius,
+        maxLegs
+      });
+
+      const result = await optimizationApi.findReturnOpportunities({
+        currentLocation: startingLocation,
+        homeBase: {
+          lat: homeBase.lat,
+          lng: homeBase.lng
+        },
+        proximityRadius: proximityRadius,
+        maxLegs: maxLegs
+      });
+
+      if (result.success && result.data) {
+        setReturnOpportunities(result.data.allOpportunities || []);
+        console.log('TCC_DEBUG: Return opportunities found:', {
+          singleLeg: result.data.counts?.singleLeg || 0,
+          multiLeg: result.data.counts?.multiLeg || 0,
+          total: result.data.counts?.total || 0,
+          proximityRadius: result.data.proximityRadius,
+          maxLegs: result.data.maxLegs
+        });
+      } else {
+        setError(result.error || 'Failed to find return opportunities');
+        setReturnOpportunities([]);
+      }
+    } catch (error) {
+      console.error('TCC_DEBUG: Error finding return opportunities:', error);
+      setError('Failed to find return opportunities');
+      setReturnOpportunities([]);
+    } finally {
+      setLoadingReturnOpportunities(false);
+    }
+  };
+
+  // Auto-find return opportunities when starting location, proximity settings change
+  useEffect(() => {
+    if (startingLocation && homeBase && currentTrip) {
+      findReturnOpportunities();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startingLocation, homeBase, currentTrip, proximityRadius, maxLegs]);
+
+  const loadTrips = async () => {
+    setLoadingTrips(true);
+    try {
+      console.log('TCC_DEBUG: Loading trips for route optimization');
       const token = localStorage.getItem('token');
       
       if (!token) {
         throw new Error('No authentication token found');
       }
 
-      // For now, we'll load trips that are pending as transport requests
-      const response = await api.get('/api/trips?status=PENDING');
+      // Load all trips (same as Trip Management)
+      const response = await api.get('/api/trips');
 
       if (!response.data?.success) {
-        throw new Error(`Failed to fetch pending requests: ${response.data?.message || 'Unknown error'}`);
+        throw new Error(`Failed to fetch trips: ${response.data?.message || 'Unknown error'}`);
       }
 
       const data = response.data;
-      console.log('TCC_DEBUG: Pending requests API response:', data);
+      console.log('TCC_DEBUG: Trips API response:', data);
       
       if (data.success) {
-        // Convert trips to transport requests format
-        const transportRequests = (data.data || []).map((trip: any) => ({
-          id: trip.id,
-          patientId: trip.patientId,
-          originFacilityId: trip.fromFacilityId || trip.fromLocation || 'Unknown',
-          destinationFacilityId: trip.toFacilityId || trip.toLocation || 'Unknown',
-          transportLevel: trip.transportLevel || 'BLS',
-          priority: trip.priority || 'MEDIUM',
-          status: trip.status || 'PENDING',
-          specialRequirements: trip.specialNeeds || trip.specialRequirements || '',
-          requestTimestamp: new Date(trip.requestTimestamp || trip.createdAt),
-          readyStart: new Date(trip.scheduledTime || trip.createdAt),
-          readyEnd: new Date(new Date(trip.scheduledTime || trip.createdAt).getTime() + 60 * 60 * 1000), // 1 hour window
-          originLocation: {
-            lat: trip.originLatitude || 40.7128,
-            lng: trip.originLongitude || -74.0060
-          },
-          destinationLocation: {
-            lat: trip.destinationLatitude || 40.7589,
-            lng: trip.destinationLongitude || -73.9851
-          }
-        }));
+        const trips = data.data || [];
+        console.log('TCC_DEBUG: Trips loaded:', trips.length);
         
-        console.log('TCC_DEBUG: Pending requests loaded:', transportRequests.length);
-        setPendingRequests(transportRequests);
+        // Filter to show trips that are available for optimization (not completed/cancelled)
+        const availableTrips = trips.filter((trip: any) => 
+          trip.status !== 'COMPLETED' && 
+          trip.status !== 'HEALTHCARE_COMPLETED' && 
+          trip.status !== 'CANCELLED'
+        );
+        
+        console.log('TCC_DEBUG: Available trips for optimization:', availableTrips.length);
+        setAvailableTrips(availableTrips);
       } else {
-        throw new Error(data.error || 'Failed to load pending requests');
+        throw new Error(data.error || 'Failed to load trips');
       }
     } catch (err) {
-      setError('Failed to load pending requests');
-      console.error('TCC_DEBUG: Requests loading error:', err);
+      setError('Failed to load trips');
+      console.error('TCC_DEBUG: Trips loading error:', err);
     } finally {
-      setLoadingRequests(false);
+      setLoadingTrips(false);
     }
   };
 
@@ -375,13 +564,13 @@ const TCCRouteOptimizer: React.FC = () => {
   };
 
   const handleOptimize = async () => {
-    if (!selectedUnit || selectedRequests.length === 0) {
-      setError('Please select a unit and at least one request');
+    if (!startingLocation) {
+      setError('Please set the starting location');
       return;
     }
 
-    if (!unitLocation) {
-      setError('Please set the unit location using "Use My Current Location" button');
+    if (selectedTrips.length === 0) {
+      setError('Please select at least one trip');
       return;
     }
 
@@ -389,13 +578,12 @@ const TCCRouteOptimizer: React.FC = () => {
     setError(null);
 
     try {
-      console.log('TCC_DEBUG: Optimizing with location:', unitLocation);
+      console.log('TCC_DEBUG: Optimizing with starting location:', startingLocation, 'and trips:', selectedTrips);
       
       const response = await optimizationApi.optimizeRoutes({
-        unitId: selectedUnit,
-        requestIds: selectedRequests,
-        constraints: optimizationSettings.constraints,
-        unitLocation: unitLocation // Pass GPS location to API
+        startingLocation: startingLocation,
+        tripIds: selectedTrips,
+        constraints: optimizationSettings.constraints
       });
 
       setOptimizationResults(response);
@@ -408,14 +596,13 @@ const TCCRouteOptimizer: React.FC = () => {
   };
 
   const handleBackhaulAnalysis = async () => {
-    console.log('TCC_DEBUG: handleBackhaulAnalysis called - selectedRequests:', selectedRequests);
-    console.log('TCC_DEBUG: selectedRequests.length:', selectedRequests.length);
-    console.log('TCC_DEBUG: unitLocation:', unitLocation);
+    console.log('TCC_DEBUG: handleBackhaulAnalysis called - selectedTrips:', selectedTrips);
+    console.log('TCC_DEBUG: selectedTrips.length:', selectedTrips.length);
     
-    if (selectedRequests.length < 2) {
-      const errorMsg = `Please select at least 2 requests for backhaul analysis (currently ${selectedRequests.length} selected)`;
+    if (selectedTrips.length < 2) {
+      const errorMsg = `Please select at least 2 trips for backhaul analysis (currently ${selectedTrips.length} selected)`;
       setError(errorMsg);
-      console.error('TCC_DEBUG: Backhaul analysis requires 2+ requests:', errorMsg);
+      console.error('TCC_DEBUG: Backhaul analysis requires 2+ trips:', errorMsg);
       // Clear error after 5 seconds
       setTimeout(() => setError(null), 5000);
       return;
@@ -426,8 +613,8 @@ const TCCRouteOptimizer: React.FC = () => {
     setBackhaulAnalysis(null); // Clear previous results
 
     try {
-      console.log('TCC_DEBUG: Starting backhaul analysis with selected requests:', selectedRequests);
-      const response = await optimizationApi.analyzeBackhaul(selectedRequests);
+      console.log('TCC_DEBUG: Starting backhaul analysis with selected trips:', selectedTrips);
+      const response = await optimizationApi.analyzeBackhaul(selectedTrips);
       console.log('TCC_DEBUG: Backhaul analysis response:', response);
 
       if (response.success) {
@@ -497,15 +684,15 @@ const TCCRouteOptimizer: React.FC = () => {
     }
   };
 
-  const handleRequestToggle = (requestId: string) => {
-    setSelectedRequests(prev => {
-      const newSelection = prev.includes(requestId) 
-        ? prev.filter(id => id !== requestId)
-        : [...prev, requestId];
+  const handleTripToggle = (tripId: string) => {
+    setSelectedTrips(prev => {
+      const newSelection = prev.includes(tripId) 
+        ? prev.filter(id => id !== tripId)
+        : [...prev, tripId];
       
-      console.log('TCC_DEBUG: Request selection changed:', {
-        requestId,
-        action: prev.includes(requestId) ? 'removed' : 'added',
+      console.log('TCC_DEBUG: Trip selection changed:', {
+        tripId,
+        action: prev.includes(tripId) ? 'removed' : 'added',
         newSelectionCount: newSelection.length,
         newSelection
       });
@@ -514,6 +701,97 @@ const TCCRouteOptimizer: React.FC = () => {
     });
   };
 
+  // Phase 6: Calculate revenue and savings for selected trips
+  const calculateSelectedTripsMetrics = () => {
+    if (!selectedTrips.length || !returnOpportunities.length || !startingLocation || !homeBase) {
+      return null;
+    }
+
+    const selectedOpportunities = returnOpportunities.filter(opp => 
+      selectedTrips.includes(opp.tripId || opp.legs?.[0]?.tripId)
+    );
+
+    if (selectedOpportunities.length === 0) {
+      return null;
+    }
+
+    // Calculate direct return distance (empty return) using Haversine approximation
+    let directReturnDistance = null;
+    if (returnOpportunities[0]?.route?.startLocation && returnOpportunities[0]?.route?.endLocation) {
+      const start = returnOpportunities[0].route.startLocation;
+      const end = returnOpportunities[0].route.endLocation;
+      const R = 3959; // Earth radius in miles
+      const dLat = (end.lat - start.lat) * Math.PI / 180;
+      const dLon = (end.lng - start.lng) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(start.lat * Math.PI / 180) * Math.cos(end.lat * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      directReturnDistance = R * c;
+    } else if (startingLocation && homeBase) {
+      const R = 3959;
+      const dLat = (homeBase.lat - startingLocation.lat) * Math.PI / 180;
+      const dLon = (homeBase.lng - startingLocation.lng) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(startingLocation.lat * Math.PI / 180) * Math.cos(homeBase.lat * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      directReturnDistance = R * c;
+    }
+
+    // Calculate totals from selected opportunities
+    let totalRevenue = 0;
+    let totalDistance = 0;
+    let totalDeadheadMiles = 0;
+    let totalDeadheadSavings = 0;
+    let totalTripDistance = 0;
+
+    selectedOpportunities.forEach(opp => {
+      if (opp.type === 'multi-leg') {
+        totalRevenue += opp.totalRevenue || 0;
+        totalDistance += opp.totalDistance || 0;
+        totalDeadheadMiles += opp.route?.totalDeadheadMiles || 0;
+        totalDeadheadSavings += opp.deadheadSavings || 0;
+        totalTripDistance += opp.legs?.reduce((sum: number, leg: any) => sum + (leg.tripDistance || 0), 0) || 0;
+      } else {
+        totalRevenue += opp.estimatedRevenue || 0;
+        const routeDistance = (opp.pickup.distanceFromCurrent || opp.route?.currentToPickup || 0) +
+                              (opp.route?.pickupToDropoff || 0) +
+                              (opp.dropoff.distanceToHome || 0);
+        totalDistance += routeDistance;
+        totalDeadheadMiles += (opp.pickup.distanceFromCurrent || opp.route?.currentToPickup || 0) +
+                              (opp.dropoff.distanceToHome || 0);
+        totalDeadheadSavings += opp.deadheadSavings || 0;
+        totalTripDistance += opp.route?.pickupToDropoff || 0;
+      }
+    });
+
+    // Calculate costs
+    const deadheadCostPerMile = 2.0;
+    const emptyReturnCost = directReturnDistance ? directReturnDistance * deadheadCostPerMile : 0;
+    const revenueReturnCost = totalDeadheadMiles * deadheadCostPerMile;
+    const netBenefit = totalRevenue - revenueReturnCost;
+    const totalSavings = emptyReturnCost - revenueReturnCost + totalRevenue;
+
+    return {
+      selectedCount: selectedOpportunities.length,
+      totalRevenue: Math.round(totalRevenue * 100) / 100,
+      totalDistance: Math.round(totalDistance * 10) / 10,
+      totalDeadheadMiles: Math.round(totalDeadheadMiles * 10) / 10,
+      totalTripDistance: Math.round(totalTripDistance * 10) / 10,
+      totalDeadheadSavings: Math.round(totalDeadheadSavings * 10) / 10,
+      emptyReturnDistance: directReturnDistance ? Math.round(directReturnDistance * 10) / 10 : null,
+      emptyReturnCost: Math.round(emptyReturnCost * 100) / 100,
+      revenueReturnCost: Math.round(revenueReturnCost * 100) / 100,
+      netBenefit: Math.round(netBenefit * 100) / 100,
+      totalSavings: Math.round(totalSavings * 100) / 100,
+      fuelSavings: Math.round((totalDeadheadSavings * 0.5) * 100) / 100,
+      opportunities: selectedOpportunities
+    };
+  };
+
+  const selectedMetrics = calculateSelectedTripsMetrics();
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -521,7 +799,7 @@ const TCCRouteOptimizer: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">System Route Optimization</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Optimize routes across all agencies and units in the system.
+            Optimize routes for selected trips based on a starting location.
           </p>
         </div>
         <div className="flex space-x-3">
@@ -747,46 +1025,195 @@ const TCCRouteOptimizer: React.FC = () => {
         </div>
       )}
 
-      {/* Unit and Request Selection */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Unit Selection */}
+      {/* Step 0: Select EMS Agency (for TCC/Admin users) */}
+      {availableAgencies.length > 0 && (
         <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Step 1: Select Unit</h3>
-          {loadingUnits ? (
-            <div className="flex items-center justify-center py-8">
-              <RefreshCw className="h-6 w-6 animate-spin text-orange-600" />
-              <span className="ml-2 text-gray-600">Loading units...</span>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Step 0: Select EMS Agency</h3>
+          {loadingAgencies ? (
+            <div className="flex items-center justify-center py-4">
+              <RefreshCw className="h-5 w-5 animate-spin text-orange-600" />
+              <span className="ml-2 text-gray-600">Loading agencies...</span>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select the EMS agency to plan return trips for:
+              </label>
               <select
-                value={selectedUnit}
+                value={selectedAgencyId || ''}
                 onChange={(e) => {
-                  setSelectedUnit(e.target.value);
-                  // Reset location when unit changes
-                  setUnitLocation(null);
+                  const selectedId = e.target.value || null;
+                  console.log('TCC_DEBUG: Agency selected:', selectedId);
+                  const selectedAgency = availableAgencies.find(a => a.id === selectedId);
+                  console.log('TCC_DEBUG: Selected agency details:', selectedAgency);
+                  console.log('TCC_DEBUG: Selected agency has coordinates?', {
+                    hasLat: !!selectedAgency?.latitude,
+                    hasLng: !!selectedAgency?.longitude,
+                    lat: selectedAgency?.latitude,
+                    lng: selectedAgency?.longitude
+                  });
+                  setSelectedAgencyId(selectedId);
                 }}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                className="block w-full md:w-1/2 border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
               >
-                <option value="">Select a unit...</option>
-                {availableUnits && availableUnits.length > 0 ? availableUnits.map((unit) => (
-                  <option key={unit.id} value={unit.id}>
-                    {unit.unitNumber || 'Unknown'} ({unit.type || 'Unknown'}) - {unit.currentStatus || 'Unknown'}
+                <option value="">-- Select an EMS Agency --</option>
+                {availableAgencies.map((agency) => (
+                  <option key={agency.id} value={agency.id}>
+                    {agency.name} {agency.city ? `(${agency.city}, ${agency.state})` : ''} {agency.latitude && agency.longitude ? '✓' : '⚠'}
                   </option>
-                )) : (
-                  <option disabled>No units available</option>
-                )}
+                ))}
               </select>
+              {selectedAgencyId && (
+                <div className="mt-2">
+                  <p className="text-sm text-gray-600">
+                    Selected: {availableAgencies.find(a => a.id === selectedAgencyId)?.name}
+                  </p>
+                  {(() => {
+                    const selected = availableAgencies.find(a => a.id === selectedAgencyId);
+                    if (selected?.latitude && selected?.longitude) {
+                      return (
+                        <p className="text-xs text-green-600 mt-1">
+                          ✓ Coordinates: {selected.latitude.toFixed(6)}, {selected.longitude.toFixed(6)}
+                        </p>
+                      );
+                    } else {
+                      return (
+                        <p className="text-xs text-yellow-600 mt-1">
+                          ⚠ No coordinates set for this agency
+                        </p>
+                      );
+                    }
+                  })()}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
-              {/* Location Selection - Only show when unit is selected */}
-              {selectedUnit && (
-                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <h4 className="text-sm font-medium text-blue-900 mb-3 flex items-center">
-                    <MapPin className="h-4 w-4 mr-2" />
-                    Step 2: Set Current Location
-                  </h4>
-                  
-                  {!unitLocation ? (
+      {/* Current Trip Display (Phase 3) - Only show if agency selected or EMS user */}
+      {availableAgencies.length > 0 && !selectedAgencyId ? (
+        <div className="bg-white shadow rounded-lg p-6">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <AlertCircle className="h-5 w-5 text-blue-600 mr-2" />
+              <div>
+                <p className="text-sm font-medium text-blue-900">Select an EMS Agency</p>
+                <p className="text-xs text-blue-700 mt-1">
+                  Please select an EMS agency above to continue with route optimization.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : loadingAgencyContext ? (
+        <div className="bg-white shadow rounded-lg p-6">
+          <div className="flex items-center justify-center py-8">
+            <RefreshCw className="h-6 w-6 animate-spin text-orange-600" />
+            <span className="ml-2 text-gray-600">Loading agency context...</span>
+          </div>
+        </div>
+      ) : currentTrip ? (
+        <div className="bg-white shadow rounded-lg p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Current Outbound Trip</h3>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center mb-2">
+                  <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+                  <span className="text-sm font-medium text-green-900">
+                    Patient {currentTrip.patientId}
+                  </span>
+                  <span className="ml-2 text-xs text-gray-500">
+                    ({currentTrip.status})
+                  </span>
+                </div>
+                <div className="text-sm text-gray-700 space-y-1">
+                  <div>
+                    <span className="font-medium">From:</span> {currentTrip.origin?.name || 'Unknown'}
+                  </div>
+                  <div>
+                    <span className="font-medium">To:</span> {currentTrip.destination?.name || 'Unknown'}
+                  </div>
+                  {currentTrip.destination?.address && (
+                    <div className="text-xs text-gray-500 mt-1">
+                      {currentTrip.destination.address}
+                    </div>
+                  )}
+                  {startingLocation && (
+                    <div className="mt-2 pt-2 border-t border-green-200">
+                      <div className="text-xs text-green-700">
+                        <span className="font-medium">Starting Location Set:</span> {matchedFacility || `${startingLocation.lat.toFixed(6)}, ${startingLocation.lng.toFixed(6)}`}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {currentTrips.length > 1 && (
+                <div className="ml-4">
+                  <select
+                    value={currentTrip.id}
+                    onChange={(e) => {
+                      const selectedTrip = currentTrips.find(t => t.id === e.target.value);
+                      if (selectedTrip) {
+                        setCurrentTrip(selectedTrip);
+                        if (selectedTrip.destination?.lat && selectedTrip.destination?.lng) {
+                          setStartingLocation({
+                            lat: selectedTrip.destination.lat,
+                            lng: selectedTrip.destination.lng
+                          });
+                          setMatchedFacility(selectedTrip.destination.name || null);
+                        }
+                      }
+                    }}
+                    className="text-sm border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                  >
+                    {currentTrips.map(trip => (
+                      <option key={trip.id} value={trip.id}>
+                        {trip.patientId} - {trip.destination?.name || 'Unknown'}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">Select different trip</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : homeBase ? (
+        <div className="bg-white shadow rounded-lg p-6">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <AlertCircle className="h-5 w-5 text-blue-600 mr-2" />
+              <div>
+                <p className="text-sm font-medium text-blue-900">No Active Trips for Selected Agency</p>
+                <p className="text-xs text-blue-700 mt-1">
+                  {selectedAgencyId && availableAgencies.find(a => a.id === selectedAgencyId)?.name 
+                    ? `No active or completed trips found for ${availableAgencies.find(a => a.id === selectedAgencyId)?.name}. `
+                    : 'No active or completed trips found for the selected agency. '}
+                  You can still find return trip opportunities by setting a starting location manually below.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Starting Location and Trip Selection */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Starting Location Selection */}
+        <div className="bg-white shadow rounded-lg p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
+            {currentTrip ? 'Step 1: Starting Location (Auto-set from Trip)' : 'Step 1: Set Starting Location'}
+          </h3>
+          <div className="space-y-4">
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <h4 className="text-sm font-medium text-blue-900 mb-3 flex items-center">
+                <MapPin className="h-4 w-4 mr-2" />
+                Set Starting Point for Route Optimization
+              </h4>
+              
+              {!startingLocation ? (
                     <div className="space-y-3">
                       {/* Mode Toggle */}
                       <div className="flex space-x-2 mb-3">
@@ -818,7 +1245,7 @@ const TCCRouteOptimizer: React.FC = () => {
                         /* GPS Mode */
                         <div className="space-y-3">
                           <p className="text-sm text-blue-700">
-                            Click the button below to use your current GPS location as the starting point for this unit.
+                            Click the button below to use your current GPS location as the starting point for route optimization.
                           </p>
                           <button
                             onClick={getCurrentLocation}
@@ -845,7 +1272,7 @@ const TCCRouteOptimizer: React.FC = () => {
                         /* Manual Mode */
                         <div className="space-y-3">
                           <p className="text-sm text-blue-700">
-                            Search for a facility or enter an address to set the unit's location.
+                            Search for a facility or enter an address to set the starting location.
                           </p>
                           
                           {/* Search Input */}
@@ -924,18 +1351,18 @@ const TCCRouteOptimizer: React.FC = () => {
                                 📍 {matchedFacility}
                               </p>
                               <p className="text-xs text-gray-600 mt-0.5">
-                                Lat: {unitLocation.lat.toFixed(6)}, Lng: {unitLocation.lng.toFixed(6)}
+                                Lat: {startingLocation.lat.toFixed(6)}, Lng: {startingLocation.lng.toFixed(6)}
                               </p>
                             </div>
                           ) : (
                             <p className="text-xs text-gray-600 mt-1">
-                              Lat: {unitLocation.lat.toFixed(6)}, Lng: {unitLocation.lng.toFixed(6)}
+                              Lat: {startingLocation.lat.toFixed(6)}, Lng: {startingLocation.lng.toFixed(6)}
                             </p>
                           )}
                         </div>
                         <button
                           onClick={() => {
-                            setUnitLocation(null);
+                            setStartingLocation(null);
                             setMatchedFacility(null);
                             setManualAddress('');
                           }}
@@ -947,96 +1374,581 @@ const TCCRouteOptimizer: React.FC = () => {
                     </div>
                   )}
                 </div>
-              )}
+              </div>
             </div>
-          )}
-        </div>
 
-        {/* Request Selection */}
-        <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Step 3: Select Requests</h3>
-          {loadingRequests ? (
-            <div className="flex items-center justify-center py-8">
-              <RefreshCw className="h-6 w-6 animate-spin text-orange-600" />
-              <span className="ml-2 text-gray-600">Loading requests...</span>
-            </div>
-          ) : (
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {pendingRequests && pendingRequests.length > 0 ? pendingRequests.map((request) => (
-                <label key={request.id} className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={selectedRequests.includes(request.id)}
-                    onChange={() => handleRequestToggle(request.id)}
-                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                  />
-                  <span className="ml-2 text-sm text-gray-700">
-                    {request.patientId || 'Unknown'} - {request.originFacilityName || request.originFacilityId || 'Unknown'} → {request.destinationFacilityName || request.destinationFacilityId || 'Unknown'}
-                  </span>
+        {/* Phase 4: Proximity Settings */}
+        {startingLocation && homeBase && (
+          <div className="bg-white shadow rounded-lg p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Proximity Settings</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Proximity Radius (miles)
                 </label>
-              )) : (
-                <p className="text-sm text-gray-500">No pending requests available</p>
-              )}
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="range"
+                    min="5"
+                    max="50"
+                    step="5"
+                    value={proximityRadius}
+                    onChange={(e) => {
+                      const newRadius = parseInt(e.target.value);
+                      setProximityRadius(newRadius);
+                      // Save to localStorage
+                      localStorage.setItem('tcc_proximity_settings', JSON.stringify({
+                        proximityRadius: newRadius,
+                        maxLegs: maxLegs
+                      }));
+                    }}
+                    className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <span className="text-sm font-medium text-gray-700 w-12 text-right">
+                    {proximityRadius} mi
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Maximum distance from current location to pickup and from dropoff to home base
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Maximum Legs
+                </label>
+                <select
+                  value={maxLegs}
+                  onChange={(e) => {
+                    const newMaxLegs = parseInt(e.target.value);
+                    setMaxLegs(newMaxLegs);
+                    // Save to localStorage
+                    localStorage.setItem('tcc_proximity_settings', JSON.stringify({
+                      proximityRadius: proximityRadius,
+                      maxLegs: newMaxLegs
+                    }));
+                  }}
+                  className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                >
+                  <option value={1}>1 leg (Single trip)</option>
+                  <option value={2}>2 legs</option>
+                  <option value={3}>3 legs</option>
+                  <option value={4}>4 legs</option>
+                  <option value={5}>5 legs</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Maximum number of trips in a return sequence
+                </p>
+              </div>
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="space-y-4">
-        <div className="flex space-x-4">
-          <button
-            onClick={handleOptimize}
-            disabled={loading || !selectedUnit || !unitLocation || selectedRequests.length === 0}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            title={!selectedUnit ? 'Step 1: Select a unit' : !unitLocation ? 'Step 2: Set unit location using GPS' : selectedRequests.length === 0 ? 'Step 3: Select at least one request' : 'Optimize routes for selected unit and requests'}
-          >
-            {loading ? (
-              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Navigation className="h-4 w-4 mr-2" />
+            {returnOpportunities.length > 0 && (
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-blue-900 font-medium">
+                    Found {returnOpportunities.length} opportunity{returnOpportunities.length !== 1 ? 'ies' : ''}
+                  </span>
+                  <span className="text-blue-700">
+                    Using {proximityRadius} mi radius, max {maxLegs} leg{maxLegs !== 1 ? 's' : ''}
+                  </span>
+                </div>
+              </div>
             )}
-            Optimize Routes
-          </button>
-
-          <button
-            onClick={handleBackhaulAnalysis}
-            disabled={loading || !selectedUnit || !unitLocation || selectedRequests.length < 2}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            title={!selectedUnit ? 'Step 1: Select a unit' : !unitLocation ? 'Step 2: Set unit location using GPS' : selectedRequests.length < 2 ? `Step 3: Select at least 2 requests (currently ${selectedRequests.length} selected)` : 'Find backhaul opportunities between selected requests'}
-          >
-            <Target className="h-4 w-4 mr-2" />
-            Backhaul Analysis ({selectedRequests.length} selected)
-          </button>
-
-          <button
-            onClick={handleReturnTripAnalysis}
-            disabled={loading}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Find return trip opportunities (e.g., Pittsburgh → Altoona → Pittsburgh)"
-          >
-            {loading ? (
-              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Navigation className="h-4 w-4 mr-2" />
-            )}
-            Find Return Trips
-          </button>
-        </div>
-        
-        {/* Selection Status Indicator */}
-        {selectedRequests.length > 0 && (
-          <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-            <div className="flex items-center">
-              <CheckCircle className="h-5 w-5 text-blue-500 mr-2" />
-              <span className="text-sm text-blue-700">
-                {selectedRequests.length} request{selectedRequests.length !== 1 ? 's' : ''} selected
-                {selectedRequests.length === 1 && ' - Select at least 1 more for backhaul analysis'}
-              </span>
-            </div>
           </div>
         )}
+
+        {/* Return Trip Opportunities Selection */}
+        {(availableAgencies.length === 0 || selectedAgencyId) && (
+        <div className="bg-white shadow rounded-lg p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
+            Step 2: Select Return Trip Opportunities
+            {homeBase && (
+              <span className="text-xs text-gray-500 ml-2">
+                (Home Base: {homeBase.agencyName || 'Your Agency'})
+              </span>
+            )}
+          </h3>
+          {loadingReturnOpportunities ? (
+            <div className="flex items-center justify-center py-8">
+              <RefreshCw className="h-6 w-6 animate-spin text-orange-600" />
+              <span className="ml-2 text-gray-600">Finding return opportunities...</span>
+            </div>
+          ) : !startingLocation || !homeBase ? (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex items-start">
+                <AlertCircle className="h-5 w-5 text-yellow-600 mr-2 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-yellow-900 mb-1">
+                    {!startingLocation ? 'Starting Location Required' : 'Home Base Required'}
+                  </p>
+                  <p className="text-sm text-yellow-700">
+                    {!startingLocation 
+                      ? 'Please set starting location first using Step 1 above.' 
+                      : error || 'Home base coordinates are not available. Please ensure you are logged in as an EMS user and your agency has home base coordinates configured in settings.'}
+                  </p>
+                  {error && error.includes('coordinates are not set') && (
+                    <p className="text-xs text-yellow-600 mt-2">
+                      Contact your administrator to set latitude and longitude for your EMS agency in the system settings.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : returnOpportunities.length > 0 ? (
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {returnOpportunities.map((opp, index) => {
+                const oppId = opp.tripId || `sequence-${index}`;
+                const isExpanded = expandedSequences.has(oppId);
+                const isSelected = selectedTrips.includes(opp.tripId || opp.legs?.[0]?.tripId);
+                
+                return (
+                <div
+                  key={oppId}
+                  className={`border rounded-lg p-3 transition-all ${
+                    isSelected
+                      ? 'border-primary-500 bg-primary-50 shadow-md'
+                      : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                  }`}
+                >
+                  <div className="flex items-start">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => handleTripToggle(opp.tripId || opp.legs?.[0]?.tripId)}
+                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded mt-1 flex-shrink-0"
+                    />
+                    <div className="ml-3 flex-1">
+                      {opp.type === 'multi-leg' ? (
+                        <div>
+                          {/* Header with expand/collapse */}
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center flex-1">
+                              <button
+                                onClick={() => {
+                                  const newExpanded = new Set(expandedSequences);
+                                  if (isExpanded) {
+                                    newExpanded.delete(oppId);
+                                  } else {
+                                    newExpanded.add(oppId);
+                                  }
+                                  setExpandedSequences(newExpanded);
+                                }}
+                                className="mr-2 text-gray-500 hover:text-gray-700"
+                              >
+                                {isExpanded ? (
+                                  <span className="text-xs">▼</span>
+                                ) : (
+                                  <span className="text-xs">▶</span>
+                                )}
+                              </button>
+                              <span className="text-sm font-medium text-gray-900">
+                                Multi-Leg Sequence ({opp.legCount} legs)
+                              </span>
+                              {index === 0 && (
+                                <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded font-medium">
+                                  ⭐ Best
+                                </span>
+                              )}
+                              {opp.efficiencyScore > 10 && (
+                                <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                                  High Value
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-3">
+                              <span className="text-xs text-gray-500">
+                                Rank #{index + 1}
+                              </span>
+                              <div className="text-right">
+                                <div className="text-xs font-bold text-green-700">
+                                  ${opp.totalRevenue?.toFixed(2) || '0.00'}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  Score: {opp.efficiencyScore?.toFixed(2) || '0.00'}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {isExpanded && (
+                            <>
+                          {/* Visual Route Flow */}
+                          <div className="mb-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            <div className="flex items-center space-x-2 text-xs">
+                              <div className="flex flex-col items-center">
+                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <span className="text-gray-500 mt-1 text-[10px]">Start</span>
+                              </div>
+                              {opp.legs.map((leg: any, legIndex: number) => (
+                                <React.Fragment key={legIndex}>
+                                  <div className="flex-1 flex items-center">
+                                    <div className="flex-1 h-0.5 bg-gray-300"></div>
+                                    <div className="px-1 text-gray-400 text-[10px]">
+                                      {leg.pickup.distanceFromPrevious?.toFixed(1) || '0'}mi
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col items-center min-w-[80px]">
+                                    <div className="w-3 h-3 bg-blue-500 rounded-full border-2 border-white shadow-sm"></div>
+                                    <span className="text-gray-700 font-medium mt-1 text-[10px] text-center leading-tight">
+                                      {leg.pickup.name.length > 12 ? leg.pickup.name.substring(0, 10) + '...' : leg.pickup.name}
+                                    </span>
+                                  </div>
+                                  <div className="flex-1 flex items-center">
+                                    <div className="flex-1 h-0.5 bg-blue-400"></div>
+                                    <div className="px-1 text-blue-600 text-[10px] font-medium">
+                                      {leg.tripDistance?.toFixed(1) || '0'}mi
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col items-center min-w-[80px]">
+                                    <div className="w-3 h-3 bg-orange-500 rounded-full border-2 border-white shadow-sm"></div>
+                                    <span className="text-gray-700 font-medium mt-1 text-[10px] text-center leading-tight">
+                                      {leg.dropoff.name.length > 12 ? leg.dropoff.name.substring(0, 10) + '...' : leg.dropoff.name}
+                                    </span>
+                                  </div>
+                                  {legIndex < opp.legs.length - 1 && (
+                                    <div className="flex-1 flex items-center">
+                                      <div className="flex-1 h-0.5 bg-gray-300"></div>
+                                      <div className="px-1 text-gray-400 text-[10px]">
+                                        {leg.dropoff.distanceToNext?.toFixed(1) || '0'}mi
+                                      </div>
+                                    </div>
+                                  )}
+                                </React.Fragment>
+                              ))}
+                              <div className="flex-1 flex items-center">
+                                <div className="flex-1 h-0.5 bg-gray-300"></div>
+                                <div className="px-1 text-gray-400 text-[10px]">
+                                  {opp.legs[opp.legs.length - 1]?.dropoff.distanceToNext?.toFixed(1) || '0'}mi
+                                </div>
+                              </div>
+                              <div className="flex flex-col items-center">
+                                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                                <span className="text-gray-500 mt-1 text-[10px]">Home</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Detailed Leg Information */}
+                          <div className="mb-3 space-y-2">
+                            {opp.legs.map((leg: any, legIndex: number) => (
+                              <div key={legIndex} className="bg-white border border-gray-200 rounded p-2">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center mb-1">
+                                      <span className="text-xs font-medium text-gray-700 mr-2">
+                                        Leg {leg.legNumber}:
+                                      </span>
+                                      <span className="text-xs text-gray-600">
+                                        Patient {leg.patientId}
+                                      </span>
+                                      <span className="ml-2 text-xs text-gray-500">
+                                        ({leg.transportLevel || 'BLS'})
+                                      </span>
+                                    </div>
+                                    <div className="text-xs text-gray-600 space-y-0.5">
+                                      <div>
+                                        <span className="font-medium">Pickup:</span> {leg.pickup.name}
+                                        {leg.pickup.distanceFromPrevious && (
+                                          <span className="text-gray-500 ml-1">
+                                            ({leg.pickup.distanceFromPrevious.toFixed(1)} mi from {legIndex === 0 ? 'current' : 'previous'})
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div>
+                                        <span className="font-medium">Dropoff:</span> {leg.dropoff.name}
+                                        {leg.dropoff.distanceToNext && (
+                                          <span className="text-gray-500 ml-1">
+                                            ({leg.dropoff.distanceToNext.toFixed(1)} mi to {legIndex === opp.legs.length - 1 ? 'home' : 'next'})
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="ml-3 text-right">
+                                    <div className="text-xs text-green-700 font-medium">
+                                      ${leg.estimatedRevenue?.toFixed(2) || '0.00'}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      {leg.tripDistance?.toFixed(1) || '0'} mi
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Summary Metrics */}
+                          <div className="pt-2 border-t border-gray-200">
+                            <div className="grid grid-cols-3 gap-2 text-xs">
+                              <div className="text-center">
+                                <div className="text-green-700 font-bold text-sm">
+                                  ${opp.totalRevenue?.toFixed(2) || '0.00'}
+                                </div>
+                                <div className="text-gray-500">Total Revenue</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-blue-700 font-bold text-sm">
+                                  {opp.deadheadSavings?.toFixed(1) || '0'} mi
+                                </div>
+                                <div className="text-gray-500">Deadhead Savings</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-purple-700 font-bold text-sm">
+                                  {opp.efficiencyScore?.toFixed(2) || '0.00'}
+                                </div>
+                                <div className="text-gray-500">Efficiency Score</div>
+                              </div>
+                            </div>
+                            <div className="mt-2 pt-2 border-t border-gray-200">
+                              <div className="flex justify-between text-xs text-gray-600">
+                                <span>Total Distance: <span className="font-medium">{opp.totalDistance?.toFixed(1) || '0'} mi</span></span>
+                                <span>Deadhead Miles: <span className="font-medium">{opp.route?.totalDeadheadMiles?.toFixed(1) || '0'} mi</span></span>
+                              </div>
+                            </div>
+                          </div>
+                            </>
+                          )}
+                        </div>
+                      ) : (
+                        <div>
+                          {/* Single-leg compact display */}
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center mb-2">
+                                <span className="text-sm font-medium text-gray-900">
+                                  Patient {opp.patientId}
+                                </span>
+                                <span className="ml-2 text-xs text-gray-500">
+                                  ({opp.transportLevel || 'BLS'})
+                                </span>
+                                {index < 3 && (
+                                  <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">
+                                    Top {index + 1}
+                                  </span>
+                                )}
+                              </div>
+                              
+                              {/* Visual route for single-leg */}
+                              <div className="mb-2 p-2 bg-gray-50 rounded border border-gray-200">
+                                <div className="flex items-center space-x-2 text-xs">
+                                  <div className="flex flex-col items-center">
+                                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                    <span className="text-gray-500 mt-1 text-[10px]">Current</span>
+                                  </div>
+                                  <div className="flex-1 flex items-center">
+                                    <div className="flex-1 h-0.5 bg-gray-300"></div>
+                                    <div className="px-1 text-gray-400 text-[10px]">
+                                      {opp.pickup.distanceFromCurrent || opp.route?.currentToPickup || '0'}mi
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col items-center min-w-[100px]">
+                                    <div className="w-3 h-3 bg-blue-500 rounded-full border-2 border-white shadow-sm"></div>
+                                    <span className="text-gray-700 font-medium mt-1 text-[10px] text-center leading-tight">
+                                      {opp.pickup.name.length > 15 ? opp.pickup.name.substring(0, 13) + '...' : opp.pickup.name}
+                                    </span>
+                                  </div>
+                                  <div className="flex-1 flex items-center">
+                                    <div className="flex-1 h-0.5 bg-blue-400"></div>
+                                    <div className="px-1 text-blue-600 text-[10px] font-medium">
+                                      {opp.route?.pickupToDropoff?.toFixed(1) || '0'}mi
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col items-center min-w-[100px]">
+                                    <div className="w-3 h-3 bg-orange-500 rounded-full border-2 border-white shadow-sm"></div>
+                                    <span className="text-gray-700 font-medium mt-1 text-[10px] text-center leading-tight">
+                                      {opp.dropoff.name.length > 15 ? opp.dropoff.name.substring(0, 13) + '...' : opp.dropoff.name}
+                                    </span>
+                                  </div>
+                                  <div className="flex-1 flex items-center">
+                                    <div className="flex-1 h-0.5 bg-gray-300"></div>
+                                    <div className="px-1 text-gray-400 text-[10px]">
+                                      {opp.dropoff.distanceToHome}mi
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col items-center">
+                                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                                    <span className="text-gray-500 mt-1 text-[10px]">Home</span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="text-xs text-gray-600 space-y-0.5">
+                                <div>
+                                  <span className="font-medium">Pickup:</span> {opp.pickup.name}
+                                  <span className="text-gray-500 ml-1">
+                                    ({opp.pickup.distanceFromCurrent || opp.route?.currentToPickup || '0'} mi from current)
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="font-medium">Dropoff:</span> {opp.dropoff.name}
+                                  <span className="text-gray-500 ml-1">
+                                    ({opp.dropoff.distanceToHome} mi to home)
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="ml-3 text-right">
+                              <div className="text-xs font-bold text-green-700 mb-1">
+                                ${opp.estimatedRevenue?.toFixed(2) || '0.00'}
+                              </div>
+                              <div className="text-xs text-blue-700 mb-1">
+                                {opp.deadheadSavings?.toFixed(1) || '0'} mi saved
+                              </div>
+                              <div className="text-xs text-gray-600">
+                                Score: {opp.efficiencyScore?.toFixed(2) || '0.00'}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+              })}
+            </div>
+          ) : (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <p className="text-sm text-gray-500 text-center">
+                No return trip opportunities found within {proximityRadius} miles.
+              </p>
+              <p className="text-xs text-gray-400 text-center mt-1">
+                Try adjusting the proximity radius above or set a different starting location.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       </div>
+
+      {/* Phase 6: Revenue & Savings Summary */}
+      {selectedMetrics && (
+        <div className="bg-white shadow rounded-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-gray-900">
+              Revenue & Savings Summary
+            </h3>
+            <button
+              onClick={() => setShowComparison(!showComparison)}
+              className="text-sm text-primary-600 hover:text-primary-800"
+            >
+              {showComparison ? 'Hide' : 'Show'} Comparison
+            </button>
+          </div>
+
+          {showComparison ? (
+            /* Comparison View */
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Empty Return */}
+              <div className="border-2 border-gray-300 rounded-lg p-4 bg-gray-50">
+                <h4 className="text-md font-semibold text-gray-700 mb-3 flex items-center">
+                  <span className="w-3 h-3 bg-red-500 rounded-full mr-2"></span>
+                  Empty Return (Direct)
+                </h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Distance:</span>
+                    <span className="font-medium">{selectedMetrics.emptyReturnDistance || 'N/A'} mi</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Deadhead Cost:</span>
+                    <span className="font-medium text-red-700">${selectedMetrics.emptyReturnCost.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Revenue:</span>
+                    <span className="font-medium">$0.00</span>
+                  </div>
+                  <div className="pt-2 border-t border-gray-300 mt-3">
+                    <div className="flex justify-between">
+                      <span className="font-semibold text-gray-700">Net Cost:</span>
+                      <span className="font-bold text-red-700">${selectedMetrics.emptyReturnCost.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Revenue Return */}
+              <div className="border-2 border-green-500 rounded-lg p-4 bg-green-50">
+                <h4 className="text-md font-semibold text-gray-700 mb-3 flex items-center">
+                  <span className="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
+                  Revenue Return ({selectedMetrics.selectedCount} trip{selectedMetrics.selectedCount !== 1 ? 's' : ''})
+                </h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Total Distance:</span>
+                    <span className="font-medium">{selectedMetrics.totalDistance} mi</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Deadhead Miles:</span>
+                    <span className="font-medium">{selectedMetrics.totalDeadheadMiles} mi</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Deadhead Cost:</span>
+                    <span className="font-medium text-orange-700">${selectedMetrics.revenueReturnCost.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Revenue Generated:</span>
+                    <span className="font-medium text-green-700">${selectedMetrics.totalRevenue.toFixed(2)}</span>
+                  </div>
+                  <div className="pt-2 border-t border-green-300 mt-3">
+                    <div className="flex justify-between">
+                      <span className="font-semibold text-gray-700">Net Benefit:</span>
+                      <span className="font-bold text-green-700">${selectedMetrics.netBenefit.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Summary View */
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="text-xs text-green-700 font-medium mb-1">Total Revenue</div>
+                <div className="text-2xl font-bold text-green-700">${selectedMetrics.totalRevenue.toFixed(2)}</div>
+                <div className="text-xs text-green-600 mt-1">{selectedMetrics.selectedCount} trip{selectedMetrics.selectedCount !== 1 ? 's' : ''}</div>
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="text-xs text-blue-700 font-medium mb-1">Deadhead Savings</div>
+                <div className="text-2xl font-bold text-blue-700">{selectedMetrics.totalDeadheadSavings} mi</div>
+                <div className="text-xs text-blue-600 mt-1">vs empty return</div>
+              </div>
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <div className="text-xs text-purple-700 font-medium mb-1">Net Benefit</div>
+                <div className="text-2xl font-bold text-purple-700">${selectedMetrics.netBenefit.toFixed(2)}</div>
+                <div className="text-xs text-purple-600 mt-1">Revenue - Costs</div>
+              </div>
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <div className="text-xs text-orange-700 font-medium mb-1">Total Savings</div>
+                <div className="text-2xl font-bold text-orange-700">${selectedMetrics.totalSavings.toFixed(2)}</div>
+                <div className="text-xs text-orange-600 mt-1">vs empty return</div>
+              </div>
+            </div>
+          )}
+
+          {/* Detailed Breakdown */}
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <h4 className="text-sm font-medium text-gray-700 mb-2">Detailed Breakdown</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+              <div>
+                <span className="text-gray-500">Total Distance:</span>
+                <span className="ml-2 font-medium">{selectedMetrics.totalDistance} mi</span>
+              </div>
+              <div>
+                <span className="text-gray-500">Trip Distance:</span>
+                <span className="ml-2 font-medium">{selectedMetrics.totalTripDistance} mi</span>
+              </div>
+              <div>
+                <span className="text-gray-500">Deadhead Miles:</span>
+                <span className="ml-2 font-medium">{selectedMetrics.totalDeadheadMiles} mi</span>
+              </div>
+              <div>
+                <span className="text-gray-500">Fuel Savings:</span>
+                <span className="ml-2 font-medium text-green-700">${selectedMetrics.fuelSavings.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* Error Display */}
       {error && (

@@ -15,7 +15,8 @@ import {
   Truck,
   MapPin,
   Send,
-  Shield
+  Shield,
+  HelpCircle
 } from 'lucide-react';
 import api from '../services/api';
 import Notifications from './Notifications';
@@ -26,8 +27,10 @@ import HealthcareEMSAgencies from './HealthcareEMSAgencies';
 import HealthcareDestinations from './HealthcareDestinations';
 import HealthcareSubUsersPanel from './HealthcareSubUsersPanel';
 import TripDispatchScreen from './TripDispatchScreen'; // Phase 3
+import AvailableAgencies from './AvailableAgencies';
 import { tripsAPI, unitsAPI } from '../services/api';
 import { categorizeTripByDate, formatSectionHeader, DateCategory } from '../utils/dateUtils';
+import { HelpModal } from './HelpSystem';
 
 interface HealthcareDashboardProps {
   user: {
@@ -46,6 +49,7 @@ interface HealthcareDashboardProps {
 
 const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogout }) => {
   const [activeTab, setActiveTab] = useState('create');
+  const [createFormKey, setCreateFormKey] = useState(0); // Counter to force form remount
   const [completedTrips, setCompletedTrips] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [trips, setTrips] = useState<any[]>([]);
@@ -75,6 +79,8 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
   // Phase 3: Dispatch screen state
   const [showDispatchScreen, setShowDispatchScreen] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [helpTopic, setHelpTopic] = useState<string | null>(null);
   // First-login enforcement for Healthcare header
   useEffect(() => {
     try {
@@ -94,6 +100,27 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
     const request = new Date(requestTime);
     const pickup = new Date(pickupTime);
     const diffMs = pickup.getTime() - request.getTime();
+    
+    if (diffMs < 0) return '0 min'; // Handle edge cases
+    
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMinutes / 60);
+    const remainingMinutes = diffMinutes % 60;
+    
+    if (diffHours > 0) {
+      return `${diffHours}h ${remainingMinutes}m`;
+    } else {
+      return `${diffMinutes} min`;
+    }
+  };
+
+  // Calculate acceptance time from trip creation to agency acceptance
+  const calculateAcceptanceTime = (tripCreatedAt: string, responseTimestamp: string | Date | null | undefined) => {
+    if (!responseTimestamp) return null;
+    
+    const tripCreated = new Date(tripCreatedAt);
+    const accepted = new Date(responseTimestamp);
+    const diffMs = accepted.getTime() - tripCreated.getTime();
     
     if (diffMs < 0) return '0 min'; // Handle edge cases
     
@@ -183,6 +210,20 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
         console.log('TCC_DEBUG: HealthcareDashboard - Grouped responses by trip:', Array.from(responsesByTrip.entries()).map(([tripId, responses]) => ({ tripId, responseCount: (responses as any[]).length })));
         
         if (data.success && data.data) {
+          // Debug: Check for specific patient
+          const patientPXW00PH2S = data.data.find((t: any) => t.patientId === 'PXW00PH2S');
+          if (patientPXW00PH2S) {
+            console.log('TCC_DEBUG: Found Patient PXW00PH2S in API response:', {
+              id: patientPXW00PH2S.id,
+              patientId: patientPXW00PH2S.patientId,
+              status: patientPXW00PH2S.status,
+              healthcareCreatedById: patientPXW00PH2S.healthcareCreatedById,
+              fromLocationId: patientPXW00PH2S.fromLocationId
+            });
+          } else {
+            console.warn('TCC_DEBUG: Patient PXW00PH2S NOT found in API response. Total trips:', data.data.length);
+          }
+          
           // Transform API data to match component expectations
           const transformedTrips = data.data.map((trip: any) => ({
             id: trip.id,
@@ -220,16 +261,61 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
             priority: trip.priority,
             urgencyLevel: trip.urgencyLevel,
             completionTime: trip.completionTimestamp ? new Date(trip.completionTimestamp).toLocaleString() : null,
-            completionTimestampISO: trip.completionTimestamp || null
+            completionTimestampISO: trip.completionTimestamp || null,
+            healthcareCompletionTime: trip.healthcareCompletionTimestamp 
+              ? new Date(trip.healthcareCompletionTimestamp).toLocaleString() 
+              : null,
+            healthcareCompletionTimestampISO: trip.healthcareCompletionTimestamp || null,
+            emsCompletionTime: trip.emsCompletionTimestamp 
+              ? new Date(trip.emsCompletionTimestamp).toLocaleString() 
+              : null,
+            emsCompletionTimestampISO: trip.emsCompletionTimestamp || null
           }));
 
           try {
             console.log('TCC_DEBUG: Healthcare transformed active trips (sample)', transformedTrips.slice(0, 3));
             console.log('TCC_DEBUG: Healthcare raw trips (sample)', (data.data || []).slice(0, 3));
+            console.log('TCC_DEBUG: Healthcare trip statuses:', transformedTrips.map((t: any) => ({ id: t.id, patientId: t.patientId, status: t.status })));
           } catch {}
           
           // Filter out completed and cancelled trips from main list
-          let activeTrips = transformedTrips.filter(trip => trip.status !== 'COMPLETED' && trip.status !== 'CANCELLED');
+          // Exclude HEALTHCARE_COMPLETED (Healthcare's own completion) and CANCELLED
+          // IMPORTANT: Keep ACCEPTED, IN_PROGRESS, and COMPLETED trips visible if healthcare hasn't completed them
+          // COMPLETED status means EMS completed it, but healthcare may not have completed it yet
+          let activeTrips = transformedTrips.filter(trip => {
+            // Exclude if healthcare has completed it OR if it's cancelled
+            if (trip.status === 'HEALTHCARE_COMPLETED' || trip.status === 'CANCELLED') {
+              return false;
+            }
+            // Also exclude if healthcareCompletionTimestamp is set (even if status isn't HEALTHCARE_COMPLETED)
+            if (trip.healthcareCompletionTimestampISO !== null) {
+              return false;
+            }
+            // Include all other trips (PENDING, PENDING_DISPATCH, ACCEPTED, IN_PROGRESS, COMPLETED)
+            return true;
+          });
+          
+          console.log('TCC_DEBUG: Healthcare active trips after filtering:', {
+            totalTrips: transformedTrips.length,
+            activeTrips: activeTrips.length,
+            filteredOut: transformedTrips.length - activeTrips.length,
+            statusBreakdown: transformedTrips.reduce((acc: any, trip: any) => {
+              acc[trip.status] = (acc[trip.status] || 0) + 1;
+              return acc;
+            }, {})
+          });
+          
+          // Debug: Check if Patient PXW00PH2S is in active trips
+          const patientPXW00PH2SActive = activeTrips.find((t: any) => t.patientId === 'PXW00PH2S');
+          const patientPXW00PH2STransformed = transformedTrips.find((t: any) => t.patientId === 'PXW00PH2S');
+          if (patientPXW00PH2STransformed) {
+            console.log('TCC_DEBUG: Patient PXW00PH2S in transformed trips:', {
+              id: patientPXW00PH2STransformed.id,
+              status: patientPXW00PH2STransformed.status,
+              inActiveTrips: !!patientPXW00PH2SActive,
+              filteredOut: !patientPXW00PH2SActive
+            });
+          }
 
           // Frontend fallback: hydrate assigned unit details if not included in API
           try {
@@ -297,13 +383,26 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
           setPastTrips(past);
           setUnscheduledTrips(unscheduled);
           
-          // Set completed/cancelled trips for the completed tab with wait time calculation
+          // Set completed/cancelled trips for the completed tab with wait time and acceptance time calculation
+          // Filter by healthcareCompletionTimestamp (Healthcare's own completion) or CANCELLED status
           const completed = transformedTrips
-            .filter(trip => trip.status === 'COMPLETED' || trip.status === 'CANCELLED')
-            .map(trip => ({
-              ...trip,
-              waitTime: calculateWaitTime(trip.requestTimeISO, trip.pickupTimeISO)
-            }));
+            .filter(trip => trip.healthcareCompletionTimestampISO !== null || trip.status === 'CANCELLED')
+            .map(trip => {
+              // Find the selected agency response to get its acceptance time
+              const selectedResponse = trip.agencyResponses?.find((r: any) => r.isSelected === true);
+              let acceptanceTime = null;
+              
+              if (selectedResponse) {
+                const responseTime = selectedResponse.responseTimestamp || selectedResponse.createdAt;
+                acceptanceTime = calculateAcceptanceTime(trip.requestTimeISO, responseTime);
+              }
+              
+              return {
+                ...trip,
+                waitTime: calculateWaitTime(trip.requestTimeISO, trip.pickupTimeISO),
+                acceptanceTime: acceptanceTime
+              };
+            });
           setCompletedTrips(completed);
         }
       }
@@ -509,9 +608,10 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
         };
       }
       
-      // Add completion timestamp if marking as completed
-      if (editFormData.status === 'COMPLETED') {
-        payload.completionTimestamp = new Date().toISOString();
+      // Add completion timestamp if marking as completed (Healthcare completion)
+      if (editFormData.status === 'COMPLETED' || editFormData.status === 'HEALTHCARE_COMPLETED') {
+        payload.status = 'HEALTHCARE_COMPLETED';
+        payload.healthcareCompletionTimestamp = new Date().toISOString();
       }
 
       console.log('TCC_EDIT_DEBUG: Sanitized payload for edit-save:', payload);
@@ -544,8 +644,8 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
     setUpdating(true);
     try {
       const response = await tripsAPI.updateStatus(tripId, {
-        status: 'COMPLETED',
-        completionTimestamp: new Date().toISOString()
+        status: 'HEALTHCARE_COMPLETED',
+        healthcareCompletionTimestamp: new Date().toISOString()
       });
 
       if (!response.data.success) {
@@ -614,25 +714,45 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
 
     const csvHeaders = [
       'Patient ID',
+      'Agency',
       'Origin Facility',
       'Destination Facility',
       'Transport Level',
       'Urgency Level',
       'Request Time',
+      'Acceptance Time',
+      'Pickup Time',
+      'Wait Time',
       'Completion Time',
       'Status'
     ];
 
-    const csvData = completedTrips.map(trip => [
-      trip.patientId,
-      trip.origin,
-      trip.destination,
-      trip.transportLevel,
-      trip.urgencyLevel,
-      trip.requestTime,
-      trip.completionTime || 'N/A',
-      trip.status
-    ]);
+    const csvData = completedTrips.map(trip => {
+      // Get agency name (same logic as display)
+      let agencyName = 'No Agency';
+      const selectedResponse = trip.agencyResponses?.find((r: any) => r.isSelected === true && r.response === 'ACCEPTED');
+      if (selectedResponse) {
+        agencyName = selectedResponse.agency?.name || 'Unknown Agency';
+      } else if (trip.assignedAgencyId) {
+        const agencyResponse = trip.agencyResponses?.find((r: any) => r.agencyId === trip.assignedAgencyId);
+        agencyName = agencyResponse?.agency?.name || 'Agency Assigned';
+      }
+
+      return [
+        trip.patientId,
+        agencyName,
+        trip.origin,
+        trip.destination,
+        trip.transportLevel || 'N/A',
+        trip.urgencyLevel || 'Routine',
+        trip.requestTime || 'N/A',
+        trip.acceptanceTime || 'N/A',
+        trip.pickupTime || 'N/A',
+        trip.waitTime || 'N/A',
+        trip.healthcareCompletionTime || (trip.status === 'CANCELLED' ? 'Cancelled' : 'N/A'),
+        trip.status
+      ];
+    });
 
     const csvContent = [csvHeaders, ...csvData]
       .map(row => row.map(field => `"${field}"`).join(','))
@@ -694,6 +814,28 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
             
             <div className="flex items-center space-x-4">
               <Notifications user={user} />
+              <button
+                onClick={() => {
+                  // Map current tab to help topic
+                  const topicMap: Record<string, string> = {
+                    'create': 'helpfile01_create-request',
+                    'trips': 'transport-requests',
+                    'in-progress': 'in-progress',
+                    'completed': 'completed-trips',
+                    'hospital-settings': 'hospital-settings',
+                    'ems-providers': 'ems-providers',
+                    'destinations': 'destinations',
+                    'users': 'team-members',
+                  };
+                  setHelpTopic(topicMap[activeTab] || 'index');
+                  setShowHelp(true);
+                }}
+                className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
+                title="Help"
+              >
+                <HelpCircle className="h-4 w-4" />
+                <span>Help</span>
+              </button>
               <div className="flex items-center space-x-2">
                 <User className="h-5 w-5 text-gray-400" />
                 <span className="text-sm text-gray-700">{user.name}</span>
@@ -722,6 +864,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex space-x-8">
             {[
+              { id: 'available-agencies', name: 'Available Agencies', icon: Truck },
               { id: 'create', name: 'Create Request', icon: Plus },
               { id: 'trips', name: 'Transport Requests', icon: Clock },
               { id: 'in-progress', name: 'In-Progress', icon: AlertCircle },
@@ -735,7 +878,14 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    // Increment form key when switching to create tab to force remount and reload options
+                    if (tab.id === 'create') {
+                      console.log('TCC_DEBUG: Switching to create tab, incrementing form key to force refresh');
+                      setCreateFormKey(prev => prev + 1);
+                    }
+                  }}
                   className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === tab.id
                       ? 'border-green-500 text-green-600'
@@ -753,6 +903,10 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {activeTab === 'available-agencies' && (
+          <AvailableAgencies user={user} />
+        )}
+
         {activeTab === 'trips' && (
           <div className="space-y-6">
             {/* Summary Tiles */}
@@ -910,35 +1064,65 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                                        trip.agencyResponses.filter((r: any) => r.isSelected).length === 0 && (
                                         <div className="mt-2 border border-gray-300 rounded-lg p-3 bg-white">
                                           <p className="text-xs font-medium text-gray-700 mb-2">Select Agency:</p>
-                                          {trip.agencyResponses.filter((r: any) => r.response === 'ACCEPTED').map((response: any) => (
-                                            <div key={response.id} className="flex items-center justify-between py-2 border-b border-gray-200 last:border-b-0">
-                                              <div>
-                                                <p className="text-sm font-medium text-gray-900">{response.agency?.name || 'Unknown Agency'}</p>
-                                                <p className="text-xs text-gray-500">
-                                                  Route: {response.trip?.fromLocation || 'N/A'} → {response.trip?.toLocation || 'N/A'}
-                                                </p>
-                                                {response.assignedUnit && (
-                                                  <p className="text-xs text-green-600">
-                                                    Assigned Unit: {response.assignedUnit.unitNumber} ({response.assignedUnit.type})
+                                          {(() => {
+                                            // Get accepted responses and calculate acceptance times
+                                            const acceptedResponses = trip.agencyResponses
+                                              .filter((r: any) => r.response === 'ACCEPTED')
+                                              .map((response: any) => {
+                                                const responseTime = response.responseTimestamp || response.createdAt;
+                                                const acceptanceTime = calculateAcceptanceTime(trip.requestTimeISO, responseTime);
+                                                // Calculate minutes for sorting (convert to number)
+                                                const responseTimeMs = responseTime ? new Date(responseTime).getTime() : 0;
+                                                const tripTimeMs = trip.requestTimeISO ? new Date(trip.requestTimeISO).getTime() : 0;
+                                                const minutesDiff = responseTimeMs && tripTimeMs ? (responseTimeMs - tripTimeMs) / (1000 * 60) : Infinity;
+                                                return {
+                                                  ...response,
+                                                  acceptanceTime,
+                                                  minutesDiff
+                                                };
+                                              })
+                                              // Sort by acceptance time (fastest first)
+                                              .sort((a: any, b: any) => a.minutesDiff - b.minutesDiff);
+                                            
+                                            const fastestTime = acceptedResponses.length > 0 ? acceptedResponses[0].minutesDiff : null;
+                                            
+                                            return acceptedResponses.map((response: any, index: number) => (
+                                              <div key={response.id} className="flex items-center justify-between py-2 border-b border-gray-200 last:border-b-0">
+                                                <div>
+                                                  <div className="flex items-center space-x-2">
+                                                    <p className="text-sm font-medium text-gray-900">{response.agency?.name || 'Unknown Agency'}</p>
+                                                    {response.acceptanceTime && (
+                                                      <span className={`text-xs font-semibold ${index === 0 && fastestTime !== null ? 'text-green-600' : 'text-gray-600'}`}>
+                                                        Accepted in: {response.acceptanceTime}
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                  <p className="text-xs text-gray-500">
+                                                    Route: {response.trip?.fromLocation || 'N/A'} → {response.trip?.toLocation || 'N/A'}
                                                   </p>
-                                                )}
+                                                  {response.assignedUnit && (
+                                                    <p className="text-xs text-green-600">
+                                                      Assigned Unit: {response.assignedUnit.unitNumber} ({response.assignedUnit.type})
+                                                    </p>
+                                                  )}
+                                                </div>
+                                                <div className="flex items-center space-x-2">
+                                                  <button
+                                                    onClick={() => handleSelectAgency(trip.id, response.id)}
+                                                    className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-md hover:bg-green-700"
+                                                  >
+                                                    Select
+                                                  </button>
+                                                  <button
+                                                    onClick={() => handleRejectAgency(trip.id, response.id, response.agency?.name || 'this agency')}
+                                                    className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700"
+                                                  >
+                                                    Reject
+                                                  </button>
+                                                </div>
                                               </div>
-                                              <div className="flex items-center space-x-2">
-                                                <button
-                                                  onClick={() => handleSelectAgency(trip.id, response.id)}
-                                                  className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-md hover:bg-green-700"
-                                                >
-                                                  Select
-                                                </button>
-                                                <button
-                                                  onClick={() => handleRejectAgency(trip.id, response.id, response.agency?.name || 'this agency')}
-                                                  className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700"
-                                                >
-                                                  Reject
-                                                </button>
-                                              </div>
-                                            </div>
-                                          ))}
+                                            ));
+                                          })()}
                                         </div>
                                       )}
                                     </div>
@@ -1088,7 +1272,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
         {activeTab === 'create' && (
           <div>
             <EnhancedTripForm 
-              key="create-form"
+              key={`create-form-${createFormKey}`}
               user={user} 
               onTripCreated={async (tripId) => {
                 // Phase 3: If tripId provided, open dispatch screen
@@ -1134,10 +1318,20 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                 <h3 className="text-lg font-medium text-gray-900">Accepted and Active Trips</h3>
               </div>
               <div className="p-6">
-                {trips.filter(t => t.status === 'ACCEPTED' || t.status === 'IN_PROGRESS').length > 0 ? (
+                {trips.filter(t => {
+                  // Include ACCEPTED, IN_PROGRESS, and COMPLETED trips
+                  // COMPLETED means EMS completed it, but Healthcare hasn't completed it yet
+                  return (t.status === 'ACCEPTED' || t.status === 'IN_PROGRESS' || t.status === 'COMPLETED') &&
+                         t.healthcareCompletionTimestampISO === null; // Exclude if Healthcare has completed it
+                }).length > 0 ? (
                   <div className="space-y-4">
                     {trips
-                      .filter(t => t.status === 'ACCEPTED' || t.status === 'IN_PROGRESS')
+                      .filter(t => {
+                        // Include ACCEPTED, IN_PROGRESS, and COMPLETED trips
+                        // COMPLETED means EMS completed it, but Healthcare hasn't completed it yet
+                        return (t.status === 'ACCEPTED' || t.status === 'IN_PROGRESS' || t.status === 'COMPLETED') &&
+                               t.healthcareCompletionTimestampISO === null; // Exclude if Healthcare has completed it
+                      })
                       .map((trip) => (
                       <div key={trip.id} className="border border-gray-200 rounded-lg p-4">
                         <div className="flex items-start justify-between">
@@ -1152,14 +1346,22 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                             )}
                             <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                               <div>
-                                <div className="font-bold text-gray-800">Assigned Unit</div>
+                                <div className="font-bold text-gray-800">Assigned Agency</div>
                                 <div className="text-gray-600">
-                                  {trip.assignedUnitNumber
-                                    ? `${trip.assignedUnitNumber}${trip.assignedUnitType ? ` (${trip.assignedUnitType})` : ''}`
-                                    : (trip.assignedUnitId
-                                        ? `#${trip.assignedUnitId}`
-                                        : (trip.status === 'ACCEPTED' ? 'Awaiting unit assignment' : '—')
-                                      )}
+                                  {(() => {
+                                    // Find the selected agency response
+                                    const selectedResponse = trip.agencyResponses?.find((r: any) => r.isSelected === true && r.response === 'ACCEPTED');
+                                    if (selectedResponse) {
+                                      return selectedResponse.agency?.name || 'Unknown Agency';
+                                    }
+                                    // Fallback: check if there's an assigned agency ID
+                                    if (trip.assignedAgencyId) {
+                                      // Try to find agency name from responses
+                                      const agencyResponse = trip.agencyResponses?.find((r: any) => r.agencyId === trip.assignedAgencyId);
+                                      return agencyResponse?.agency?.name || 'Agency Assigned';
+                                    }
+                                    return trip.status === 'ACCEPTED' ? 'Awaiting agency selection' : '—';
+                                  })()}
                                 </div>
                               </div>
                               <div>
@@ -1248,25 +1450,43 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                           <div className="flex-1">
                             <div className="flex items-center space-x-4">
                               <div>
-                                <h4 className="text-lg font-medium text-gray-900">Patient {trip.patientId}</h4>
+                                <h4 className="text-lg font-medium text-gray-900">
+                                  Patient {trip.patientId} - Agency: {(() => {
+                                    // Find the selected agency response
+                                    const selectedResponse = trip.agencyResponses?.find((r: any) => r.isSelected === true && r.response === 'ACCEPTED');
+                                    if (selectedResponse) {
+                                      return selectedResponse.agency?.name || 'Unknown Agency';
+                                    }
+                                    // Fallback: check if there's an assigned agency ID
+                                    if (trip.assignedAgencyId) {
+                                      // Try to find agency name from responses
+                                      const agencyResponse = trip.agencyResponses?.find((r: any) => r.agencyId === trip.assignedAgencyId);
+                                      return agencyResponse?.agency?.name || 'Agency Assigned';
+                                    }
+                                    return 'No Agency';
+                                  })()} - Urgency: {trip.urgencyLevel || 'Routine'} - {trip.transportLevel}
+                                </h4>
                                 <p className="text-base text-gray-600">
                                   {trip.origin} → {trip.destination}
                                 </p>
                               </div>
                             </div>
-                            <div className="mt-2 grid grid-cols-6 gap-4 text-sm">
-                              <div>
-                                <div className="font-bold text-gray-800">Transport Level:</div>
-                                <div className="text-gray-500">{trip.transportLevel}</div>
-                              </div>
-                              <div>
-                                <div className="font-bold text-gray-800">Urgency:</div>
-                                <div className="text-gray-500">{trip.urgencyLevel || 'Routine'}</div>
-                              </div>
+                            <div className="mt-2 grid grid-cols-5 gap-4 text-sm">
                               <div>
                                 <div className="font-bold text-gray-800">Request Time:</div>
                                 <div className="text-gray-500">{trip.requestTime}</div>
                               </div>
+                              {trip.acceptanceTime ? (
+                                <div>
+                                  <div className="font-bold text-gray-800">Acceptance Time:</div>
+                                  <div className="text-blue-600">{trip.acceptanceTime}</div>
+                                </div>
+                              ) : (
+                                <div>
+                                  <div className="font-bold text-gray-800">Acceptance Time:</div>
+                                  <div className="text-blue-600">N/A</div>
+                                </div>
+                              )}
                               {trip.pickupTime && (
                                 <div>
                                   <div className="font-bold text-gray-800">Pickup Time:</div>
@@ -1282,7 +1502,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                               <div>
                                 <div className="font-bold text-gray-800">Completion Time:</div>
                                 <div className="text-gray-500">
-                                  {trip.status === 'CANCELLED' ? 'Cancelled' : (trip.completionTime || 'N/A')}
+                                  {trip.status === 'CANCELLED' ? 'Cancelled' : (trip.healthcareCompletionTime || 'N/A')}
                                 </div>
                               </div>
                             </div>
@@ -1609,6 +1829,14 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
 
       {/* Change Password Modal */}
       <ChangePasswordModal isOpen={showChangePassword} onClose={() => setShowChangePassword(false)} />
+
+      {/* Help Modal */}
+      <HelpModal
+        isOpen={showHelp}
+        onClose={() => setShowHelp(false)}
+        userType="HEALTHCARE"
+        topic={helpTopic || undefined}
+      />
     </div>
   );
 };

@@ -5,15 +5,17 @@ import {
   Building2, 
   Truck, 
   Settings, 
-  BarChart3,
   Calculator,
   User,
   LogOut,
   Menu,
   X,
-  Home
+  Home,
+  List,
+  HelpCircle
 } from 'lucide-react';
 import ChangePasswordModal from './ChangePasswordModal';
+import { HelpModal } from './HelpSystem';
 
 interface TopMenuBarProps {
   user: {
@@ -32,6 +34,8 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [helpTopic, setHelpTopic] = useState<string | null>(null);
   // First-login enforcement: auto-open Change Password if flagged
   // Check on mount and whenever the user changes (post-login)
   useEffect(() => {
@@ -49,13 +53,10 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
 
   const menuItems = [
     {
-      label: 'Actions',
-      icon: BarChart3,
-      hasDropdown: true,
-      items: [
-        { label: 'Trip Management', path: '/dashboard/operations/trips' },
-        { label: 'Route Optimization', path: '/dashboard/operations/route-optimization' },
-      ]
+      label: 'Trip Management',
+      icon: List,
+      hasDropdown: false,
+      path: '/dashboard/operations/trips'
     },
     {
       label: 'Healthcare',
@@ -74,24 +75,57 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
         { label: 'Agencies List', path: '/dashboard/ems/agencies' },
         { label: 'Add Agency', path: '/ems-register' },
         { label: 'Units Management', path: '/dashboard/ems/units' },
+        { label: 'Route Optimization', path: '/dashboard/operations/route-optimization' },
+        { label: 'Trip Calculator', path: '/dashboard/operations/analytics' },
       ]
     },
     {
-      label: 'Trip Calculator',
-      icon: Calculator,
+      label: 'Help',
+      icon: HelpCircle,
       hasDropdown: false,
-      path: '/dashboard/operations/analytics'
+      path: 'HELP' // Special path to trigger help modal
     },
     ...(user.userType === 'ADMIN' ? [{
       label: 'Admin Users',
       icon: Settings,
-      hasDropdown: false,
-      path: '/dashboard/admin/users'
+      hasDropdown: true,
+      items: [
+        { label: 'Manage Users', path: '/dashboard/admin/users' },
+        { label: 'Change Password', path: 'CHANGE_PASSWORD' } // Special path to trigger modal
+      ]
     }] : [])
   ];
 
   const handleNavigation = (path: string) => {
     console.log('TCC_DEBUG: TopMenuBar handleNavigation called with path:', path);
+    
+    // Handle special actions
+    if (path === 'CHANGE_PASSWORD') {
+      setShowChangePassword(true);
+      setActiveDropdown(null);
+      setMobileMenuOpen(false);
+      return;
+    }
+    
+    if (path === 'HELP') {
+      // Determine help topic based on current route
+      const pathToTopic: Record<string, string> = {
+        '/dashboard/operations/trips': 'trip-management',
+        '/dashboard/healthcare/facilities': 'healthcare-facilities',
+        '/dashboard/ems/agencies': 'ems-agencies',
+        '/dashboard/ems/units': 'units',
+        '/dashboard/operations/route-optimization': 'route-optimization',
+        '/dashboard/operations/analytics': 'analytics',
+        '/dashboard/admin/users': 'user-management',
+      };
+      const currentPath = location.pathname;
+      setHelpTopic(pathToTopic[currentPath] || 'index');
+      setShowHelp(true);
+      setActiveDropdown(null);
+      setMobileMenuOpen(false);
+      return;
+    }
+    
     // Handle external registration pages (outside dashboard context)
     if (path === '/healthcare-register' || path === '/ems-register') {
       console.log('TCC_DEBUG: TopMenuBar navigating to external page:', path);
@@ -123,11 +157,14 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
 
   const getActiveSection = () => {
     const path = location.pathname;
-    if (path === '/' || path === '/dashboard') return 'Actions';
-    if (path.startsWith('/dashboard/operations/trips')) return 'Actions';
+    if (path === '/' || path === '/dashboard') return null;
+    if (path.startsWith('/dashboard/operations/trips')) return 'Trip Management';
     if (path.startsWith('/dashboard/healthcare')) return 'Healthcare';
     if (path.startsWith('/dashboard/ems')) return 'EMS';
-    if (path.startsWith('/dashboard/operations')) return 'Trip Calculator';
+    if (path.startsWith('/dashboard/operations/route-optimization')) return 'EMS'; // Route Optimization moved to EMS
+    if (path.startsWith('/dashboard/operations/analytics')) return 'EMS'; // Trip Calculator moved to EMS dropdown
+    if (path.startsWith('/dashboard/operations')) return 'EMS'; // Other operations routes
+    if (path.startsWith('/dashboard/admin/users')) return 'Admin Users';
     return null;
   };
 
@@ -143,7 +180,7 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
                 <span className="text-white font-bold text-lg">T</span>
               </div>
               <span className="ml-3 text-xl font-semibold text-gray-900">
-                Transport Command
+                Command
               </span>
             </div>
             
@@ -158,14 +195,14 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-8">
+          <nav className="hidden md:flex space-x-4">
             {menuItems.map((item) => (
               <div key={item.label} className="relative">
                 {item.hasDropdown ? (
                   <div className="relative">
                     <button
                       onClick={() => handleDropdownToggle(item.label)}
-                      className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      className={`flex items-center space-x-1 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
                         getActiveSection() === item.label
                           ? 'text-blue-600 bg-blue-50'
                           : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
@@ -207,7 +244,7 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
                 ) : (
                   <button
                     onClick={() => handleNavigation(item.path)}
-                    className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    className={`flex items-center space-x-1 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
                       isActivePath(item.path)
                         ? 'text-blue-600 bg-blue-50'
                         : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
@@ -230,8 +267,6 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
               <div className="text-sm">
                 <div className="font-medium text-gray-900 flex items-center space-x-2">
                   <span>{user.name}</span>
-                  {/* Compact role badges */}
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${user.userType === 'ADMIN' ? 'bg-blue-100 text-blue-800' : user.userType === 'HEALTHCARE' ? 'bg-green-100 text-green-800' : user.userType === 'EMS' ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-800'}`}>{user.userType}</span>
                   {/* Org Admin badge for Healthcare/EMS when present */}
                   {(() => {
                     try {
@@ -247,13 +282,6 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
                 <div className="text-gray-500">{user.email}</div>
               </div>
             </div>
-            <button
-              onClick={() => setShowChangePassword(true)}
-              className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-            >
-              <Settings className="h-4 w-4" />
-              <span>Change Password</span>
-            </button>
             <button
               onClick={onLogout}
               className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
@@ -372,7 +400,19 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
       )}
 
       {/* Change Password Modal */}
-      <ChangePasswordModal isOpen={showChangePassword} onClose={() => setShowChangePassword(false)} />
+      <ChangePasswordModal 
+        isOpen={showChangePassword} 
+        onClose={() => setShowChangePassword(false)} 
+        userName={user.name}
+      />
+
+      {/* Help Modal */}
+      <HelpModal
+        isOpen={showHelp}
+        onClose={() => setShowHelp(false)}
+        userType="ADMIN"
+        topic={helpTopic || undefined}
+      />
     </div>
   );
 };

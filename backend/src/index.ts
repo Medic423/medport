@@ -13,7 +13,7 @@ import facilityRoutes from './routes/facilities';
 import analyticsRoutes from './routes/analytics';
 import tripRoutes from './routes/trips';
 import agencyResponseRoutes from './routes/agencyResponses';
-// import optimizationRoutes from './routes/optimization'; // Temporarily disabled - depends on deleted coordinateService
+import optimizationRoutes from './routes/optimization';
 import notificationRoutes from './routes/notifications';
 // import adminNotificationRoutes from './routes/adminNotifications';
 import unitRoutes from './routes/units';
@@ -31,7 +31,9 @@ import healthcareSubUsersRoutes from './routes/healthcareSubUsers';
 import emsSubUsersRoutes from './routes/emsSubUsers';
 
 // Load environment variables
+// Load .env first, then .env.local (which will override .env values)
 dotenv.config();
+dotenv.config({ path: '.env.local', override: true });
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -107,7 +109,7 @@ app.use('/api/tcc/units', tccUnitRoutes);
 app.use('/api/dropdown-options', dropdownOptionsRoutes);
 app.use('/api/tcc/pickup-locations', pickupLocationRoutes);
 app.use('/api/ems/analytics', emsAnalyticsRoutes);
-// app.use('/api/optimize', optimizationRoutes); // Temporarily disabled
+app.use('/api/optimize', optimizationRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/healthcare/locations', healthcareLocationsRoutes);

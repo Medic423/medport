@@ -236,9 +236,12 @@ router.get('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
     const result = await tripService.getTrips(filters);
 
     if (!result.success) {
+      console.error('TCC_DEBUG: getTrips returned error:', result.error);
+      console.error('TCC_DEBUG: Filters used:', filters);
+      console.error('TCC_DEBUG: User type:', req.user?.userType);
       return res.status(400).json({
         success: false,
-        error: result.error
+        error: result.error || 'Failed to fetch trips'
       });
     }
 
@@ -341,7 +344,7 @@ router.get('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => 
  * PUT /api/trips/:id/status
  * Update trip status (accept/decline/complete)
  */
-router.put('/:id/status', async (req, res) => {
+router.put('/:id/status', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     console.log('TCC_DEBUG: Update trip status request:', { id: req.params.id, body: req.body });
     
@@ -355,6 +358,8 @@ router.put('/:id/status', async (req, res) => {
       arrivalTimestamp,
       departureTimestamp,
       completionTimestamp,
+      healthcareCompletionTimestamp,  // NEW
+      emsCompletionTimestamp,  // NEW
       urgencyLevel,
       transportLevel,
       diagnosis,
@@ -373,10 +378,10 @@ router.put('/:id/status', async (req, res) => {
       });
     }
 
-    if (!['PENDING', 'PENDING_DISPATCH', 'ACCEPTED', 'DECLINED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'].includes(status)) {
+    if (!['PENDING', 'PENDING_DISPATCH', 'ACCEPTED', 'DECLINED', 'IN_PROGRESS', 'HEALTHCARE_COMPLETED', 'COMPLETED', 'CANCELLED'].includes(status)) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid status. Must be PENDING, PENDING_DISPATCH, ACCEPTED, DECLINED, IN_PROGRESS, COMPLETED, or CANCELLED'
+        error: 'Invalid status. Must be PENDING, PENDING_DISPATCH, ACCEPTED, DECLINED, IN_PROGRESS, HEALTHCARE_COMPLETED, COMPLETED, or CANCELLED'
       });
     }
 
@@ -389,6 +394,8 @@ router.put('/:id/status', async (req, res) => {
       arrivalTimestamp,
       departureTimestamp,
       completionTimestamp,
+      healthcareCompletionTimestamp,  // NEW
+      emsCompletionTimestamp,  // NEW
       urgencyLevel,
       transportLevel,
       diagnosis,
@@ -400,7 +407,10 @@ router.put('/:id/status', async (req, res) => {
       pickupLocation,
     };
 
-    const result = await tripService.updateTripStatus(id, updateData);
+    // Extract user type from authenticated request
+    const userType = req.user?.userType;
+    
+    const result = await tripService.updateTripStatus(id, updateData, userType);
 
     if (!result.success) {
       return res.status(400).json({

@@ -10,6 +10,55 @@ const router = express.Router();
 router.use(authenticateAdmin);
 
 /**
+ * GET /api/healthcare/agencies/available
+ * Get only available EMS agencies (marked as available by EMS users)
+ * Query params:
+ *   - radius: Filter by distance in miles (default: 50, null/undefined: show all)
+ */
+router.get('/available', async (req: AuthenticatedRequest, res) => {
+  try {
+    // Verify user is healthcare type
+    if (req.user?.userType !== 'HEALTHCARE') {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: Healthcare users only',
+      });
+    }
+
+    // Parse radius parameter (default: 50 miles, null means show all)
+    let radiusMiles: number | null = 50; // Default radius
+    if (req.query.radius !== undefined) {
+      if (req.query.radius === 'null' || req.query.radius === 'all' || req.query.radius === '') {
+        radiusMiles = null; // Show all agencies
+      } else {
+        const parsed = parseFloat(req.query.radius as string);
+        if (!isNaN(parsed) && parsed > 0) {
+          radiusMiles = parsed;
+        }
+      }
+    }
+
+    const agencies = await healthcareAgencyService.getAvailableAgenciesForHealthcareUser(
+      req.user!.id,
+      radiusMiles
+    );
+
+    res.json({
+      success: true,
+      data: agencies,
+      count: agencies.length,
+      radiusMiles: radiusMiles,
+    });
+  } catch (error) {
+    console.error('Get available healthcare agencies error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve available agencies',
+    });
+  }
+});
+
+/**
  * GET /api/healthcare/agencies
  * List all EMS agencies for the logged-in healthcare user with optional filtering
  */

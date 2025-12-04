@@ -1,4 +1,10 @@
 import { PrismaClient } from '@prisma/client';
+import dotenv from 'dotenv';
+
+// Load environment variables before initializing database
+// Load .env first, then .env.local (which will override .env values)
+dotenv.config();
+dotenv.config({ path: '.env.local', override: true });
 
 class DatabaseManager {
   private static instance: DatabaseManager;
@@ -8,16 +14,29 @@ class DatabaseManager {
   private retryDelay = 2000; // 2 seconds
 
   private constructor() {
-    this.prisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: process.env.DATABASE_URL
-        }
-      },
-      // Add connection configuration for Render PostgreSQL
-      log: process.env.NODE_ENV === 'production' ? ['error'] : ['error', 'warn'],
-      errorFormat: 'pretty',
-    });
+    // Validate DATABASE_URL is set
+    if (!process.env.DATABASE_URL) {
+      const error = new Error('DATABASE_URL environment variable is not set. Cannot initialize Prisma client.');
+      console.error('❌ DatabaseManager initialization failed:', error.message);
+      throw error;
+    }
+
+    try {
+      this.prisma = new PrismaClient({
+        datasources: {
+          db: {
+            url: process.env.DATABASE_URL
+          }
+        },
+        // Add connection configuration for Render PostgreSQL
+        log: process.env.NODE_ENV === 'production' ? ['error'] : ['error', 'warn'],
+        errorFormat: 'pretty',
+      });
+      console.log('✅ DatabaseManager: Prisma client initialized successfully');
+    } catch (error) {
+      console.error('❌ DatabaseManager: Failed to create Prisma client:', error);
+      throw error;
+    }
   }
 
   public static getInstance(): DatabaseManager {
@@ -28,6 +47,11 @@ class DatabaseManager {
   }
 
   public getPrismaClient(): PrismaClient {
+    if (!this.prisma) {
+      const error = new Error('Prisma client is not initialized. DATABASE_URL may be missing or Prisma client generation failed.');
+      console.error('❌ DatabaseManager.getPrismaClient() failed:', error.message);
+      throw error;
+    }
     return this.prisma;
   }
 

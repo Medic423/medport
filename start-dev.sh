@@ -2,12 +2,69 @@
 
 # TCC Development Server Startup Script
 # Standardized ports: Frontend=3000, Backend=5001
-# Enhanced with process conflict prevention
+# Enhanced with process conflict prevention and environment validation
+
+set -e
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKEND_ENV="$ROOT_DIR/backend/.env"
+BACKEND_ENV_LOCAL="$ROOT_DIR/backend/.env.local"
+BACKUP_DIR="/Volumes/Acasis/tcc-backups"
 
 echo "🚀 Starting TCC Development Environment..."
 echo "📋 Standardized Ports:"
 echo "   Frontend: http://localhost:3000"
 echo "   Backend:  http://localhost:5001"
+echo ""
+
+# Validate backend .env file exists
+echo "🔍 Validating environment configuration..."
+if [ ! -f "$BACKEND_ENV" ] && [ ! -f "$BACKEND_ENV_LOCAL" ]; then
+    echo "❌ ERROR: Backend environment file not found!"
+    echo "   Expected: $BACKEND_ENV or $BACKEND_ENV_LOCAL"
+    echo ""
+    echo "💡 Solution: Restore .env file from backup"
+    
+    # Find latest backup
+    LATEST_BACKUP=$(ls -td "$BACKUP_DIR"/tcc-backup-* 2>/dev/null | head -1)
+    if [ -n "$LATEST_BACKUP" ] && [ -f "$LATEST_BACKUP/project/backend/.env" ]; then
+        echo ""
+        echo "📦 Found backup: $(basename "$LATEST_BACKUP")"
+        echo "   To restore, run:"
+        echo "   cp \"$LATEST_BACKUP/project/backend/.env\" \"$BACKEND_ENV\""
+        echo ""
+        read -p "   Restore from backup now? (y/n): " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            cp "$LATEST_BACKUP/project/backend/.env" "$BACKEND_ENV"
+            echo "✅ Restored .env from backup"
+        else
+            echo "❌ Cannot start backend without DATABASE_URL"
+            exit 1
+        fi
+    else
+        echo ""
+        echo "⚠️  No backup found at $BACKUP_DIR"
+        echo "   Please create backend/.env with DATABASE_URL"
+        exit 1
+    fi
+fi
+
+# Validate DATABASE_URL exists in .env file
+ENV_FILE="$BACKEND_ENV"
+if [ ! -f "$ENV_FILE" ]; then
+    ENV_FILE="$BACKEND_ENV_LOCAL"
+fi
+
+if ! grep -q "DATABASE_URL" "$ENV_FILE" 2>/dev/null; then
+    echo "❌ ERROR: DATABASE_URL not found in $ENV_FILE"
+    echo "   Backend requires DATABASE_URL to initialize Prisma client"
+    echo ""
+    echo "💡 Solution: Add DATABASE_URL to $ENV_FILE"
+    exit 1
+fi
+
+echo "✅ Environment configuration validated"
 echo ""
 
 # Enhanced process cleanup
@@ -39,33 +96,50 @@ fi
 
 # Start backend with enhanced process management
 echo "🔧 Starting Backend Server (Port 5001)..."
-cd backend
+cd "$ROOT_DIR/backend"
 npm run dev &
 BACKEND_PID=$!
 # Write backend PID file at project root
-echo "$BACKEND_PID" > ../backend-live.pid 2>/dev/null || true
+echo "$BACKEND_PID" > "$ROOT_DIR/backend-live.pid" 2>/dev/null || true
 
 # Wait for backend to start and verify health
 echo "⏳ Waiting for backend to start..."
 sleep 5
 
-# Health check
-if curl -s http://localhost:5001/health > /dev/null 2>&1; then
+# Health check with retries
+MAX_RETRIES=6
+RETRY_COUNT=0
+BACKEND_HEALTHY=false
+
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    if curl -s http://localhost:5001/health > /dev/null 2>&1; then
+        BACKEND_HEALTHY=true
+        break
+    fi
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    sleep 2
+done
+
+if [ "$BACKEND_HEALTHY" = true ]; then
     echo "✅ Backend server is healthy"
 else
     echo "❌ Backend server failed to start properly"
     echo "   Check backend logs for errors"
+    echo "   Common issues:"
+    echo "   - DATABASE_URL not set or incorrect"
+    echo "   - Database server not running"
+    echo "   - Port 5001 already in use"
     kill $BACKEND_PID 2>/dev/null || true
     exit 1
 fi
 
 # Start frontend
 echo "🎨 Starting Frontend Server (Port 3000)..."
-cd ../frontend
+cd "$ROOT_DIR/frontend"
 npm run dev &
 FRONTEND_PID=$!
 # Write frontend PID file at project root
-echo "$FRONTEND_PID" > ../frontend-live.pid 2>/dev/null || true
+echo "$FRONTEND_PID" > "$ROOT_DIR/frontend-live.pid" 2>/dev/null || true
 
 # Wait for frontend to start
 sleep 3

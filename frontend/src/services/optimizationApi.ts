@@ -15,17 +15,25 @@ class OptimizationApiService {
   private baseUrl = '/api/optimize';
 
   /**
-   * Optimize routes for a specific unit
+   * Optimize routes for selected trips with a starting location
    */
-  async optimizeRoutes(request: OptimizationRequest): Promise<OptimizationResponse> {
+  async optimizeRoutes(request: { startingLocation: { lat: number; lng: number }, tripIds: string[], constraints?: any }): Promise<OptimizationResponse> {
     try {
+      // For now, send tripIds as requestIds to maintain backend compatibility
+      // TODO: Update backend to accept tripIds and startingLocation instead of unitId
       const response = await fetch(`${this.baseUrl}/routes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
-        body: JSON.stringify(request),
+        body: JSON.stringify({
+          // Temporary: Backend still expects unitId, but we'll pass null and use startingLocation
+          unitId: null,
+          requestIds: request.tripIds,
+          startingLocation: request.startingLocation,
+          constraints: request.constraints
+        }),
       });
 
       const data = await response.json();
@@ -45,17 +53,18 @@ class OptimizationApiService {
   }
 
   /**
-   * Find backhaul opportunities for given requests
+   * Find backhaul opportunities for given trips
    */
-  async analyzeBackhaul(requestIds: string[]): Promise<BackhaulAnalysisResponse> {
+  async analyzeBackhaul(tripIds: string[]): Promise<BackhaulAnalysisResponse> {
     try {
+      // Backend expects requestIds, but we're passing tripIds
       const response = await fetch(`${this.baseUrl}/backhaul`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
-        body: JSON.stringify({ requestIds }),
+        body: JSON.stringify({ requestIds: tripIds }),
       });
 
       const data = await response.json();
@@ -285,6 +294,107 @@ class OptimizationApiService {
     } catch (error) {
       console.error('Error saving optimization settings:', error);
       return false;
+    }
+  }
+
+  /**
+   * Get EMS agency home base coordinates
+   * @param agencyId Optional agency ID for TCC/Admin users. If not provided, uses logged-in user's agency.
+   */
+  async getAgencyHomeBase(agencyId?: string): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const url = agencyId 
+        ? `${this.baseUrl}/agency/home-base?agencyId=${agencyId}`
+        : `${this.baseUrl}/agency/home-base`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to get agency home base');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error getting agency home base:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      };
+    }
+  }
+
+  /**
+   * Get agency's current active/completed trips
+   * @param agencyId Optional agency ID for TCC/Admin users. If not provided, uses logged-in user's agency.
+   */
+  async getCurrentTrips(agencyId?: string): Promise<{ success: boolean; data?: any[]; error?: string }> {
+    try {
+      const url = agencyId
+        ? `${this.baseUrl}/agency/current-trips?agencyId=${agencyId}`
+        : `${this.baseUrl}/agency/current-trips`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to get current trips');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error getting current trips:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      };
+    }
+  }
+
+  /**
+   * Find return trip opportunities
+   */
+  async findReturnOpportunities(request: {
+    currentLocation: { lat: number; lng: number };
+    homeBase: { lat: number; lng: number };
+    proximityRadius?: number;
+    maxLegs?: number;
+  }): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/return-opportunities`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify(request),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to find return opportunities');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error finding return opportunities:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      };
     }
   }
 }
