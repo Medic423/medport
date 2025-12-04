@@ -10,6 +10,38 @@ const router = express.Router();
 router.use(authenticateAdmin);
 
 /**
+ * GET /api/healthcare/agencies/available
+ * Get only available EMS agencies (marked as available by EMS users)
+ */
+router.get('/available', async (req: AuthenticatedRequest, res) => {
+  try {
+    // Verify user is healthcare type
+    if (req.user?.userType !== 'HEALTHCARE') {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: Healthcare users only',
+      });
+    }
+
+    const agencies = await healthcareAgencyService.getAvailableAgenciesForHealthcareUser(
+      req.user!.id
+    );
+
+    res.json({
+      success: true,
+      data: agencies,
+      count: agencies.length,
+    });
+  } catch (error) {
+    console.error('Get available healthcare agencies error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve available agencies',
+    });
+  }
+});
+
+/**
  * GET /api/healthcare/agencies
  * List all EMS agencies for the logged-in healthcare user with optional filtering
  */

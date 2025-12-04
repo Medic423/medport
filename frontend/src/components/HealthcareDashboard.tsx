@@ -27,6 +27,7 @@ import HealthcareEMSAgencies from './HealthcareEMSAgencies';
 import HealthcareDestinations from './HealthcareDestinations';
 import HealthcareSubUsersPanel from './HealthcareSubUsersPanel';
 import TripDispatchScreen from './TripDispatchScreen'; // Phase 3
+import AvailableAgencies from './AvailableAgencies';
 import { tripsAPI, unitsAPI } from '../services/api';
 import { categorizeTripByDate, formatSectionHeader, DateCategory } from '../utils/dateUtils';
 import { HelpModal } from './HelpSystem';
@@ -863,6 +864,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex space-x-8">
             {[
+              { id: 'available-agencies', name: 'Available Agencies', icon: Truck },
               { id: 'create', name: 'Create Request', icon: Plus },
               { id: 'trips', name: 'Transport Requests', icon: Clock },
               { id: 'in-progress', name: 'In-Progress', icon: AlertCircle },
@@ -901,6 +903,10 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {activeTab === 'available-agencies' && (
+          <AvailableAgencies user={user} />
+        )}
+
         {activeTab === 'trips' && (
           <div className="space-y-6">
             {/* Summary Tiles */}

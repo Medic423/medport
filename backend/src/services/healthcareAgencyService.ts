@@ -352,6 +352,84 @@ export class HealthcareAgencyService {
       orderBy: { name: 'asc' },
     });
   }
+
+  /**
+   * Get available agencies for a healthcare user (agencies marked as available)
+   * Returns only agencies where availabilityStatus.isAvailable = true
+   */
+  async getAvailableAgenciesForHealthcareUser(
+    healthcareUserId: string
+  ): Promise<any[]> {
+    const prisma = databaseManager.getPrismaClient();
+
+    // Get all agencies added by this healthcare user
+    const agencies = await prisma.eMSAgency.findMany({
+      where: {
+        addedBy: healthcareUserId,
+        isActive: true,
+      },
+      include: {
+        healthcarePreferences: {
+          where: {
+            healthcareUserId: healthcareUserId,
+          },
+          select: {
+            isPreferred: true,
+          },
+        },
+      },
+    });
+
+    // Filter to only available agencies and transform
+    const availableAgencies = agencies
+      .filter((agency: any) => {
+        // Check if agency has availabilityStatus and isAvailable is true
+        if (!agency.availabilityStatus) {
+          return false;
+        }
+        
+        try {
+          const status = typeof agency.availabilityStatus === 'string'
+            ? JSON.parse(agency.availabilityStatus)
+            : agency.availabilityStatus;
+          
+          return status.isAvailable === true;
+        } catch (error) {
+          console.error('Error parsing availabilityStatus:', error);
+          return false;
+        }
+      })
+      .map((agency: any) => {
+        // Parse availabilityStatus to get availableLevels
+        let availableLevels: string[] = [];
+        try {
+          const status = typeof agency.availabilityStatus === 'string'
+            ? JSON.parse(agency.availabilityStatus)
+            : agency.availabilityStatus;
+          availableLevels = Array.isArray(status.availableLevels) ? status.availableLevels : [];
+        } catch (error) {
+          console.error('Error parsing availableLevels:', error);
+        }
+
+        return {
+          ...agency,
+          isPreferred: agency.healthcarePreferences?.[0]?.isPreferred || false,
+          availableLevels,
+          healthcarePreferences: undefined, // Remove nested preferences
+        };
+      });
+
+    // Sort by preferred status first, then alphabetically
+    availableAgencies.sort((a: any, b: any) => {
+      // Preferred agencies first
+      if (a.isPreferred && !b.isPreferred) return -1;
+      if (!a.isPreferred && b.isPreferred) return 1;
+      // Then alphabetically by name
+      return a.name.localeCompare(b.name);
+    });
+
+    return availableAgencies;
+  }
 }
 
 export const healthcareAgencyService = new HealthcareAgencyService();

@@ -301,6 +301,10 @@ export const healthcareAgenciesAPI = {
     if (params?.radius) queryParams.set('radius', params.radius.toString());
     return api.get(`/api/healthcare/agencies/trip-agencies?${queryParams.toString()}`);
   },
+
+  // Get available agencies (marked as available by EMS users)
+  getAvailable: () =>
+    api.get('/api/healthcare/agencies/available'),
 };
 
 // Healthcare Destinations API
