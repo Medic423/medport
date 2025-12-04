@@ -203,6 +203,7 @@ model EMSAgency {
   requiresReview        Boolean                      @default(false)
   serviceRadius         Int?
   totalUnits            Int                          @default(0)
+  availabilityStatus    Json?                         @default("{\"isAvailable\":false,\"availableLevels\":[]}")
   users                 EMSUser[]
   units                 Unit[]
   healthcarePreferences HealthcareAgencyPreference[]

@@ -400,18 +400,194 @@
 - Primary: `cd /Volumes/Extreme SSD Two 2TB/tcc-backups/tcc-backup-20251204_100434 && ./restore-complete.sh`
 - Secondary: `cd /Volumes/Acasis/tcc-backups/current && ./restore-complete.sh` (or use specific backup)
 
-### 7.3 Plan Future Status Feature Implementation ⏸️ PENDING
-- [ ] Review what went wrong with December 3rd attempt
-- [ ] Develop safer implementation strategy
-- [ ] Create implementation plan document
-- [ ] Ensure proper testing strategy is in place
+### 7.3 Plan Future Status Feature Implementation ✅ PLANNED
+
+**Status**: Implementation plan created - Ready for review and approval
+
+#### What Went Wrong (December 3rd Attempt)
+
+**Root Cause Analysis:**
+1. **Location Error**: Status feature was placed in the "Filters" section of Available Trips tab instead of its own dedicated tab
+2. **Database Coupling**: Implementation attempted to modify or query `HealthcareAgencyPreference` table, causing catastrophic data loss
+3. **Unit Dependency**: Feature was incorrectly tied to Unit model, creating unnecessary complexity
+4. **Schema Changes**: Database migrations affected critical Healthcare -> EMS provider relationships
+
+**Impact:**
+- All data in `healthcare_agency_preferences` table was lost
+- Healthcare users could no longer see/manage their EMS provider preferences
+- Trip creation and dispatch workflows were broken
+- Required full database restoration from backup
+
+#### Revised Implementation Plan: EMS Agency Availability Status
+
+**Core Requirements:**
+1. ✅ Status is **NOT** tied to units (completely independent)
+2. ✅ Status is **completely siloed** from Healthcare -> EMS providers (`HealthcareAgencyPreference` table)
+3. ✅ Allows EMS users to mark agency as "Available" and select BLS/ALS level
+4. ✅ Minimal database changes (single JSON field addition)
+5. ✅ Dedicated tab in EMS Dashboard (not in filters section)
+
+**Architecture Overview:**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    EMS Dashboard                             │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐     │
+│  │ Available│ │ Accepted │ │Completed │ │Available │ ← NEW
+│  │  Trips   │ │  Trips   │ │  Trips   │ │  Status  │     │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘     │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+                    ┌──────────────────┐
+                    │  EMSAgency Model │
+                    │  (ems_agencies)  │
+                    └──────────────────┘
+                              │
+                    ┌─────────┴─────────┐
+                    │                   │
+         ┌──────────▼──────────┐  ┌─────▼──────────────┐
+         │ availabilityStatus  │  │ HealthcareAgency │
+         │    (JSON field)      │  │   Preference     │
+         │                      │  │   (UNTOUCHED)    │
+         │ - isAvailable: bool  │  └──────────────────┘
+         │ - availableLevels:   │
+         │   ['BLS', 'ALS']     │
+         └──────────────────────┘
+```
+
+**Implementation Strategy:**
+
+**Phase 1: Database Schema (Minimal Change)**
+- Add single JSON field `availabilityStatus` to `EMSAgency` model
+- Field structure: `{ isAvailable: boolean, availableLevels: string[] }`
+- Default: `{ isAvailable: false, availableLevels: [] }`
+- **CRITICAL**: This field is ONLY on `EMSAgency`, never touches `HealthcareAgencyPreference`
+- Migration is additive only (no data loss risk)
+
+**Phase 2: Backend API (New Endpoints)**
+- `PUT /api/ems/agency/availability` - Update agency availability status
+- `GET /api/ems/agency/availability` - Get current agency availability status
+- Endpoints scoped to EMS users only (their own agency)
+- No interaction with healthcare agency service or preferences
+
+**Phase 3: Frontend Component (New Tab)**
+- Create new "Availability Status" tab in EMS Dashboard
+- Component: `EMSAgencyAvailabilityStatus.tsx`
+- UI Features:
+  - Checkbox: "Mark Agency as Available"
+  - When checked, show level selection: BLS checkbox, ALS checkbox
+  - Save button to persist status
+  - Visual indicator of current status
+- **Location**: Separate tab, NOT in filters section
+
+**Phase 4: Integration (Optional - Display Only)**
+- Show availability status in Healthcare trip dispatch screen (read-only)
+- Display in Available Trips filter (read-only, for filtering)
+- **CRITICAL**: No write operations from Healthcare side
+
+**Safety Measures:**
+
+1. **Complete Isolation**
+   - New field only on `EMSAgency` table
+   - No foreign keys or relationships to Healthcare tables
+   - Separate API endpoints (no shared services)
+
+2. **Testing Strategy**
+   - Unit tests for availability status updates
+   - Integration tests verifying Healthcare preferences remain untouched
+   - Database backup before migration
+   - Isolated test environment first
+
+3. **Rollback Plan**
+   - Migration is reversible (can drop column)
+   - Frontend changes are non-breaking (new tab, doesn't affect existing functionality)
+   - If issues occur, can disable tab via feature flag
+
+4. **Data Integrity**
+   - Availability status is agency-level, not unit-level
+   - Healthcare preferences (`HealthcareAgencyPreference`) completely separate
+   - No cascade deletes or relationships that could cause data loss
+
+**Database Schema Change:**
+
+```prisma
+model EMSAgency {
+  // ... existing fields ...
+  availabilityStatus Json? @default("{\"isAvailable\":false,\"availableLevels\":[]}")
+  // ... rest of fields ...
+}
+```
+
+**Migration SQL:**
+```sql
+ALTER TABLE "ems_agencies" 
+ADD COLUMN "availabilityStatus" JSONB DEFAULT '{"isAvailable":false,"availableLevels":[]}';
+```
+
+**API Endpoints:**
+
+```typescript
+// Backend: backend/src/routes/emsAgency.ts
+PUT /api/ems/agency/availability
+Body: { isAvailable: boolean, availableLevels: string[] }
+Response: { success: boolean, data: { availabilityStatus: {...} } }
+
+GET /api/ems/agency/availability  
+Response: { success: boolean, data: { availabilityStatus: {...} } }
+```
+
+**Frontend Component Structure:**
+
+```
+EMSDashboard.tsx
+  ├── Available Trips Tab (existing)
+  ├── Accepted Trips Tab (existing)
+  ├── Completed Trips Tab (existing)
+  ├── Units Tab (existing)
+  └── Availability Status Tab (NEW)
+      └── EMSAgencyAvailabilityStatus.tsx
+          ├── Availability Toggle
+          ├── Level Selection (BLS/ALS checkboxes)
+          └── Save Button
+```
+
+**Testing Checklist:**
+
+- [ ] Database migration runs successfully
+- [ ] Existing Healthcare preferences remain intact
+- [ ] EMS user can update their agency availability
+- [ ] Availability status persists across sessions
+- [ ] Healthcare users can see availability (read-only)
+- [ ] No data loss in Healthcare -> EMS providers
+- [ ] Units remain unaffected
+- [ ] Rollback migration works if needed
+
+**Implementation Phases:**
+
+1. **Phase 1**: Database migration + backend API (1-2 days)
+2. **Phase 2**: Frontend component development (1-2 days)
+3. **Phase 3**: Integration testing (1 day)
+4. **Phase 4**: User acceptance testing (1 day)
+
+**Total Estimated Time**: 4-6 days
+
+**Key Differences from Failed Attempt:**
+
+| Failed Attempt | Revised Plan |
+|---------------|--------------|
+| Status in Filters section | Dedicated tab |
+| Tied to Units | Agency-level only |
+| Modified Healthcare preferences | Completely isolated |
+| Complex schema changes | Single JSON field |
+| No isolation testing | Comprehensive testing plan |
 
 **Technical Notes:**
 - Restoration completed successfully - system is now in a known-good state
 - All database schema differences resolved through migration
 - New backup created with restored and verified working system
-- Future status feature implementation should be planned separately with proper testing strategy
 - **Key Lesson**: Always test database migrations and schema changes in isolation before applying to production
+- **New Lesson**: Keep features completely isolated from critical data relationships (Healthcare -> EMS providers)
 
 ---
 

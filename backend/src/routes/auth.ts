@@ -627,6 +627,210 @@ router.put('/ems/agency/update', authenticateAdmin, async (req: AuthenticatedReq
 });
 
 /**
+ * GET /api/auth/ems/agency/availability
+ * Get EMS agency availability status (Authenticated)
+ */
+router.get('/ems/agency/availability', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!req.user?.email) {
+      return res.status(401).json({
+        success: false,
+        error: 'User not authenticated'
+      });
+    }
+
+    const db = databaseManager.getPrismaClient();
+
+    // Find EMS user by email
+    const emsUser = await db.eMSUser.findUnique({
+      where: { email: req.user.email }
+    });
+
+    if (!emsUser) {
+      return res.status(404).json({
+        success: false,
+        error: 'EMS user not found'
+      });
+    }
+
+    // Find agency record - try by email first, then by agencyId
+    const agencyId = emsUser.agencyId || emsUser.id;
+    let agency = await db.eMSAgency.findFirst({
+      where: { email: emsUser.email }
+    });
+
+    if (!agency) {
+      agency = await db.eMSAgency.findUnique({
+        where: { id: agencyId }
+      });
+    }
+
+    if (!agency) {
+      // Return default availability status if agency doesn't exist yet
+      return res.json({
+        success: true,
+        data: {
+          availabilityStatus: {
+            isAvailable: false,
+            availableLevels: []
+          }
+        }
+      });
+    }
+
+    // Parse availabilityStatus JSON or return default
+    let availabilityStatus = {
+      isAvailable: false,
+      availableLevels: [] as string[]
+    };
+
+    if (agency.availabilityStatus) {
+      try {
+        const status = typeof agency.availabilityStatus === 'string' 
+          ? JSON.parse(agency.availabilityStatus) 
+          : agency.availabilityStatus;
+        
+        availabilityStatus = {
+          isAvailable: status.isAvailable || false,
+          availableLevels: Array.isArray(status.availableLevels) ? status.availableLevels : []
+        };
+      } catch (error) {
+        console.error('Error parsing availabilityStatus:', error);
+        // Use default if parsing fails
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        availabilityStatus
+      }
+    });
+
+  } catch (error) {
+    console.error('Get EMS agency availability error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve agency availability status'
+    });
+  }
+});
+
+/**
+ * PUT /api/auth/ems/agency/availability
+ * Update EMS agency availability status (Authenticated)
+ */
+router.put('/ems/agency/availability', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!req.user?.email) {
+      return res.status(401).json({
+        success: false,
+        error: 'User not authenticated'
+      });
+    }
+
+    // Verify user is EMS type
+    if (req.user.userType !== 'EMS') {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: EMS users only'
+      });
+    }
+
+    const { isAvailable, availableLevels } = req.body;
+
+    // Validate input
+    if (typeof isAvailable !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        error: 'isAvailable must be a boolean'
+      });
+    }
+
+    if (!Array.isArray(availableLevels)) {
+      return res.status(400).json({
+        success: false,
+        error: 'availableLevels must be an array'
+      });
+    }
+
+    // Validate availableLevels contains only valid values
+    const validLevels = ['BLS', 'ALS', 'CCT'];
+    const invalidLevels = availableLevels.filter((level: string) => !validLevels.includes(level));
+    if (invalidLevels.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid levels: ${invalidLevels.join(', ')}. Valid levels are: ${validLevels.join(', ')}`
+      });
+    }
+
+    const db = databaseManager.getPrismaClient();
+
+    // Find EMS user by email
+    const emsUser = await db.eMSUser.findUnique({
+      where: { email: req.user.email }
+    });
+
+    if (!emsUser) {
+      return res.status(404).json({
+        success: false,
+        error: 'EMS user not found'
+      });
+    }
+
+    // Find agency record - try by email first, then by agencyId
+    const agencyId = emsUser.agencyId || emsUser.id;
+    let agency = await db.eMSAgency.findFirst({
+      where: { email: emsUser.email }
+    });
+
+    if (!agency) {
+      agency = await db.eMSAgency.findUnique({
+        where: { id: agencyId }
+      });
+    }
+
+    if (!agency) {
+      return res.status(404).json({
+        success: false,
+        error: 'EMS agency not found. Please update your agency information first.'
+      });
+    }
+
+    // Prepare availability status object
+    const availabilityStatus = {
+      isAvailable,
+      availableLevels: availableLevels.filter((level: string) => validLevels.includes(level))
+    };
+
+    // Update agency availability status
+    const updatedAgency = await db.eMSAgency.update({
+      where: { id: agency.id },
+      data: {
+        availabilityStatus: availabilityStatus,
+        updatedAt: new Date()
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Agency availability status updated successfully',
+      data: {
+        availabilityStatus
+      }
+    });
+
+  } catch (error) {
+    console.error('Update EMS agency availability error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update agency availability status',
+      details: (error as Error).message
+    });
+  }
+});
+
+/**
  * POST /api/auth/ems/register
  * Register new EMS Agency (Public)
  */
