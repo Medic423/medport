@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Truck, RefreshCw, AlertCircle, Star, CheckCircle } from 'lucide-react';
+import { Truck, RefreshCw, AlertCircle, Star, CheckCircle, MapPin } from 'lucide-react';
 import { healthcareAgenciesAPI } from '../services/api';
 
 interface AvailableAgenciesProps {
@@ -19,21 +19,26 @@ interface Agency {
   isPreferred: boolean;
   city?: string;
   state?: string;
+  distance?: number | null;
 }
 
 const AvailableAgencies: React.FC<AvailableAgenciesProps> = ({ user }) => {
   const [agencies, setAgencies] = useState<Agency[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [radiusMiles, setRadiusMiles] = useState<number | null>(50); // Default 50 miles
+  const [currentRadius, setCurrentRadius] = useState<number | null>(50);
 
-  const loadAvailableAgencies = async () => {
+  const loadAvailableAgencies = async (radius?: number | null) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await healthcareAgenciesAPI.getAvailable();
+      const params = radius !== undefined ? { radius: radius === null ? 'all' : radius.toString() } : {};
+      const response = await healthcareAgenciesAPI.getAvailable(params);
       
       if (response.data?.success && Array.isArray(response.data.data)) {
         setAgencies(response.data.data);
+        setCurrentRadius(response.data.radiusMiles ?? radiusMiles);
       } else {
         throw new Error('Invalid response format');
       }
@@ -47,8 +52,13 @@ const AvailableAgencies: React.FC<AvailableAgenciesProps> = ({ user }) => {
   };
 
   useEffect(() => {
-    loadAvailableAgencies();
+    loadAvailableAgencies(radiusMiles);
   }, []);
+
+  const handleRadiusChange = (newRadius: number | null) => {
+    setRadiusMiles(newRadius);
+    loadAvailableAgencies(newRadius);
+  };
 
   const getCapabilityBadgeColor = (level: string) => {
     switch (level) {
@@ -80,24 +90,61 @@ const AvailableAgencies: React.FC<AvailableAgenciesProps> = ({ user }) => {
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center space-x-3">
-            <Truck className="h-6 w-6 text-green-500" />
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Available Agencies</h2>
-              <p className="text-sm text-gray-600 mt-1">
-                EMS agencies currently marked as available for trip dispatch
-              </p>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center space-x-3">
+              <Truck className="h-6 w-6 text-green-500" />
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Available Agencies</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  EMS agencies currently marked as available for trip dispatch
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => loadAvailableAgencies(radiusMiles)}
+              disabled={loading}
+              className="flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+          </div>
+
+          {/* Radius Filter */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-4 border-t border-gray-200">
+            <label className="text-sm font-medium text-gray-700 flex items-center">
+              <MapPin className="h-4 w-4 mr-2" />
+              Filter by distance:
+            </label>
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={radiusMiles === null ? 'all' : radiusMiles.toString()}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  handleRadiusChange(value === 'all' ? null : parseInt(value));
+                }}
+                className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                disabled={loading}
+              >
+                <option value="25">25 miles</option>
+                <option value="50">50 miles (default)</option>
+                <option value="100">100 miles</option>
+                <option value="200">200 miles</option>
+                <option value="all">Show All</option>
+              </select>
+              {currentRadius !== null && (
+                <span className="text-sm text-gray-500">
+                  Showing agencies within {currentRadius} miles
+                </span>
+              )}
+              {currentRadius === null && (
+                <span className="text-sm text-gray-500">
+                  Showing all available agencies
+                </span>
+              )}
             </div>
           </div>
-          <button
-            onClick={loadAvailableAgencies}
-            disabled={loading}
-            className="flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
         </div>
       </div>
 
@@ -153,18 +200,26 @@ const AvailableAgencies: React.FC<AvailableAgenciesProps> = ({ user }) => {
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-base font-semibold text-gray-900 truncate">
-                      {agency.name}
-                    </h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-base font-semibold text-gray-900 truncate">
+                        {agency.name}
+                      </h4>
+                      {agency.isPreferred && (
+                        <Star className="h-4 w-4 text-green-500 fill-current flex-shrink-0" />
+                      )}
+                    </div>
                     {(agency.city || agency.state) && (
                       <p className="text-xs text-gray-500 mt-1">
                         {[agency.city, agency.state].filter(Boolean).join(', ')}
                       </p>
                     )}
+                    {agency.distance !== null && agency.distance !== undefined && (
+                      <p className="text-xs text-green-600 mt-1 font-medium flex items-center">
+                        <MapPin className="h-3 w-3 mr-1" />
+                        {agency.distance.toFixed(1)} miles away
+                      </p>
+                    )}
                   </div>
-                  {agency.isPreferred && (
-                    <Star className="h-5 w-5 text-green-500 fill-current flex-shrink-0 ml-2" />
-                  )}
                 </div>
 
                 {/* Available Service Levels */}

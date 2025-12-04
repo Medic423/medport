@@ -303,8 +303,8 @@ export const healthcareAgenciesAPI = {
   },
 
   // Get available agencies (marked as available by EMS users)
-  getAvailable: () =>
-    api.get('/api/healthcare/agencies/available'),
+  getAvailable: (params?: { radius?: string }) =>
+    api.get('/api/healthcare/agencies/available', { params }),
 };
 
 // Healthcare Destinations API

@@ -12,6 +12,8 @@ router.use(authenticateAdmin);
 /**
  * GET /api/healthcare/agencies/available
  * Get only available EMS agencies (marked as available by EMS users)
+ * Query params:
+ *   - radius: Filter by distance in miles (default: 50, null/undefined: show all)
  */
 router.get('/available', async (req: AuthenticatedRequest, res) => {
   try {
@@ -23,14 +25,29 @@ router.get('/available', async (req: AuthenticatedRequest, res) => {
       });
     }
 
+    // Parse radius parameter (default: 50 miles, null means show all)
+    let radiusMiles: number | null = 50; // Default radius
+    if (req.query.radius !== undefined) {
+      if (req.query.radius === 'null' || req.query.radius === 'all' || req.query.radius === '') {
+        radiusMiles = null; // Show all agencies
+      } else {
+        const parsed = parseFloat(req.query.radius as string);
+        if (!isNaN(parsed) && parsed > 0) {
+          radiusMiles = parsed;
+        }
+      }
+    }
+
     const agencies = await healthcareAgencyService.getAvailableAgenciesForHealthcareUser(
-      req.user!.id
+      req.user!.id,
+      radiusMiles
     );
 
     res.json({
       success: true,
       data: agencies,
       count: agencies.length,
+      radiusMiles: radiusMiles,
     });
   } catch (error) {
     console.error('Get available healthcare agencies error:', error);
