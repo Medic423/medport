@@ -356,16 +356,22 @@ export class HealthcareAgencyService {
   /**
    * Get available agencies for a healthcare user (agencies marked as available)
    * Returns only agencies where availabilityStatus.isAvailable = true
+   * Includes both registered agencies (with EMS accounts) and user-added agencies
    */
   async getAvailableAgenciesForHealthcareUser(
     healthcareUserId: string
   ): Promise<any[]> {
     const prisma = databaseManager.getPrismaClient();
 
-    // Get all agencies added by this healthcare user
+    // Get all agencies: both registered agencies (with EMS accounts) and user-added agencies
+    // Registered agencies have addedBy = null (they have EMS user accounts)
+    // User-added agencies have addedBy = healthcareUserId (manually added by healthcare user)
     const agencies = await prisma.eMSAgency.findMany({
       where: {
-        addedBy: healthcareUserId,
+        OR: [
+          { addedBy: null }, // Registered agencies with EMS accounts
+          { addedBy: healthcareUserId } // Agencies manually added by this healthcare user
+        ],
         isActive: true,
       },
       include: {
