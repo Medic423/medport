@@ -68,3 +68,6 @@ coverage/
 
 # Prisma
 prisma/migrations/*.sql.backup
+
+# External documentation (symlinked)
+docs/tcc-project-docs
