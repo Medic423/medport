@@ -54,6 +54,8 @@ vercel.json
 *.sqlite
 *.db
 *.sql.backup
+# Temporary backup files from disaster recovery
+current-*-backup-*.sql
 
 # OS files
 .DS_Store
