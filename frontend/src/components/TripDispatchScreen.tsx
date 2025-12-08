@@ -410,7 +410,7 @@ const TripDispatchScreen: React.FC<TripDispatchScreenProps> = ({ tripId, trip, u
             {(dispatchMode === 'GEOGRAPHIC' || dispatchMode === 'HYBRID') && (
               <div className="mt-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Notification Radius (miles)
+                  Dispatch Radius (miles)
                 </label>
                 <input
                   type="number"
@@ -420,6 +420,10 @@ const TripDispatchScreen: React.FC<TripDispatchScreenProps> = ({ tripId, trip, u
                   onChange={(e) => setNotificationRadius(parseInt(e.target.value) || 100)}
                   className="w-32 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
                 />
+                <p className="mt-1 text-xs text-gray-500">
+                  <strong>For Agency Selection:</strong> Filter agencies shown in the list by distance. 
+                  This is separate from the SMS notification radius set during trip creation.
+                </p>
               </div>
             )}
           </div>

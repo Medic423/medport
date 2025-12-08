@@ -54,7 +54,7 @@ function AppContent() {
 
   // Handle browser back button navigation
   useEffect(() => {
-    const handlePopState = (event: PopStateEvent) => {
+    const handlePopState = () => {
       // If user is logged in and tries to go back to login pages, redirect to root
       if (user && location.pathname.startsWith('/register')) {
         navigate('/', { replace: true });
@@ -149,7 +149,7 @@ function AppContent() {
     if (user.userType === 'HEALTHCARE') {
       return <HealthcareDashboard user={user} onLogout={handleLogout} />;
     } else if (user.userType === 'EMS') {
-      return <EMSDashboard user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} />;
+      return <EMSDashboard user={user as any} onLogout={handleLogout} onUserUpdate={handleUserUpdate as any} />;
     } else {
       // ADMIN and USER types go to TCC Dashboard
       return (

@@ -41,10 +41,12 @@ jobs:
         working-directory: '${{ env.FOLDER_PATH }}'
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        continue-on-error: false # Fail fast if migrations fail - prevents partial database state
 
       - name: Build application (if applicable)
         run: npm run build # Run your build script if you have one
         working-directory: '${{ env.FOLDER_PATH }}'
+        continue-on-error: false # Fail fast if build fails
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2 # Action for deploying to Azure Web Apps
@@ -53,3 +55,5 @@ jobs:
           slot-name: '${{ env.SLOT_NAME }}' # Or your desired slot name (e.g., 'staging')
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }} # Secret containing your Azure publish profile
           package: '${{ env.FOLDER_PATH }}' # Path to your application package (defaults to current directory)
+        # Note: If this step fails, Azure keeps the previous deployment active
+        # The site will NOT be empty - current deployment remains in place

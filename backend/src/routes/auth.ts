@@ -427,7 +427,8 @@ router.get('/ems/agency/info', authenticateAdmin, async (req: AuthenticatedReque
         operatingHours: {
           start: operatingHoursStart,
           end: operatingHoursEnd
-        }
+        },
+        acceptsNotifications: agency.acceptsNotifications !== undefined ? agency.acceptsNotifications : true
       }
     });
   } catch (error) {
@@ -543,6 +544,7 @@ router.put('/ems/agency/update', authenticateAdmin, async (req: AuthenticatedReq
           serviceArea: updateData.capabilities || [],
           capabilities: updateData.capabilities || [],
           operatingHours: updateData.operatingHours || '24/7',
+          acceptsNotifications: updateData.acceptsNotifications !== undefined ? updateData.acceptsNotifications : existingAgency.acceptsNotifications,
           updatedAt: new Date()
         }
       });
@@ -563,6 +565,7 @@ router.put('/ems/agency/update', authenticateAdmin, async (req: AuthenticatedReq
           serviceArea: updateData.capabilities || [],
           capabilities: updateData.capabilities || [],
           operatingHours: updateData.operatingHours || '24/7',
+          acceptsNotifications: updateData.acceptsNotifications !== undefined ? updateData.acceptsNotifications : true,
           isActive: true,
           status: "ACTIVE"
         }
