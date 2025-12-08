@@ -859,7 +859,9 @@ export class TripService {
               locationName: true,
               city: true,
               state: true,
-              facilityType: true
+              facilityType: true,
+              latitude: true,
+              longitude: true
             }
           }
         }
@@ -868,10 +870,62 @@ export class TripService {
       console.log('TCC_DEBUG: Enhanced trip created successfully:', trip.id);
       console.log('MULTI_LOC: Trip created with location:', trip.healthcareLocation?.locationName || 'N/A');
       console.log('TCC_CREATE_DEBUG: Created trip healthcareCreatedById:', (trip as any).healthcareCreatedById);
+      
+      // SMS notification (feature-flagged, non-blocking)
+      console.log('========================================');
+      console.log('📱 SMS TRIGGER CHECK');
+      console.log('========================================');
+      console.log('TCC_DEBUG: Checking SMS trigger conditions:', {
+        smsEnabled: process.env.AZURE_SMS_ENABLED === 'true',
+        smsEnabledRaw: process.env.AZURE_SMS_ENABLED,
+        notificationRadius: data.notificationRadius,
+        notificationRadiusType: typeof data.notificationRadius,
+        notificationRadiusTruthy: !!data.notificationRadius,
+        tripId: trip.id
+      });
+      console.log('========================================');
+      
+      // Check if SMS should be triggered
+      // notificationRadius can be 0 (which is falsy), so check for !== undefined instead
+      const shouldTriggerSMS = process.env.AZURE_SMS_ENABLED === 'true' && 
+                                data.notificationRadius !== undefined && 
+                                data.notificationRadius !== null;
+      
+      if (shouldTriggerSMS) {
+        console.log('TCC_DEBUG: SMS conditions met, triggering SMS notification...');
+        console.log('TCC_DEBUG: Using notificationRadius:', data.notificationRadius);
+        // Import dynamically to avoid breaking if service doesn't exist
+        try {
+          const { tripSMSService } = await import('./tripSMSService');
+          tripSMSService.sendTripCreationSMS(trip, data.notificationRadius).catch(err => {
+            console.error('TCC_DEBUG: SMS notification failed (non-blocking):', err);
+          });
+        } catch (err) {
+          console.error('TCC_DEBUG: SMS service not available:', err);
+        }
+      } else {
+        console.log('TCC_DEBUG: SMS not triggered - conditions not met:', {
+          smsEnabled: process.env.AZURE_SMS_ENABLED === 'true',
+          notificationRadiusDefined: data.notificationRadius !== undefined,
+          notificationRadiusNotNull: data.notificationRadius !== null,
+          notificationRadiusValue: data.notificationRadius,
+          notificationRadiusType: typeof data.notificationRadius
+        });
+      }
+      
       return { success: true, data: trip };
-    } catch (error) {
+    } catch (error: any) {
       console.error('TCC_DEBUG: Error creating enhanced trip:', error);
-      return { success: false, error: 'Failed to create enhanced transport request' };
+      console.error('TCC_DEBUG: Error details:', {
+        message: error?.message,
+        code: error?.code,
+        stack: error?.stack
+      });
+      return { 
+        success: false, 
+        error: error?.message || 'Failed to create enhanced transport request',
+        details: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+      };
     }
   }
 

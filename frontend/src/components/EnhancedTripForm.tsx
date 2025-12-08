@@ -865,10 +865,19 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
         loadPickupLocationsForHospital(selectedLocation.id);
       }
     } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
-      }));
+      // Handle number inputs (convert to number)
+      if (type === 'number') {
+        const numValue = value === '' ? 0 : Number(value);
+        setFormData(prev => ({
+          ...prev,
+          [name]: isNaN(numValue) ? prev[name as keyof FormData] : numValue
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+        }));
+      }
     }
 
     // Load pickup locations when fromLocation changes (for regular facilities)
@@ -1114,7 +1123,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
             monitoringRequired: !!formData.monitoringRequired,
             generateQRCode: false,
             selectedAgencies: [], // Phase 3: Agencies not selected at creation
-            notificationRadius: undefined, // Phase 3: Set at dispatch
+            notificationRadius: formData.notificationRadius ? Number(formData.notificationRadius) : 100, // SMS notification radius in miles
             notes: formData.notes,
             priority: (tripData as any).priority,
             status: 'PENDING_DISPATCH', // Phase 3: Set status to PENDING_DISPATCH for dispatch workflow
@@ -1582,6 +1591,33 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
                 </select>
               </div>
             </div>
+
+            {/* SMS Notification Radius - Separate section for clarity */}
+            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  📱 SMS Notification Radius (miles) *
+                </label>
+                <input
+                  type="number"
+                  name="notificationRadius"
+                  value={formData.notificationRadius}
+                  onChange={handleChange}
+                  min="10"
+                  max="200"
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                />
+                <p className="mt-2 text-xs text-gray-600">
+                  <strong>Purpose:</strong> EMS agencies within this radius will receive SMS notifications when this trip is created. 
+                  <br />
+                  <strong>Note:</strong> This is separate from the "Dispatch Radius" used later when selecting agencies for dispatch. 
+                  Agencies can see trips in their area without receiving SMS if they have SMS notifications disabled in their settings.
+                  <br />
+                  <strong>Default:</strong> 100 miles
+                </p>
+              </div>
+            </div>
           </div>
         );
 
@@ -1663,110 +1699,9 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
           </div>
         );
 
-      // case 4:
-        return (
-          <div className="space-y-6">
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-              <div className="flex items-center">
-                <Truck className="h-5 w-5 text-orange-600 mr-2" />
-                <h3 className="text-sm font-medium text-orange-800">EMS Agency Selection</h3>
-              </div>
-              <p className="text-sm text-orange-700 mt-1">
-                Select agencies to notify within {formData.notificationRadius} miles.
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Notification Radius (miles)
-              </label>
-              <input
-                type="number"
-                name="notificationRadius"
-                value={formData.notificationRadius}
-                onChange={handleChange}
-                min="10"
-                max="200"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Available Agencies
-              </label>
-              
-              {!formData.fromLocation ? (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm text-yellow-700">
-                        <strong>No Origin Hospital Selected:</strong> Please select an origin hospital in step 2 to load available agencies.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {formOptions.agencies.length === 0 ? (
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0">
-                          <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                        <div className="ml-3">
-                          <p className="text-sm text-gray-600">
-                            <strong>Loading agencies...</strong> Please wait while we find available EMS agencies in your area.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    formOptions.agencies.map((agency) => (
-                      <div
-                        key={agency.id}
-                        className={`border rounded-lg p-4 cursor-pointer transition-colors ${
-                          formData.selectedAgencies.includes(agency.id)
-                            ? 'border-orange-500 bg-orange-50'
-                            : 'border-gray-200 hover:border-orange-300'
-                        }`}
-                        onClick={() => handleAgencyToggle(agency.id)}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="font-medium text-gray-900">{agency.name}</h4>
-                            <p className="text-sm text-gray-500">{agency.serviceType}</p>
-                            <p className="text-xs text-gray-400">
-                              {agency.availableUnits || 0}/{agency.totalUnits || 0} units available
-                            </p>
-                          </div>
-                          <div className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={formData.selectedAgencies.includes(agency.id)}
-                              onChange={() => {}}
-                              className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Unit Assignment (Optional) */}
-            {/* Unit assignment section removed under Option B */}
-          </div>
-        );
+      // case 4: (Commented out - Agency selection happens in dispatch screen)
+        // This step is disabled - agencies are selected during dispatch, not trip creation
+        return null;
 
       // case 5:
         return (

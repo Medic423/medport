@@ -39,8 +39,7 @@ interface AgencyInfo {
     start: string;
     end: string;
   };
-  emailNotifications: boolean;
-  smsNotifications: boolean;
+  acceptsNotifications: boolean;
 }
 
 const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) => {
@@ -60,8 +59,7 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
       start: '00:00',
       end: '23:59'
     },
-    emailNotifications: true,
-    smsNotifications: false
+    acceptsNotifications: true
   });
 
   const [loading, setLoading] = useState(false);
@@ -115,7 +113,8 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
                   start: data.operatingHours.start || '00:00',
                   end: data.operatingHours.end || '23:59'
                 }
-              : prev.operatingHours
+              : prev.operatingHours,
+            acceptsNotifications: data.acceptsNotifications !== undefined ? data.acceptsNotifications : true
           }));
         } else {
           // Fallback to user data if API fails
@@ -254,6 +253,7 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
         longitude: agencyInfo.longitude,
         capabilities: agencyInfo.capabilities,
         operatingHours: operatingHoursString,
+        acceptsNotifications: agencyInfo.acceptsNotifications,
       };
 
       console.log('TCC_DEBUG: Payload being sent:', payload);
@@ -270,14 +270,15 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
         try {
           const reloadResponse = await api.get('/api/auth/ems/agency/info');
           if (reloadResponse.data?.success && reloadResponse.data?.data) {
-            const data = reloadResponse.data.data;
-            setAgencyInfo(prev => ({
-              ...prev,
-              agencyName: data.agencyName || prev.agencyName,
-              contactName: data.contactName || prev.contactName,
-              email: data.email || prev.email,
-              phone: data.phone || prev.phone,
-              address: data.address || prev.address,
+          const data = reloadResponse.data.data;
+          setAgencyInfo(prev => ({
+            ...prev,
+            agencyName: data.agencyName || prev.agencyName,
+            contactName: data.contactName || prev.contactName,
+            email: data.email || prev.email,
+            phone: data.phone || prev.phone,
+            address: data.address || prev.address,
+            acceptsNotifications: data.acceptsNotifications !== undefined ? data.acceptsNotifications : prev.acceptsNotifications,
               city: data.city || prev.city,
               state: data.state || prev.state,
               zipCode: data.zipCode || prev.zipCode,
@@ -687,33 +688,28 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
               </p>
             </div>
 
-            {/* Notification Preferences */}
+            {/* SMS Notification Preference */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Notification Preferences
+                SMS Notifications
               </label>
-              <div className="space-y-2">
+              <div className="flex items-center space-x-2">
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    name="emailNotifications"
-                    checked={agencyInfo.emailNotifications}
+                    name="acceptsNotifications"
+                    checked={agencyInfo.acceptsNotifications}
                     onChange={handleInputChange}
                     className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                   />
-                  <span className="text-sm text-gray-700">Email Notifications</span>
-                </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="smsNotifications"
-                    checked={agencyInfo.smsNotifications}
-                    onChange={handleInputChange}
-                    className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-                  />
-                  <span className="text-sm text-gray-700">SMS Notifications</span>
+                  <span className="text-sm text-gray-700">
+                    Receive SMS notifications for new trip requests
+                  </span>
                 </label>
               </div>
+              <p className="mt-1 text-xs text-gray-500">
+                When enabled, you will receive SMS notifications when healthcare facilities create trips within your service area.
+              </p>
             </div>
 
             {/* Action Buttons */}

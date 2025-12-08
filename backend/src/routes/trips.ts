@@ -99,9 +99,25 @@ router.post('/', async (req, res) => {
  * POST /api/trips/enhanced
  * Create a new enhanced transport request with comprehensive patient and clinical details
  */
-router.post('/enhanced', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
+// Log ALL requests to trips routes for debugging
+router.use((req, res, next) => {
+  if (req.method === 'POST') {
+    console.log('🔍 TCC_DEBUG: POST request to trips router:', req.path, req.url);
+  }
+  next();
+});
+
+router.post('/enhanced', (req, res, next) => {
+  console.log('🔍 TCC_DEBUG: POST /enhanced route handler called');
+  console.log('🔍 TCC_DEBUG: Request body keys:', Object.keys(req.body || {}));
+  console.log('🔍 TCC_DEBUG: notificationRadius in body:', req.body?.notificationRadius);
+  next();
+}, authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
-    console.log('TCC_DEBUG: Create enhanced trip request received:', req.body);
+    console.log('========================================');
+    console.log('🚨 TCC_DEBUG: CREATE ENHANCED TRIP REQUEST RECEIVED');
+    console.log('========================================');
+    console.log('TCC_DEBUG: Request body:', JSON.stringify(req.body, null, 2));
     console.log('TCC_DEBUG: Authenticated user:', req.user);
     
     const {
@@ -157,6 +173,9 @@ router.post('/enhanced', authenticateAdmin, async (req: AuthenticatedRequest, re
       });
     }
 
+    console.log('TCC_DEBUG: Route received notificationRadius:', notificationRadius);
+    console.log('TCC_DEBUG: Route notificationRadius type:', typeof notificationRadius);
+    
     const enhancedTripData: EnhancedCreateTripRequest = {
       patientId,
       patientWeight,
@@ -185,6 +204,8 @@ router.post('/enhanced', authenticateAdmin, async (req: AuthenticatedRequest, re
       createdByTCCUserEmail,
       createdVia
     };
+    
+    console.log('TCC_DEBUG: Enhanced trip data notificationRadius:', enhancedTripData.notificationRadius);
 
     // Log TCC command audit trail if applicable
     if (createdByTCCUserId) {
@@ -1150,6 +1171,62 @@ router.post('/calculate-distance', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Internal server error'
+    });
+  }
+});
+
+/**
+ * GET /api/trips/sms-diagnostics
+ * Diagnostic endpoint to check SMS configuration and status
+ */
+router.get('/sms-diagnostics', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const diagnostics = {
+      featureFlag: {
+        enabled: process.env.AZURE_SMS_ENABLED === 'true',
+        value: process.env.AZURE_SMS_ENABLED || 'NOT SET',
+        note: 'Must be exactly "true" (string) to enable SMS'
+      },
+      azureConfig: {
+        connectionString: process.env.AZURE_COMMUNICATION_CONNECTION_STRING ? 'SET' : 'NOT SET',
+        phoneNumber: process.env.AZURE_SMS_PHONE_NUMBER || 'NOT SET'
+      },
+      services: {
+        azureSMSService: 'Available',
+        smsMessageComposer: 'Available',
+        tripSMSService: 'Available'
+      },
+      testAgency: {
+        name: 'Elk County EMS',
+        phone: '+18146950813',
+        acceptsNotifications: true,
+        note: 'Test agency for SMS debugging'
+      }
+    };
+
+    // Try to import services to verify they exist
+    try {
+      await import('../services/azureSMSService');
+      await import('../services/smsMessageComposer');
+      await import('../services/tripSMSService');
+    } catch (err: any) {
+      diagnostics.services = {
+        azureSMSService: `Error: ${err.message}`,
+        smsMessageComposer: 'Unknown',
+        tripSMSService: 'Unknown'
+      };
+    }
+
+    res.json({
+      success: true,
+      data: diagnostics,
+      message: 'SMS diagnostics retrieved successfully'
+    });
+  } catch (error: any) {
+    console.error('TCC_DEBUG: SMS diagnostics error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to get SMS diagnostics'
     });
   }
 });

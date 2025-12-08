@@ -56,6 +56,26 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Global request logger - catches ALL requests before routing
+app.use((req, res, next) => {
+  // Log ALL POST requests to help debug
+  if (req.method === 'POST') {
+    console.log('========================================');
+    console.log('🌐 GLOBAL REQUEST LOGGER: POST request detected');
+    console.log('Path:', req.path);
+    console.log('URL:', req.url);
+    console.log('Original URL:', req.originalUrl);
+    console.log('Method:', req.method);
+    if (req.path.includes('/trips') || req.url.includes('/trips') || req.originalUrl.includes('/trips')) {
+      console.log('✅ This is a trips-related request');
+      console.log('Body keys:', Object.keys(req.body || {}));
+      console.log('notificationRadius:', req.body?.notificationRadius);
+    }
+    console.log('========================================');
+  }
+  next();
+});
+
 // Root endpoint
 app.get('/', (req, res) => {
   res.json({
@@ -330,6 +350,16 @@ async function startServer() {
       console.log(`🚑 Agencies API: http://localhost:${PORT}/api/tcc/agencies`);
       console.log(`🏢 Facilities API: http://localhost:${PORT}/api/tcc/facilities`);
       console.log(`📈 Analytics API: http://localhost:${PORT}/api/tcc/analytics`);
+      
+      // SMS Configuration Logging
+      console.log('========================================');
+      console.log('📱 SMS CONFIGURATION STATUS');
+      console.log('========================================');
+      console.log('AZURE_SMS_ENABLED:', process.env.AZURE_SMS_ENABLED || 'NOT SET (defaults to false)');
+      console.log('AZURE_COMMUNICATION_CONNECTION_STRING:', process.env.AZURE_COMMUNICATION_CONNECTION_STRING ? 'SET (hidden)' : 'NOT SET');
+      console.log('AZURE_SMS_PHONE_NUMBER:', process.env.AZURE_SMS_PHONE_NUMBER || 'NOT SET');
+      console.log('SMS Enabled Check:', process.env.AZURE_SMS_ENABLED === 'true' ? '✅ ENABLED' : '❌ DISABLED');
+      console.log('========================================');
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
