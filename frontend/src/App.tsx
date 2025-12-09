@@ -10,6 +10,8 @@ import EMSRegistration from './components/EMSRegistration';
 import { authAPI } from './services/api';
 import ErrorBoundary from './components/ErrorBoundary';
 import TripAcceptance from './components/TripAcceptance';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsAndConditions from './components/TermsAndConditions';
 
 interface User {
   id: string;
@@ -216,6 +218,9 @@ function AppContent() {
             </div>
           </div>
         } />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsAndConditions />} />
+        <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>

@@ -25,7 +25,8 @@ interface MessageCompositionResult {
 
 class SMSMessageComposer {
   // Default SMS message template
-  private readonly DEFAULT_TEMPLATE = `🚑 NEW TRIP CREATED
+  // Note: Must start with program name "TraccEMS:" for Azure compliance
+  private readonly DEFAULT_TEMPLATE = `TraccEMS: 🚑 NEW TRIP CREATED
 Trip #{tripNumber}
 PatientID: {patientId}
 Level: {transportLevel}
