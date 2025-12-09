@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin } from 'lucide-react';
-import { dropdownOptionsAPI } from '../services/api';
+import { MapPin, Settings, Trash2, Edit, Plus, ArrowUp, ArrowDown, AlertCircle } from 'lucide-react';
+import { dropdownOptionsAPI, dropdownCategoriesAPI } from '../services/api';
 import api from '../services/api';
 
 interface DropdownOption {
@@ -10,6 +10,17 @@ interface DropdownOption {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+interface DropdownCategory {
+  id: string;
+  slug: string;
+  displayName: string;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  optionCount?: number;
 }
 
 interface Hospital {
@@ -73,8 +84,21 @@ interface HospitalSettingsProps {
 const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
   console.log('TCC_DEBUG: HospitalSettings component rendered with user:', user);
   
-  // Tab state
-  const [activeTab, setActiveTab] = useState<'dropdowns' | 'pickup-locations' | 'main-contact'>('dropdowns');
+  // Tab state - Added 'categories' as first tab
+  const [activeTab, setActiveTab] = useState<'categories' | 'dropdowns' | 'pickup-locations' | 'main-contact'>('categories');
+  
+  // Category management state
+  const [categoryList, setCategoryList] = useState<DropdownCategory[]>([]);
+  const [categoryLoading, setCategoryLoading] = useState(false);
+  const [categoryError, setCategoryError] = useState<string | null>(null);
+  const [categorySuccess, setCategorySuccess] = useState<string | null>(null);
+  const [editingCategory, setEditingCategory] = useState<DropdownCategory | null>(null);
+  const [showCategoryForm, setShowCategoryForm] = useState(false);
+  const [categoryFormData, setCategoryFormData] = useState({
+    slug: '',
+    displayName: '',
+    displayOrder: 0
+  });
   
   // Dropdown options state
   const [categories, setCategories] = useState<string[]>([]);
@@ -127,6 +151,7 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
   // Load categories on component mount
   useEffect(() => {
     loadCategories();
+    loadCategoryList();
   }, []);
 
   // Load options when category changes
@@ -163,16 +188,47 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
     }
   }, [selectedCategory]);
 
+  // Load category list for Category Options tab
+  const loadCategoryList = async () => {
+    try {
+      setCategoryLoading(true);
+      setCategoryError(null);
+      const response = await dropdownCategoriesAPI.getAll();
+      if (response.data.success) {
+        setCategoryList(response.data.data);
+      } else {
+        setCategoryError('Failed to load categories');
+      }
+    } catch (error: any) {
+      console.error('Error loading category list:', error);
+      setCategoryError(error.response?.data?.error || 'Failed to load categories');
+    } finally {
+      setCategoryLoading(false);
+    }
+  };
+
+  // Load categories for Dropdown Options tab (now from API)
   const loadCategories = async () => {
     try {
       setLoading(true);
-      // Use fixed categories per product decision
-      const fixed = ['transport-level', 'urgency', 'diagnosis', 'mobility', 'insurance', 'special-needs'];
-      setCategories(fixed);
-      setSelectedCategory(fixed[0]);
+      // Load from API instead of hardcoded list
+      const response = await dropdownOptionsAPI.getCategories();
+      if (response.data.success && Array.isArray(response.data.data)) {
+        setCategories(response.data.data);
+        if (response.data.data.length > 0) {
+          setSelectedCategory(response.data.data[0]);
+        }
+      } else {
+        // Fallback to empty array if API fails
+        setCategories([]);
+        setSelectedCategory('');
+      }
     } catch (error) {
       console.error('Error loading categories:', error);
       setError('Failed to load categories');
+      // Fallback to empty array
+      setCategories([]);
+      setSelectedCategory('');
     } finally {
       setLoading(false);
     }
@@ -294,6 +350,94 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
       setError('Failed to set default');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Category management handlers
+  const handleCategorySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setCategoryLoading(true);
+      setCategoryError(null);
+      setCategorySuccess(null);
+
+      if (editingCategory) {
+        // Update existing category
+        const response = await dropdownCategoriesAPI.update(editingCategory.id, {
+          displayName: categoryFormData.displayName,
+          displayOrder: categoryFormData.displayOrder
+        });
+        if (response.data.success) {
+          setCategorySuccess('Category updated successfully');
+          setEditingCategory(null);
+          setShowCategoryForm(false);
+          setCategoryFormData({ slug: '', displayName: '', displayOrder: 0 });
+          loadCategoryList();
+          loadCategories(); // Reload categories for dropdown options tab
+          setTimeout(() => setCategorySuccess(null), 3000);
+        }
+      } else {
+        // Create new category
+        const response = await dropdownCategoriesAPI.create({
+          slug: categoryFormData.slug,
+          displayName: categoryFormData.displayName,
+          displayOrder: categoryFormData.displayOrder || undefined
+        });
+        if (response.data.success) {
+          setCategorySuccess('Category created successfully');
+          setShowCategoryForm(false);
+          setCategoryFormData({ slug: '', displayName: '', displayOrder: 0 });
+          loadCategoryList();
+          loadCategories(); // Reload categories for dropdown options tab
+          setTimeout(() => setCategorySuccess(null), 3000);
+        }
+      }
+    } catch (error: any) {
+      console.error('Error saving category:', error);
+      setCategoryError(error.response?.data?.error || 'Failed to save category');
+    } finally {
+      setCategoryLoading(false);
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    const category = categoryList.find(c => c.id === id);
+    if (!category) return;
+
+    if (category.optionCount && category.optionCount > 0) {
+      setCategoryError(`Cannot delete category with ${category.optionCount} active option(s). Please remove or deactivate all options first.`);
+      setTimeout(() => setCategoryError(null), 5000);
+      return;
+    }
+
+    // Show confirmation dialog with warning
+    const confirmed = window.confirm(
+      `⚠️ WARNING: Delete Category\n\n` +
+      `Are you sure you want to delete "${category.displayName}"?\n\n` +
+      `This will deactivate the category and all associated dropdown options.\n` +
+      `This action cannot be undone.\n\n` +
+      `Click OK to confirm deletion.`
+    );
+    
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setCategoryLoading(true);
+      setCategoryError(null);
+      const response = await dropdownCategoriesAPI.delete(id);
+      if (response.data.success) {
+        setCategorySuccess('Category deleted successfully');
+        loadCategoryList();
+        loadCategories(); // Reload categories for dropdown options tab
+        setTimeout(() => setCategorySuccess(null), 3000);
+      }
+    } catch (error: any) {
+      console.error('Error deleting category:', error);
+      setCategoryError(error.response?.data?.error || 'Failed to delete category');
+    } finally {
+      setCategoryLoading(false);
     }
   };
 
@@ -544,6 +688,22 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
             <button
+              onClick={() => {
+                setActiveTab('categories');
+                setCategoryError(null);
+                setCategorySuccess(null);
+                loadCategoryList();
+              }}
+              className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+                activeTab === 'categories'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <Settings className="h-4 w-4" />
+              Category Options
+            </button>
+            <button
               onClick={() => setActiveTab('dropdowns')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'dropdowns'
@@ -616,6 +776,209 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
             Dismiss
           </button>
         </div>
+      )}
+
+      {/* Category Options Tab */}
+      {activeTab === 'categories' && (
+        <>
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Manage Categories</h3>
+              <button
+                onClick={() => {
+                  setEditingCategory(null);
+                  setCategoryFormData({ slug: '', displayName: '', displayOrder: 0 });
+                  setCategorySuccess(null);
+                  setCategoryError(null);
+                  setShowCategoryForm(true);
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add Category
+              </button>
+            </div>
+
+            {categoryLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="mt-2 text-gray-600">Loading categories...</p>
+              </div>
+            ) : categoryList.length === 0 ? (
+              <div className="text-center py-8 bg-gray-50 rounded-lg">
+                <Settings className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                <p className="text-gray-600">No categories found. Add your first category to get started.</p>
+              </div>
+            ) : (
+              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Display Name</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Slug</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Options</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {categoryList.map((category) => (
+                      <tr key={category.id} className={category.isActive ? '' : 'opacity-50'}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {category.displayName}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <code className="bg-gray-100 px-2 py-1 rounded text-xs">{category.slug}</code>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {category.optionCount || 0}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {category.displayOrder}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 text-xs rounded-full ${category.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                            {category.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => {
+                                setEditingCategory(category);
+                                setShowCategoryForm(true);
+                                setCategoryFormData({
+                                  slug: category.slug,
+                                  displayName: category.displayName,
+                                  displayOrder: category.displayOrder
+                                });
+                                setCategorySuccess(null);
+                                setCategoryError(null);
+                              }}
+                              className="text-blue-600 hover:text-blue-900"
+                              title="Edit category"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteCategory(category.id)}
+                              className="text-red-600 hover:text-red-900"
+                              title="Delete category"
+                              disabled={category.optionCount && category.optionCount > 0}
+                            >
+                              <Trash2 className={`h-4 w-4 ${category.optionCount && category.optionCount > 0 ? 'opacity-50 cursor-not-allowed' : ''}`} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Add/Edit Category Form */}
+          {(editingCategory || showCategoryForm) && (
+            <div className="mt-6 bg-gray-50 p-6 rounded-lg border border-gray-200">
+              <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                {editingCategory ? 'Edit Category' : 'Add New Category'}
+              </h4>
+              <form onSubmit={handleCategorySubmit} className="space-y-4">
+                <div>
+                  <label htmlFor="category-slug" className="block text-sm font-medium text-gray-700 mb-1">
+                    Slug <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="category-slug"
+                    value={categoryFormData.slug}
+                    onChange={(e) => setCategoryFormData({ ...categoryFormData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
+                    placeholder="e.g., transport-level"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                    disabled={!!editingCategory}
+                    pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                    title="Lowercase letters, numbers, and hyphens only"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">Lowercase letters, numbers, and hyphens only. Cannot be changed after creation.</p>
+                </div>
+                <div>
+                  <label htmlFor="category-display-name" className="block text-sm font-medium text-gray-700 mb-1">
+                    Display Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="category-display-name"
+                    value={categoryFormData.displayName}
+                    onChange={(e) => setCategoryFormData({ ...categoryFormData, displayName: e.target.value })}
+                    placeholder="e.g., Transport Levels"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="category-display-order" className="block text-sm font-medium text-gray-700 mb-1">
+                    Display Order
+                  </label>
+                  <input
+                    type="number"
+                    id="category-display-order"
+                    value={categoryFormData.displayOrder}
+                    onChange={(e) => setCategoryFormData({ ...categoryFormData, displayOrder: parseInt(e.target.value) || 0 })}
+                    placeholder="Auto-calculated if not set"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    min="0"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">Lower numbers appear first. Leave empty to auto-calculate.</p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={categoryLoading || !categoryFormData.slug || !categoryFormData.displayName}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {categoryLoading ? 'Saving...' : (editingCategory ? 'Update Category' : 'Create Category')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingCategory(null);
+                      setShowCategoryForm(false);
+                      setCategoryFormData({ slug: '', displayName: '', displayOrder: 0 });
+                      setCategorySuccess(null);
+                      setCategoryError(null);
+                    }}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Information Box */}
+          <div className="mt-6 bg-blue-50 border border-blue-200 rounded-md p-4">
+            <div className="flex">
+              <AlertCircle className="h-5 w-5 text-blue-400 flex-shrink-0" />
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-blue-800">About Category Options</h3>
+                <div className="mt-2 text-sm text-blue-700">
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Categories organize dropdown options used throughout the application</li>
+                    <li>Each category can have multiple dropdown options that appear in trip creation forms</li>
+                    <li>Categories cannot be deleted if they have active options - remove or deactivate all options first</li>
+                    <li>The slug is a unique identifier that cannot be changed after creation</li>
+                    <li>Display order determines the order categories appear in dropdowns (lower numbers appear first)</li>
+                    <li>Changes to categories and options are reflected immediately in trip creation forms</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Dropdown Options Tab */}

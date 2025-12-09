@@ -332,6 +332,26 @@ async function main() {
       console.log(`✅ Location created: ${loc.name}`);
     }
 
+    // Ensure dropdown categories exist (idempotent)
+    console.log('🌱 Seeding dropdown categories...');
+    const categories = [
+      { slug: 'transport-level', displayName: 'Transport Levels', displayOrder: 1 },
+      { slug: 'urgency', displayName: 'Urgency Levels', displayOrder: 2 },
+      { slug: 'diagnosis', displayName: 'Primary Diagnosis', displayOrder: 3 },
+      { slug: 'mobility', displayName: 'Mobility Levels', displayOrder: 4 },
+      { slug: 'insurance', displayName: 'Insurance Companies', displayOrder: 5 },
+      { slug: 'special-needs', displayName: 'Secondary Insurance', displayOrder: 6 },
+    ];
+
+    for (const cat of categories) {
+      await prisma.dropdownCategory.upsert({
+        where: { slug: cat.slug },
+        update: { displayName: cat.displayName, displayOrder: cat.displayOrder, isActive: true },
+        create: cat,
+      });
+    }
+    console.log(`✅ Categories seeded: ${categories.length}`);
+
     // Create dropdown options for all categories
     console.log('🌱 Seeding dropdown options...');
     
@@ -407,6 +427,11 @@ async function main() {
 
     let dropdownCount = 0;
     for (const option of dropdownOptions) {
+      // Get category ID for linking
+      const category = await prisma.dropdownCategory.findUnique({
+        where: { slug: option.category },
+      });
+      
       await prisma.dropdownOption.upsert({
         where: {
           category_value: {
@@ -414,9 +439,13 @@ async function main() {
             value: option.value
           }
         },
-        update: { isActive: true },
+        update: { 
+          isActive: true,
+          categoryId: category?.id || null
+        },
         create: {
           category: option.category,
+          categoryId: category?.id || null,
           value: option.value,
           isActive: true
         }
