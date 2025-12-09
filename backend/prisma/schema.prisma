@@ -203,7 +203,7 @@ model EMSAgency {
   requiresReview        Boolean                      @default(false)
   serviceRadius         Int?
   totalUnits            Int                          @default(0)
-  availabilityStatus    Json?                         @default("{\"isAvailable\":false,\"availableLevels\":[]}")
+  availabilityStatus    Json?                        @default("{\"isAvailable\":false,\"availableLevels\":[]}")
   users                 EMSUser[]
   units                 Unit[]
   healthcarePreferences HealthcareAgencyPreference[]
@@ -515,14 +515,29 @@ model NotificationLog {
   @@map("notification_logs")
 }
 
+model DropdownCategory {
+  id           String           @id @default(cuid())
+  slug         String           @unique
+  displayName  String
+  displayOrder Int              @default(0)
+  isActive     Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  options      DropdownOption[]
+
+  @@map("dropdown_categories")
+}
+
 model DropdownOption {
-  id         String           @id @default(cuid())
-  category   String
-  value      String
-  isActive   Boolean          @default(true)
-  createdAt  DateTime         @default(now())
-  updatedAt  DateTime         @updatedAt
-  defaultFor CategoryDefault?
+  id          String            @id @default(cuid())
+  category    String
+  categoryId  String?
+  value       String
+  isActive    Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  defaultFor  CategoryDefault?
+  categoryRef DropdownCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   @@unique([category, value])
   @@map("dropdown_options")

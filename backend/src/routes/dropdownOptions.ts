@@ -5,21 +5,30 @@ import { AuthenticatedRequest } from '../middleware/authenticateAdmin';
 
 const router = express.Router();
 
-const ALLOWED_CATEGORIES = new Set([
-  'transport-level',
-  'urgency',
-  'diagnosis',
-  'mobility',
-  'insurance',
-  'special-needs'
-]);
+// Helper function to validate category exists in database
+async function isValidCategory(category: string): Promise<boolean> {
+  try {
+    const prisma = databaseManager.getPrismaClient();
+    const categoryRecord = await prisma.dropdownCategory.findFirst({
+      where: {
+        slug: category,
+        isActive: true
+      }
+    });
+    return !!categoryRecord;
+  } catch (error) {
+    console.error('TCC_DEBUG: Error validating category:', error);
+    return false;
+  }
+}
 
 // Get all dropdown options for a category
 router.get('/:category', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     const { category } = req.params;
 
-    if (!ALLOWED_CATEGORIES.has(category)) {
+    // Validate category exists in database
+    if (!(await isValidCategory(category))) {
       return res.status(400).json({ success: false, error: 'Invalid category' });
     }
     
@@ -63,7 +72,8 @@ router.get('/:category/default', authenticateAdmin, async (req: AuthenticatedReq
   try {
     const { category } = req.params;
 
-    if (!ALLOWED_CATEGORIES.has(category)) {
+    // Validate category exists in database
+    if (!(await isValidCategory(category))) {
       return res.status(400).json({ success: false, error: 'Invalid category' });
     }
 
@@ -92,7 +102,8 @@ router.post('/:category/default', authenticateAdmin, async (req: AuthenticatedRe
     const { category } = req.params;
     const { optionId } = req.body;
 
-    if (!ALLOWED_CATEGORIES.has(category)) {
+    // Validate category exists in database
+    if (!(await isValidCategory(category))) {
       return res.status(400).json({ success: false, error: 'Invalid category' });
     }
     if (!optionId) {
@@ -143,7 +154,8 @@ router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
       });
     }
 
-    if (!ALLOWED_CATEGORIES.has(category)) {
+    // Validate category exists in database
+    if (!(await isValidCategory(category))) {
       return res.status(400).json({ success: false, error: 'Invalid category' });
     }
 
@@ -156,6 +168,21 @@ router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
     }
 
     const hospitalPrisma = databaseManager.getPrismaClient();
+    
+    // Get category ID for linking
+    const categoryRecord = await hospitalPrisma.dropdownCategory.findFirst({
+      where: {
+        slug: category,
+        isActive: true
+      }
+    });
+
+    if (!categoryRecord) {
+      return res.status(400).json({
+        success: false,
+        error: 'Category not found'
+      });
+    }
     
     // Check if option already exists
     const existingOption = await hospitalPrisma.dropdownOption.findFirst({
@@ -175,6 +202,7 @@ router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
     const newOption = await hospitalPrisma.dropdownOption.create({
       data: {
         category: category,
+        categoryId: categoryRecord.id,
         value: value,
         isActive: true
       }
@@ -251,12 +279,24 @@ router.delete('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) 
   }
 });
 
-// Get all categories
+// Get all categories (now fetches from database)
 router.get('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
+    const prisma = databaseManager.getPrismaClient();
+    const categories = await prisma.dropdownCategory.findMany({
+      where: { isActive: true },
+      orderBy: { displayOrder: 'asc' },
+      select: {
+        slug: true,
+        displayName: true,
+        displayOrder: true
+      }
+    });
+
+    // Return slugs for backward compatibility (frontend may still expect slugs)
     res.json({
       success: true,
-      data: Array.from(ALLOWED_CATEGORIES),
+      data: categories.map(cat => cat.slug),
       message: 'Categories retrieved successfully'
     });
   } catch (error) {

@@ -384,6 +384,29 @@ export const dropdownOptionsAPI = {
     api.delete(`/api/dropdown-options/${id}`),
 };
 
+// Dropdown Categories API
+export const dropdownCategoriesAPI = {
+  // Get all categories
+  getAll: () =>
+    api.get('/api/dropdown-categories'),
+
+  // Get single category by ID
+  getById: (id: string) =>
+    api.get(`/api/dropdown-categories/${id}`),
+
+  // Create new category
+  create: (data: { slug: string; displayName: string; displayOrder?: number }) =>
+    api.post('/api/dropdown-categories', data),
+
+  // Update category
+  update: (id: string, data: Partial<{ displayName: string; displayOrder: number; isActive: boolean }>) =>
+    api.put(`/api/dropdown-categories/${id}`, data),
+
+  // Delete category (soft delete)
+  delete: (id: string) =>
+    api.delete(`/api/dropdown-categories/${id}`),
+};
+
 // Optimization API
 export const optimizationAPI = {
   createStream: (token: string) => {
