@@ -1274,40 +1274,21 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Insurance Company
-                </label>
-                <select
-                  name="insuranceCompany"
-                  value={formData.insuranceCompany}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Select insurance company</option>
-                  {formOptions.insurance.map((insurance) => (
-                    <option key={insurance} value={insurance}>{insurance}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Secondary Insurance
-                </label>
-                <select
-                  name="specialNeeds"
-                  value={formData.specialNeeds}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Select secondary insurance</option>
-                  {formOptions.specialNeeds.map((sn) => (
-                    <option key={sn} value={sn}>{sn}</option>
-                  ))}
-                </select>
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Insurance Company
+              </label>
+              <select
+                name="insuranceCompany"
+                value={formData.insuranceCompany}
+                onChange={handleChange}
+                className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Select insurance company</option>
+                {formOptions.insurance.map((insurance) => (
+                  <option key={insurance} value={insurance}>{insurance}</option>
+                ))}
+              </select>
             </div>
 
             {/* QR Code generation temporarily disabled for first version */}
