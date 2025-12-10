@@ -45,8 +45,7 @@ interface Trip {
   urgencyLevel: 'Routine' | 'Urgent' | 'Emergent';
   diagnosis?: string;
   mobilityLevel?: string;
-  oxygenRequired: boolean;
-  monitoringRequired: boolean;
+  specialNeeds?: string;
   pickupLocationId?: string;
   pickupLocation?: {
     id: string;
@@ -1186,8 +1185,6 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
                     urgencyLevel: trip.urgencyLevel,
                     diagnosis: trip.diagnosis,
                     mobilityLevel: trip.mobilityLevel,
-                    oxygenRequired: trip.oxygenRequired,
-                    monitoringRequired: trip.monitoringRequired,
                     notes: '',
                     tripNumber: trip.tripNumber
                   };
@@ -1415,16 +1412,12 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
                     </div>
                   )}
                   
-                  <div className="grid grid-cols-2 gap-4">
+                  {selectedTrip.specialNeeds && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Oxygen Required</label>
-                      <p className="mt-1 text-sm text-gray-900">{selectedTrip.oxygenRequired ? 'Yes' : 'No'}</p>
+                      <label className="block text-sm font-medium text-gray-700">Special Needs</label>
+                      <p className="mt-1 text-sm text-gray-900">{selectedTrip.specialNeeds}</p>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Monitoring Required</label>
-                      <p className="mt-1 text-sm text-gray-900">{selectedTrip.monitoringRequired ? 'Yes' : 'No'}</p>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
               

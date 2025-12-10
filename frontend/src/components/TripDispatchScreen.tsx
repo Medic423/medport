@@ -23,8 +23,7 @@ interface TransportRequest {
   urgencyLevel?: string;
   diagnosis?: string;
   mobilityLevel?: string;
-  oxygenRequired?: boolean;
-  monitoringRequired?: boolean;
+  specialNeeds?: string;
   notes?: string;
   tripNumber?: string; // Phase 3
 }
@@ -333,15 +332,10 @@ const TripDispatchScreen: React.FC<TripDispatchScreenProps> = ({ tripId, trip, u
                   <span className="ml-2 text-blue-900">{trip.mobilityLevel}</span>
                 </div>
               )}
-              {(trip.oxygenRequired || trip.monitoringRequired) && (
+              {trip.specialNeeds && (
                 <div>
                   <span className="text-blue-700 font-medium">Special Needs:</span>
-                  <span className="ml-2 text-blue-900">
-                    {[
-                      trip.oxygenRequired && 'Oxygen Required',
-                      trip.monitoringRequired && 'Monitoring Required'
-                    ].filter(Boolean).join(', ')}
-                  </span>
+                  <span className="ml-2 text-blue-900">{trip.specialNeeds}</span>
                 </div>
               )}
             </div>

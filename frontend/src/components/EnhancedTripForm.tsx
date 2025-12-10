@@ -53,8 +53,6 @@ interface FormData {
   // Clinical Details
   diagnosis: string;
   mobilityLevel: string;
-  oxygenRequired: boolean;
-  monitoringRequired: boolean;
   
   // Agency Selection
   selectedAgencies: string[];
@@ -154,8 +152,6 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
     urgencyLevel: 'Routine',
     diagnosis: '',
     mobilityLevel: 'Ambulatory',
-    oxygenRequired: false,
-    monitoringRequired: false,
     selectedAgencies: [],
     notificationRadius: 100,
     assignedUnitId: 'N/A',
@@ -267,8 +263,6 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
       urgencyLevel: 'Routine',
       diagnosis: '',
       mobilityLevel: 'Ambulatory',
-      oxygenRequired: false,
-      monitoringRequired: false,
       selectedAgencies: [],
       notificationRadius: 100,
       assignedUnitId: 'N/A',
@@ -907,6 +901,30 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
     }
   };
 
+  const handleSpecialNeedsChange = (need: string, checked: boolean) => {
+    setFormData(prev => {
+      const currentNeeds = prev.specialNeeds 
+        ? prev.specialNeeds.split(',').map(n => n.trim()).filter(n => n !== '')
+        : [];
+      
+      let newNeeds: string[];
+      if (checked) {
+        // Add if not already present
+        newNeeds = currentNeeds.includes(need) 
+          ? currentNeeds 
+          : [...currentNeeds, need];
+      } else {
+        // Remove
+        newNeeds = currentNeeds.filter(n => n !== need);
+      }
+      
+      return {
+        ...prev,
+        specialNeeds: newNeeds.join(', ')
+      };
+    });
+  };
+
   const handleDestinationModeChange = (mode: 'select' | 'manual') => {
     setDestinationMode(mode);
     // Clear destination when switching modes
@@ -1119,8 +1137,6 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
             urgencyLevel: formData.urgencyLevel as any,
             diagnosis: formData.diagnosis || undefined,
             mobilityLevel: formData.mobilityLevel as any,
-            oxygenRequired: !!formData.oxygenRequired,
-            monitoringRequired: !!formData.monitoringRequired,
             generateQRCode: false,
             selectedAgencies: [], // Phase 3: Agencies not selected at creation
             notificationRadius: formData.notificationRadius ? Number(formData.notificationRadius) : 100, // SMS notification radius in miles
@@ -1669,32 +1685,40 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="oxygenRequired"
-                  checked={formData.oxygenRequired}
-                  onChange={handleChange}
-                  className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                />
-                <label className="ml-2 block text-sm text-gray-900">
-                  Oxygen Required
-                </label>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Special Needs (Select all that apply)
+              </label>
+              <div className="space-y-2">
+                {formOptions.specialNeeds.length > 0 ? (
+                  formOptions.specialNeeds.map((need) => (
+                    <div key={need} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id={`special-need-${need}`}
+                        checked={formData.specialNeeds.split(',').map(n => n.trim()).includes(need)}
+                        onChange={(e) => handleSpecialNeedsChange(need, e.target.checked)}
+                        className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                      />
+                      <label 
+                        htmlFor={`special-need-${need}`}
+                        className="ml-2 block text-sm text-gray-900 cursor-pointer"
+                      >
+                        {need}
+                      </label>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500 italic">
+                    No special needs options available. Please configure in Hospital Settings.
+                  </p>
+                )}
               </div>
-
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="monitoringRequired"
-                  checked={formData.monitoringRequired}
-                  onChange={handleChange}
-                  className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                />
-                <label className="ml-2 block text-sm text-gray-900">
-                  Continuous Monitoring Required
-                </label>
-              </div>
+              {formData.specialNeeds && (
+                <p className="mt-2 text-sm text-gray-600">
+                  Selected: {formData.specialNeeds}
+                </p>
+              )}
             </div>
           </div>
         );
@@ -1752,8 +1776,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
                   <h4 className="font-medium text-gray-900 mb-2">Clinical Details</h4>
                   {formData.diagnosis && <p className="text-sm text-gray-600">Diagnosis: {formData.diagnosis}</p>}
                   <p className="text-sm text-gray-600">Mobility: {formData.mobilityLevel}</p>
-                  {formData.oxygenRequired && <p className="text-sm text-red-600">Oxygen Required</p>}
-                  {formData.monitoringRequired && <p className="text-sm text-red-600">Monitoring Required</p>}
+                  {formData.specialNeeds && <p className="text-sm text-red-600">Special Needs: {formData.specialNeeds}</p>}
                 </div>
 
                 <div className="bg-white border rounded-lg p-4">

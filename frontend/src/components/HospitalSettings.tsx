@@ -219,6 +219,7 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
           setSelectedCategory(response.data.data[0]);
         }
       } else {
+        console.warn('TCC_DEBUG: Invalid response format:', response.data);
         // Fallback to empty array if API fails
         setCategories([]);
         setSelectedCategory('');
@@ -671,7 +672,7 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
       'mobility': 'Mobility Levels',
       'transport-level': 'Transport Levels',
       'urgency': 'Urgency Levels',
-      'special-needs': 'Secondary Insurance'
+      'special-needs': 'Special Needs'
     };
     return displayNames[category] || category;
   };
