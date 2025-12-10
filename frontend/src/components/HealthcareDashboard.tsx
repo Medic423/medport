@@ -540,6 +540,30 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
     }
   };
 
+  const handleEditSpecialNeedsChange = (need: string, checked: boolean) => {
+    setEditFormData(prev => {
+      const currentNeeds = prev.specialNeeds 
+        ? prev.specialNeeds.split(',').map(n => n.trim()).filter(n => n !== '')
+        : [];
+      
+      let newNeeds: string[];
+      if (checked) {
+        // Add if not already present
+        newNeeds = currentNeeds.includes(need) 
+          ? currentNeeds 
+          : [...currentNeeds, need];
+      } else {
+        // Remove
+        newNeeds = currentNeeds.filter(n => n !== need);
+      }
+      
+      return {
+        ...prev,
+        specialNeeds: newNeeds.join(', ')
+      };
+    });
+  };
+
   const handleEditTrip = (trip: any) => {
     setEditingTrip(trip);
     setEditFormData({
@@ -550,8 +574,6 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
       mobilityLevel: trip.mobilityLevel || '',
       insuranceCompany: trip.insuranceCompany || '',
       specialNeeds: trip.specialNeeds || '',
-      oxygenRequired: trip.oxygenRequired || false,
-      monitoringRequired: trip.monitoringRequired || false,
       // Pickup location fields
       pickupLocationName: trip.pickupLocation?.name || '',
       pickupLocationFloor: trip.pickupLocation?.floor || '',
@@ -590,10 +612,6 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
       if (editFormData.specialNeeds && editFormData.specialNeeds.trim() !== '') {
         payload.specialNeeds = editFormData.specialNeeds;
       }
-      
-      // Always include booleans
-      payload.oxygenRequired = !!editFormData.oxygenRequired;
-      payload.monitoringRequired = !!editFormData.monitoringRequired;
       
       // Add pickup location data if any pickup location field is provided
       if (editFormData.pickupLocationName || editFormData.pickupLocationFloor || 
@@ -1659,49 +1677,38 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                   {/* Special Needs */}
                   <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Special Needs
-                    </label>
-                    <select
-                      value={editFormData.specialNeeds}
-                      onChange={(e) => setEditFormData({...editFormData, specialNeeds: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
-                    >
-                      <option value="">Select special needs</option>
-                      {editOptions.specialNeeds.map((specialNeed: string) => (
-                        <option key={specialNeed} value={specialNeed}>{specialNeed}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Clinical Requirements */}
-                  <div className="mb-4 md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Clinical Requirements
+                      Special Needs (Select all that apply)
                     </label>
                     <div className="space-y-2">
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={editFormData.oxygenRequired}
-                          onChange={(e) => setEditFormData({...editFormData, oxygenRequired: e.target.checked})}
-                          className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                        />
-                        <label className="ml-2 block text-sm text-gray-900">
-                          Oxygen Required
-                        </label>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={editFormData.monitoringRequired}
-                          onChange={(e) => setEditFormData({...editFormData, monitoringRequired: e.target.checked})}
-                          className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                        />
-                        <label className="ml-2 block text-sm text-gray-900">
-                          Continuous Monitoring Required
-                        </label>
-                      </div>
+                      {editOptions.specialNeeds.length > 0 ? (
+                        editOptions.specialNeeds.map((need: string) => (
+                          <div key={need} className="flex items-center">
+                            <input
+                              type="checkbox"
+                              id={`edit-special-need-${need}`}
+                              checked={editFormData.specialNeeds ? editFormData.specialNeeds.split(',').map(n => n.trim()).includes(need) : false}
+                              onChange={(e) => handleEditSpecialNeedsChange(need, e.target.checked)}
+                              className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                            />
+                            <label 
+                              htmlFor={`edit-special-need-${need}`}
+                              className="ml-2 block text-sm text-gray-900 cursor-pointer"
+                            >
+                              {need}
+                            </label>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-gray-500 italic">
+                          No special needs options available. Please configure in Hospital Settings.
+                        </p>
+                      )}
                     </div>
+                    {editFormData.specialNeeds && (
+                      <p className="mt-2 text-sm text-gray-600">
+                        Selected: {editFormData.specialNeeds}
+                      </p>
+                    )}
                   </div>
 
                   {/* Pickup Location Details */}

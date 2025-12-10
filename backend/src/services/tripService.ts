@@ -66,8 +66,6 @@ export interface EnhancedCreateTripRequest {
   urgencyLevel: 'Routine' | 'Urgent' | 'Emergent';
   diagnosis?: string;
   mobilityLevel?: 'Ambulatory' | 'Wheelchair' | 'Stretcher' | 'Bed';
-  oxygenRequired?: boolean;
-  monitoringRequired?: boolean;
   generateQRCode?: boolean;
   selectedAgencies?: string[];
   notificationRadius?: number;
@@ -785,8 +783,8 @@ export class TripService {
         specialRequirements: data.specialNeeds || null,
         diagnosis: data.diagnosis || null,
         mobilityLevel: data.mobilityLevel || null,
-        oxygenRequired: data.oxygenRequired || false,
-        monitoringRequired: data.monitoringRequired || false,
+        oxygenRequired: false, // Unused - kept for schema compatibility
+        monitoringRequired: false, // Unused - kept for schema compatibility
         generateQRCode: data.generateQRCode || false,
         qrCodeData: null,
         selectedAgencies: data.selectedAgencies || [],

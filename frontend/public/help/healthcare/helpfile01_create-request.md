@@ -15,7 +15,7 @@ The **Create Request** tab allows you to create new transport requests for patie
 3. In Trip Details select the "From, Pickup and To" locations and schedule a time for patient pick-up. 
 4. Choose the appropriate Transport and Urgency Levels 
 5. Select a Primary Diagnosis and patient Mobility Level
-6. Check the boxes for any additional needs such as oxygen.
+6. Select all applicable special needs from the checkboxes (e.g., Oxygen Required, Monitoring Required).
 7. Click the "Create Request" button. 
 8. The trip will be created and the "Dispatch Trip to Agencies" screen will be displayed.
 9. Choose the "Dispatch Mode."
@@ -95,16 +95,17 @@ Select the patient's mobility status:
 
 ### Step 3: Special Requirements
 
-#### Oxygen Requirements
-- Check if patient requires oxygen during transport
+#### Special Needs
+Select all special needs that apply to this patient from the available checkboxes. Options are configured by your hospital administrator in Hospital Settings -> Category Options -> special-needs.
 
-#### Monitoring Requirements
-- **Cardiac Monitoring:** Continuous ECG monitoring required
-- **IV/Medication:** IV access or medication administration during transport
-- Ventilator-dependent patients
-- Behavioral/psychiatric considerations
-- Language interpreter needs
-- Other special accommodations
+Common special needs may include:
+- **Oxygen Required:** Patient requires oxygen during transport
+- **Monitoring Required:** Continuous monitoring needed during transport
+- **Ventilator Required:** Patient requires ventilator support
+- **Bariatric Stretcher:** Patient requires bariatric-capable transport
+- Other needs as configured by your hospital
+
+**Note:** You can select multiple special needs by checking multiple boxes. Selected items will be displayed below the checkboxes for confirmation.
 
 ---
 

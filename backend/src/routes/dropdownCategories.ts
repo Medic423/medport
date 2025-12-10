@@ -13,12 +13,11 @@ function isValidSlug(slug: string): boolean {
   return slugRegex.test(slug);
 }
 
-// Get all categories
+// Get all categories (including inactive for management purposes)
 router.get('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     const prisma = databaseManager.getPrismaClient();
     const categories = await prisma.dropdownCategory.findMany({
-      where: { isActive: true },
       orderBy: { displayOrder: 'asc' },
       include: {
         _count: {
