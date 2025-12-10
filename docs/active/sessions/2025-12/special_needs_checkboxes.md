@@ -383,6 +383,31 @@ Replace the hardcoded "Oxygen Required" and "Continuous Monitoring Required" che
 - Backend changes: Route fixes and API updates
 - Frontend components: Dynamic checkbox implementation
 - Documentation: Help files and implementation plan
+- Additional fixes: isActive toggle, Secondary Insurance dropdown, display name fixes
+
+**Additional Fixes Completed:**
+1. **Category Management Enhancement:**
+   - Added `isActive` toggle checkbox to category edit form
+   - Users can now activate/deactivate categories from the edit form
+   - Updated `dropdownCategories` API to return all categories (including inactive) for management purposes
+
+2. **Secondary Insurance Dropdown Restoration:**
+   - Restored Secondary Insurance dropdown in Step 1 of trip creation form
+   - Added `secondaryInsurance` field to FormData and FormOptions
+   - Loading options from `secondary-insurance` category
+   - Temporarily storing value in notes field (database field can be added later)
+
+3. **Display Name Fixes:**
+   - Fixed display name mapping for `secondary-insurance` category
+   - Dropdown Options tab now shows "Secondary Insurance" instead of slug
+   - Added safety check for undefined `secondaryInsurance` array to prevent runtime errors
+
+**Testing Completed:**
+- ✅ All fixes tested and verified working
+- ✅ Category edit form includes isActive toggle
+- ✅ Secondary Insurance dropdown appears in Step 1
+- ✅ Display names show correctly in all dropdowns
+- ✅ No runtime errors with undefined arrays
 
 ---
 
@@ -459,9 +484,9 @@ Replace the hardcoded "Oxygen Required" and "Continuous Monitoring Required" che
 
 ## Final Status
 
-**Implementation Complete:** December 10, 2025
+**Implementation Complete:** December 10, 2025 ✅
 
-All phases completed successfully. The special-needs checkboxes feature is fully implemented and tested.
+All phases completed successfully. The special-needs checkboxes feature is fully implemented, tested, and committed to the `feature/special-needs-checkboxes` branch.
 
 **Key Achievements:**
 - ✅ Replaced hardcoded checkboxes with dynamic checkboxes from database
