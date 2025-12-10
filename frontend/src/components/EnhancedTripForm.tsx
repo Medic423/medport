@@ -39,6 +39,7 @@ interface FormData {
   patientWeight: string;
   specialNeeds: string;
   insuranceCompany: string;
+  secondaryInsurance: string;
   generateQRCode: boolean;
   
   // Trip Details
@@ -106,6 +107,7 @@ interface FormOptions {
   transportLevel: string[];
   urgency: string[];
   insurance: string[];
+  secondaryInsurance: string[];
   specialNeeds: string[];
   facilities: any[];
   agencies: any[];
@@ -125,6 +127,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
     transportLevel: [],
     urgency: [],
     insurance: [],
+    secondaryInsurance: [],
     specialNeeds: [],
     facilities: [],
     agencies: [],
@@ -142,6 +145,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
     patientWeight: '',
     specialNeeds: '',
     insuranceCompany: '',
+    secondaryInsurance: '',
     generateQRCode: false,
     fromLocation: user.facilityName || '',
     fromLocationId: '', // ✅ NEW: Will be set based on user's locations
@@ -616,12 +620,13 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
       }
       
       // Load dropdown options from backend Hospital Settings
-      const [diagRes, mobRes, tlRes, urgRes, insRes, snRes] = await Promise.all([
+      const [diagRes, mobRes, tlRes, urgRes, insRes, secInsRes, snRes] = await Promise.all([
         dropdownOptionsAPI.getByCategory('diagnosis').catch(() => ({ data: { success: false, data: [] }})),
         dropdownOptionsAPI.getByCategory('mobility').catch(() => ({ data: { success: false, data: [] }})),
         dropdownOptionsAPI.getByCategory('transport-level').catch(() => ({ data: { success: false, data: [] }})),
         dropdownOptionsAPI.getByCategory('urgency').catch(() => ({ data: { success: false, data: [] }})),
         dropdownOptionsAPI.getByCategory('insurance').catch(() => ({ data: { success: false, data: [] }})),
+        dropdownOptionsAPI.getByCategory('secondary-insurance').catch(() => ({ data: { success: false, data: [] }})),
         dropdownOptionsAPI.getByCategory('special-needs').catch(() => ({ data: { success: false, data: [] }})),
       ]);
 
@@ -639,6 +644,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
         transportLevel: toValues(tlRes, ['BLS', 'ALS', 'CCT', 'Other']),
         urgency: urgencyOptions,
         insurance: toValues(insRes, ['Medicare', 'Medicaid', 'Private', 'Self-pay']),
+        secondaryInsurance: toValues(secInsRes, []),
         specialNeeds: toValues(snRes, ['Bariatric Stretcher']),
         facilities: facilities,
         agencies: [],
@@ -1140,7 +1146,9 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
             generateQRCode: false,
             selectedAgencies: [], // Phase 3: Agencies not selected at creation
             notificationRadius: formData.notificationRadius ? Number(formData.notificationRadius) : 100, // SMS notification radius in miles
-            notes: formData.notes,
+            notes: formData.secondaryInsurance 
+              ? `${formData.notes || ''}${formData.notes ? '\n' : ''}Secondary Insurance: ${formData.secondaryInsurance}`.trim()
+              : formData.notes,
             priority: (tripData as any).priority,
             status: 'PENDING_DISPATCH', // Phase 3: Set status to PENDING_DISPATCH for dispatch workflow
             // assignedUnitId removed (not applicable)
@@ -1274,21 +1282,39 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Insurance Company
-              </label>
-              <select
-                name="insuranceCompany"
-                value={formData.insuranceCompany}
-                onChange={handleChange}
-                className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Select insurance company</option>
-                {formOptions.insurance.map((insurance) => (
-                  <option key={insurance} value={insurance}>{insurance}</option>
-                ))}
-              </select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Insurance Company
+                </label>
+                <select
+                  name="insuranceCompany"
+                  value={formData.insuranceCompany}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Select insurance company</option>
+                  {formOptions.insurance.map((insurance) => (
+                    <option key={insurance} value={insurance}>{insurance}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Secondary Insurance
+                </label>
+                <select
+                  name="secondaryInsurance"
+                  value={formData.secondaryInsurance}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Select secondary insurance</option>
+                  {(formOptions.secondaryInsurance || []).map((insurance) => (
+                    <option key={insurance} value={insurance}>{insurance}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* QR Code generation temporarily disabled for first version */}
