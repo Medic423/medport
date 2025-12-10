@@ -22,6 +22,35 @@ async function isValidCategory(category: string): Promise<boolean> {
   }
 }
 
+// Get all categories (must be before /:category route to avoid route matching issues)
+router.get('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const prisma = databaseManager.getPrismaClient();
+    const categories = await prisma.dropdownCategory.findMany({
+      where: { isActive: true },
+      orderBy: { displayOrder: 'asc' },
+      select: {
+        slug: true,
+        displayName: true,
+        displayOrder: true
+      }
+    });
+
+    // Return slugs for backward compatibility (frontend may still expect slugs)
+    res.json({
+      success: true,
+      data: categories.map(cat => cat.slug),
+      message: 'Categories retrieved successfully'
+    });
+  } catch (error) {
+    console.error('TCC_DEBUG: Get categories error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get categories'
+    });
+  }
+});
+
 // Get all dropdown options for a category
 router.get('/:category', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
@@ -275,35 +304,6 @@ router.delete('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) 
     res.status(500).json({
       success: false,
       error: 'Failed to delete dropdown option'
-    });
-  }
-});
-
-// Get all categories (now fetches from database)
-router.get('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
-  try {
-    const prisma = databaseManager.getPrismaClient();
-    const categories = await prisma.dropdownCategory.findMany({
-      where: { isActive: true },
-      orderBy: { displayOrder: 'asc' },
-      select: {
-        slug: true,
-        displayName: true,
-        displayOrder: true
-      }
-    });
-
-    // Return slugs for backward compatibility (frontend may still expect slugs)
-    res.json({
-      success: true,
-      data: categories.map(cat => cat.slug),
-      message: 'Categories retrieved successfully'
-    });
-  } catch (error) {
-    console.error('TCC_DEBUG: Get categories error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to get categories'
     });
   }
 });
