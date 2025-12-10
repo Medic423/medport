@@ -219,6 +219,7 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
           setSelectedCategory(response.data.data[0]);
         }
       } else {
+        console.warn('TCC_DEBUG: Invalid response format:', response.data);
         // Fallback to empty array if API fails
         setCategories([]);
         setSelectedCategory('');
