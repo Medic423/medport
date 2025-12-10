@@ -807,7 +807,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                   {user.facilityName || 'Healthcare Facility'}
                 </h1>
                 <p className="text-sm text-gray-500 capitalize">
-                  {user.facilityType?.toLowerCase() || 'Healthcare'} • Healthcare Portal [Deployment Test]
+                  {user.facilityType?.toLowerCase() || 'Healthcare'} • Healthcare Portal
                 </p>
               </div>
             </div>
