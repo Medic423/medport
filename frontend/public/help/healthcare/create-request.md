@@ -80,34 +80,19 @@ Select the patient's mobility status:
 
 ### Step 3: Special Requirements
 
-#### Oxygen Requirements
-- Check if patient requires oxygen during transport
-- Specify flow rate (L/min) if known
-- Indicate if continuous monitoring is needed
+#### Special Needs
+Select all special needs that apply to this patient from the available checkboxes. Options are configured by your hospital administrator in Hospital Settings -> Category Options -> special-needs.
 
-#### Monitoring Requirements
-- **Cardiac Monitoring:** Continuous ECG monitoring required
-- **Vital Signs:** Frequent vital sign checks needed
-- **IV/Medication:** IV access or medication administration during transport
+Common special needs may include:
+- **Oxygen Required:** Patient requires oxygen during transport
+- **Monitoring Required:** Continuous monitoring needed during transport
+- **Ventilator Required:** Patient requires ventilator support
+- **Bariatric Stretcher:** Patient requires bariatric-capable transport
+- Other needs as configured by your hospital
 
-#### Isolation Requirements
-- **Contact Precautions:** Patient requires contact isolation
-- **Droplet Precautions:** Patient requires droplet isolation
-- **Airborne Precautions:** Patient requires airborne isolation
-- **Standard Precautions:** No special isolation needed
+**Note:** You can select multiple special needs by checking multiple boxes. Selected items will be displayed below the checkboxes for confirmation.
 
-**Important:** Isolation requirements help EMS agencies prepare appropriate personal protective equipment (PPE).
-
-#### Bariatric Transport
-- Check if patient requires bariatric-capable transport
-- Specify weight if over standard stretcher capacity
-- Ensures appropriate vehicle and equipment are dispatched
-
-#### Other Special Needs
-- Ventilator-dependent patients
-- Behavioral/psychiatric considerations
-- Language interpreter needs
-- Other special accommodations
+**Important:** Special needs help EMS agencies prepare appropriate equipment and personnel for safe transport.
 
 ---
 
@@ -267,7 +252,7 @@ Before submitting, verify:
 - **Be thorough:** Complete all relevant fields for best agency matching
 - **Be accurate:** Double-check addresses and times
 - **Use saved destinations:** Save frequently used locations to speed up entry
-- **Check special requirements:** Don't forget isolation, oxygen, or monitoring needs
+- **Check special requirements:** Select all applicable special needs from the checkboxes
 
 ### Timing
 - **Plan ahead:** Schedule routine transports in advance

@@ -340,7 +340,8 @@ async function main() {
       { slug: 'diagnosis', displayName: 'Primary Diagnosis', displayOrder: 3 },
       { slug: 'mobility', displayName: 'Mobility Levels', displayOrder: 4 },
       { slug: 'insurance', displayName: 'Insurance Companies', displayOrder: 5 },
-      { slug: 'special-needs', displayName: 'Secondary Insurance', displayOrder: 6 },
+      { slug: 'special-needs', displayName: 'Special Needs', displayOrder: 6 },
+      { slug: 'secondary-insurance', displayName: 'Secondary Insurance', displayOrder: 7 },
     ];
 
     for (const cat of categories) {
