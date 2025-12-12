@@ -72,6 +72,48 @@ Today's special-needs checkboxes feature implementation was complete and working
 
 ## Phase-by-Phase Re-Implementation Plan
 
+### Phase 0: Fix Category Mapping Issue (CRITICAL - Do First)
+
+**Problem Identified:**
+- Category `'special-needs'` has wrong displayName (`'Secondary Insurance'` instead of `'Special Needs'`)
+- Missing `'secondary-insurance'` category for insurance companies
+- Insurance items (Medicare, Private) may be in wrong category
+
+**Goal:** Fix category structure before re-implementing feature
+
+**Steps:**
+1. Run database fix script: `backend/fix-category-mapping.sql`
+   - Fixes `'special-needs'` displayName to `'Special Needs'`
+   - Creates `'secondary-insurance'` category
+   - Moves insurance items to correct category
+2. Verify database changes:
+   ```sql
+   SELECT slug, "displayName", "displayOrder" 
+   FROM "dropdown_categories" 
+   WHERE slug IN ('special-needs', 'secondary-insurance')
+   ORDER BY "displayOrder";
+   ```
+3. Test in UI:
+   - Open Hospital Settings -> Dropdown Options
+   - Verify "Special Needs" category shows special needs items
+   - Verify "Secondary Insurance" category shows insurance items
+   - Verify Category Options tab shows correct displayNames
+
+**Files Updated:**
+- ✅ `backend/fix-category-mapping.sql` (created)
+- ✅ `frontend/src/components/HospitalSettings.tsx` (updated displayName mapping)
+- ✅ `backend/prisma/seed.ts` (updated for future seeds)
+
+**Success Criteria:**
+- ✅ Database has correct category structure
+- ✅ UI displays correct category names
+- ✅ Options are in correct categories
+- ✅ No deployment needed (database-only change)
+
+**DO NOT PROCEED** to Phase 1 until this is verified working.
+
+---
+
 ### Phase 1: Restore Feature Code (No Deployment)
 
 **Goal:** Get feature code back into codebase without deploying
