@@ -1,7 +1,7 @@
 # Special Needs Checkboxes Implementation Plan
-**Date:** December 10, 2025  
+**Date:** December 10, 2025 (Original) | December 12, 2025 (Re-implementation)  
 **Branch:** `feature/special-needs-checkboxes`  
-**Status:** Planning
+**Status:** Re-implementing (Phase 0 Complete, Ready for Phase 1)
 
 ## Overview
 
@@ -14,7 +14,7 @@ Replace the hardcoded "Oxygen Required" and "Continuous Monitoring Required" che
 ---
 
 ## Phase 1: Frontend Form Changes
-**Status:** ✅ Complete
+**Status:** ✅ **COMPLETE** (Re-implemented December 12, 2025)
 
 ### Tasks
 
@@ -173,7 +173,7 @@ Replace the hardcoded "Oxygen Required" and "Continuous Monitoring Required" che
 ---
 
 ## Phase 3: Display Components Updates
-**Status:** ✅ Complete
+**Status:** ✅ **COMPLETE** (Verified December 12, 2025)
 
 ### Tasks
 
@@ -484,11 +484,13 @@ Replace the hardcoded "Oxygen Required" and "Continuous Monitoring Required" che
 
 ## Final Status
 
-**Implementation Complete:** December 10, 2025 ✅
+**Original Implementation Complete:** December 10, 2025 ✅  
+**Re-implementation Started:** December 12, 2025
 
-All phases completed successfully. The special-needs checkboxes feature is fully implemented, tested, and committed to the `feature/special-needs-checkboxes` branch.
+### Original Implementation
+All phases completed successfully. The special-needs checkboxes feature was fully implemented, tested, and committed to the `feature/special-needs-checkboxes` branch, but was reverted due to deployment issues.
 
-**Key Achievements:**
+**Key Achievements (Original):**
 - ✅ Replaced hardcoded checkboxes with dynamic checkboxes from database
 - ✅ Removed all frontend references to `oxygenRequired` and `monitoringRequired`
 - ✅ Backend maintains schema compatibility by setting unused fields to `false`
@@ -496,9 +498,45 @@ All phases completed successfully. The special-needs checkboxes feature is fully
 - ✅ All display components show `specialNeeds` correctly
 - ✅ No breaking changes - existing functionality preserved
 
-**Next Steps (Optional):**
-- Phase 5: Cleanup & Documentation (if needed)
-- Future: Consider database migration to drop unused columns (low priority)
+### Re-implementation Status
+
+**Phase 0: Category Mapping Fix** ✅ **COMPLETE** (December 12, 2025)
+- ✅ Fixed `special-needs` category displayName from 'Secondary Insurance' to 'Special Needs'
+- ✅ Created `secondary-insurance` category for insurance companies
+- ✅ Fixed Azure database category structure
+- ✅ Updated frontend displayName mapping
+- ✅ Updated seed file for future database seeds
+- ✅ Verified on both development and Azure production
+
+**Phase 1: Restore Feature Code** ✅ **COMPLETE** (December 12, 2025)
+- ✅ Created feature branch `feature/special-needs-checkboxes-v2`
+- ✅ Cherry-picked all feature commits successfully
+- ✅ Resolved merge conflicts (kept Secondary Insurance dropdown)
+- ✅ Local testing: Trip creation successful
+- ✅ Azure testing: Working correctly with 7 options
+- ✅ Code ready for deployment
+
+**Phase 2: Backend API Updates** ✅ **VERIFIED COMPLETE** (December 12, 2025)
+- ✅ Backend interface updated (no oxygenRequired/monitoringRequired)
+- ✅ Backend service updated (sets boolean fields to false for schema compatibility)
+- ✅ Route handlers updated (removed boolean field extraction)
+- ✅ Verified: No references to boolean fields in backend code
+
+**Phase 3: Display Components Updates** ✅ **VERIFIED COMPLETE** (December 12, 2025)
+- ✅ TripsView.tsx - Shows specialNeeds, no boolean fields
+- ✅ TripDispatchScreen.tsx - Shows specialNeeds, no boolean fields
+- ✅ HealthcareDashboard.tsx - Edit form has dynamic checkboxes with handleEditSpecialNeedsChange
+- ✅ EnhancedTripForm.tsx - Create form has dynamic checkboxes
+- ✅ Verified: No references to oxygenRequired/monitoringRequired in frontend
+
+**Current Status:** ✅ **ALL PHASES COMPLETE** - Ready for deployment
+
+**Next Steps:**
+- Deploy to Azure (merge feature branch to develop/main)
+- Final verification on Azure production
+- Update help files if needed (Phase 5)
+
+**Reference:** See `docs/notes/special-needs-safe-reimplementation-plan.md` for detailed re-implementation strategy
 
 ---
 

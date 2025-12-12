@@ -97,7 +97,8 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
   const [categoryFormData, setCategoryFormData] = useState({
     slug: '',
     displayName: '',
-    displayOrder: 0
+    displayOrder: 0,
+    isActive: true
   });
   
   // Dropdown options state
@@ -219,6 +220,7 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
           setSelectedCategory(response.data.data[0]);
         }
       } else {
+        console.warn('TCC_DEBUG: Invalid response format:', response.data);
         // Fallback to empty array if API fails
         setCategories([]);
         setSelectedCategory('');
@@ -365,13 +367,14 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
         // Update existing category
         const response = await dropdownCategoriesAPI.update(editingCategory.id, {
           displayName: categoryFormData.displayName,
-          displayOrder: categoryFormData.displayOrder
+          displayOrder: categoryFormData.displayOrder,
+          isActive: categoryFormData.isActive
         });
         if (response.data.success) {
           setCategorySuccess('Category updated successfully');
           setEditingCategory(null);
           setShowCategoryForm(false);
-          setCategoryFormData({ slug: '', displayName: '', displayOrder: 0 });
+          setCategoryFormData({ slug: '', displayName: '', displayOrder: 0, isActive: true });
           loadCategoryList();
           loadCategories(); // Reload categories for dropdown options tab
           setTimeout(() => setCategorySuccess(null), 3000);
@@ -386,7 +389,7 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
         if (response.data.success) {
           setCategorySuccess('Category created successfully');
           setShowCategoryForm(false);
-          setCategoryFormData({ slug: '', displayName: '', displayOrder: 0 });
+          setCategoryFormData({ slug: '', displayName: '', displayOrder: 0, isActive: true });
           loadCategoryList();
           loadCategories(); // Reload categories for dropdown options tab
           setTimeout(() => setCategorySuccess(null), 3000);
@@ -667,6 +670,7 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
   const getCategoryDisplayName = (category: string) => {
     const displayNames: { [key: string]: string } = {
       'insurance': 'Insurance Companies',
+      'secondary-insurance': 'Secondary Insurance',
       'diagnosis': 'Primary Diagnosis',
       'mobility': 'Mobility Levels',
       'transport-level': 'Transport Levels',
@@ -788,7 +792,7 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
               <button
                 onClick={() => {
                   setEditingCategory(null);
-                  setCategoryFormData({ slug: '', displayName: '', displayOrder: 0 });
+                  setCategoryFormData({ slug: '', displayName: '', displayOrder: 0, isActive: true });
                   setCategorySuccess(null);
                   setCategoryError(null);
                   setShowCategoryForm(true);
@@ -852,7 +856,8 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
                                 setCategoryFormData({
                                   slug: category.slug,
                                   displayName: category.displayName,
-                                  displayOrder: category.displayOrder
+                                  displayOrder: category.displayOrder,
+                                  isActive: category.isActive
                                 });
                                 setCategorySuccess(null);
                                 setCategoryError(null);
@@ -934,6 +939,22 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
                   />
                   <p className="mt-1 text-xs text-gray-500">Lower numbers appear first. Leave empty to auto-calculate.</p>
                 </div>
+                {editingCategory && (
+                  <div>
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={categoryFormData.isActive}
+                        onChange={(e) => setCategoryFormData({ ...categoryFormData, isActive: e.target.checked })}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <span className="ml-2 block text-sm text-gray-900">
+                        Active (category will appear in dropdowns)
+                      </span>
+                    </label>
+                    <p className="mt-1 text-xs text-gray-500">Inactive categories are hidden from dropdowns but can still be managed here.</p>
+                  </div>
+                )}
                 <div className="flex gap-2">
                   <button
                     type="submit"
@@ -947,7 +968,7 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
                     onClick={() => {
                       setEditingCategory(null);
                       setShowCategoryForm(false);
-                      setCategoryFormData({ slug: '', displayName: '', displayOrder: 0 });
+                      setCategoryFormData({ slug: '', displayName: '', displayOrder: 0, isActive: true });
                       setCategorySuccess(null);
                       setCategoryError(null);
                     }}
