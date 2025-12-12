@@ -484,11 +484,13 @@ Replace the hardcoded "Oxygen Required" and "Continuous Monitoring Required" che
 
 ## Final Status
 
-**Implementation Complete:** December 10, 2025 ✅
+**Original Implementation Complete:** December 10, 2025 ✅  
+**Re-implementation Started:** December 12, 2025
 
-All phases completed successfully. The special-needs checkboxes feature is fully implemented, tested, and committed to the `feature/special-needs-checkboxes` branch.
+### Original Implementation
+All phases completed successfully. The special-needs checkboxes feature was fully implemented, tested, and committed to the `feature/special-needs-checkboxes` branch, but was reverted due to deployment issues.
 
-**Key Achievements:**
+**Key Achievements (Original):**
 - ✅ Replaced hardcoded checkboxes with dynamic checkboxes from database
 - ✅ Removed all frontend references to `oxygenRequired` and `monitoringRequired`
 - ✅ Backend maintains schema compatibility by setting unused fields to `false`
@@ -496,9 +498,19 @@ All phases completed successfully. The special-needs checkboxes feature is fully
 - ✅ All display components show `specialNeeds` correctly
 - ✅ No breaking changes - existing functionality preserved
 
-**Next Steps (Optional):**
-- Phase 5: Cleanup & Documentation (if needed)
-- Future: Consider database migration to drop unused columns (low priority)
+### Re-implementation Status
+
+**Phase 0: Category Mapping Fix** ✅ **COMPLETE** (December 12, 2025)
+- ✅ Fixed `special-needs` category displayName from 'Secondary Insurance' to 'Special Needs'
+- ✅ Created `secondary-insurance` category for insurance companies
+- ✅ Fixed Azure database category structure
+- ✅ Updated frontend displayName mapping
+- ✅ Updated seed file for future database seeds
+- ✅ Verified on both development and Azure production
+
+**Current Status:** Ready to proceed with Phase 1 - Restore Feature Code
+
+**Reference:** See `docs/notes/special-needs-safe-reimplementation-plan.md` for detailed re-implementation strategy
 
 ---
 
