@@ -15,10 +15,16 @@ echo "Backup to: $BACKUP_DIR/$BACKUP_NAME"
 # Create backup directory if it doesn't exist
 mkdir -p "$BACKUP_DIR/$BACKUP_NAME"
 
-# 1. Organize documents before backup (if script exists)
-if [ -f "$PROJECT_DIR/scripts/organize-documents.sh" ]; then
-    echo "📁 Organizing documents before backup..."
-    "$PROJECT_DIR/scripts/organize-documents.sh" --force || echo "⚠️ Document organization skipped"
+# 1. Organize project documents before backup (if script exists)
+if [ -f "$PROJECT_DIR/scripts/organize-project-docs.sh" ]; then
+    echo "📁 Organizing project documents before backup..."
+    "$PROJECT_DIR/scripts/organize-project-docs.sh" --force || echo "⚠️ Project document organization skipped"
+fi
+
+# 1b. Organize external documents before backup (if script exists)
+if [ -f "$PROJECT_DIR/documentation/scripts/organize-documents.sh" ]; then
+    echo "📁 Organizing external documentation before backup..."
+    "$PROJECT_DIR/documentation/scripts/organize-documents.sh" --force || echo "⚠️ External document organization skipped"
 fi
 
 # 2. Backup project files

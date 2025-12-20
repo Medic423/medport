@@ -227,6 +227,49 @@ The old flat backup structure has been automatically migrated:
 - ✅ Archive structure organized by month
 - ✅ New scripts use organized structure
 
+## 📄 **Markdown Document Organization**
+
+### **Automatic Organization During Backup**
+
+Before creating a backup, all markdown documents in the project's `/docs` directory are automatically organized:
+
+1. **Runs Automatically:** `scripts/organize-project-docs.sh` is called before backup
+2. **Removes Duplicates:** Detects and removes duplicate files
+3. **Categorizes Files:** Moves files from `docs/notes/` to appropriate locations
+4. **Archives Old Files:** Moves documents >60 days old to `archive/[YYYY-MM]/`
+
+### **Document Categories**
+
+- **`active/features/[feature-name]/`** - Feature documentation, completion summaries
+- **`active/sessions/[YYYY-MM]/`** - Session notes, implementation plans
+- **`reference/`** - Technical reference (azure/, database/, deployment/, etc.)
+- **`archive/[YYYY-MM]/`** - Historical documents organized by month
+
+### **Benefits**
+
+- ✅ Every backup has clean, organized documentation
+- ✅ No duplicate files in backups
+- ✅ Easy to find documents after restoration
+- ✅ Consistent structure across all backups
+
+### **Manual Organization**
+
+You can organize documents manually anytime:
+
+```bash
+# Preview what would happen
+./scripts/organize-project-docs.sh --dry-run
+
+# Organize documents
+./scripts/organize-project-docs.sh --force
+```
+
+### **Documentation**
+
+For detailed information about document organization:
+- See `docs/reference/backup/DOCUMENT_CLEANUP_STRATEGY.md`
+- Includes classification rules, archive criteria, and troubleshooting
+
 ## 🚨 **Important Notes**
 
 1. **Current Symlink**: Always points to the latest stable backup
@@ -234,6 +277,7 @@ The old flat backup structure has been automatically migrated:
 3. **Archive Cleanup**: Runs automatically but can be triggered manually
 4. **Experimental Backups**: Auto-deleted after 3 days to save space
 5. **Backup Types**: Use appropriate type for your use case
+6. **Document Organization**: Happens automatically before backup - no manual work needed
 
 ## 📞 **Troubleshooting**
 
