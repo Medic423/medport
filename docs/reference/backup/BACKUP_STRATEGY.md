@@ -133,6 +133,38 @@ frontend/vercel.json          # Frontend Vercel config
 medport_ems                   # Consolidated TCC database (all tables in single database)
 ```
 
+## **Document Cleanup During Backup**
+
+### **Automatic Organization**
+
+Before creating a backup, the backup script automatically organizes all markdown documents in the project's `/docs` directory:
+
+1. **Project Documents:** Runs `scripts/organize-project-docs.sh` to organize `/docs` folder
+2. **External Documents:** Runs `documentation/scripts/organize-documents.sh` for external docs (if exists)
+
+### **What Gets Organized**
+
+- **Removes Duplicates:** Detects and removes duplicate files
+- **Categorizes Files:** Moves files from `docs/notes/` to appropriate locations:
+  - `active/features/[feature-name]/` - Feature documentation
+  - `active/sessions/[YYYY-MM]/` - Session notes
+  - `reference/` - Technical reference materials
+  - `archive/[YYYY-MM]/` - Historical documents (>60 days old)
+- **Ensures Clean Structure:** Every backup has organized, consistent documentation
+
+### **Benefits**
+
+- ✅ **Clean Backups:** No duplicate or misplaced files
+- ✅ **Easy Restoration:** Restored backups are immediately usable
+- ✅ **Consistent Structure:** All backups have same organization
+- ✅ **No Manual Work:** Happens automatically before backup
+
+### **Documentation**
+
+For detailed information about document organization:
+- See `docs/reference/backup/DOCUMENT_CLEANUP_STRATEGY.md`
+- Run `./scripts/organize-project-docs.sh --dry-run` to preview changes
+
 ## **Maintenance Schedule**
 
 ### **Daily (Development):**
@@ -142,14 +174,17 @@ medport_ems                   # Consolidated TCC database (all tables in single 
 ### **Weekly:**
 - Run `scripts/backup-enhanced-latest.sh` for complete backup
 - Run `scripts/backup-critical-scripts-to-icloud.sh` to update iCloud
+- Documents are automatically organized before backup
 
 ### **Before Major Changes:**
 - Always create enhanced backup before significant modifications
 - Update critical scripts in iCloud if you modify them
+- Documents are automatically organized before backup
 
 ### **After Git Operations:**
 - Remember: Git restore won't include environment files
 - Always verify environment files are intact after Git operations
+- Documents are automatically organized before backup
 
 ## **Your Strategic Insight**
 
