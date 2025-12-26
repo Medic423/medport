@@ -1,0 +1,61 @@
+# Docs for the Azure Static Web Apps Deploy action: https://github.com/Azure/static-web-apps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
+name: production - Deploy Prod Frontend
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to deploy from'
+        required: true
+        default: 'develop'
+        type: choice
+        options:
+          - develop
+          - main
+
+env:
+  APP_NAME: 'TraccEms-Prod-Frontend'
+  SLOT_NAME: 'production'
+  FOLDER_PATH: './frontend'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read #This is required for actions/checkout
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x' # Specify the Node.js version
+
+      - name: Install dependencies
+        run: npm install # Install project dependencies
+        working-directory: ${{ env.FOLDER_PATH }}
+
+      - name: Build React App
+        run: npm run build # Run your build script if you have one
+        working-directory: ${{ env.FOLDER_PATH }}
+        continue-on-error: false # Fail fast if build fails
+
+      - name: Deploy to Azure Static Web Apps
+        id: builddeploy
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_FRONTEND_PROD_API_TOKEN }}
+          repo_token: ${{ secrets.PAT_TOKEN }} # Used for GitHub deployment
+          action: "upload"
+          app_location: "${{ env.FOLDER_PATH }}" # Location of your React app
+          api_location: "" # Leave empty if no API
+          output_location: 'dist' # Output directory of your React app build
+        # Note: If this step fails, Azure Static Web Apps keeps the previous deployment active
+        # The site will NOT be empty - current deployment remains in place
+
