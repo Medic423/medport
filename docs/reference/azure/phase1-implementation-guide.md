@@ -341,11 +341,22 @@ TraccEms-Prod-USCentral • TraccEmsSubscription Central US_____________________
 
 **Resource ID:** `/subscriptions/fb5dde6b-779f-4ef5-b457-4b4d087a48ee/resourceGroups/TraccEms-Prod-USCentral/providers/Microsoft.DBforPostgreSQL/flexibleServers/traccems-prod-pgsql` ✅
 
-**Connection String:** `postgresql://traccems_admin:[password]@traccems-prod-pgsql.postgres.database.azure.com:5432/postgres?sslmode=require`
+**Endpoint (FQDN):** `traccems-prod-pgsql.postgres.database.azure.com` ✅
+
+**Connection String:** ✅ **CONFIGURED**
+
+**Corrected Connection String (no spaces):**
+```
+postgresql://traccems_admin:TVmedic429!@traccems-prod-pgsql.postgres.database.azure.com:5432/postgres?sslmode=require
+```
+
+**Important:** 
+- ⚠️ **No space** between colon and password: `traccems_admin:TVmedic429!` ✅
+- ✅ Connection string configured and ready
+- 🔒 **Save this securely** - you'll need it for GitHub Secrets as `DATABASE_URL_PROD` in Phase 3
 
 **Next Steps:**
-- [ ] Get connection string from Azure Portal → Connection strings
-- [ ] Save password securely (if not already saved)
+- [x] Connection string configured ✅
 - [ ] Proceed to Task 1.6: Configure Database Firewall
 
 **Notes:** Document any issues or observations:
@@ -370,38 +381,55 @@ TraccEms-Prod-USCentral • TraccEmsSubscription Central US_____________________
    - Find **"Outbound IP addresses"**
    - Copy all IP addresses listed (there may be multiple)
 
-2. **Add Firewall Rules:**
-   - Navigate to `traccems-prod-pgsql` PostgreSQL server
-   - Go to **"Networking"** section
+2. **Verify Firewall Rules (Already Configured):**
+   - ✅ **"Allow Azure services"** is already enabled (Rule: `AllowAllAzureServicesAndResourcesWithinAzureIps` - 0.0.0.0)
+   - ✅ This allows the App Service to connect automatically
+   - ✅ Client IP rule exists for manual access
+
+3. **Optional: Add Specific App Service IPs (For Explicit Control):**
+   - **Note:** Not required since "Allow Azure services" covers this, but can be added for more explicit control
+   - Navigate to `traccems-prod-pgsql` PostgreSQL server → **"Networking"** section
    - Click **"Add firewall rule"**
-   - For each outbound IP from step 1:
-     - **Rule name:** `TraccEms-Prod-Backend-IP-[number]`
+   - For each outbound IP (7 IPs listed above):
+     - **Rule name:** `TraccEms-Prod-Backend-IP-[number]` (e.g., `TraccEms-Prod-Backend-IP-1`)
      - **Start IP address:** [IP address]
      - **End IP address:** [same IP address]
      - Click **"OK"**
    - Click **"Save"**
-
-3. **Verify Firewall Rules:**
-   - Ensure **"Allow Azure services and resources to access this server"** is enabled
-   - Verify all production App Service IPs are added
+   - **Recommendation:** Skip this step - the current configuration is sufficient and more flexible
 
 ### Verification
-- [ ] Production App Service outbound IPs identified
-- [ ] Firewall rules added for all production App Service IPs
-- [ ] "Allow Azure services" enabled
-- [ ] Firewall rules saved
+- [x] Production App Service outbound IPs identified ✅ (7 current IPs listed above)
+- [x] "Allow Azure services" enabled ✅ (Rule: AllowAllAzureServicesAndResourcesWithinAzureIps - 0.0.0.0)
+- [x] Client IP rule exists ✅ (71.58.90.33 - for manual access)
+- [ ] **Optional:** Add specific App Service outbound IPs for explicit control (not required since "Allow Azure services" covers this)
 
-**Outbound IPs:** 
+**Current Firewall Rules:**
+- ✅ `AllowAllAzureServicesAndResourcesWithinAzureIps` (0.0.0.0) - Allows all Azure services ✅
+- ✅ `ClientIPAddress_2025-12-26_12-36-46` (71.58.90.33) - Your current IP for manual access ✅
+
+**Note:** The "Allow Azure services" rule (0.0.0.0) already allows the App Service to connect. Adding specific IPs is optional but provides more explicit control.
+
+**Outbound IPs (Current - 7 IPs):** ✅
 ```
-1. _________________________________________________
-2. _________________________________________________
-3. _________________________________________________
+1. 20.106.6.62
+2. 20.106.6.147
+3. 20.106.6.148
+4. 20.106.7.37
+5. 20.109.192.161
+6. 20.109.192.166
+7. 20.118.48.0
 ```
+
+**Note:** There are also "possible outbound IPs" (24 total), but the current 7 are sufficient. The "Allow Azure services" setting should cover most cases, but adding these specific IPs provides explicit control.
 
 **Notes:** Document any issues or observations:
 ```
-_________________________________________________________________
-_________________________________________________________________
+✅ Firewall already configured correctly
+✅ "Allow Azure services" rule (0.0.0.0) enables App Service connection
+✅ Client IP rule exists for manual database access
+✅ No additional firewall rules needed - current configuration is sufficient
+✅ Phase 1 complete!
 ```
 
 ---
@@ -425,11 +453,13 @@ After completing all tasks, verify:
   - Resource ID: `/subscriptions/fb5dde6b-779f-4ef5-b457-4b4d087a48ee/resourceGroups/TraccEms-Prod-USCentral/providers/Microsoft.DBforPostgreSQL/flexibleServers/traccems-prod-pgsql`
   - High Availability: Enabled (Zone redundant)
   - Compute: General Purpose D4ds_v5 (4 vCores, 16 GiB RAM)
-- [ ] Database firewall configured (Task 1.6)
-- [ ] All deployment tokens/connection strings saved
+- [x] Database firewall configured ✅ (Task 1.6)
+  - "Allow Azure services" enabled (0.0.0.0) - App Service can connect
+  - Client IP rule exists for manual access
+- [x] All deployment tokens/connection strings saved ✅
   - [x] Static Web App deployment token: ✅ **OBTAINED** (starts with: `6e26f747b51cd74712e27aef71bd61ae...`)
   - [x] App Service publish profile: ✅ **OBTAINED** (`TraccEms-Prod-Backend.publishsettings`)
-  - [ ] Database connection string: ⚠️ **Will get in Task 1.5**
+  - [x] Database connection string: ✅ **CONFIGURED** (`postgresql://traccems_admin:TVmedic429!@traccems-prod-pgsql.postgres.database.azure.com:5432/postgres?sslmode=require`)
 
 ---
 
@@ -437,16 +467,22 @@ After completing all tasks, verify:
 
 After Phase 1 is complete:
 1. **Save all credentials securely:**
-   - Deployment token for Static Web App
-   - Publish profile for App Service
-   - Database connection string
-   - Database admin password
+   - ✅ Deployment token for Static Web App
+   - ✅ Publish profile for App Service
+   - ✅ Database connection string
+   - ✅ Database admin password
 
-2. **Proceed to Phase 2:** Database Setup
+2. **Verify Database Connection Configuration (Before Phase 2):**
+   - ✅ DATABASE_URL environment variable set in App Service ✅
+   - ✅ Firewall configuration verified ✅
+   - ⚠️ Full connection testing will be done after code deployment in Phase 3
+   - See: `docs/reference/azure/phase1-database-connection-verification.md`
+
+3. **Proceed to Phase 2:** Database Setup (after verification)
    - Initialize production database schema
    - Run Prisma migrations
 
-3. **Proceed to Phase 3:** GitHub Actions Workflows
+4. **Proceed to Phase 3:** GitHub Actions Workflows
    - Create production workflows
    - Configure GitHub Secrets
 

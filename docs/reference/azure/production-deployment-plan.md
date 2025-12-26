@@ -364,104 +364,118 @@ Feature Branch → main → develop → dev-swa.traccems.com → traccems.com
 - [x] **Microsoft Entra Authentication:** chuck@traccems.com ✅
 - [x] **Subscription:** TraccEmsSubscription (fb5dde6b-779f-4ef5-b457-4b4d087a48ee) ✅
 - [x] **Resource ID:** `/subscriptions/fb5dde6b-779f-4ef5-b457-4b4d087a48ee/resourceGroups/TraccEms-Prod-USCentral/providers/Microsoft.DBforPostgreSQL/flexibleServers/traccems-prod-pgsql` ✅
-- [ ] **Connection String:** ⚠️ Get from Azure Portal → Connection strings
-- [x] **Notes:** Database created successfully with high availability enabled
+- [x] **Endpoint (FQDN):** `traccems-prod-pgsql.postgres.database.azure.com` ✅
+- [x] **Connection String:** ✅ **CONFIGURED** (password set)
+- [x] **Connection String Format:** `postgresql://traccems_admin:[PASSWORD]@traccems-prod-pgsql.postgres.database.azure.com:5432/postgres?sslmode=require` ✅
+- [x] **Note:** Connection string configured. Will be added to GitHub Secrets as `DATABASE_URL_PROD` in Phase 3.
+- [x] **Notes:** Database created successfully with high availability enabled. Connection string format obtained.
 
-#### Task 1.6: Configure Database Firewall
-- [ ] **Action:** Configure PostgreSQL firewall rules
-- [ ] **Allow Azure Services:** Enable (for App Service access) ✅ CRITICAL
-- [ ] **Get Production App Service Outbound IPs:** From App Service Properties
-- [ ] **Add Production App Service IPs:** Add each outbound IP as firewall rule
-- [ ] **Add Current Client IP:** For manual database access (optional)
-- [ ] **Add GitHub Actions IPs:** If needed for migrations (optional, Azure services enabled should cover this)
-- [ ] **Notes:** See Phase 1 Implementation Guide for detailed steps
+#### Task 1.6: Configure Database Firewall ✅ COMPLETED
+- [x] **Action:** Configure PostgreSQL firewall rules ✅
+- [x] **Allow Azure Services:** ✅ **ENABLED** (Rule: `AllowAllAzureServicesAndResourcesWithinAzureIps` - 0.0.0.0) ✅ CRITICAL
+- [x] **Production App Service Outbound IPs:** ✅ Identified (7 current IPs: 20.106.6.62, 20.106.6.147, 20.106.6.148, 20.106.7.37, 20.109.192.161, 20.109.192.166, 20.118.48.0)
+- [x] **Client IP Rule:** ✅ Exists (71.58.90.33) for manual access
+- [x] **App Service Connection:** ✅ Ready - "Allow Azure services" rule covers App Service access
+- [x] **GitHub Actions:** ✅ Covered by "Allow Azure services" rule
+- [x] **Notes:** Firewall configured correctly. "Allow Azure services" rule (0.0.0.0) enables App Service and GitHub Actions to connect. Specific IP rules are optional.
 
 ---
 
 ### Phase 2: Database Setup
 
+**Implementation Guide:** See `docs/reference/azure/phase2-database-setup-guide.md` for detailed step-by-step instructions.
+
 #### Task 2.1: Initialize Production Database Schema
-- [ ] **Action:** Run Prisma migrations on production database
-- [ ] **Method:** Via GitHub Actions workflow or manual connection
-- [ ] **Baseline:** Apply all migrations from `backend/prisma/migrations/`
-- [ ] **Verification:** Confirm `_prisma_migrations` table has all migrations
-- [ ] **Notes:** Document migration status and any issues
+- [x] **Action:** Run Prisma migrations on production database ✅ **COMPLETED** December 26, 2025
+- [x] **Method:** Via Azure CLI (from local machine)
+- [x] **Migrations:** 30 migrations applied successfully
+- [x] **Command:** `npx prisma migrate deploy` (from backend directory)
+- [x] **Verification:** Confirmed `_prisma_migrations` table has all 30 migrations
+- [x] **Notes:** Fixed 4 migration dependency issues (see Phase 2 Implementation Guide)
 
 #### Task 2.2: Seed Production Database (If Needed)
-- [ ] **Action:** Decide if production needs seed data
-- [ ] **Options:**
-  - [ ] Start with empty database (users create accounts)
-  - [ ] Seed with initial admin user
-  - [ ] Seed with test agencies/facilities (if needed)
-- [ ] **Notes:** Document seed strategy and any data loaded
+- [x] **Action:** Decide if production needs seed data ✅ **DECISION MADE**
+- [x] **Options:**
+  - [x] Start with empty database (users create accounts) - **SELECTED** ✅
+  - [ ] Seed with initial admin user (optional)
+  - [ ] Seed with test agencies/facilities (not recommended for production)
+- [x] **Notes:** Production database will start empty, users will create accounts through registration
 
-#### Task 2.3: Configure Database Connection String
-- [ ] **Action:** Create production `DATABASE_URL` connection string
-- [ ] **Format:** `postgresql://[admin]:[password]@traccems-prod-pgsql.postgres.database.azure.com:5432/postgres?sslmode=require`
-- [ ] **Storage:** Add to GitHub Secrets as `DATABASE_URL_PROD` (or update existing)
-- [ ] **Notes:** Document connection string format (without password)
+#### Task 2.3: Verify Database Schema
+- [x] **Action:** Verify all tables created correctly ✅ **COMPLETED**
+- [x] **Check:** Migration count (30), table count verified, key tables exist
+- [x] **Method:** Used Prisma migrate status - confirmed "Database schema is up to date!"
+- [x] **Notes:** All migrations applied successfully, schema matches expected structure
 
 ---
 
 ### Phase 3: GitHub Actions Workflows
 
+**Implementation Guide:** See `docs/reference/azure/phase3-github-actions-guide.md` for detailed step-by-step instructions.
+
 #### Task 3.1: Create Production Frontend Workflow
-- [ ] **Action:** Create `.github/workflows/prod-fe.yaml`
-- [ ] **Trigger:** Push to `develop` branch (same source as dev, but separate pipeline)
-- [ ] **App Name:** `TraccEms-Prod-Frontend` (match Azure resource name)
-- [ ] **API Token Secret:** Create new secret `AZURE_FRONTEND_PROD_API_TOKEN`
-- [ ] **Build:** Same as dev workflow
-- [ ] **Deploy:** Use Azure Static Web Apps deploy action
-- [ ] **Workflow Strategy:** 
-  - **Existing:** Deploy to dev-swa.traccems.com from `develop` branch (UNCHANGED)
-  - **New:** Deploy to traccems.com from `develop` branch (SEPARATE PIPELINE)
-  - **Safety:** Both workflows trigger from `develop`, but deploy to different resources
-  - **Manual Control:** Can add manual approval step or workflow_dispatch trigger for production
-- [ ] **Isolation:** Production deployment completely separate from dev deployment
-- [ ] **Notes:** Document workflow file location and trigger branch
+- [x] **Action:** Create `.github/workflows/prod-fe.yaml` ✅ **COMPLETED** December 26, 2025
+- [x] **Trigger:** `workflow_dispatch` (manual trigger) ✅
+- [x] **App Name:** `TraccEms-Prod-Frontend` ✅
+- [x] **API Token Secret:** Uses `AZURE_FRONTEND_PROD_API_TOKEN` ✅
+- [x] **Build:** Same as dev workflow ✅
+- [x] **Deploy:** Uses Azure Static Web Apps deploy action ✅
+- [x] **Workflow Strategy:** 
+  - **Existing:** Deploy to dev-swa.traccems.com from `develop` branch (UNCHANGED) ✅
+  - **New:** Manual deploy to production from `develop` branch (SEPARATE PIPELINE) ✅
+  - **Safety:** Manual trigger provides maximum control ✅
+  - **Manual Control:** `workflow_dispatch` trigger implemented ✅
+- [x] **Isolation:** Production deployment completely separate from dev deployment ✅
+- [x] **Notes:** Workflow file created at `.github/workflows/prod-fe.yaml`
 
 #### Task 3.2: Create Production Backend Workflow
-- [ ] **Action:** Create `.github/workflows/prod-be.yaml`
-- [ ] **Trigger:** Push to `develop` branch (same source as dev, but separate pipeline)
-- [ ] **App Name:** `TraccEms-Prod-Backend` (match Azure resource name)
-- [ ] **Publish Profile Secret:** Create new secret `AZURE_WEBAPP_PROD_PUBLISH_PROFILE`
-- [ ] **Database URL:** Use `DATABASE_URL_PROD` secret (production database connection string)
-- [ ] **Migrations:** Run Prisma migrations as part of deployment
-- [ ] **Build:** Same as dev workflow
-- [ ] **Workflow Strategy:**
-  - **Existing:** Deploy to dev backend from `develop` branch (UNCHANGED)
-  - **New:** Deploy to production backend from `develop` branch (SEPARATE PIPELINE)
-  - **Safety:** Both workflows trigger from `develop`, but deploy to different resources
-  - **Manual Control:** Can add manual approval step or workflow_dispatch trigger for production
-- [ ] **Isolation:** Production deployment completely separate from dev deployment
-- [ ] **Notes:** Document workflow file location and trigger branch
+- [x] **Action:** Create `.github/workflows/prod-be.yaml` ✅ **COMPLETED** December 26, 2025
+- [x] **Trigger:** `workflow_dispatch` (manual trigger) ✅
+- [x] **App Name:** `TraccEms-Prod-Backend` ✅
+- [x] **Publish Profile Secret:** Uses `AZURE_WEBAPP_PROD_PUBLISH_PROFILE` ✅
+- [x] **Database URL:** Uses `DATABASE_URL_PROD` secret ✅
+- [x] **Migrations:** Runs Prisma migrations as part of deployment ✅
+- [x] **Build:** Same as dev workflow ✅
+- [x] **Workflow Strategy:**
+  - **Existing:** Deploy to dev backend from `develop` branch (UNCHANGED) ✅
+  - **New:** Manual deploy to production backend from `develop` branch (SEPARATE PIPELINE) ✅
+  - **Safety:** Manual trigger provides maximum control ✅
+  - **Manual Control:** `workflow_dispatch` trigger implemented ✅
+- [x] **Isolation:** Production deployment completely separate from dev deployment ✅
+- [x] **Notes:** Workflow file created at `.github/workflows/prod-be.yaml`
 
-#### Task 3.3: Configure Workflow Safety ✅ DECISION MADE
-- [ ] **Action:** Configure `workflow_dispatch` trigger for manual production deployments
-- [ ] **Chosen Approach:** Option A - Manual trigger (`workflow_dispatch`)
-- [ ] **Implementation:**
-  - Add `workflow_dispatch` trigger to both production workflows
-  - Add optional `inputs` for deployment confirmation
-  - Production only deploys when manually triggered from GitHub Actions UI
-- [ ] **Benefits:**
-  - Maximum safety and control
-  - Production only deploys after explicit approval
-  - Can review code on dev-swa.traccems.com before triggering production
-  - Easy to skip production deployment if issues found on dev
-- [ ] **How to Trigger:**
+#### Task 3.3: Configure Workflow Safety ✅ COMPLETED
+- [x] **Action:** Configure `workflow_dispatch` trigger for manual production deployments ✅
+- [x] **Chosen Approach:** Option A - Manual trigger (`workflow_dispatch`) ✅
+- [x] **Implementation:**
+  - [x] Added `workflow_dispatch` trigger to both production workflows ✅
+  - [x] Added branch selection input (develop/main) ✅
+  - [x] Production only deploys when manually triggered from GitHub Actions UI ✅
+- [x] **Benefits:**
+  - Maximum safety and control ✅
+  - Production only deploys after explicit approval ✅
+  - Can review code on dev-swa.traccems.com before triggering production ✅
+  - Easy to skip production deployment if issues found on dev ✅
+- [x] **How to Trigger:**
   - Go to GitHub Actions → Workflows → Select production workflow
   - Click "Run workflow" button
-  - Select `develop` branch
+  - Select `develop` or `main` branch
   - Click "Run workflow" to start deployment
-- [ ] **Notes:** Document workflow trigger process and add to production troubleshooting guide
+- [x] **Notes:** See Phase 3 Implementation Guide for detailed trigger process
 
-#### Task 3.3: Configure GitHub Secrets
-- [ ] **Action:** Add production secrets to GitHub repository
-- [ ] **Secrets to Add:**
-  - [ ] `DATABASE_URL_PROD` - Production database connection string
-  - [ ] `AZURE_WEBAPP_PROD_PUBLISH_PROFILE` - Production backend publish profile
-  - [ ] `AZURE_FRONTEND_PROD_API_TOKEN` - Production frontend deployment token
-- [ ] **Notes:** Document which secrets are production-specific
+#### Task 3.4: Configure GitHub Secrets ✅ COMPLETED
+- [x] **Action:** Add production secrets to GitHub repository ✅ **COMPLETED** December 26, 2025
+- [x] **Guide:** See `docs/reference/azure/phase3-github-secrets-setup.md` ✅
+- [x] **Secrets Added:**
+  - [x] `DATABASE_URL_PROD` - Production database connection string ✅
+  - [x] `AZURE_WEBAPP_PROD_PUBLISH_PROFILE` - Production backend publish profile ✅
+    - **Note:** Required enabling Basic Authentication in App Service Configuration
+    - **Note:** Downloaded fresh publish profile from Azure Portal
+  - [x] `AZURE_FRONTEND_PROD_API_TOKEN` - Production frontend deployment token ✅
+- [x] **Workflow Testing:** ✅ Both workflows tested and working
+  - [x] Frontend workflow: ✅ Deploys successfully
+  - [x] Backend workflow: ✅ Deploys successfully (after fixing publish profile)
+- [x] **Notes:** See Phase 3 GitHub Secrets Setup Guide for detailed secret configuration steps
 
 ---
 
