@@ -481,30 +481,40 @@ Feature Branch → main → develop → dev-swa.traccems.com → traccems.com
 
 ### Phase 4: Environment Variables Configuration
 
+**Implementation Guide:** See `docs/reference/azure/phase4-environment-variables-guide.md` for detailed step-by-step instructions.
+
 #### Task 4.1: Configure Production Backend Environment Variables
 - [ ] **Action:** Set application settings in Azure Portal for production backend
+- [ ] **Guide:** See Phase 4 Implementation Guide for detailed steps
 - [ ] **Variables to Set:**
   - [ ] `DATABASE_URL` - Production database connection string (from `DATABASE_URL_PROD` secret)
   - [ ] `NODE_ENV` - Set to `production`
   - [ ] `AZURE_SMS_ENABLED` - Set to `true`
   - [ ] `AZURE_COMMUNICATION_CONNECTION_STRING` - Same as dev (from `TraccComms` resource)
   - [ ] `AZURE_COMMUNICATION_PHONE_NUMBER` - Set to `+18339675959` (same as dev)
-  - [ ] `PORT` - Usually auto-set by Azure
+  - [ ] `PORT` - Usually auto-set by Azure (optional)
+  - [ ] `FRONTEND_URL` - Frontend URL for CORS (optional, will update in Phase 5)
+  - [ ] `CORS_ORIGIN` - CORS origin (optional, will update in Phase 5)
 - [ ] **Note:** Using same Communication Services resource (`TraccComms`) as dev
-- [ ] **Notes:** Document all environment variables set
+- [ ] **Notes:** See Phase 4 Implementation Guide for detailed configuration steps
 
 #### Task 4.2: Configure Production Frontend Environment Variables
 - [ ] **Action:** Set application settings in Azure Static Web App
+- [ ] **Guide:** See Phase 4 Implementation Guide for detailed steps
 - [ ] **Variables to Set:**
-  - [ ] `VITE_API_URL` - Set to production backend URL (e.g., `https://api.traccems.com`)
-  - [ ] Any other frontend-specific environment variables
-- [ ] **Notes:** Document frontend environment variables
+  - [ ] `VITE_API_URL` - Set to production backend URL (Azure URL until custom domain configured)
+  - [ ] `NODE_ENV` - Set to `production` (optional)
+- [ ] **Note:** Backend URL will be updated to `https://api.traccems.com` in Phase 5
+- [ ] **Notes:** See Phase 4 Implementation Guide for detailed configuration steps
 
 #### Task 4.3: Verify Environment Variables
 - [ ] **Action:** Test that environment variables are accessible
 - [ ] **Backend:** Check log stream for initialization messages
+- [ ] **Backend:** Test health endpoint (`/health`)
+- [ ] **Backend:** Test database endpoint (`/api/test-db`)
 - [ ] **Frontend:** Verify API calls go to correct backend URL
-- [ ] **Notes:** Document verification results
+- [ ] **Frontend:** Check browser console for API_BASE_URL
+- [ ] **Notes:** See Phase 4 Implementation Guide for verification steps
 
 ---
 
