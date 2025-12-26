@@ -5,9 +5,9 @@ const ENV_NAME = import.meta.env.MODE || (import.meta.env.DEV ? 'development' : 
 const EXPLICIT_API_URL = import.meta.env.VITE_API_URL as string | undefined;
 const DEFAULT_DEV_URL = 'http://localhost:5001';
 // NOTE: Prefer setting VITE_API_URL in env. This fallback should point to the
-// stable production API domain. Updated to latest Vercel backend deployment.
-// Backend production URL (ensure this matches the latest Vercel backend deployment or set VITE_API_URL)
-const DEFAULT_PROD_URL = 'https://dev-api.traccems.com';
+// stable production API domain. Updated to production Azure backend.
+// Backend production URL (ensure this matches the latest production backend or set VITE_API_URL)
+const DEFAULT_PROD_URL = 'https://traccems-prod-backend-ejb8awe3auh8bmeb.centralus-01.azurewebsites.net';
 
 // Runtime config via public/config.js → window.__TCC_CONFIG__
 type TCCRuntimeConfig = { apiBaseUrl?: string } | undefined;
