@@ -50,38 +50,155 @@ rm -rf "$BACKUP_DIR/$BACKUP_NAME/project/node_modules"
 # 5. Backup PostgreSQL databases
 echo "🗄️ Backing up PostgreSQL databases..."
 
-# Check if PostgreSQL is running
-if ! pg_isready -q; then
-    echo "❌ PostgreSQL is not running. Starting PostgreSQL..."
-    brew services start postgresql@15
-    sleep 5
-fi
-
 # Create database backup directory
 mkdir -p "$BACKUP_DIR/$BACKUP_NAME/databases"
 
-# Backup the single consolidated database
-echo "📊 Backing up medport_ems database (consolidated TCC database)..."
-pg_dump -h localhost -U scooper -d medport_ems > "$BACKUP_DIR/$BACKUP_NAME/databases/medport_ems.sql"
+# 5a. Backup local dev database (if PostgreSQL is running locally)
+if pg_isready -q 2>/dev/null; then
+    echo "📊 Backing up local dev database (medport_ems)..."
+    if pg_dump -h localhost -U scooper -d medport_ems > "$BACKUP_DIR/$BACKUP_NAME/databases/medport_ems_local.sql" 2>/dev/null; then
+        echo "✅ Local dev database backed up"
+    else
+        echo "⚠️ Local dev database backup skipped (database may not exist)"
+    fi
+else
+    echo "⚠️ PostgreSQL not running locally - skipping local database backup"
+fi
+
+# 5b. Backup Azure dev database (traccems-dev-pgsql)
+echo "📊 Backing up Azure dev database (traccems-dev-pgsql)..."
+if command -v pg_dump >/dev/null 2>&1; then
+    # Get dev database connection string from Azure App Service config
+    DEV_DB_CONNECTION=$(az webapp config appsettings list \
+        --name TraccEms-Dev-Backend \
+        --resource-group TraccEms-Dev-USCentral \
+        --query "[?name=='DATABASE_URL'].value" -o tsv 2>/dev/null || echo "")
+    
+    if [ -n "$DEV_DB_CONNECTION" ]; then
+        echo "📥 Exporting Azure dev database..."
+        echo "   This may take a few minutes..."
+        
+        # Extract connection details from connection string
+        # Format: postgresql://user:password@host:port/database?sslmode=require
+        DB_USER=$(echo "$DEV_DB_CONNECTION" | sed -n 's|postgresql://\([^:]*\):.*|\1|p')
+        DB_PASSWORD=$(echo "$DEV_DB_CONNECTION" | sed -n 's|postgresql://[^:]*:\([^@]*\)@.*|\1|p')
+        DB_HOST=$(echo "$DEV_DB_CONNECTION" | sed -n 's|.*@\([^:]*\):.*|\1|p')
+        DB_PORT=$(echo "$DEV_DB_CONNECTION" | sed -n 's|.*:\([0-9]*\)/.*|\1|p')
+        DB_NAME=$(echo "$DEV_DB_CONNECTION" | sed -n 's|.*/[^?]*/\([^?]*\).*|\1|p' || echo "postgres")
+        
+        # If DB_NAME extraction failed, try alternative pattern
+        if [ -z "$DB_NAME" ] || [ "$DB_NAME" = "$DEV_DB_CONNECTION" ]; then
+            DB_NAME=$(echo "$DEV_DB_CONNECTION" | sed -n 's|.*/\([^?]*\)?.*|\1|p' || echo "postgres")
+        fi
+        
+        if [ -n "$DB_HOST" ] && [ -n "$DB_NAME" ] && [ -n "$DB_USER" ] && [ -n "$DB_PASSWORD" ]; then
+            # Use PostgreSQL 17 pg_dump if available (required for Azure PostgreSQL 17)
+            PG_DUMP_CMD="pg_dump"
+            if [ -f "/opt/homebrew/opt/postgresql@17/bin/pg_dump" ]; then
+                PG_DUMP_CMD="/opt/homebrew/opt/postgresql@17/bin/pg_dump"
+                echo "   Using PostgreSQL 17 pg_dump (required for Azure PostgreSQL 17)"
+            fi
+            
+            export PGPASSWORD="$DB_PASSWORD"
+            if PGPASSWORD="$DB_PASSWORD" "$PG_DUMP_CMD" \
+                -h "$DB_HOST" \
+                -p "${DB_PORT:-5432}" \
+                -U "$DB_USER" \
+                -d "$DB_NAME" \
+                --no-owner \
+                --no-acl \
+                -F p \
+                > "$BACKUP_DIR/$BACKUP_NAME/databases/traccems-dev-pgsql.sql" 2>&1; then
+                # Verify backup file exists and has content
+                if [ -s "$BACKUP_DIR/$BACKUP_NAME/databases/traccems-dev-pgsql.sql" ]; then
+                    BACKUP_SIZE=$(wc -l < "$BACKUP_DIR/$BACKUP_NAME/databases/traccems-dev-pgsql.sql")
+                    BACKUP_FILE_SIZE=$(ls -lh "$BACKUP_DIR/$BACKUP_NAME/databases/traccems-dev-pgsql.sql" | awk '{print $5}')
+                    echo "✅ Azure dev database backed up: $BACKUP_FILE_SIZE ($BACKUP_SIZE lines)"
+                else
+                    echo "❌ ERROR: Azure dev database backup file is empty!"
+                    rm -f "$BACKUP_DIR/$BACKUP_NAME/databases/traccems-dev-pgsql.sql"
+                fi
+            else
+                echo "❌ ERROR: Azure dev database backup failed!"
+                echo "   Check firewall rules and network connectivity"
+                echo "   You may need to whitelist your IP in Azure Portal"
+            fi
+            unset PGPASSWORD
+        else
+            echo "❌ ERROR: Could not parse Azure dev database connection string"
+            echo "   DB_HOST: ${DB_HOST:-empty}"
+            echo "   DB_NAME: ${DB_NAME:-empty}"
+            echo "   DB_USER: ${DB_USER:-empty}"
+            echo "   DB_PASSWORD: ${DB_PASSWORD:+set}"
+        fi
+    else
+        echo "❌ ERROR: Azure dev database connection string not found!"
+        echo "   Cannot backup Azure dev database without connection string"
+        exit 1
+    fi
+else
+    echo "❌ ERROR: pg_dump not found - cannot backup Azure dev database"
+    echo "   Please install PostgreSQL client tools"
+    exit 1
+fi
 
 # Verify database backup integrity
-echo "🔍 Verifying database backup..."
-DB_SIZE=$(wc -l < "$BACKUP_DIR/$BACKUP_NAME/databases/medport_ems.sql")
-TRIP_COUNT=$(grep -A 1000 "COPY public.transport_requests" "$BACKUP_DIR/$BACKUP_NAME/databases/medport_ems.sql" | grep -c "^cmg" || echo "0")
+echo "🔍 Verifying database backups..."
+HAS_LOCAL_DB=false
+HAS_AZURE_DB=false
+BACKUP_FAILED=false
 
-if [ "$DB_SIZE" -lt 100 ]; then
-    echo "❌ WARNING: Database backup appears too small ($DB_SIZE lines)"
-    echo "   This may indicate a backup failure!"
+if [ -f "$BACKUP_DIR/$BACKUP_NAME/databases/medport_ems_local.sql" ]; then
+    HAS_LOCAL_DB=true
+    DB_SIZE=$(wc -l < "$BACKUP_DIR/$BACKUP_NAME/databases/medport_ems_local.sql")
+    if [ "$DB_SIZE" -gt 100 ]; then
+        TRIP_COUNT=$(grep -A 1000 "COPY public.transport_requests" "$BACKUP_DIR/$BACKUP_NAME/databases/medport_ems_local.sql" | grep -c "^cmg" || echo "0")
+        echo "✅ Local dev database verified: $DB_SIZE lines, $TRIP_COUNT trips"
+    else
+        echo "⚠️ WARNING: Local database backup appears too small ($DB_SIZE lines)"
+    fi
+fi
+
+if [ -f "$BACKUP_DIR/$BACKUP_NAME/databases/traccems-dev-pgsql.sql" ]; then
+    HAS_AZURE_DB=true
+    AZURE_DB_SIZE=$(wc -l < "$BACKUP_DIR/$BACKUP_NAME/databases/traccems-dev-pgsql.sql")
+    AZURE_FILE_SIZE=$(ls -lh "$BACKUP_DIR/$BACKUP_NAME/databases/traccems-dev-pgsql.sql" | awk '{print $5}')
+    
+    if [ "$AZURE_DB_SIZE" -gt 100 ]; then
+        # Check for critical tables
+        TABLES_FOUND=0
+        for table in "_prisma_migrations" "transport_requests" "trips" "ems_users" "ems_agencies"; do
+            if grep -q "CREATE TABLE.*${table}" "$BACKUP_DIR/$BACKUP_NAME/databases/traccems-dev-pgsql.sql" || \
+               grep -q "COPY public.${table}" "$BACKUP_DIR/$BACKUP_NAME/databases/traccems-dev-pgsql.sql"; then
+                TABLES_FOUND=$((TABLES_FOUND + 1))
+            fi
+        done
+        echo "✅ Azure dev database verified: $AZURE_FILE_SIZE ($AZURE_DB_SIZE lines, $TABLES_FOUND/5 critical tables found)"
+    else
+        echo "❌ ERROR: Azure dev database backup appears invalid ($AZURE_DB_SIZE lines)"
+        BACKUP_FAILED=true
+    fi
+else
+    echo "❌ ERROR: Azure dev database backup file not found!"
+    BACKUP_FAILED=true
+fi
+
+# CRITICAL: Fail if no database backups exist
+if [ "$HAS_LOCAL_DB" = false ] && [ "$HAS_AZURE_DB" = false ]; then
+    echo ""
+    echo "❌ CRITICAL ERROR: No database backups found!"
+    echo "   This backup is NOT usable for disaster recovery!"
+    echo "   Please fix the backup script and try again."
     exit 1
 fi
 
-if [ "$TRIP_COUNT" -eq 0 ]; then
-    echo "❌ WARNING: No transport requests found in backup!"
-    echo "   This may indicate an empty or corrupted backup!"
+# Warn if Azure backup failed (but allow if local backup exists)
+if [ "$BACKUP_FAILED" = true ] && [ "$HAS_LOCAL_DB" = false ]; then
+    echo ""
+    echo "❌ CRITICAL ERROR: Azure dev database backup failed and no local backup exists!"
+    echo "   This backup is NOT usable for disaster recovery!"
     exit 1
 fi
-
-echo "✅ Database backup verified: $DB_SIZE lines, $TRIP_COUNT trips"
 
 # 6. Create database restore script
 echo "📝 Creating database restore script..."
