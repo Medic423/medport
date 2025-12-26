@@ -41,6 +41,12 @@ jobs:
         run: npm install # Install project dependencies
         working-directory: ${{ env.FOLDER_PATH }}
 
+      - name: Verify Environment Variables
+        run: |
+          echo "VITE_API_URL=$VITE_API_URL"
+          echo "NODE_ENV=$NODE_ENV"
+        working-directory: ${{ env.FOLDER_PATH }}
+
       - name: Build React App
         run: npm run build # Run your build script if you have one
         working-directory: ${{ env.FOLDER_PATH }}
