@@ -42,6 +42,10 @@ build/
 .vercel
 vercel.json
 
+# Azure publish profiles (contain credentials)
+*.publishsettings
+*.PublishSettings
+
 # Temporary files
 *.tmp
 *.temp
