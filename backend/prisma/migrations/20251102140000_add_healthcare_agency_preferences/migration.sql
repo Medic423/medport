@@ -15,12 +15,28 @@ CREATE INDEX IF NOT EXISTS "healthcare_agency_preferences_healthcareUserId_idx" 
 CREATE INDEX IF NOT EXISTS "healthcare_agency_preferences_agencyId_idx" ON "healthcare_agency_preferences"("agencyId");
 
 -- AddForeignKey: Link healthcare_agency_preferences to healthcare_users
-ALTER TABLE "healthcare_agency_preferences" ADD CONSTRAINT IF NOT EXISTS "healthcare_agency_preferences_healthcareUserId_fkey" 
-    FOREIGN KEY ("healthcareUserId") REFERENCES "healthcare_users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conname = 'healthcare_agency_preferences_healthcareUserId_fkey'
+    ) THEN
+        ALTER TABLE "healthcare_agency_preferences" ADD CONSTRAINT "healthcare_agency_preferences_healthcareUserId_fkey" 
+            FOREIGN KEY ("healthcareUserId") REFERENCES "healthcare_users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+END $$;
 
 -- AddForeignKey: Link healthcare_agency_preferences to ems_agencies
-ALTER TABLE "healthcare_agency_preferences" ADD CONSTRAINT IF NOT EXISTS "healthcare_agency_preferences_agencyId_fkey" 
-    FOREIGN KEY ("agencyId") REFERENCES "ems_agencies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conname = 'healthcare_agency_preferences_agencyId_fkey'
+    ) THEN
+        ALTER TABLE "healthcare_agency_preferences" ADD CONSTRAINT "healthcare_agency_preferences_agencyId_fkey" 
+            FOREIGN KEY ("agencyId") REFERENCES "ems_agencies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+END $$;
 
 -- CreateIndex: Add unique constraint for healthcare_agency_preferences
 CREATE UNIQUE INDEX IF NOT EXISTS "healthcare_agency_preferences_healthcareUserId_agencyId_key" 
