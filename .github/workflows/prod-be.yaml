@@ -1,0 +1,69 @@
+# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
+name: production - Deploy Prod Backend
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to deploy from'
+        required: true
+        default: 'develop'
+        type: choice
+        options:
+          - develop
+          - main
+
+env:
+  APP_NAME: 'TraccEms-Prod-Backend'
+  SLOT_NAME: 'production'
+  FOLDER_PATH: './backend'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read #This is required for actions/checkout
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x' # Specify the Node.js version
+
+      - name: Install dependencies
+        run: npm install # Install project dependencies
+        working-directory: '${{ env.FOLDER_PATH }}'
+        
+      - name: Generate Prisma Models
+        run: npx prisma generate # Generate Prisma client
+        working-directory: '${{ env.FOLDER_PATH }}'
+
+      - name: Run Database Migrations
+        run: npx prisma migrate deploy
+        working-directory: '${{ env.FOLDER_PATH }}'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_PROD }}
+        continue-on-error: false # Fail fast if migrations fail - prevents partial database state
+
+      - name: Build application (if applicable)
+        run: npm run build # Run your build script if you have one
+        working-directory: '${{ env.FOLDER_PATH }}'
+        continue-on-error: false # Fail fast if build fails
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v2 # Action for deploying to Azure Web Apps
+        with:
+          app-name: '${{ env.APP_NAME }}' # Production Azure App Service name
+          slot-name: '${{ env.SLOT_NAME }}' # Or your desired slot name (e.g., 'staging')
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PROD_PUBLISH_PROFILE }} # Production publish profile secret
+          package: '${{ env.FOLDER_PATH }}' # Path to your application package (defaults to current directory)
+        # Note: If this step fails, Azure keeps the previous deployment active
+        # The site will NOT be empty - current deployment remains in place
+
