@@ -20,10 +20,16 @@ You correctly identified that **Git does NOT maintain critical files** needed fo
 ## **The Solution: Multi-Layer Backup Strategy**
 
 ### **Layer 1: Enhanced External Backup**
-- **Script**: `scripts/backup-enhanced-latest.sh`
-- **Purpose**: Wrapper that invokes root `backup-enhanced.sh` to create a complete project backup including ALL environment files
+- **Script**: `documentation/backup-enhanced.sh` (called via `documentation/scripts/backup-enhanced-latest.sh`)
+- **Purpose**: Creates complete project backup including ALL environment files and **Azure databases**
 - **Location**: External drive (`/Volumes/Acasis/`)
-- **Includes**: Environment files, Vercel config, databases, restore scripts
+- **Includes**: 
+  - Environment files
+  - Vercel config (if exists)
+  - **Azure dev database** (`traccems-dev-pgsql`) - **REQUIRED**
+  - Local database (if exists)
+  - Restore scripts
+- **Critical Requirement**: Backup will **FAIL** if no database backups are created (ensures disaster recovery capability)
 
 ### **Layer 2: Critical Scripts Backup**
 - **Script**: `scripts/backup-critical-scripts-to-icloud.sh`
@@ -128,10 +134,17 @@ frontend/vercel.json          # Frontend Vercel config
 .vercel/                      # Complete Vercel directory
 ```
 
-### **Database Schema:**
+### **Database Backups:**
 ```
-medport_ems                   # Consolidated TCC database (all tables in single database)
+Local (if exists):
+  medport_ems_local.sql       # Local development database (optional)
+
+Azure Databases (CRITICAL):
+  traccems-dev-pgsql.sql      # Azure dev database (REQUIRED for disaster recovery)
+  traccems-prod-pgsql.sql     # Azure production database (optional, can restore from Azure backups)
 ```
+
+**⚠️ CRITICAL:** The backup script will **FAIL** if no database backups are created. This ensures backups are usable for disaster recovery.
 
 ## **Document Cleanup During Backup**
 
@@ -209,7 +222,16 @@ This is exactly why we need:
 ./scripts/backup-critical-scripts-to-icloud.sh
 ```
 
-### **Run Both Backups Together:**
+### **Run Complete Backup (External Drive + iCloud):**
+```bash
+bash documentation/scripts/backup-complete-with-icloud.sh /Volumes/Acasis/
+```
+This runs:
+1. Enhanced backup to external drive (includes Azure database)
+2. Critical scripts backup to iCloud
+3. Full backup copy to iCloud Drive
+
+### **Run Both Backups Together (Legacy):**
 ```bash
 ./scripts/backup-run-all.sh /Volumes/Acasis/
 ```
@@ -240,8 +262,9 @@ popd >/dev/null
 ```
 
 3) Optional: isolated DB import (use a separate DB name or Docker)
-- Recommended: import `databases/medport_ems.sql` into a disposable local DB (e.g., `medport_ems_test`) or a Docker Postgres container.
-- Do not run restore scripts against your live DBs.
+- Recommended: import `databases/traccems-dev-pgsql.sql` (Azure dev database) into a disposable local DB (e.g., `medport_ems_test`) or a Docker Postgres container.
+- Or import `databases/medport_ems_local.sql` if local database exists.
+- Do not run restore scripts against your live Azure databases.
 
 4) Optional: run services from the restored copy
 ```bash
@@ -273,9 +296,10 @@ docker run --name tcc-pg-test \
 2) Import the latest DB from a backup folder
 ```bash
 RESTORE_ROOT="/Volumes/Acasis/tcc-backups/<backup-folder>"
-docker cp "$RESTORE_ROOT/databases/medport_ems.sql" tcc-pg-test:/tmp/medport_ems.sql
+# Use Azure dev database backup (or local if available)
+docker cp "$RESTORE_ROOT/databases/traccems-dev-pgsql.sql" tcc-pg-test:/tmp/traccems-dev-pgsql.sql
 docker exec -i tcc-pg-test \
-  psql -U postgres -d medport_ems_test -f /tmp/medport_ems.sql
+  psql -U postgres -d medport_ems_test -f /tmp/traccems-dev-pgsql.sql
 ```
 
 3) Verify
@@ -286,8 +310,8 @@ docker exec -i tcc-pg-test psql -U postgres -d medport_ems_test -c "SELECT count
 4) Update the Docker DB when a new backup is created
 ```bash
 # Option A: Re-import over the same DB (fast for small DBs)
-docker cp "/Volumes/Acasis/tcc-backups/<new-backup>/databases/medport_ems.sql" tcc-pg-test:/tmp/medport_ems.sql
-docker exec -i tcc-pg-test psql -U postgres -d medport_ems_test -f /tmp/medport_ems.sql
+docker cp "/Volumes/Acasis/tcc-backups/<new-backup>/databases/traccems-dev-pgsql.sql" tcc-pg-test:/tmp/traccems-dev-pgsql.sql
+docker exec -i tcc-pg-test psql -U postgres -d medport_ems_test -f /tmp/traccems-dev-pgsql.sql
 
 # Option B: Recreate the DB (ensures a clean state)
 docker exec -i tcc-pg-test psql -U postgres -c "DROP DATABASE IF EXISTS medport_ems_test;"
@@ -321,12 +345,101 @@ docker start tcc-pg-test
 5. ✅ Verify all login systems work
 6. ✅ Test dev/prod separation
 
+## **Azure Database Backup Technical Notes**
+
+### **PostgreSQL Version Requirements**
+
+**⚠️ CRITICAL:** Azure PostgreSQL Flexible Server uses **PostgreSQL 17**. The backup script requires **PostgreSQL 17 `pg_dump`** to backup Azure databases.
+
+**Installation:**
+```bash
+brew install postgresql@17
+```
+
+**How It Works:**
+- The backup script automatically detects and uses `/opt/homebrew/opt/postgresql@17/bin/pg_dump` if available
+- Falls back to system `pg_dump` if PostgreSQL 17 is not installed (will fail for Azure databases)
+- **Version mismatch error:** If you see "server version mismatch", install PostgreSQL 17
+
+### **Azure Database Connection**
+
+The backup script automatically retrieves the Azure dev database connection string from:
+- Azure App Service configuration (`TraccEms-Dev-Backend` → `DATABASE_URL` environment variable)
+
+**Connection Details:**
+- **Host:** `traccems-dev-pgsql.postgres.database.azure.com`
+- **Port:** `5432`
+- **Database:** `postgres`
+- **User:** `traccems_admin`
+- **SSL:** Required (`sslmode=require`)
+
+### **Firewall Requirements**
+
+Azure PostgreSQL firewall must allow connections from your current IP address. The backup script will fail with a connection error if:
+- Your IP is not whitelisted in Azure Portal
+- Network connectivity issues exist
+
+**To Fix:**
+1. Go to Azure Portal → `traccems-dev-pgsql` → Networking
+2. Add firewall rule for your current IP address
+3. Or temporarily enable "Allow access to Azure services"
+
+### **Backup Verification**
+
+The backup script verifies database backups contain:
+- Minimum 100 lines (ensures backup is not empty)
+- Critical tables: `_prisma_migrations`, `transport_requests`, `trips`, `ems_users`, `ems_agencies`
+- **Backup fails if verification fails** (ensures disaster recovery capability)
+
+### **What Gets Backed Up**
+
+**Azure Dev Database (`traccems-dev-pgsql`):**
+- ✅ **REQUIRED** - Backup will fail if this cannot be backed up
+- Contains all development data
+- Can be restored to new Azure PostgreSQL instance or local PostgreSQL
+
+**Local Database (`medport_ems`):**
+- ✅ Optional - Only backed up if PostgreSQL is running locally and database exists
+- Used for local development
+
+**Azure Production Database (`traccems-prod-pgsql`):**
+- ⚠️ Not backed up by script (use Azure Portal backups for production)
+- Azure provides automated backups for production databases
+
+### **Disaster Recovery Scenarios**
+
+**Scenario A: Restore Azure Dev Database**
+```bash
+cd /path/to/backup/databases
+export PGPASSWORD='password1!'
+psql -h traccems-dev-pgsql.postgres.database.azure.com \
+     -p 5432 \
+     -U traccems_admin \
+     -d postgres \
+     -f traccems-dev-pgsql.sql
+```
+
+**Scenario B: Restore to New Azure Instance**
+1. Create new Azure PostgreSQL Flexible Server
+2. Update firewall rules
+3. Restore from backup SQL file
+
+**Scenario C: Restore to Local PostgreSQL**
+```bash
+createdb medport_ems_restored
+psql -d medport_ems_restored -f traccems-dev-pgsql.sql
+```
+
 ## **Why This Strategy Works**
 
 - **Git**: Handles source code versioning
-- **Enhanced Backup**: Handles environment files and configurations
+- **Enhanced Backup**: Handles environment files, configurations, and **Azure databases**
 - **iCloud Scripts**: Ensures you always have latest backup capabilities
 - **External Drive**: Provides complete offline backup capability
+- **iCloud Drive**: Provides off-site cloud backup
+- **Database Verification**: Ensures backups are usable for disaster recovery
 - **Multiple Layers**: Redundancy prevents total loss
+
+**Updated:** December 26, 2025 - Added Azure database backup support with PostgreSQL 17 requirement
 
 Your strategic thinking about this backup architecture was spot-on! 🎯

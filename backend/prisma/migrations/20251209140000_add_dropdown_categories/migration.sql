@@ -18,11 +18,39 @@ CREATE UNIQUE INDEX "dropdown_categories_slug_key" ON "dropdown_categories"("slu
 
 -- AlterTable: Add categoryId to dropdown_options (nullable for backward compatibility)
 -- This allows linking options to categories while maintaining the existing category string field
-ALTER TABLE "dropdown_options" ADD COLUMN "categoryId" TEXT;
-
--- AddForeignKey: Link dropdown_options to dropdown_categories
--- Using SET NULL on delete to preserve options if category is deleted (soft delete recommended instead)
-ALTER TABLE "dropdown_options" ADD CONSTRAINT "dropdown_options_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "dropdown_categories"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+-- Only if dropdown_options table exists
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'dropdown_options') THEN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'dropdown_options' AND column_name = 'categoryId') THEN
+            ALTER TABLE "dropdown_options" ADD COLUMN "categoryId" TEXT;
+        END IF;
+        
+        -- AddForeignKey: Link dropdown_options to dropdown_categories
+        -- Using SET NULL on delete to preserve options if category is deleted (soft delete recommended instead)
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint 
+            WHERE conname = 'dropdown_options_categoryId_fkey'
+        ) THEN
+            ALTER TABLE "dropdown_options" ADD CONSTRAINT "dropdown_options_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "dropdown_categories"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+        END IF;
+        
+        -- Update existing dropdown_options to link to categories
+        -- Match options by category string to category slug
+        UPDATE "dropdown_options" dopt
+        SET "categoryId" = (
+            SELECT dc.id
+            FROM "dropdown_categories" dc
+            WHERE dc.slug = dopt.category
+            LIMIT 1
+        )
+        WHERE EXISTS (
+            SELECT 1
+            FROM "dropdown_categories" dc
+            WHERE dc.slug = dopt.category
+        ) AND dopt."categoryId" IS NULL;
+    END IF;
+END $$;
 
 -- Seed initial categories
 -- These match the existing hardcoded categories in the application
@@ -33,20 +61,6 @@ VALUES
     (gen_random_uuid()::text, 'diagnosis', 'Primary Diagnosis', 3, true, NOW(), NOW()),
     (gen_random_uuid()::text, 'mobility', 'Mobility Levels', 4, true, NOW(), NOW()),
     (gen_random_uuid()::text, 'insurance', 'Insurance Companies', 5, true, NOW(), NOW()),
-    (gen_random_uuid()::text, 'special-needs', 'Secondary Insurance', 6, true, NOW(), NOW());
-
--- Update existing dropdown_options to link to categories
--- Match options by category string to category slug
-UPDATE "dropdown_options" dopt
-SET "categoryId" = (
-    SELECT dc.id
-    FROM "dropdown_categories" dc
-    WHERE dc.slug = dopt.category
-    LIMIT 1
-)
-WHERE EXISTS (
-    SELECT 1
-    FROM "dropdown_categories" dc
-    WHERE dc.slug = dopt.category
-);
+    (gen_random_uuid()::text, 'special-needs', 'Secondary Insurance', 6, true, NOW(), NOW())
+ON CONFLICT ("slug") DO NOTHING;
 

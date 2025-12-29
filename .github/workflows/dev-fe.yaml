@@ -36,6 +36,9 @@ jobs:
         run: npm run build # Run your build script if you have one
         working-directory: ${{ env.FOLDER_PATH }}
         continue-on-error: false # Fail fast if build fails
+        env:
+          VITE_API_URL: 'https://dev-api.traccems.com'
+          NODE_ENV: 'production'
 
       - name: Deploy to Azure Static Web Apps
         id: builddeploy

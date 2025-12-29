@@ -483,38 +483,39 @@ Feature Branch → main → develop → dev-swa.traccems.com → traccems.com
 
 **Implementation Guide:** See `docs/reference/azure/phase4-environment-variables-guide.md` for detailed step-by-step instructions.
 
-#### Task 4.1: Configure Production Backend Environment Variables
-- [ ] **Action:** Set application settings in Azure Portal for production backend
-- [ ] **Guide:** See Phase 4 Implementation Guide for detailed steps
-- [ ] **Variables to Set:**
-  - [ ] `DATABASE_URL` - Production database connection string (from `DATABASE_URL_PROD` secret)
-  - [ ] `NODE_ENV` - Set to `production`
-  - [ ] `AZURE_SMS_ENABLED` - Set to `true`
-  - [ ] `AZURE_COMMUNICATION_CONNECTION_STRING` - Same as dev (from `TraccComms` resource)
-  - [ ] `AZURE_COMMUNICATION_PHONE_NUMBER` - Set to `+18339675959` (same as dev)
-  - [ ] `PORT` - Usually auto-set by Azure (optional)
-  - [ ] `FRONTEND_URL` - Frontend URL for CORS (optional, will update in Phase 5)
-  - [ ] `CORS_ORIGIN` - CORS origin (optional, will update in Phase 5)
-- [ ] **Note:** Using same Communication Services resource (`TraccComms`) as dev
-- [ ] **Notes:** See Phase 4 Implementation Guide for detailed configuration steps
+#### Task 4.1: Configure Production Backend Environment Variables ✅ COMPLETED
+- [x] **Action:** Set application settings in Azure Portal for production backend ✅ **COMPLETED** December 26, 2025
+- [x] **Guide:** See Phase 4 Implementation Guide ✅
+- [x] **Variables Set:**
+  - [x] `DATABASE_URL` - Production database connection string ✅
+  - [x] `NODE_ENV` - Set to `production` ✅
+  - [x] `AZURE_SMS_ENABLED` - Set to `true` ✅
+  - [x] `AZURE_COMMUNICATION_CONNECTION_STRING` - Communication Services connection string ✅
+  - [x] `AZURE_COMMUNICATION_PHONE_NUMBER` - Set to `+18339675959` ✅
+  - [x] `PORT` - Set to `8080` ✅
+- [x] **Note:** Using same Communication Services resource (`TraccComms`) as dev ✅
+- [x] **Method:** Configured via Azure CLI (all variables set successfully)
+- [x] **Notes:** App Service restarted automatically after configuration
 
-#### Task 4.2: Configure Production Frontend Environment Variables
-- [ ] **Action:** Set application settings in Azure Static Web App
-- [ ] **Guide:** See Phase 4 Implementation Guide for detailed steps
-- [ ] **Variables to Set:**
-  - [ ] `VITE_API_URL` - Set to production backend URL (Azure URL until custom domain configured)
-  - [ ] `NODE_ENV` - Set to `production` (optional)
-- [ ] **Note:** Backend URL will be updated to `https://api.traccems.com` in Phase 5
-- [ ] **Notes:** See Phase 4 Implementation Guide for detailed configuration steps
+#### Task 4.2: Configure Production Frontend Environment Variables ✅ COMPLETED
+- [x] **Action:** Set application settings in Azure Static Web App ✅ **COMPLETED** December 26, 2025
+- [x] **Guide:** See Phase 4 Implementation Guide ✅
+- [x] **Variables Set:**
+  - [x] `VITE_API_URL` - Set to production backend URL ✅
+  - [x] `NODE_ENV` - Set to `production` ✅
+- [x] **Note:** Backend URL will be updated to `https://api.traccems.com` in Phase 5
+- [x] **Method:** Configured via Azure Portal (Settings → Environment Variables)
+- [x] **Note:** Static Web Apps apply environment variables automatically (no save button)
 
 #### Task 4.3: Verify Environment Variables
 - [ ] **Action:** Test that environment variables are accessible
-- [ ] **Backend:** Check log stream for initialization messages
-- [ ] **Backend:** Test health endpoint (`/health`)
-- [ ] **Backend:** Test database endpoint (`/api/test-db`)
-- [ ] **Frontend:** Verify API calls go to correct backend URL
+- [ ] **Backend:** Check log stream for initialization messages (after code deployment)
+- [ ] **Backend:** Test health endpoint (`/health`) - Currently returns 401 (expected if code not deployed)
+- [ ] **Backend:** Test database endpoint (`/api/test-db`) - After code deployment
+- [ ] **Frontend:** Redeploy frontend to apply environment variables
+- [ ] **Frontend:** Verify API calls go to correct backend URL (after redeployment)
 - [ ] **Frontend:** Check browser console for API_BASE_URL
-- [ ] **Notes:** See Phase 4 Implementation Guide for verification steps
+- [ ] **Notes:** See Phase 4 Implementation Guide and phase4-verification-steps.md for verification steps
 
 ---
 
