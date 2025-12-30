@@ -57,10 +57,14 @@ router.post('/login', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('❌ Login error:', error);
+    console.error('❌ Login error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error('❌ Login error message:', error instanceof Error ? error.message : String(error));
+    console.error('❌ Login error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
     res.status(500).json({
       success: false,
-      error: 'Internal server error'
+      error: 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
     });
   }
 });
