@@ -21,8 +21,32 @@ router.get('/hospital/:hospitalId', authenticateAdmin, async (req: Authenticated
     
     if (healthcareLocation) {
       console.log('TCC_DEBUG: Found healthcare location:', healthcareLocation.locationName);
-      // Use the healthcare location ID directly
-      actualHospitalId = healthcareLocation.id;
+      // For healthcare locations, query pickup_locations using the healthcare location ID
+      // Note: pickup_locations.hospitalId can reference either hospital.id or healthcare_location.id
+      const whereClause: any = {
+        hospitalId: healthcareLocation.id
+      };
+
+      // Only include active locations unless specifically requested
+      if (includeInactive !== 'true') {
+        whereClause.isActive = true;
+      }
+
+      console.log('TCC_DEBUG: Querying pickup locations for healthcare location:', healthcareLocation.id);
+
+      const pickup_locationss = await databaseManager.getPrismaClient().pickup_locations.findMany({
+        where: whereClause,
+        orderBy: {
+          name: 'asc'
+        }
+      });
+
+      console.log('TCC_DEBUG: Found pickup locations:', pickup_locationss.length);
+
+      return res.json({
+        success: true,
+        data: pickup_locationss
+      });
     } else {
       // First, try to find if this ID is a facility
       const facility = await databaseManager.getPrismaClient().facility.findUnique({

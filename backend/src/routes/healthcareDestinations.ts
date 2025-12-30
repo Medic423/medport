@@ -22,6 +22,8 @@ router.get('/', async (req: AuthenticatedRequest, res) => {
       });
     }
 
+    console.log('TCC_DEBUG: Getting destinations for user:', req.user!.id);
+
     const filters = {
       name: req.query.search as string,
       type: req.query.type as string,
@@ -37,9 +39,11 @@ router.get('/', async (req: AuthenticatedRequest, res) => {
       filters
     );
 
+    console.log('TCC_DEBUG: Found', result.destinations.length, 'destinations');
+
     res.json({
       success: true,
-      data: result.destinations,
+      data: result.destinations || [],
       pagination: {
         page: result.page,
         totalPages: result.totalPages,
@@ -47,11 +51,17 @@ router.get('/', async (req: AuthenticatedRequest, res) => {
         limit: filters.limit,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get healthcare destinations error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      stack: error.stack
+    });
     res.status(500).json({
       success: false,
       error: 'Failed to retrieve destinations',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
