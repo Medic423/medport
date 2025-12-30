@@ -498,14 +498,37 @@ router.put('/ems/agency/update', authenticateAdmin, async (req: AuthenticatedReq
     const emailChanged = typeof updateData.email === 'string' && updateData.email !== previousEmail;
     
     // Update EMS user record using the found user ID
+    // IMPORTANT: Only update email if it's actually changing, and handle conflicts
+    const userUpdateData: any = {
+      agencyName: updateData.agencyName,
+      name: updateData.contactName,
+      updatedAt: new Date()
+    };
+    
+    // Only update email if it's provided and different
+    if (updateData.email && updateData.email !== previousEmail) {
+      // Check if new email is already taken by another user
+      const emailConflict = await db.eMSUser.findFirst({
+        where: { 
+          email: updateData.email,
+          id: { not: existingUser.id } // Exclude current user
+        }
+      });
+      
+      if (emailConflict) {
+        console.warn('TCC_DEBUG: Email already in use by another user:', updateData.email);
+        return res.status(400).json({
+          success: false,
+          error: 'Email address is already in use by another account'
+        });
+      }
+      
+      userUpdateData.email = updateData.email;
+    }
+    
     const updatedUser = await db.eMSUser.update({
       where: { id: existingUser.id },
-      data: {
-        agencyName: updateData.agencyName,
-        email: updateData.email,
-        name: updateData.contactName,
-        updatedAt: new Date()
-      }
+      data: userUpdateData
     });
 
     console.log('TCC_DEBUG: EMS user updated successfully:', updatedUser);
