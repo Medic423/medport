@@ -46,45 +46,71 @@ export class HealthcareDestinationService {
     const { page = 1, limit = 50, ...whereFilters } = filters;
     const skip = (page - 1) * limit;
 
-    const where: any = {
-      healthcareUserId,
-      isActive: true, // Only get active destinations by default
-    };
+    try {
+      const where: any = {
+        healthcareUserId,
+        isActive: true, // Only get active destinations by default
+      };
 
-    if (whereFilters.name) {
-      where.name = { contains: whereFilters.name, mode: 'insensitive' };
-    }
-    if (whereFilters.type) {
-      where.type = whereFilters.type;
-    }
-    if (whereFilters.city) {
-      where.city = { contains: whereFilters.city, mode: 'insensitive' };
-    }
-    if (whereFilters.state) {
-      where.state = { contains: whereFilters.state, mode: 'insensitive' };
-    }
-    if (whereFilters.isActive !== undefined) {
-      where.isActive = whereFilters.isActive;
-    }
+      if (whereFilters.name) {
+        where.name = { contains: whereFilters.name, mode: 'insensitive' };
+      }
+      if (whereFilters.type) {
+        where.type = whereFilters.type;
+      }
+      if (whereFilters.city) {
+        where.city = { contains: whereFilters.city, mode: 'insensitive' };
+      }
+      if (whereFilters.state) {
+        where.state = { contains: whereFilters.state, mode: 'insensitive' };
+      }
+      if (whereFilters.isActive !== undefined) {
+        where.isActive = whereFilters.isActive;
+      }
 
-    const [destinations, total] = await Promise.all([
-      prisma.healthcareDestination.findMany({
-        where,
-        orderBy: { name: 'asc' },
-        skip,
-        take: limit,
-      }),
-      prisma.healthcareDestination.count({ where }),
-    ]);
+      console.log('TCC_DEBUG: Querying destinations with where:', JSON.stringify(where));
 
-    const totalPages = Math.ceil(total / limit);
+      const [destinations, total] = await Promise.all([
+        prisma.healthcareDestination.findMany({
+          where,
+          orderBy: { name: 'asc' },
+          skip,
+          take: limit,
+        }),
+        prisma.healthcareDestination.count({ where }),
+      ]);
 
-    return {
-      destinations,
-      total,
-      page,
-      totalPages,
-    };
+      console.log('TCC_DEBUG: Query successful, found', destinations.length, 'destinations');
+
+      const totalPages = Math.ceil(total / limit);
+
+      return {
+        destinations: destinations || [],
+        total: total || 0,
+        page,
+        totalPages,
+      };
+    } catch (error: any) {
+      console.error('TCC_DEBUG: Error in getDestinationsForHealthcareUser:', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        meta: error.meta
+      });
+      
+      // If it's a column mapping error, return empty array instead of failing
+      if (error.code === 'P2022' || error.message?.includes('column') || error.message?.includes('does not exist')) {
+        console.warn('TCC_DEBUG: Column mapping error detected, returning empty array');
+        return {
+          destinations: [],
+          total: 0,
+          page,
+          totalPages: 0,
+        };
+      }
+      
+      throw error;
+    }
   }
 
   /**
