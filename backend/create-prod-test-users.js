@@ -90,44 +90,174 @@ async function createTestUsers() {
         `;
         
         if (existingEMS && existingEMS.length > 0) {
-          console.log('⚠️  EMS user already exists. Updating password...');
-          // Try to update with available fields
-          try {
-            await prisma.$executeRaw`
-              UPDATE ems_users 
-              SET password = ${emsHashedPassword}, "isActive" = true
-              WHERE email = ${emsEmail}
-            `;
-            console.log('✅ EMS user password updated successfully!');
-          } catch (updateError) {
-            // If update fails due to missing columns, try minimal update
-            await prisma.$executeRaw`
-              UPDATE ems_users 
-              SET password = ${emsHashedPassword}
-              WHERE email = ${emsEmail}
-            `;
-            console.log('✅ EMS user password updated successfully!');
+          console.log('⚠️  EMS user already exists. Checking agency link...');
+          
+          const userId = existingEMS[0].id;
+          const currentAgencyId = existingEMS[0].agencyId;
+          
+          // Check if user has agencyId, if not, create/link agency
+          if (!currentAgencyId) {
+            const agencyName = existingEMS[0].agencyName || 'Test EMS Agency';
+            console.log(`   User missing agencyId. Creating/linking agency: ${agencyName}`);
+            
+            try {
+              // Check if agency exists
+              const existingAgency = await prisma.$queryRaw`
+                SELECT id FROM "ems_agencies" WHERE name = ${agencyName} LIMIT 1
+              `;
+              
+              let agencyId;
+              if (existingAgency && existingAgency.length > 0) {
+                agencyId = existingAgency[0].id;
+                console.log('   Found existing agency, linking user...');
+              } else {
+                // Create agency
+                const newAgencyId = generateId();
+                await prisma.$executeRaw`
+                  INSERT INTO "ems_agencies" (
+                    id, name, "contactName", phone, email, address, city, state, "zipCode", 
+                    "serviceArea", capabilities, "isActive", status, "createdAt", "updatedAt"
+                  )
+                  VALUES (
+                    ${newAgencyId}, 
+                    ${agencyName}, 
+                    ${existingEMS[0].name || 'Test EMS User'}, 
+                    ${'555-0100'}, 
+                    ${emsEmail}, 
+                    ${'123 Test St'}, 
+                    ${'Test City'}, 
+                    ${'PA'}, 
+                    ${'12345'}, 
+                    ARRAY[]::text[], 
+                    ARRAY[]::text[], 
+                    true, 
+                    ${'ACTIVE'}, 
+                    NOW(), 
+                    NOW()
+                  )
+                `;
+                agencyId = newAgencyId;
+                console.log('   Created new agency and linking user...');
+              }
+              
+              // Update user with agencyId
+              await prisma.$executeRaw`
+                UPDATE ems_users 
+                SET password = ${emsHashedPassword}, "isActive" = true, "agencyId" = ${agencyId}
+                WHERE email = ${emsEmail}
+              `;
+              console.log('✅ EMS user updated with agency link!');
+            } catch (linkError) {
+              console.error('   Error linking agency:', linkError.message);
+              // Fallback: just update password
+              await prisma.$executeRaw`
+                UPDATE ems_users 
+                SET password = ${emsHashedPassword}, "isActive" = true
+                WHERE email = ${emsEmail}
+              `;
+              console.log('✅ EMS user password updated (agency link failed)');
+            }
+          } else {
+            // User already has agencyId, just update password
+            try {
+              await prisma.$executeRaw`
+                UPDATE ems_users 
+                SET password = ${emsHashedPassword}, "isActive" = true
+                WHERE email = ${emsEmail}
+              `;
+              console.log('✅ EMS user password updated successfully!');
+            } catch (updateError) {
+              await prisma.$executeRaw`
+                UPDATE ems_users 
+                SET password = ${emsHashedPassword}
+                WHERE email = ${emsEmail}
+              `;
+              console.log('✅ EMS user password updated successfully!');
+            }
           }
         } else {
-          const userId = generateId();
-          // Try to create with all fields, fallback to minimal if needed
+          // First, create or find the EMS agency
+          const agencyName = 'Test EMS Agency';
+          let agencyId;
+          
           try {
-            await prisma.$executeRaw`
-              INSERT INTO ems_users (id, email, password, name, "agencyName", "userType", "isActive", "createdAt", "updatedAt")
-              VALUES (${userId}, ${emsEmail}, ${emsHashedPassword}, ${'Test EMS User'}, ${'Test EMS Agency'}, ${'EMS'}, true, NOW(), NOW())
+            // Check if agency already exists
+            const existingAgency = await prisma.$queryRaw`
+              SELECT id FROM "ems_agencies" WHERE name = ${agencyName} LIMIT 1
             `;
+            
+            if (existingAgency && existingAgency.length > 0) {
+              agencyId = existingAgency[0].id;
+              console.log('✅ Found existing EMS agency:', agencyName);
+            } else {
+              // Create new agency
+              const newAgencyId = generateId();
+              await prisma.$executeRaw`
+                INSERT INTO "ems_agencies" (
+                  id, name, "contactName", phone, email, address, city, state, "zipCode", 
+                  "serviceArea", capabilities, "isActive", status, "createdAt", "updatedAt"
+                )
+                VALUES (
+                  ${newAgencyId}, 
+                  ${agencyName}, 
+                  ${'Test EMS User'}, 
+                  ${'555-0100'}, 
+                  ${emsEmail}, 
+                  ${'123 Test St'}, 
+                  ${'Test City'}, 
+                  ${'PA'}, 
+                  ${'12345'}, 
+                  ARRAY[]::text[], 
+                  ARRAY[]::text[], 
+                  true, 
+                  ${'ACTIVE'}, 
+                  NOW(), 
+                  NOW()
+                )
+              `;
+              agencyId = newAgencyId;
+              console.log('✅ Created EMS agency:', agencyName);
+            }
+          } catch (agencyError) {
+            console.error('⚠️  Error creating/finding EMS agency:', agencyError.message);
+            console.log('   Continuing without agencyId - user may need manual linking');
+            agencyId = null;
+          }
+          
+          const userId = generateId();
+          // Create user with agencyId if available
+          try {
+            if (agencyId) {
+              await prisma.$executeRaw`
+                INSERT INTO ems_users (id, email, password, name, "agencyName", "agencyId", "userType", "isActive", "orgAdmin", "createdAt", "updatedAt")
+                VALUES (${userId}, ${emsEmail}, ${emsHashedPassword}, ${'Test EMS User'}, ${agencyName}, ${agencyId}, ${'EMS'}, true, true, NOW(), NOW())
+              `;
+            } else {
+              await prisma.$executeRaw`
+                INSERT INTO ems_users (id, email, password, name, "agencyName", "userType", "isActive", "orgAdmin", "createdAt", "updatedAt")
+                VALUES (${userId}, ${emsEmail}, ${emsHashedPassword}, ${'Test EMS User'}, ${agencyName}, ${'EMS'}, true, true, NOW(), NOW())
+              `;
+            }
           } catch (createError) {
-            // Fallback: try without isActive if column doesn't exist
-            await prisma.$executeRaw`
-              INSERT INTO ems_users (id, email, password, name, "agencyName", "userType", "createdAt", "updatedAt")
-              VALUES (${userId}, ${emsEmail}, ${emsHashedPassword}, ${'Test EMS User'}, ${'Test EMS Agency'}, ${'EMS'}, NOW(), NOW())
-            `;
+            // Fallback: try without orgAdmin if column doesn't exist
+            if (agencyId) {
+              await prisma.$executeRaw`
+                INSERT INTO ems_users (id, email, password, name, "agencyName", "agencyId", "userType", "isActive", "createdAt", "updatedAt")
+                VALUES (${userId}, ${emsEmail}, ${emsHashedPassword}, ${'Test EMS User'}, ${agencyName}, ${agencyId}, ${'EMS'}, true, NOW(), NOW())
+              `;
+            } else {
+              await prisma.$executeRaw`
+                INSERT INTO ems_users (id, email, password, name, "agencyName", "userType", "isActive", "createdAt", "updatedAt")
+                VALUES (${userId}, ${emsEmail}, ${emsHashedPassword}, ${'Test EMS User'}, ${agencyName}, ${'EMS'}, true, NOW(), NOW())
+              `;
+            }
           }
           
           console.log('✅ EMS user created successfully!');
           console.log(`   Email: ${emsEmail}`);
           console.log(`   Name: Test EMS User`);
-          console.log(`   Agency: Test EMS Agency`);
+          console.log(`   Agency: ${agencyName}`);
+          console.log(`   Agency ID: ${agencyId || 'Not linked (needs manual update)'}`);
           console.log(`   User Type: EMS`);
         }
       }
