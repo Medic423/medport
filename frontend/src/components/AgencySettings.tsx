@@ -174,10 +174,11 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
     }));
   };
 
-  // Geocode address to get coordinates
+  // Geocode address to get coordinates using backend API endpoint
+  // Backend handles multiple address variations and rate limiting
   const geocodeAddress = async () => {
-    if (!agencyInfo.address || !agencyInfo.city || !agencyInfo.state) {
-      setGeocodeError('Please fill in address, city, and state before geocoding.');
+    if (!agencyInfo.address || !agencyInfo.city || !agencyInfo.state || !agencyInfo.zipCode) {
+      setGeocodeError('Please fill in address, city, state, and ZIP code before geocoding.');
       return;
     }
 
@@ -185,43 +186,38 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
     setGeocodeError(null);
 
     try {
-      const fullAddress = `${agencyInfo.address}, ${agencyInfo.city}, ${agencyInfo.state} ${agencyInfo.zipCode}`.trim();
-      console.log('TCC_DEBUG: Geocoding address:', fullAddress);
+      console.log('TCC_DEBUG: Geocoding agency address:', {
+        address: agencyInfo.address,
+        city: agencyInfo.city,
+        state: agencyInfo.state,
+        zipCode: agencyInfo.zipCode,
+        agencyName: agencyInfo.agencyName
+      });
 
-      // Use Nominatim (OpenStreetMap) geocoding service
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&limit=1`,
-        {
-          headers: {
-            'User-Agent': 'TCC-EMS-System/1.0' // Required by Nominatim
-          }
-        }
-      );
+      // Use backend geocoding endpoint which handles multiple variations and rate limiting
+      const response = await api.post('/api/public/geocode', {
+        address: agencyInfo.address,
+        city: agencyInfo.city,
+        state: agencyInfo.state,
+        zipCode: agencyInfo.zipCode,
+        facilityName: agencyInfo.agencyName
+      });
 
-      const data = await response.json();
-
-      if (data && data.length > 0) {
-        const result = data[0];
-        const lat = parseFloat(result.lat);
-        const lon = parseFloat(result.lon);
-
-        if (lat && lon) {
-          setAgencyInfo(prev => ({
-            ...prev,
-            latitude: lat,
-            longitude: lon
-          }));
-          setGeocodeError(null);
-          console.log('TCC_DEBUG: Geocoding successful:', { lat, lon });
-        } else {
-          throw new Error('Invalid coordinates returned from geocoding service');
-        }
+      if (response.data.success) {
+        const { latitude, longitude } = response.data.data;
+        setAgencyInfo(prev => ({
+          ...prev,
+          latitude: latitude,
+          longitude: longitude
+        }));
+        setGeocodeError(null);
+        console.log('TCC_DEBUG: Geocoding successful:', { latitude, longitude });
       } else {
-        throw new Error('No results found for this address');
+        throw new Error(response.data.error || 'No results found for this address');
       }
     } catch (error: any) {
       console.error('TCC_DEBUG: Geocoding error:', error);
-      setGeocodeError(error.message || 'Failed to geocode address. Please enter coordinates manually.');
+      setGeocodeError(error.response?.data?.error || error.message || 'Failed to geocode address. Please enter coordinates manually.');
     } finally {
       setGeocoding(false);
     }
