@@ -44,7 +44,9 @@ export class AuthService {
       const { email, password } = credentials;
 
       // Use unified database to find user
+      console.log('TCC_DEBUG: Getting Prisma client from databaseManager...');
       const db = databaseManager.getPrismaClient(); // ✅ FIXED: Use unified database
+      console.log('TCC_DEBUG: Prisma client obtained:', db ? 'YES' : 'NO');
       
       // Defensive check: ensure database client is available
       if (!db) {
@@ -55,19 +57,29 @@ export class AuthService {
         };
       }
       
+      console.log('TCC_DEBUG: Database client available, proceeding with user lookup...');
+      
       let user: any = null;
       let userType: 'ADMIN' | 'USER' | 'HEALTHCARE' | 'EMS' = 'ADMIN';
       let userData: User;
       let mustChangePassword = false;
 
       // Try to find user in CenterUser table first (check all users, including deleted)
+      console.log('TCC_DEBUG: Looking up user in centerUser table...');
       let foundUser: any = null;
-      foundUser = await db.centerUser?.findFirst({
-        where: { email }
-      });
+      try {
+        foundUser = await db.centerUser?.findFirst({
+          where: { email }
+        });
+        console.log('TCC_DEBUG: centerUser lookup result:', foundUser ? `Found user: ${foundUser.email}` : 'Not found');
+      } catch (dbError) {
+        console.error('❌ Error querying centerUser table:', dbError);
+        throw dbError;
+      }
       if (foundUser) {
         userType = foundUser.userType as 'ADMIN' | 'USER';
         user = foundUser;
+        console.log('TCC_DEBUG: User found in centerUser table, type:', userType);
       }
 
       // If not found, try HealthcareUser table
@@ -94,7 +106,7 @@ export class AuthService {
         }
       }
 
-      console.log('TCC_DEBUG: User found in database:', user ? { id: user.id, email: user.email, name: user.name, isActive: user.isActive, isDeleted: (user as any).isDeleted, userType } : 'null');
+      console.log('TCC_DEBUG: User lookup complete. User found:', user ? { id: user.id, email: user.email, name: user.name, isActive: user.isActive, isDeleted: (user as any).isDeleted, userType } : 'null');
 
       // Check if user exists at all
       if (!user) {
@@ -180,7 +192,17 @@ export class AuthService {
       };
 
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('❌ AuthService.login error:', error);
+      console.error('❌ AuthService.login error type:', error?.constructor?.name);
+      console.error('❌ AuthService.login error message:', error instanceof Error ? error.message : String(error));
+      console.error('❌ AuthService.login error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      if (error instanceof Error) {
+        console.error('❌ AuthService.login error details:', {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        });
+      }
       return {
         success: false,
         error: 'Internal server error'
