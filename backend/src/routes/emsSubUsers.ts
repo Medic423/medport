@@ -22,8 +22,13 @@ async function getParentEMSUserId(req: AuthenticatedRequest): Promise<string | n
   const db = databaseManager.getPrismaClient();
   // EMS tokens use agencyId as id; use email to find user
   if (!req.user?.email) return null;
-  const parent = await db.eMSUser.findUnique({ where: { email: req.user.email } });
-  return parent?.id || null;
+  try {
+    const parent = await db.eMSUser.findUnique({ where: { email: req.user.email } });
+    return parent?.id || null;
+  } catch (error) {
+    console.error('Error finding parent EMS user:', error);
+    return null;
+  }
 }
 
 // List EMS sub-users
@@ -33,12 +38,22 @@ router.get('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
     if (!(req.user.userType === 'EMS' || req.user.userType === 'ADMIN')) {
       return res.status(403).json({ success: false, error: 'Forbidden' });
     }
-    const parentId = await getParentEMSUserId(req);
-    if (!parentId) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
     const db = databaseManager.getPrismaClient();
+    
+    // If ADMIN, show all EMS sub-users; if EMS, show only their sub-users
+    let whereClause: any = { isSubUser: true };
+    if (req.user.userType === 'EMS') {
+      const parentId = await getParentEMSUserId(req);
+      if (!parentId) {
+        return res.status(401).json({ success: false, error: 'No authentication token found' });
+      }
+      whereClause.parentUserId = parentId;
+    }
+    // For ADMIN, whereClause remains { isSubUser: true } to show all sub-users
+
     const users = await db.eMSUser.findMany({
-      where: { parentUserId: parentId, isSubUser: true },
+      where: whereClause,
       orderBy: { createdAt: 'desc' },
       select: { id: true, email: true, name: true, isActive: true, createdAt: true, updatedAt: true }
     });
@@ -56,16 +71,34 @@ router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
     if (!(req.user.userType === 'EMS' || req.user.userType === 'ADMIN')) {
       return res.status(403).json({ success: false, error: 'Forbidden' });
     }
-    const { email, name } = req.body || {};
+    const { email, name, agencyName } = req.body || {};
     if (!email || !name) {
       return res.status(400).json({ success: false, error: 'email and name are required' });
     }
     const db = databaseManager.getPrismaClient();
 
-    const parentId = await getParentEMSUserId(req);
-    if (!parentId) return res.status(401).json({ success: false, error: 'Unauthorized' });
-    const parent = await db.eMSUser.findUnique({ where: { id: parentId } });
-    if (!parent) return res.status(401).json({ success: false, error: 'Unauthorized' });
+    let parentId: string | null = null;
+    let parent: any = null;
+    
+    if (req.user.userType === 'EMS') {
+      parentId = await getParentEMSUserId(req);
+      if (!parentId) return res.status(401).json({ success: false, error: 'No authentication token found' });
+      parent = await db.eMSUser.findUnique({ where: { id: parentId } });
+      if (!parent) return res.status(401).json({ success: false, error: 'Unauthorized' });
+    } else if (req.user.userType === 'ADMIN') {
+      // For ADMIN, require agencyName to be provided
+      if (!agencyName) {
+        return res.status(400).json({ success: false, error: 'agencyName is required when creating EMS sub-user as admin' });
+      }
+      // Find or create parent EMS user for this agency
+      parent = await db.eMSUser.findFirst({ 
+        where: { agencyName, isSubUser: false } 
+      });
+      if (!parent) {
+        return res.status(404).json({ success: false, error: `No EMS agency found with name: ${agencyName}` });
+      }
+      parentId = parent.id;
+    }
 
     const existing = await db.eMSUser.findUnique({ where: { email } });
     if (existing) {
@@ -107,14 +140,21 @@ router.patch('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) =
     const { id } = req.params;
     const { name, isActive } = req.body || {};
 
-    const parentId = await getParentEMSUserId(req);
-    if (!parentId) return res.status(401).json({ success: false, error: 'Unauthorized' });
-
     const db = databaseManager.getPrismaClient();
     const sub = await db.eMSUser.findUnique({ where: { id } });
-    if (!sub || sub.parentUserId !== parentId) {
+    if (!sub) {
       return res.status(404).json({ success: false, error: 'Sub-user not found' });
     }
+
+    // For EMS users, verify they own this sub-user; for ADMIN, allow any sub-user
+    if (req.user.userType === 'EMS') {
+      const parentId = await getParentEMSUserId(req);
+      if (!parentId) return res.status(401).json({ success: false, error: 'No authentication token found' });
+      if (sub.parentUserId !== parentId) {
+        return res.status(403).json({ success: false, error: 'Forbidden: You can only update your own sub-users' });
+      }
+    }
+    // For ADMIN, allow updating any sub-user
 
     const updated = await db.eMSUser.update({
       where: { id },
@@ -141,14 +181,21 @@ router.post('/:id/reset-temp-password', authenticateAdmin, async (req: Authentic
     }
     const { id } = req.params;
 
-    const parentId = await getParentEMSUserId(req);
-    if (!parentId) return res.status(401).json({ success: false, error: 'Unauthorized' });
-
     const db = databaseManager.getPrismaClient();
     const sub = await db.eMSUser.findUnique({ where: { id } });
-    if (!sub || sub.parentUserId !== parentId) {
+    if (!sub) {
       return res.status(404).json({ success: false, error: 'Sub-user not found' });
     }
+
+    // For EMS users, verify they own this sub-user; for ADMIN, allow any sub-user
+    if (req.user.userType === 'EMS') {
+      const parentId = await getParentEMSUserId(req);
+      if (!parentId) return res.status(401).json({ success: false, error: 'No authentication token found' });
+      if (sub.parentUserId !== parentId) {
+        return res.status(403).json({ success: false, error: 'Forbidden: You can only reset passwords for your own sub-users' });
+      }
+    }
+    // For ADMIN, allow resetting password for any sub-user
 
     const tempPassword = generateTempPassword();
     const hash = await bcrypt.hash(tempPassword, 12);
@@ -169,13 +216,21 @@ router.delete('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) 
       return res.status(403).json({ success: false, error: 'Forbidden' });
     }
     const { id } = req.params;
-    const parentId = await getParentEMSUserId(req);
-    if (!parentId) return res.status(401).json({ success: false, error: 'Unauthorized' });
     const db = databaseManager.getPrismaClient();
     const sub = await db.eMSUser.findUnique({ where: { id } });
-    if (!sub || sub.parentUserId !== parentId) {
+    if (!sub) {
       return res.status(404).json({ success: false, error: 'Sub-user not found' });
     }
+
+    // For EMS users, verify they own this sub-user; for ADMIN, allow any sub-user
+    if (req.user.userType === 'EMS') {
+      const parentId = await getParentEMSUserId(req);
+      if (!parentId) return res.status(401).json({ success: false, error: 'No authentication token found' });
+      if (sub.parentUserId !== parentId) {
+        return res.status(403).json({ success: false, error: 'Forbidden: You can only delete your own sub-users' });
+      }
+    }
+    // For ADMIN, allow deleting any sub-user
     await db.eMSUser.delete({ where: { id } });
     res.json({ success: true, message: 'Sub-user deleted' });
   } catch (e) {

@@ -1058,20 +1058,41 @@ router.get('/users', authenticateAdmin, async (req: AuthenticatedRequest, res) =
     const includeSubUsers = (req.query.includeSubUsers as string | undefined) === 'true';
     const onlySubUsers = (req.query.onlySubUsers as string | undefined) === 'true';
 
-    const [centers, healthcare, ems] = await Promise.all([
-      db.centerUser.findMany({
+    // Query each user type separately with error handling
+    let centers: any[] = [];
+    let healthcare: any[] = [];
+    let ems: any[] = [];
+
+    try {
+      centers = await db.centerUser.findMany({
         where: { isDeleted: false },
         select: { id: true, email: true, name: true, userType: true, isActive: true, createdAt: true, updatedAt: true }
-      }),
-      db.healthcareUser.findMany({
+      });
+    } catch (error: any) {
+      console.error('Error fetching center users:', error);
+      // Continue with empty array if table doesn't exist
+    }
+
+    try {
+      healthcare = await db.healthcareUser.findMany({
         where: { isDeleted: false },
         select: { id: true, email: true, name: true, userType: true, isActive: true, createdAt: true, updatedAt: true, isSubUser: true, parentUserId: true, facilityName: true, orgAdmin: true }
-      }),
-      db.eMSUser.findMany({
+      });
+    } catch (error: any) {
+      console.error('Error fetching healthcare users:', error);
+      // Continue with empty array if table doesn't exist
+    }
+
+    try {
+      ems = await db.eMSUser.findMany({
         where: { isDeleted: false },
         select: { id: true, email: true, name: true, userType: true, isActive: true, createdAt: true, updatedAt: true, isSubUser: true, parentUserId: true, agencyName: true, orgAdmin: true }
-      })
-    ]);
+      });
+    } catch (error: any) {
+      console.error('Error fetching EMS users:', error);
+      // Continue with empty array if table doesn't exist
+      // This handles the case where ems_users table doesn't exist yet
+    }
 
     let all = [
       ...centers.map(u => ({ ...u, domain: 'CENTER', isSubUser: false, parentUserId: null })),
