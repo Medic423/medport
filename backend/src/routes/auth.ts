@@ -372,11 +372,18 @@ router.get('/ems/agency/info', authenticateAdmin, async (req: AuthenticatedReque
       });
     }
 
-    // Find agency record
+    // Find agency record - try by agencyId first, then by email
     const agencyId = emsUser.agencyId || emsUser.id;
-    const agency = await centerDB.eMSAgency.findFirst({
-      where: { email: emsUser.email }
+    let agency = await centerDB.eMSAgency.findUnique({
+      where: { id: agencyId }
     });
+
+    if (!agency) {
+      // Try by email as fallback
+      agency = await centerDB.eMSAgency.findFirst({
+        where: { email: emsUser.email }
+      });
+    }
 
     if (!agency) {
       // Return user data with empty agency fields
@@ -391,6 +398,8 @@ router.get('/ems/agency/info', authenticateAdmin, async (req: AuthenticatedReque
           city: '',
           state: '',
           zipCode: '',
+          latitude: null,
+          longitude: null,
           capabilities: [],
           operatingHours: '24/7'
         }

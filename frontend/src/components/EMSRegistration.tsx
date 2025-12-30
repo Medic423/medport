@@ -9,6 +9,7 @@ import {
   MapPin,
   Clock
 } from 'lucide-react';
+import api from '../services/api';
 
 interface EMSRegistrationProps {
   onBack: () => void;
@@ -74,7 +75,8 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
     'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
   ];
 
-  // Geocoding function using multiple services for better reliability
+  // Geocoding function using backend API endpoint
+  // Backend handles multiple address variations and rate limiting
   const geocodeAddress = async () => {
     if (!formData.address || !formData.city || !formData.state || !formData.zipCode) {
       setError('Please fill in address, city, state, and ZIP code before looking up coordinates');
@@ -84,89 +86,41 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
     setGeocoding(true);
     setError(null);
 
-    const fullAddress = `${formData.address}, ${formData.city}, ${formData.state} ${formData.zipCode}`;
-    console.log('TCC_DEBUG: Geocoding address:', fullAddress);
+    console.log('TCC_DEBUG: Geocoding EMS registration address:', {
+      address: formData.address,
+      city: formData.city,
+      state: formData.state,
+      zipCode: formData.zipCode,
+      agencyName: formData.agencyName
+    });
 
-    // Try multiple address variations and geocoding services
-    const addressVariations = [
-      fullAddress, // Original format
-      `${formData.address}, ${formData.city}, ${formData.state}`, // Without ZIP
-      `${formData.city}, ${formData.state}`, // Just city and state
-      `${formData.agencyName}, ${formData.city}, ${formData.state}`, // Use agency name
-    ];
+    try {
+      const response = await api.post('/api/public/geocode', {
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        zipCode: formData.zipCode,
+        facilityName: formData.agencyName
+      });
 
-    const geocodingServices = [
-      // Service 1: OpenStreetMap Nominatim (free, no API key required)
-      {
-        name: 'OpenStreetMap Nominatim',
-        url: (address: string) => `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1&addressdetails=1`,
-        headers: {
-          'User-Agent': 'TCC-Healthcare-App/1.0'
-        }
-      },
-      // Service 2: Alternative format for Nominatim
-      {
-        name: 'OpenStreetMap Nominatim (alt)',
-        url: (address: string) => `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1&addressdetails=1&countrycodes=us`,
-        headers: {
-          'User-Agent': 'TCC-Healthcare-App/1.0'
-        }
+      if (response.data.success) {
+        const { latitude, longitude } = response.data.data;
+        setFormData(prev => ({
+          ...prev,
+          latitude: latitude.toString(),
+          longitude: longitude.toString()
+        }));
+        setError(null);
+        console.log('TCC_DEBUG: Coordinates set successfully:', { latitude, longitude });
+      } else {
+        setError(response.data.error || 'No coordinates found for this address. Please enter them manually.');
       }
-    ];
-
-    // Try each address variation with each service
-    for (const addressVariation of addressVariations) {
-      console.log(`TCC_DEBUG: Trying address variation: "${addressVariation}"`);
-      
-      for (const service of geocodingServices) {
-        try {
-          console.log(`TCC_DEBUG: Trying ${service.name} with "${addressVariation}"...`);
-          
-          const response = await fetch(service.url(addressVariation), {
-            method: 'GET',
-            headers: service.headers,
-            mode: 'cors'
-          });
-          
-          console.log(`TCC_DEBUG: ${service.name} response status:`, response.status);
-          
-          if (!response.ok) {
-            console.log(`TCC_DEBUG: ${service.name} failed with status:`, response.status);
-            continue;
-          }
-
-          const data = await response.json();
-          console.log(`TCC_DEBUG: ${service.name} response data:`, data);
-          
-          if (data && data.length > 0) {
-            const result = data[0];
-            console.log(`TCC_DEBUG: ${service.name} result:`, result);
-            
-            if (result.lat && result.lon) {
-              setFormData(prev => ({
-                ...prev,
-                latitude: result.lat,
-                longitude: result.lon
-              }));
-              setError(null);
-              console.log('TCC_DEBUG: Coordinates set successfully:', result.lat, result.lon);
-              setGeocoding(false);
-              return;
-            }
-          }
-          
-          console.log(`TCC_DEBUG: ${service.name} returned no valid results for "${addressVariation}"`);
-        } catch (err) {
-          console.log(`TCC_DEBUG: ${service.name} error for "${addressVariation}":`, err);
-          continue;
-        }
-      }
+    } catch (err: any) {
+      console.error('TCC_DEBUG: Geocoding error:', err);
+      setError(err.response?.data?.error || 'Failed to lookup coordinates. Please enter them manually.');
+    } finally {
+      setGeocoding(false);
     }
-
-    // If all services failed
-    console.log('TCC_DEBUG: All geocoding services failed');
-    setError('Address not found. Please enter coordinates manually or try a different address format.');
-    setGeocoding(false);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

@@ -159,7 +159,8 @@ const Hospitals: React.FC = () => {
     }));
   };
 
-  // Geocoding function using OpenStreetMap Nominatim API (free)
+  // Geocoding function using backend API endpoint
+  // Backend handles multiple address variations and rate limiting
   const geocodeAddress = async () => {
     if (!editFormData.address || !editFormData.city || !editFormData.state || !editFormData.zipCode) {
       setEditError('Please fill in address, city, state, and ZIP code before looking up coordinates');
@@ -170,31 +171,37 @@ const Hospitals: React.FC = () => {
     setEditError(null);
 
     try {
-      const fullAddress = `${editFormData.address}, ${editFormData.city}, ${editFormData.state} ${editFormData.zipCode}`;
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&limit=1`
-      );
-      
-      if (!response.ok) {
-        throw new Error('Geocoding service unavailable');
-      }
+      console.log('TCC_DEBUG: Geocoding hospital address:', {
+        address: editFormData.address,
+        city: editFormData.city,
+        state: editFormData.state,
+        zipCode: editFormData.zipCode,
+        name: editFormData.name
+      });
 
-      const data = await response.json();
-      
-      if (data && data.length > 0) {
-        const result = data[0];
+      const response = await api.post('/api/public/geocode', {
+        address: editFormData.address,
+        city: editFormData.city,
+        state: editFormData.state,
+        zipCode: editFormData.zipCode,
+        facilityName: editFormData.name
+      });
+
+      if (response.data.success) {
+        const { latitude, longitude } = response.data.data;
         setEditFormData(prev => ({
           ...prev,
-          latitude: result.lat,
-          longitude: result.lon
+          latitude: latitude.toString(),
+          longitude: longitude.toString()
         }));
         setEditError(null);
+        console.log('TCC_DEBUG: Coordinates set successfully:', { latitude, longitude });
       } else {
-        setEditError('Address not found. Please enter coordinates manually.');
+        setEditError(response.data.error || 'Address not found. Please enter coordinates manually.');
       }
-    } catch (err) {
-      console.error('Geocoding error:', err);
-      setEditError('Failed to lookup coordinates. Please enter them manually.');
+    } catch (err: any) {
+      console.error('TCC_DEBUG: Geocoding error:', err);
+      setEditError(err.response?.data?.error || 'Failed to lookup coordinates. Please enter them manually.');
     } finally {
       setGeocoding(false);
     }
