@@ -1499,10 +1499,31 @@ router.post('/healthcare/login', async (req, res) => {
 
     const db = databaseManager.getPrismaClient();
     
-    // First check if user exists at all (including deleted)
-    const user = await db.healthcareUser.findFirst({
-      where: { email }
-    });
+    // Use raw query to handle missing columns gracefully
+    let user: any = null;
+    try {
+      // Try to get user with all fields first
+      user = await db.healthcareUser.findFirst({
+        where: { email }
+      });
+    } catch (queryError: any) {
+      // If Prisma query fails due to missing columns, use raw SQL
+      console.log('TCC_DEBUG: Prisma query failed, trying raw SQL:', queryError.message);
+      try {
+        const rawUsers = await db.$queryRaw`
+          SELECT id, email, password, name, "facilityName", "facilityType", "userType", "isActive"
+          FROM healthcare_users 
+          WHERE email = ${email}
+          LIMIT 1
+        `;
+        if (rawUsers && Array.isArray(rawUsers) && rawUsers.length > 0) {
+          user = rawUsers[0];
+        }
+      } catch (rawError) {
+        console.error('TCC_DEBUG: Raw SQL query also failed:', rawError);
+        throw queryError; // Throw original error
+      }
+    }
 
     if (!user) {
       console.log('TCC_DEBUG: No Healthcare user found for email:', email);
@@ -1512,8 +1533,9 @@ router.post('/healthcare/login', async (req, res) => {
       });
     }
 
-    // Check if user is deleted
-    if (user.isDeleted) {
+    // Check if user is deleted (handle missing column gracefully)
+    const isDeleted = (user as any).isDeleted === true || (user as any).isDeleted === 1;
+    if (isDeleted) {
       console.log('TCC_DEBUG: Healthcare user account has been deleted:', email);
       return res.status(401).json({
         success: false,
@@ -1521,8 +1543,9 @@ router.post('/healthcare/login', async (req, res) => {
       });
     }
 
-    // Check if user is inactive
-    if (!user.isActive) {
+    // Check if user is inactive (handle missing column gracefully)
+    const isActive = (user as any).isActive !== false && (user as any).isActive !== 0;
+    if (!isActive) {
       return res.status(401).json({
         success: false,
         error: 'This account has been deactivated. Please contact support to reactivate your account.'
@@ -1556,7 +1579,12 @@ router.post('/healthcare/login', async (req, res) => {
       maxAge: 24 * 60 * 60 * 1000
     });
 
-    console.log('MULTI_LOC: Healthcare login - manageMultipleLocations:', user.manageMultipleLocations);
+    // Handle optional fields gracefully
+    const manageMultipleLocations = (user as any).manageMultipleLocations === true || (user as any).manageMultipleLocations === 1;
+    const orgAdmin = (user as any).orgAdmin === true || (user as any).orgAdmin === 1;
+    const mustChangePassword = (user as any).mustChangePassword === true || (user as any).mustChangePassword === 1;
+    
+    console.log('MULTI_LOC: Healthcare login - manageMultipleLocations:', manageMultipleLocations);
     res.json({
       success: true,
       message: 'Login successful',
@@ -1567,15 +1595,20 @@ router.post('/healthcare/login', async (req, res) => {
         userType: 'HEALTHCARE',
         facilityName: user.facilityName,
         facilityType: user.facilityType,
-        manageMultipleLocations: user.manageMultipleLocations, // ✅ NEW: Multi-location flag
-        orgAdmin: (user as any).orgAdmin === true
+        manageMultipleLocations: manageMultipleLocations || false,
+        orgAdmin: orgAdmin || false
       },
       token,
-      mustChangePassword: !!(user as any).mustChangePassword
+      mustChangePassword: mustChangePassword || false
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Healthcare Login error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      meta: error.meta
+    });
     res.status(500).json({
       success: false,
       error: 'Internal server error'
