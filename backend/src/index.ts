@@ -48,10 +48,15 @@ console.log('TCC_DEBUG: FRONTEND_URL =', JSON.stringify(process.env.FRONTEND_URL
 console.log('TCC_DEBUG: Cleaned frontendUrl =', JSON.stringify(frontendUrl));
 console.log('TCC_DEBUG: Cleaned corsOrigin =', JSON.stringify(corsOrigin));
 
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 app.use(cors({
   origin: corsOrigin,
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-TCC-Env'],
+  exposedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(cookieParser());
 app.use(express.json());
