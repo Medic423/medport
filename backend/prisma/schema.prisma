@@ -583,8 +583,8 @@ model TransportRequest {
   requestTimestamp              DateTime            @default(now())
   acceptedTimestamp             DateTime?
   pickupTimestamp               DateTime?
-  arrivalTimestamp              DateTime?           @map("emsArrivalTime")
-  departureTimestamp            DateTime?          @map("emsDepartureTime")
+  arrivalTimestamp              DateTime?
+  departureTimestamp            DateTime?
   completionTimestamp           DateTime? // Keep for backward compatibility
   healthcareCompletionTimestamp DateTime? // Healthcare completion (patient leaves hospital)
   emsCompletionTimestamp        DateTime? // EMS completion (arrives at destination)
@@ -623,7 +623,7 @@ model Facility {
   phone            String?
   email            String?
   type             String
-  capabilities     String[]
+  capabilities     String[]           @default([])
   region           String
   coordinates      Json?
   latitude         Float?

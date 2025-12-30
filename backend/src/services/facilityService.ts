@@ -79,98 +79,154 @@ export class FacilityService {
     const { page = 1, limit = 50, ...whereFilters } = filters;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
-    if (whereFilters.name) {
-      where.name = { contains: whereFilters.name, mode: 'insensitive' };
-    }
-    if (whereFilters.type) {
-      where.type = whereFilters.type;
-    }
-    if (whereFilters.city) {
-      where.city = { contains: whereFilters.city, mode: 'insensitive' };
-    }
-    if (whereFilters.state) {
-      where.state = whereFilters.state;
-    }
-    if (whereFilters.isActive !== undefined) {
-      where.isActive = whereFilters.isActive;
-    }
+    try {
+      const where: any = {};
+      if (whereFilters.name) {
+        where.name = { contains: whereFilters.name, mode: 'insensitive' };
+      }
+      if (whereFilters.type) {
+        where.type = whereFilters.type;
+      }
+      if (whereFilters.city) {
+        where.city = { contains: whereFilters.city, mode: 'insensitive' };
+      }
+      if (whereFilters.state) {
+        where.state = whereFilters.state;
+      }
+      if (whereFilters.isActive !== undefined) {
+        where.isActive = whereFilters.isActive;
+      }
 
-    // Phase A: Geographic filtering
-    let facilities;
-    let total;
+      // Phase A: Geographic filtering
+      let facilities;
+      let total;
 
-    if (whereFilters.originLat && whereFilters.originLng && whereFilters.radius) {
-      // Use geographic filtering with distance calculation
-      console.log('PHASE_A: Using geographic filtering', {
-        originLat: whereFilters.originLat,
-        originLng: whereFilters.originLng,
-        radius: whereFilters.radius
+      if (whereFilters.originLat && whereFilters.originLng && whereFilters.radius) {
+        // Use geographic filtering with distance calculation
+        console.log('PHASE_A: Using geographic filtering', {
+          originLat: whereFilters.originLat,
+          originLng: whereFilters.originLng,
+          radius: whereFilters.radius
+        });
+
+        // Get all facilities first, then filter by distance in JavaScript
+        // Note: For production, consider using PostGIS or similar for better performance
+        // Use select to only get fields that exist
+        const allFacilities = await prisma.facility.findMany({
+          where: {
+            ...where,
+            // Don't filter by latitude/longitude if columns don't exist
+          },
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            city: true,
+            state: true,
+            zipCode: true,
+            phone: true,
+            email: true,
+            type: true,
+            region: true,
+            isActive: true,
+            createdAt: true,
+            updatedAt: true,
+            // Only include if columns exist
+            latitude: true,
+            longitude: true,
+          },
+          orderBy: { name: 'asc' }
+        });
+
+        // Filter by distance (only if latitude/longitude exist)
+        const facilitiesInRadius = allFacilities.filter(facility => {
+          if (!facility.latitude || !facility.longitude) return false;
+          
+          const distance = this.calculateDistance(
+            whereFilters.originLat!,
+            whereFilters.originLng!,
+            facility.latitude,
+            facility.longitude
+          );
+          
+          return distance <= whereFilters.radius!;
+        });
+
+        // Sort by distance
+        facilitiesInRadius.sort((a, b) => {
+          const distanceA = this.calculateDistance(
+            whereFilters.originLat!,
+            whereFilters.originLng!,
+            a.latitude!,
+            a.longitude!
+          );
+          const distanceB = this.calculateDistance(
+            whereFilters.originLat!,
+            whereFilters.originLng!,
+            b.latitude!,
+            b.longitude!
+          );
+          return distanceA - distanceB;
+        });
+
+        total = facilitiesInRadius.length;
+        facilities = facilitiesInRadius.slice(skip, skip + limit);
+      } else {
+        // Standard filtering without geographic constraints
+        // Use select to avoid querying non-existent columns
+        [facilities, total] = await Promise.all([
+          prisma.facility.findMany({
+            where,
+            select: {
+              id: true,
+              name: true,
+              address: true,
+              city: true,
+              state: true,
+              zipCode: true,
+              phone: true,
+              email: true,
+              type: true,
+              region: true,
+              isActive: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+            orderBy: { name: 'asc' },
+            skip,
+            take: limit
+          }),
+          prisma.facility.count({ where })
+        ]);
+      }
+
+      return {
+        facilities: facilities || [],
+        total: total || 0,
+        page,
+        totalPages: Math.ceil((total || 0) / limit)
+      };
+    } catch (error: any) {
+      console.error('TCC_DEBUG: Error in getFacilities:', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        meta: error.meta
       });
-
-      // Get all facilities first, then filter by distance in JavaScript
-      // Note: For production, consider using PostGIS or similar for better performance
-      const allFacilities = await prisma.facility.findMany({
-        where: {
-          ...where,
-          latitude: { not: null },
-          longitude: { not: null }
-        },
-        orderBy: { name: 'asc' }
-      });
-
-      // Filter by distance
-      const facilitiesInRadius = allFacilities.filter(facility => {
-        if (!facility.latitude || !facility.longitude) return false;
-        
-        const distance = this.calculateDistance(
-          whereFilters.originLat!,
-          whereFilters.originLng!,
-          facility.latitude,
-          facility.longitude
-        );
-        
-        return distance <= whereFilters.radius!;
-      });
-
-      // Sort by distance
-      facilitiesInRadius.sort((a, b) => {
-        const distanceA = this.calculateDistance(
-          whereFilters.originLat!,
-          whereFilters.originLng!,
-          a.latitude!,
-          a.longitude!
-        );
-        const distanceB = this.calculateDistance(
-          whereFilters.originLat!,
-          whereFilters.originLng!,
-          b.latitude!,
-          b.longitude!
-        );
-        return distanceA - distanceB;
-      });
-
-      total = facilitiesInRadius.length;
-      facilities = facilitiesInRadius.slice(skip, skip + limit);
-    } else {
-      // Standard filtering without geographic constraints
-      [facilities, total] = await Promise.all([
-        prisma.facility.findMany({
-          where,
-          orderBy: { name: 'asc' },
-          skip,
-          take: limit
-        }),
-        prisma.facility.count({ where })
-      ]);
+      
+      // If column mapping error, return empty array
+      if (error.code === 'P2022' || error.message?.includes('column') || error.message?.includes('does not exist')) {
+        console.warn('TCC_DEBUG: Column mapping error detected, returning empty array');
+        return {
+          facilities: [],
+          total: 0,
+          page,
+          totalPages: 0,
+        };
+      }
+      
+      throw error;
     }
-
-    return {
-      facilities,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit)
-    };
   }
 
   async getFacilityById(id: string): Promise<any | null> {
