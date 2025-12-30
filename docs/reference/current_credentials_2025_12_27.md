@@ -58,10 +58,13 @@
 ## Known Passwords
 
 ### Verified Working Passwords (Tested December 28, 2025)
-- `admin@tcc.com`: `admin123` ✅ Verified
+- `admin@tcc.com`: `admin123` ✅ Verified (Local Dev & Dev-SWA)
+- `admin@tcc.com`: `password123` ⚠️ **Production Only** (different password!)
 - `chuck@ferrellhospitals.com`: `testpassword` ✅ Verified
 - `doe@elkcoems.com`: `password` ✅ Verified
 - `test@ems.com`: `testpassword` ✅ Verified
+
+**⚠️ IMPORTANT:** Production uses `password123` for `admin@tcc.com`, NOT `admin123`. Production password was set manually on December 28, 2025.
 
 ### Passwords from Seed Script (Not Yet Verified)
 - `user@tcc.com`: `admin123` (from seed)

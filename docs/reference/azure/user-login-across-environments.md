@@ -246,7 +246,7 @@ curl -X POST https://dev-api.traccems.com/api/auth/login \
 - `test@ems.com` / `testpassword`
 
 **Production (only this works):**
-- `admin@tcc.com` / `password123`
+- `admin@tcc.com` / `password123` ⚠️ **Note:** Password is `password123`, NOT `admin123`
 
 ### Database Connection Strings
 
