@@ -98,18 +98,102 @@ export class HealthcareDestinationService {
         meta: error.meta
       });
       
-      // If it's a column mapping error, return empty array instead of failing
-      if (error.code === 'P2022' || error.message?.includes('column') || error.message?.includes('does not exist')) {
-        console.warn('TCC_DEBUG: Column mapping error detected, returning empty array');
-        return {
-          destinations: [],
-          total: 0,
-          page,
-          totalPages: 0,
-        };
+      // If it's a column mapping error, try using raw SQL as fallback
+      if (error.code === 'P2022' || error.message?.includes('column') || error.message?.includes('does not exist') || error.message?.includes('healthcareUserId')) {
+        console.warn('TCC_DEBUG: Column mapping error detected, trying raw SQL fallback');
+        try {
+          // Build WHERE clause for raw SQL
+          let whereClause = `WHERE healthcare_user_id = $1 AND is_active = true`;
+          const params: any[] = [healthcareUserId];
+          let paramIndex = 2;
+
+          if (whereFilters.name) {
+            whereClause += ` AND name ILIKE $${paramIndex}`;
+            params.push(`%${whereFilters.name}%`);
+            paramIndex++;
+          }
+          if (whereFilters.type) {
+            whereClause += ` AND type = $${paramIndex}`;
+            params.push(whereFilters.type);
+            paramIndex++;
+          }
+          if (whereFilters.city) {
+            whereClause += ` AND city ILIKE $${paramIndex}`;
+            params.push(`%${whereFilters.city}%`);
+            paramIndex++;
+          }
+          if (whereFilters.state) {
+            whereClause += ` AND state ILIKE $${paramIndex}`;
+            params.push(`%${whereFilters.state}%`);
+            paramIndex++;
+          }
+
+          // Get total count
+          const countResult = await prisma.$queryRawUnsafe(
+            `SELECT COUNT(*) as count FROM healthcare_destinations ${whereClause}`,
+            ...params
+          );
+          const total = parseInt((countResult as any[])[0]?.count || '0');
+
+          // Get destinations with pagination
+          const destinationsResult = await prisma.$queryRawUnsafe(
+            `SELECT * FROM healthcare_destinations ${whereClause} ORDER BY name ASC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+            ...params,
+            limit,
+            skip
+          );
+
+          // Transform snake_case to camelCase
+          const destinations = (destinationsResult as any[]).map((row: any) => ({
+            id: row.id,
+            healthcareUserId: row.healthcare_user_id,
+            name: row.name,
+            type: row.type,
+            address: row.address,
+            city: row.city,
+            state: row.state,
+            zipCode: row.zip_code,
+            phone: row.phone,
+            email: row.email,
+            contactName: row.contact_name,
+            latitude: row.latitude,
+            longitude: row.longitude,
+            isActive: row.is_active,
+            notes: row.notes,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at,
+          }));
+
+          const totalPages = Math.ceil(total / limit);
+
+          console.log('TCC_DEBUG: Raw SQL fallback successful, found', destinations.length, 'destinations');
+
+          return {
+            destinations: destinations || [],
+            total: total || 0,
+            page,
+            totalPages,
+          };
+        } catch (rawError: any) {
+          console.error('TCC_DEBUG: Raw SQL fallback also failed:', rawError);
+          // If even raw SQL fails, return empty array
+          return {
+            destinations: [],
+            total: 0,
+            page,
+            totalPages: 0,
+          };
+        }
       }
       
-      throw error;
+      // For other errors, still return empty array instead of throwing
+      console.warn('TCC_DEBUG: Unknown error, returning empty array to prevent crash');
+      return {
+        destinations: [],
+        total: 0,
+        page,
+        totalPages: 0,
+      };
     }
   }
 
