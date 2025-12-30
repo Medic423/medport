@@ -48,6 +48,19 @@ console.log('TCC_DEBUG: FRONTEND_URL =', JSON.stringify(process.env.FRONTEND_URL
 console.log('TCC_DEBUG: Cleaned frontendUrl =', JSON.stringify(frontendUrl));
 console.log('TCC_DEBUG: Cleaned corsOrigin =', JSON.stringify(corsOrigin));
 
+// Handle OPTIONS preflight requests FIRST - before any other middleware
+app.options('*', (req, res) => {
+  const origin = req.headers.origin;
+  if (origin === corsOrigin || corsOrigin === '*') {
+    res.header('Access-Control-Allow-Origin', origin || corsOrigin);
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-TCC-Env');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Max-Age', '86400'); // 24 hours
+  }
+  res.sendStatus(200);
+});
+
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
