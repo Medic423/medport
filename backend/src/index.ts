@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { databaseManager } from './services/databaseManager';
 import cookieParser from 'cookie-parser';
+import { GeocodingService } from './utils/geocodingService';
 
 // Import routes
 import authRoutes from './routes/auth';
@@ -200,7 +201,6 @@ app.post('/api/public/geocode', async (req, res) => {
       });
     }
 
-    const { GeocodingService } = require('./utils/geocodingService');
     const result = await GeocodingService.geocodeAddress(
       address,
       city,
