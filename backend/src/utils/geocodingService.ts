@@ -29,17 +29,42 @@ export class GeocodingService {
   ): Promise<GeocodeResult> {
     console.log('GEOCODING: Attempting to geocode address:', { address, city, state, zipCode, facilityName });
 
-    // Build address variations to try
-    const addressVariations = [
-      `${address}, ${city}, ${state} ${zipCode}`, // Full address with ZIP
-      `${address}, ${city}, ${state}`, // Without ZIP
-      `${city}, ${state}`, // Just city and state
-    ];
-
-    // Add facility name variant if provided
-    if (facilityName) {
-      addressVariations.unshift(`${facilityName}, ${city}, ${state}`); // Facility name first
+    // Build address variations to try (more comprehensive)
+    const addressVariations: string[] = [];
+    
+    // 1. Full address with ZIP
+    if (address && city && state && zipCode) {
+      addressVariations.push(`${address}, ${city}, ${state} ${zipCode}`);
     }
+    
+    // 2. Full address without ZIP
+    if (address && city && state) {
+      addressVariations.push(`${address}, ${city}, ${state}`);
+    }
+    
+    // 3. Facility name with full address (if provided)
+    if (facilityName && address && city && state && zipCode) {
+      addressVariations.push(`${facilityName}, ${address}, ${city}, ${state} ${zipCode}`);
+    }
+    
+    // 4. Facility name with city/state (if provided)
+    if (facilityName && city && state) {
+      addressVariations.push(`${facilityName}, ${city}, ${state}`);
+    }
+    
+    // 5. Just street address and city/state
+    if (address && city && state) {
+      addressVariations.push(`${address}, ${city}, ${state}`);
+    }
+    
+    // 6. City and state only (fallback)
+    if (city && state) {
+      addressVariations.push(`${city}, ${state}`);
+    }
+    
+    // Remove duplicates
+    const uniqueVariations = [...new Set(addressVariations)];
+    console.log('GEOCODING: Trying', uniqueVariations.length, 'address variations:', uniqueVariations);
 
     // Try each variation
     for (let i = 0; i < addressVariations.length; i++) {
