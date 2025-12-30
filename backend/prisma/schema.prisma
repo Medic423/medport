@@ -583,8 +583,8 @@ model TransportRequest {
   requestTimestamp              DateTime            @default(now())
   acceptedTimestamp             DateTime?
   pickupTimestamp               DateTime?
-  arrivalTimestamp              DateTime?
-  departureTimestamp            DateTime?
+  arrivalTimestamp              DateTime?           @map("emsArrivalTime")
+  departureTimestamp            DateTime?          @map("emsDepartureTime")
   completionTimestamp           DateTime? // Keep for backward compatibility
   healthcareCompletionTimestamp DateTime? // Healthcare completion (patient leaves hospital)
   emsCompletionTimestamp        DateTime? // EMS completion (arrives at destination)
