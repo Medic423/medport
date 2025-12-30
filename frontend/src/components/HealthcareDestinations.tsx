@@ -167,6 +167,7 @@ const HealthcareDestinations: React.FC<HealthcareDestinationsProps> = ({ user })
   };
 
   // Geocoding function using OpenStreetMap Nominatim API
+  // Tries multiple address variations for better success rate
   const geocodeAddress = async () => {
     if (!addFormData.address || !addFormData.city || !addFormData.state || !addFormData.zipCode) {
       setAddError('Please fill in address, city, state, and ZIP code before looking up coordinates');
@@ -176,41 +177,73 @@ const HealthcareDestinations: React.FC<HealthcareDestinationsProps> = ({ user })
     setGeocoding(true);
     setAddError(null);
 
-    const fullAddress = `${addFormData.address}, ${addFormData.city}, ${addFormData.state} ${addFormData.zipCode}`;
-    console.log('TCC_DEBUG: Geocoding destination address:', fullAddress);
+    // Build address variations to try (similar to backend service)
+    const addressVariations = [
+      `${addFormData.address}, ${addFormData.city}, ${addFormData.state} ${addFormData.zipCode}`, // Full address with ZIP
+      `${addFormData.address}, ${addFormData.city}, ${addFormData.state}`, // Without ZIP
+      `${addFormData.city}, ${addFormData.state}`, // Just city and state
+    ];
 
-    try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&limit=1&addressdetails=1`, {
-        headers: {
-          'User-Agent': 'TCC-Healthcare-App/1.0'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Geocoding service unavailable');
-      }
-
-      const data = await response.json();
-      console.log('TCC_DEBUG: Geocoding response:', data);
-
-      if (data && data.length > 0) {
-        const result = data[0];
-        setAddFormData(prev => ({
-          ...prev,
-          latitude: result.lat,
-          longitude: result.lon
-        }));
-        setAddError(null);
-        console.log('TCC_DEBUG: Coordinates set successfully:', result.lat, result.lon);
-      } else {
-        setAddError('No coordinates found for this address. Please enter them manually.');
-      }
-    } catch (err) {
-      console.error('Geocoding error:', err);
-      setAddError('Failed to lookup coordinates. Please enter them manually.');
-    } finally {
-      setGeocoding(false);
+    // Add destination name variant if provided
+    if (addFormData.name) {
+      addressVariations.unshift(`${addFormData.name}, ${addFormData.city}, ${addFormData.state}`);
     }
+
+    console.log('TCC_DEBUG: Geocoding destination address variations:', addressVariations);
+
+    // Try each variation
+    for (let i = 0; i < addressVariations.length; i++) {
+      const variation = addressVariations[i];
+      
+      try {
+        // Try with countrycodes parameter first
+        let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(variation)}&limit=1&addressdetails=1&countrycodes=us`;
+        console.log('TCC_DEBUG: Trying geocoding variation:', variation);
+
+        const response = await fetch(url, {
+          headers: {
+            'User-Agent': 'TCC-Healthcare-App/1.0'
+          }
+        });
+
+        if (!response.ok) {
+          console.warn('TCC_DEBUG: Geocoding HTTP error:', response.status);
+          // Try next variation
+          continue;
+        }
+
+        const data = await response.json();
+        console.log('TCC_DEBUG: Geocoding response:', data);
+
+        if (data && data.length > 0) {
+          const result = data[0];
+          setAddFormData(prev => ({
+            ...prev,
+            latitude: parseFloat(result.lat),
+            longitude: parseFloat(result.lon)
+          }));
+          setAddError(null);
+          console.log('TCC_DEBUG: Coordinates set successfully:', result.lat, result.lon);
+          setGeocoding(false);
+          return; // Success, exit function
+        }
+
+        // Rate limiting - wait 1 second between requests
+        if (i < addressVariations.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      } catch (err) {
+        console.error('TCC_DEBUG: Geocoding error for variation:', variation, err);
+        // Continue to next variation
+        if (i < addressVariations.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+    }
+
+    // If we get here, all variations failed
+    setAddError('No coordinates found for this address. Please enter them manually.');
+    setGeocoding(false);
   };
 
   const handleAddSubmit = async (e: React.FormEvent) => {
