@@ -188,6 +188,50 @@ app.get('/api/public/categories', async (req, res) => {
   }
 });
 
+// Geocoding endpoint for frontend
+app.post('/api/public/geocode', async (req, res) => {
+  try {
+    const { address, city, state, zipCode, facilityName } = req.body;
+
+    if (!address || !city || !state || !zipCode) {
+      return res.status(400).json({
+        success: false,
+        error: 'Address, city, state, and zipCode are required'
+      });
+    }
+
+    const { GeocodingService } = require('./utils/geocodingService');
+    const result = await GeocodingService.geocodeAddress(
+      address,
+      city,
+      state,
+      zipCode,
+      facilityName
+    );
+
+    if (result.success) {
+      res.json({
+        success: true,
+        data: {
+          latitude: result.latitude,
+          longitude: result.longitude
+        }
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        error: result.error || 'Could not find coordinates for this address'
+      });
+    }
+  } catch (error) {
+    console.error('Geocoding endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to geocode address'
+    });
+  }
+});
+
 app.get('/api/public/hospitals', async (req, res) => {
   try {
     const prisma = databaseManager.getPrismaClient();
