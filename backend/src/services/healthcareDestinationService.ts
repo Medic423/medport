@@ -102,46 +102,41 @@ export class HealthcareDestinationService {
       if (error.code === 'P2022' || error.message?.includes('column') || error.message?.includes('does not exist') || error.message?.includes('healthcareUserId')) {
         console.warn('TCC_DEBUG: Column mapping error detected, trying raw SQL fallback');
         try {
-          // Build WHERE clause for raw SQL
-          let whereClause = `WHERE healthcare_user_id = $1 AND is_active = true`;
-          const params: any[] = [healthcareUserId];
-          let paramIndex = 2;
+          // Build WHERE clause for raw SQL using Prisma's tagged template
+          const conditions: string[] = [];
+          const values: any[] = [healthcareUserId];
+          
+          conditions.push(`healthcare_user_id = $1`);
+          conditions.push(`is_active = true`);
 
           if (whereFilters.name) {
-            whereClause += ` AND name ILIKE $${paramIndex}`;
-            params.push(`%${whereFilters.name}%`);
-            paramIndex++;
+            values.push(`%${whereFilters.name}%`);
+            conditions.push(`name ILIKE $${values.length}`);
           }
           if (whereFilters.type) {
-            whereClause += ` AND type = $${paramIndex}`;
-            params.push(whereFilters.type);
-            paramIndex++;
+            values.push(whereFilters.type);
+            conditions.push(`type = $${values.length}`);
           }
           if (whereFilters.city) {
-            whereClause += ` AND city ILIKE $${paramIndex}`;
-            params.push(`%${whereFilters.city}%`);
-            paramIndex++;
+            values.push(`%${whereFilters.city}%`);
+            conditions.push(`city ILIKE $${values.length}`);
           }
           if (whereFilters.state) {
-            whereClause += ` AND state ILIKE $${paramIndex}`;
-            params.push(`%${whereFilters.state}%`);
-            paramIndex++;
+            values.push(`%${whereFilters.state}%`);
+            conditions.push(`state ILIKE $${values.length}`);
           }
 
+          const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+          
           // Get total count
-          const countResult = await prisma.$queryRawUnsafe(
-            `SELECT COUNT(*) as count FROM healthcare_destinations ${whereClause}`,
-            ...params
-          );
+          const countQuery = `SELECT COUNT(*)::int as count FROM healthcare_destinations ${whereClause}`;
+          const countResult = await prisma.$queryRawUnsafe(countQuery, ...values);
           const total = parseInt((countResult as any[])[0]?.count || '0');
 
           // Get destinations with pagination
-          const destinationsResult = await prisma.$queryRawUnsafe(
-            `SELECT * FROM healthcare_destinations ${whereClause} ORDER BY name ASC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
-            ...params,
-            limit,
-            skip
-          );
+          values.push(limit, skip);
+          const destinationsQuery = `SELECT * FROM healthcare_destinations ${whereClause} ORDER BY name ASC LIMIT $${values.length - 1} OFFSET $${values.length}`;
+          const destinationsResult = await prisma.$queryRawUnsafe(destinationsQuery, ...values);
 
           // Transform snake_case to camelCase
           const destinations = (destinationsResult as any[]).map((row: any) => ({
