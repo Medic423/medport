@@ -1,0 +1,55 @@
+EMS registration on production (traccems.com) is failing with a 500 Internal Server Error. The error shows that the `addedAt` column doesn't exist in the production database, even though we've removed it from the create operation.
+
+Error Details:
+- Error Code: P2022 (Prisma: Column does not exist)
+- Column: `ems_agencies.addedAt`
+- Error Message: "Invalid `prisma.eMSAgency.create()` invocation: The column `addedAt` does not exist in the current database."
+
+What We've Tried:
+1. Fixed `addedBy` column access by using `select: { id: true }` in findFirst query (commit 323daafc) - this worked
+2. Removed `addedAt: new Date()` from the agency creation data (commit fc82d1e2) - still failing
+3. Added extensive error logging to help diagnose (commits f03e3b93, 955703b5)
+
+Current Status:
+- GPS lookup is working (may be slow due to Nominatim rate limiting)
+- EMS registration still failing with same 500 error
+- TCC Admin Dashboard shows 0 agencies (should show actual count) - may be related schema issue
+
+Root Cause:
+The Prisma schema defines `addedAt DateTime @default(now())` but the production database doesn't have this column. Even though we removed it from the create operation, Prisma may still be trying to use the default value.
+
+Files to Review:
+- backend/src/routes/auth.ts (EMS registration endpoint, lines ~745-780)
+- backend/prisma/schema.prisma (EMSAgency model, lines ~175-212)
+- frontend/src/components/EMSRegistration.tsx
+
+Possible Solutions:
+1. Add missing columns to production database via migration (recommended - keeps schema in sync)
+2. Remove `addedBy` and `addedAt` from Prisma schema to match production (quick fix but creates schema drift)
+3. Check if Prisma client needs regeneration after schema changes
+
+Next Steps:
+1. Check production database schema directly to see what columns actually exist in ems_agencies table
+2. Compare Prisma schema with actual production database schema
+3. Choose solution: either add missing columns OR update Prisma schema to match production
+4. Regenerate Prisma client if schema is updated
+5. Test EMS registration after fix
+6. Continue with GPS functionality testing across all 7 forms
+
+Context Documents:
+- Full session plan: docs/active/sessions/2025-12/plan_for_20251231.md
+- Detailed error analysis: docs/active/sessions/2025-12/ems-registration-500-error-prompt.md
+- Testing checklist: docs/active/sessions/2025-12/testing_checklist_20251231.md
+
+Git Status:
+- All changes committed to main (commit f1a9ae16)
+- Develop branch synced with main
+- Backup created: /Volumes/Acasis/tcc-backups/tcc-backup-20251231_122924
+
+How to Access Backend Logs:
+az webapp log tail --name TraccEms-Prod-Backend --resource-group TraccEms-Prod-USCentral
+
+Look for TCC_DEBUG: messages to see detailed error information.
+
+Please review the plan document (plan_for_20251231.md) for full context on what we've accomplished today and what remains to be tested.
+
