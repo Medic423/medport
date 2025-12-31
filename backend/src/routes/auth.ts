@@ -1275,7 +1275,6 @@ router.post('/ems/login', async (req, res) => {
       token,
       mustChangePassword: !!(user as any).mustChangePassword
     });
-
   } catch (error) {
     console.error('EMS Login error:', error);
     res.status(500).json({
