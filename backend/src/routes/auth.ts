@@ -4,6 +4,7 @@ import { authenticateAdmin, authenticateToken, AuthenticatedRequest } from '../m
 import { databaseManager } from '../services/databaseManager';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { randomBytes } from 'crypto';
 
 
 const router = express.Router();
@@ -1047,7 +1048,53 @@ router.post('/ems/register', async (req, res) => {
         code: createError.code,
         meta: createError.meta
       });
-      throw createError; // Re-throw to be caught by outer catch
+      
+      // If error is due to missing column (addedAt/addedBy), use raw SQL
+      if (createError.code === 'P2022' && createError.meta?.column) {
+        console.log('TCC_DEBUG: Column missing in database, using raw SQL fallback');
+        try {
+          const agencyId = `c${Date.now().toString(36)}${randomBytes(6).toString('hex').substring(0, 10)}`;
+          await centerDB.$executeRaw`
+            INSERT INTO ems_agencies (
+              id, name, "contactName", phone, email, address, city, state, "zipCode",
+              "serviceArea", capabilities, "isActive", status, "createdAt", "updatedAt",
+              latitude, longitude, "operatingHours", "requiresReview"
+            )
+            VALUES (
+              ${agencyId},
+              ${agencyData.name},
+              ${agencyData.contactName},
+              ${agencyData.phone},
+              ${agencyData.email},
+              ${agencyData.address},
+              ${agencyData.city},
+              ${agencyData.state},
+              ${agencyData.zipCode},
+              ${agencyData.serviceArea || []}::text[],
+              ${agencyData.capabilities || []}::text[],
+              ${agencyData.isActive},
+              ${agencyData.status},
+              NOW(),
+              NOW(),
+              ${agencyData.latitude || null},
+              ${agencyData.longitude || null},
+              ${agencyData.operatingHours ? JSON.stringify(agencyData.operatingHours) : null}::jsonb,
+              ${agencyData.requiresReview || false}
+            )
+          `;
+          
+          // Fetch the created agency
+          agency = await centerDB.eMSAgency.findUnique({
+            where: { id: agencyId }
+          });
+          console.log('TCC_DEBUG: Agency created via raw SQL, ID:', agency?.id);
+        } catch (rawSqlError: any) {
+          console.error('TCC_DEBUG: Raw SQL creation also failed:', rawSqlError);
+          throw createError; // Re-throw original error
+        }
+      } else {
+        throw createError; // Re-throw to be caught by outer catch
+      }
     }
 
     // Create new EMS user with agencyId linked
