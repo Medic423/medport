@@ -752,6 +752,8 @@ router.post('/ems/register', async (req, res) => {
     console.log('TCC_DEBUG: Creating EMSAgency record');
     const centerDB = databaseManager.getPrismaClient();
     
+    // Only set fields that definitely exist in production database
+    // Don't set addedAt or addedBy as they may not exist
     const agencyData: any = {
       name: agencyName,
       contactName: name,
@@ -768,9 +770,8 @@ router.post('/ems/register', async (req, res) => {
       longitude: longitude ? parseFloat(longitude) : null,
       isActive: true, // Auto-approve new EMS registrations
       status: 'ACTIVE', // Set status explicitly
-      requiresReview: false, // No review needed for auto-approved agencies
-      addedAt: new Date() // Explicitly set addedAt timestamp
-      // Note: Not setting addedBy as it may not exist in production database
+      requiresReview: false // No review needed for auto-approved agencies
+      // Note: Not setting addedAt or addedBy as they may not exist in production database
     };
     
     console.log('TCC_DEBUG: Agency data to create:', JSON.stringify(agencyData, null, 2));
