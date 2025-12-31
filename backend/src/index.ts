@@ -30,7 +30,7 @@ import healthcareAgenciesRoutes from './routes/healthcareAgencies';
 import healthcareDestinationsRoutes from './routes/healthcareDestinations';
 import healthcareSubUsersRoutes from './routes/healthcareSubUsers';
 import emsSubUsersRoutes from './routes/emsSubUsers';
-import { GeocodingService } from './utils/geocodingService';
+import publicRoutes from './routes/public';
 
 // Load environment variables
 // Load .env first, then .env.local (which will override .env values)
@@ -141,125 +141,8 @@ app.use('/api/healthcare/sub-users', healthcareSubUsersRoutes);
 app.use('/api/ems/sub-users', emsSubUsersRoutes);
 app.use('/api/agency', agencyTransportRoutes);
 
-// Public endpoints for healthcare users
-app.get('/api/public/categories', async (req, res) => {
-  try {
-    const hospitalPrisma = databaseManager.getPrismaClient();
-    
-    const categories = await hospitalPrisma.dropdownOption.findMany({
-      select: {
-        category: true
-      },
-      distinct: ['category'],
-      where: {
-        isActive: true
-      }
-    });
-
-    res.json({
-      success: true,
-      data: categories.map((c: { category: string }) => c.category),
-      message: 'Categories retrieved successfully'
-    });
-  } catch (error) {
-    console.error('TCC_DEBUG: Get public categories error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to get categories'
-    });
-  }
-});
-
-app.get('/api/public/hospitals', async (req, res) => {
-  try {
-    const prisma = databaseManager.getPrismaClient();
-    
-    // Only query hospitals table for production data (schema uses Hospital model)
-    const hospitals = await prisma.hospital.findMany({
-      where: { isActive: true },
-      select: {
-        id: true,
-        name: true,
-        address: true,
-        city: true,
-        state: true,
-        zipCode: true,
-        phone: true,
-        email: true,
-        type: true,
-        latitude: true,
-        longitude: true
-      }
-    });
-
-    // Sort by name
-    hospitals.sort((a, b) => a.name.localeCompare(b.name));
-
-    console.log('TCC_DEBUG: Public hospitals endpoint - Hospitals:', hospitals.length);
-
-    res.json({
-      success: true,
-      data: hospitals,
-      message: 'Hospitals retrieved successfully'
-    });
-  } catch (error) {
-    console.error('TCC_DEBUG: Get public hospitals error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to get hospitals'
-    });
-  }
-});
-
-// Geocoding endpoint for frontend
-app.post('/api/public/geocode', async (req, res) => {
-  try {
-    console.log('TCC_DEBUG: Geocoding endpoint called with body:', JSON.stringify(req.body));
-    const { address, city, state, zipCode, facilityName } = req.body;
-
-    if (!address || !city || !state || !zipCode) {
-      console.warn('TCC_DEBUG: Missing required fields:', { address: !!address, city: !!city, state: !!state, zipCode: !!zipCode });
-      return res.status(400).json({
-        success: false,
-        error: 'Address, city, state, and zipCode are required'
-      });
-    }
-
-    console.log('TCC_DEBUG: Calling GeocodingService with:', { address, city, state, zipCode, facilityName });
-    const result = await GeocodingService.geocodeAddress(
-      address,
-      city,
-      state,
-      zipCode,
-      facilityName
-    );
-
-    console.log('TCC_DEBUG: GeocodingService result:', result);
-
-    if (result.success) {
-      res.json({
-        success: true,
-        data: {
-          latitude: result.latitude,
-          longitude: result.longitude
-        }
-      });
-    } else {
-      console.warn('TCC_DEBUG: Geocoding failed:', result.error);
-      res.status(404).json({
-        success: false,
-        error: result.error || 'Could not find coordinates for this address'
-      });
-    }
-  } catch (error) {
-    console.error('TCC_DEBUG: Geocoding endpoint error:', error);
-    console.error('TCC_DEBUG: Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-    res.status(500).json({
-      success: false,
-      error: 'Failed to geocode address'
-    });
-  }
-});
+// Public endpoints (no auth required)
+app.use('/api/public', publicRoutes);
 
 // Test endpoints
 app.get('/api/test', (req, res) => {
