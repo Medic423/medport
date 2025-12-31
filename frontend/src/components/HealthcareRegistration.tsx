@@ -167,31 +167,25 @@ const HealthcareRegistration: React.FC<HealthcareRegistrationProps> = ({ onBack,
     try {
       console.log('TCC_DEBUG: Submitting healthcare registration with data:', formData);
 
-      const response = await fetch('http://localhost:5001/api/auth/healthcare/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: formData.contactName,
-          email: formData.email,
-          password: formData.password,
-          facilityName: formData.facilityName,
-          facilityType: formData.facilityType,
-          manageMultipleLocations: formData.manageMultipleLocations, // ✅ NEW: Multi-location flag
-          phone: formData.phone,
-          address: formData.address,
-          city: formData.city,
-          state: formData.state,
-          zipCode: formData.zipCode,
-          latitude: parseFloat(formData.latitude),
-          longitude: parseFloat(formData.longitude),
-        }),
+      const response = await api.post('/api/auth/healthcare/register', {
+        name: formData.contactName,
+        email: formData.email,
+        password: formData.password,
+        facilityName: formData.facilityName,
+        facilityType: formData.facilityType,
+        manageMultipleLocations: formData.manageMultipleLocations, // ✅ NEW: Multi-location flag
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        zipCode: formData.zipCode,
+        latitude: parseFloat(formData.latitude),
+        longitude: parseFloat(formData.longitude),
       });
 
-      const data = await response.json();
+      const data = response.data;
 
-      if (!response.ok) {
+      if (!data.success) {
         // Show the specific error message from the backend
         const errorMessage = data.error || data.message || 'Registration failed. Please try again.';
         throw new Error(errorMessage);

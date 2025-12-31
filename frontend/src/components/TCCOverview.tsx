@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Plus, 
@@ -11,6 +11,7 @@ import {
   MapPin,
   Activity
 } from 'lucide-react';
+import { analyticsAPI } from '../services/api';
 
 interface TCCOverviewProps {
   user: {
@@ -22,8 +23,37 @@ interface TCCOverviewProps {
   onClearSession?: () => void;
 }
 
+interface SystemOverview {
+  totalTrips: number;
+  totalHospitals: number;
+  totalAgencies: number;
+  totalFacilities: number;
+  activeHospitals: number;
+  activeAgencies: number;
+  activeFacilities: number;
+  totalUnits: number;
+  activeUnits: number;
+}
+
 const TCCOverview: React.FC<TCCOverviewProps> = ({ user, onClearSession }) => {
   const navigate = useNavigate();
+  const [overview, setOverview] = useState<SystemOverview | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchOverview = async () => {
+      try {
+        const response = await analyticsAPI.getOverview();
+        setOverview(response.data.data);
+      } catch (error: any) {
+        console.error('Failed to load overview:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOverview();
+  }, []);
 
   const quickActions = [
     {
@@ -75,33 +105,33 @@ const TCCOverview: React.FC<TCCOverviewProps> = ({ user, onClearSession }) => {
   const statsCards = [
     {
       title: 'Active Trips',
-      value: '15',
-      change: '+12%',
-      changeType: 'positive',
+      value: overview?.totalTrips?.toString() || '0',
+      change: '—',
+      changeType: 'neutral' as const,
       icon: FileText,
       color: 'bg-blue-50 text-blue-600'
     },
     {
       title: 'Healthcare Facilities',
-      value: '9',
-      change: '+1',
-      changeType: 'positive',
+      value: overview?.totalHospitals?.toString() || '0',
+      change: `${overview?.activeHospitals || 0} active`,
+      changeType: 'positive' as const,
       icon: Building2,
       color: 'bg-green-50 text-green-600'
     },
     {
       title: 'EMS Agencies',
-      value: '3',
-      change: '0',
-      changeType: 'neutral',
+      value: overview?.totalAgencies?.toString() || '0',
+      change: `${overview?.activeAgencies || 0} active`,
+      changeType: 'positive' as const,
       icon: Truck,
       color: 'bg-red-50 text-red-600'
     },
     {
       title: 'Active Units',
-      value: '12',
-      change: '+2',
-      changeType: 'positive',
+      value: overview?.activeUnits?.toString() || '0',
+      change: `${overview?.totalUnits || 0} total`,
+      changeType: 'positive' as const,
       icon: Users,
       color: 'bg-purple-50 text-purple-600'
     }

@@ -221,34 +221,28 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
     try {
       console.log('TCC_DEBUG: Submitting EMS agency registration with data:', formData);
 
-      const response = await fetch('http://localhost:5001/api/auth/ems/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: formData.contactName,
-          email: formData.email,
-          password: formData.password,
-          agencyName: formData.agencyName,
-          phone: formData.phone,
-          address: formData.address,
-          city: formData.city,
-          state: formData.state,
-          zipCode: formData.zipCode,
-          latitude: parseFloat(formData.latitude),
-          longitude: parseFloat(formData.longitude),
-          serviceArea: formData.serviceArea, // Send as array
-          capabilities: formData.capabilities, // Send capabilities array
-          operatingHours: formData.operatingHours.start && formData.operatingHours.end 
-            ? `${formData.operatingHours.start} - ${formData.operatingHours.end}`
-            : '24/7',
-        }),
+      const response = await api.post('/api/auth/ems/register', {
+        name: formData.contactName,
+        email: formData.email,
+        password: formData.password,
+        agencyName: formData.agencyName,
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        zipCode: formData.zipCode,
+        latitude: parseFloat(formData.latitude),
+        longitude: parseFloat(formData.longitude),
+        serviceArea: formData.serviceArea, // Send as array
+        capabilities: formData.capabilities, // Send capabilities array
+        operatingHours: formData.operatingHours.start && formData.operatingHours.end 
+          ? `${formData.operatingHours.start} - ${formData.operatingHours.end}`
+          : '24/7',
       });
 
-      const data = await response.json();
+      const data = response.data;
 
-      if (!response.ok) {
+      if (!data.success) {
         // Show the specific error message from the backend
         const errorMessage = data.error || data.message || 'Registration failed. Please try again.';
         throw new Error(errorMessage);
