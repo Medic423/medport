@@ -40,6 +40,7 @@ console.log('TCC_DEBUG: API_BASE_URL is set to:', API_BASE_URL, 'ENV:', ENV_NAME
 const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
+  timeout: 30000, // 30 second timeout for all requests
   headers: {
     'Content-Type': 'application/json',
     // NOTE: Do NOT set custom headers by default to avoid CORS issues

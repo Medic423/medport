@@ -95,13 +95,20 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
     });
 
     try {
-      const response = await api.post('/api/public/geocode', {
+      // Add a timeout wrapper to ensure we don't hang indefinitely
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Geocoding request timed out after 20 seconds')), 20000);
+      });
+
+      const geocodePromise = api.post('/api/public/geocode', {
         address: formData.address,
         city: formData.city,
         state: formData.state,
         zipCode: formData.zipCode,
         facilityName: formData.agencyName
       });
+
+      const response = await Promise.race([geocodePromise, timeoutPromise]) as any;
 
       if (response.data.success) {
         const { latitude, longitude } = response.data.data;
@@ -124,7 +131,18 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
         data: err.response?.data,
         code: err.code
       });
-      setError(err.response?.data?.error || err.message || 'Failed to lookup coordinates. Please enter them manually.');
+      
+      // Provide user-friendly error messages
+      let errorMessage = 'Failed to lookup coordinates. Please enter them manually.';
+      if (err.message && err.message.includes('timeout')) {
+        errorMessage = 'Geocoding request timed out. Please try again or enter coordinates manually.';
+      } else if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setGeocoding(false);
     }
