@@ -220,61 +220,116 @@ export class TripService {
       if (filters?.priority) {
         where.priority = filters.priority;
       }
-      // Note: assignedAgencyId doesn't exist in TransportRequest model, so we'll skip this filter for now
+      
+      // ✅ NEW: Filter trips for EMS users by agency
+      if (filters?.agencyId && !filters?.healthcareUserId) {
+        console.log('TCC_DEBUG: Filtering trips for EMS agencyId:', filters.agencyId);
+        
+        // EMS users should see:
+        // 1. PENDING trips (available for acceptance)
+        // 2. Trips they've accepted (via AgencyResponse)
+        try {
+          // Get trip IDs where this agency has responded
+          const agencyResponses = await prisma.agencyResponse.findMany({
+            where: {
+              agencyId: filters.agencyId
+            },
+            select: {
+              tripId: true
+            }
+          });
+          
+          const acceptedTripIds = agencyResponses.map(r => r.tripId);
+          console.log('TCC_DEBUG: Found', acceptedTripIds.length, 'trips accepted by agency');
+          
+          // Build agency filter - don't override existing OR from healthcare user filter
+          const agencyFilter: any[] = [{ status: 'PENDING' }];
+          if (acceptedTripIds.length > 0) {
+            agencyFilter.push({ id: { in: acceptedTripIds } });
+          }
+          
+          // If we already have an OR condition (from healthcare user filter), combine them
+          if (where.OR) {
+            // Combine healthcare OR with agency OR using AND
+            where.AND = [
+              { OR: where.OR },
+              { OR: agencyFilter }
+            ];
+            delete where.OR;
+          } else {
+            where.OR = agencyFilter;
+          }
+        } catch (agencyFilterError: any) {
+          console.error('TCC_DEBUG: Error filtering by agency:', agencyFilterError);
+          // Fallback: only show PENDING trips (if no existing OR condition)
+          if (!where.OR && !where.AND) {
+            where.status = 'PENDING';
+          }
+        }
+      }
 
+      // Build include object defensively - some relations might not exist
+      const include: any = {
+        originFacility: {
+          select: {
+            id: true,
+            name: true,
+            type: true
+          }
+        },
+        destinationFacility: {
+          select: {
+            id: true,
+            name: true,
+            type: true
+          }
+        },
+        pickupLocation: {
+          select: {
+            id: true,
+            name: true,
+            floor: true,
+            room: true,
+            contactPhone: true,
+            contactEmail: true
+          }
+        },
+        healthcareLocation: {
+          select: {
+            id: true,
+            locationName: true,
+            city: true,
+            state: true,
+            facilityType: true
+          }
+        }
+      };
+      
+      // Only include assignedUnit if it exists (defensive)
+      try {
+        include.assignedUnit = {
+          select: {
+            id: true,
+            unitNumber: true,
+            type: true,
+            agency: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        };
+      } catch (e) {
+        console.warn('TCC_DEBUG: assignedUnit relation might not be available');
+      }
+      
       const trips = await prisma.transportRequest.findMany({
         where,
         orderBy: {
           createdAt: 'desc',
         },
-        include: {
-          originFacility: {
-            select: {
-              id: true,
-              name: true,
-              type: true
-            }
-          },
-          destinationFacility: {
-            select: {
-              id: true,
-              name: true,
-              type: true
-            }
-          },
-          pickupLocation: {
-            select: {
-              id: true,
-              name: true,
-              floor: true,
-              room: true,
-              contactPhone: true,
-              contactEmail: true
-            }
-          },
-          healthcareLocation: {
-            select: {
-              id: true,
-              locationName: true,
-              city: true,
-              state: true,
-              facilityType: true
-            }
-          },
-          assignedUnit: {
-            select: {
-              id: true,
-              unitNumber: true,
-              type: true,
-              agency: {
-                select: {
-                  id: true,
-                  name: true
-                }
-              }
-            }
-          }
-        }
+        include
       });
 
       console.log('TCC_DEBUG: Found trips:', trips.length);

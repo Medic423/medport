@@ -242,11 +242,35 @@ router.get('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
     console.log('TCC_DEBUG: Get trips request with query:', req.query);
     console.log('TCC_DEBUG: Authenticated user:', req.user);
     
+    // Resolve agencyId for EMS users
+    let agencyId: string | undefined = req.query.agencyId as string | undefined;
+    
+    if (req.user?.userType === 'EMS' && !agencyId) {
+      // For EMS users, resolve their agencyId
+      agencyId = req.user.agencyId;
+      
+      if (!agencyId && req.user.email) {
+        try {
+          const db = databaseManager.getPrismaClient();
+          const emsUser = await db.eMSUser.findUnique({
+            where: { email: req.user.email },
+            select: { agencyId: true }
+          });
+          if (emsUser?.agencyId) {
+            agencyId = emsUser.agencyId;
+            console.log('TCC_DEBUG: Resolved EMS agencyId from database:', agencyId);
+          }
+        } catch (lookupError: any) {
+          console.error('TCC_DEBUG: Error looking up EMS user for trips:', lookupError.message);
+        }
+      }
+    }
+    
     const filters = {
       status: req.query.status as string,
       transportLevel: req.query.transportLevel as string,
       priority: req.query.priority as string,
-      agencyId: req.query.agencyId as string,
+      agencyId: agencyId,
       healthcareUserId: req.user?.userType === 'HEALTHCARE' ? req.user.id : undefined, // ✅ NEW: Filter by healthcare user
     };
 

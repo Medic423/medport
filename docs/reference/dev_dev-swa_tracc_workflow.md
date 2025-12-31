@@ -2,7 +2,52 @@
 
 **Created:** December 29, 2025  
 **Purpose:** Document the complete workflow for local development, dev-swa testing, and production deployment  
-**Status:** Active Reference Document
+**Status:** Active Reference Document  
+**Last Updated:** December 31, 2025 - Added branch sync process
+
+---
+
+## ⚠️ CRITICAL: Branch Synchronization
+
+### The Problem
+When fixes are made directly to `main` branch and deployed to production, `develop` branch doesn't automatically get those fixes. This causes:
+- ❌ Dev-swa missing production fixes
+- ❌ Having to fix the same issue twice
+- ❌ Dev-swa and production getting out of sync
+
+### The Solution: Always Sync After Production Fixes
+
+**After deploying fixes to production from `main`, ALWAYS sync back to `develop`:**
+
+```bash
+# 1. Make sure main is up to date
+git checkout main
+git pull origin main
+
+# 2. Merge main into develop to sync fixes
+git checkout develop
+git merge main --no-edit
+
+# 3. Push develop to trigger dev-swa deployment
+git push origin develop
+```
+
+This ensures dev-swa gets all production fixes automatically.
+
+### Recommended Workflow (Prevents Sync Issues)
+
+**Ideal Flow:**
+1. **Develop on `develop` branch** (or feature branch → develop)
+2. **Test on dev-swa** (auto-deploys from develop)
+3. **After testing, merge to `main`**
+4. **Deploy to production from `main`**
+5. **Sync back: `develop` ← `main`** (keeps them in sync)
+
+**Emergency Hotfix Flow (when fixing production directly):**
+1. **Fix on `main` branch**
+2. **Deploy to production**
+3. **IMMEDIATELY sync: `develop` ← `main`**
+4. **Push `develop`** (auto-deploys to dev-swa)
 
 ---
 
@@ -45,49 +90,51 @@ This document explains the three-environment development workflow: **Local Devel
 ┌──────────────────────────────────────────────────────────────────┐
 │                    GIT REPOSITORY (GitHub)                        │
 │                                                                   │
-│  Feature Branch → main → develop                                  │
+│  Feature Branch → develop → main                                  │
 │                                                                   │
-│  ┌────────────┐     ┌──────┐     ┌─────────┐                    │
-│  │  Feature  │ --> │ main │ --> │ develop │                    │
-│  │  Branch   │     └──────┘     └────┬────┘                    │
-│  └────────────┘                      │                           │
-│                                      │                           │
-└──────────────────────────────────────┼───────────────────────────┘
-                                       │
-                    ┌──────────────────┼──────────────────┐
-                    │                  │                  │
-                    ▼                  ▼                  ▼
-         ┌──────────────────┐  ┌──────────────┐  ┌──────────────┐
-         │  Local Dev       │  │  Dev-SWA     │  │  Production  │
-         │  (localhost)     │  │  (Azure Dev) │  │  (Azure Prod)│
-         │                  │  │              │  │              │
-         │  Manual Start    │  │  Auto Deploy │  │  Manual Deploy│
-         │  npm run dev     │  │  on develop  │  │  via GitHub  │
-         │                  │  │  push        │  │  Actions     │
-         │                  │  │              │  │              │
-         │  ┌────────────┐  │  │  ┌────────┐ │  │  ┌────────┐ │
-         │  │ Frontend   │  │  │  │Frontend│ │  │  │Frontend│ │
-         │  │ :3000      │  │  │  │dev-swa │ │  │  │traccems │ │
-         │  └─────┬──────┘  │  │  │.com    │ │  │  │.com     │ │
-         │        │         │  │  └────┬───┘ │  │  └────┬───┘ │
-         │        │         │  │       │     │  │       │     │
-         │  ┌─────▼──────┐  │  │  ┌────▼───┐ │  │  ┌────▼───┐ │
-         │  │ Backend    │  │  │  │Backend │ │  │  │Backend │ │
-         │  │ :5001      │  │  │  │dev-api │ │  │  │api.    │ │
-         │  └─────┬──────┘  │  │  │.com    │ │  │  │traccems │ │
-         │        │         │  │  └────┬───┘ │  │  │.com     │ │
-         │        │         │  │       │     │  │  └────┬───┘ │
-         │  ┌─────▼──────┐  │  │  ┌────▼───┐ │  │  ┌────▼───┐ │
-         │  │ PostgreSQL │  │  │  │Postgres│ │  │  │Postgres│ │
-         │  │ medport_ems│  │  │  │traccems│ │  │  │traccems│ │
-         │  │ (local)    │  │  │  │-dev-   │ │  │  │-prod-  │ │
-         │  │            │  │  │  │pgsql   │ │  │  │pgsql   │ │
-         │  └────────────┘  │  │  └────────┘ │  │  └────────┘ │
-         │                  │  │              │  │              │
-         │  Test Data       │  │  Test Data   │  │  CLIENT DATA │
-         │  (synced from    │  │  (synced from│  │  (REAL)      │
-         │   dev Azure)     │  │   dev Azure) │  │              │
-         └──────────────────┘  └──────────────┘  └──────────────┘
+│  ┌────────────┐     ┌─────────┐     ┌──────┐                    │
+│  │  Feature  │ --> │ develop │ --> │ main │                    │
+│  │  Branch   │     └────┬────┘     └──────┘                    │
+│  └────────────┘          │                                        │
+│                         │                                         │
+│                         │ SYNC: main → develop (after prod fixes)│
+│                         │                                         │
+└─────────────────────────┼─────────────────────────────────────────┘
+                          │
+         ┌────────────────┼──────────────────┐
+         │                │                  │
+         ▼                ▼                  ▼
+  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+  │  Local Dev   │  │  Dev-SWA     │  │  Production  │
+  │  (localhost) │  │  (Azure Dev) │  │  (Azure Prod)│
+  │              │  │              │  │              │
+  │  Manual Start│  │  Auto Deploy │  │  Manual Deploy│
+  │  npm run dev │  │  on develop  │  │  via GitHub  │
+  │              │  │  push        │  │  Actions     │
+  │              │  │              │  │              │
+  │  ┌────────┐  │  │  ┌────────┐ │  │  ┌────────┐ │
+  │  │Frontend│  │  │  │Frontend│ │  │  │Frontend│ │
+  │  │ :3000  │  │  │  │dev-swa │ │  │  │traccems │ │
+  │  └────┬───┘  │  │  │.com    │ │  │  │.com     │ │
+  │       │      │  │  └────┬───┘ │  │  └────┬───┘ │
+  │       │      │  │       │     │  │       │     │
+  │  ┌────▼───┐  │  │  ┌────▼───┐ │  │  ┌────▼───┐ │
+  │  │ Backend│  │  │  │ Backend │ │  │  │ Backend │ │
+  │  │ :5001  │  │  │  │dev-api │ │  │  │api.    │ │
+  │  └────┬───┘  │  │  │.com    │ │  │  │traccems │ │
+  │       │      │  │  └────┬───┘ │  │  │.com     │ │
+  │       │      │  │       │     │  │  └────┬───┘ │
+  │  ┌────▼───┐  │  │  ┌────▼───┐ │  │  ┌────▼───┐ │
+  │  │Postgres│  │  │  │Postgres│ │  │  │Postgres│ │
+  │  │medport │  │  │  │traccems│ │  │  │traccems│ │
+  │  │_ems    │  │  │  │-dev-   │ │  │  │-prod-  │ │
+  │  │(local) │  │  │  │pgsql   │ │  │  │pgsql   │ │
+  │  └────────┘  │  │  └────────┘ │  │  └────────┘ │
+  │              │  │              │  │              │
+  │  Test Data   │  │  Test Data   │  │  CLIENT DATA │
+  │  (synced from│  │  (synced from│  │  (REAL)      │
+  │   dev Azure) │  │   dev Azure) │  │              │
+  └──────────────┘  └──────────────┘  └──────────────┘
 ```
 
 ---
@@ -141,10 +188,8 @@ This document explains the three-environment development workflow: **Local Devel
 **Process:**
 1. **Merge to Develop Branch:**
    ```bash
-   git checkout main
-   git merge feature/my-feature-name
    git checkout develop
-   git merge main
+   git merge feature/my-feature-name
    git push origin develop
    ```
 
@@ -184,30 +229,83 @@ This document explains the three-environment development workflow: **Local Devel
    - All tests pass
    - Ready for production
 
-2. **Manual Production Deployment:**
+2. **Merge to Main:**
+   ```bash
+   git checkout main
+   git merge develop
+   git push origin main
+   ```
+
+3. **Manual Production Deployment:**
    - Go to GitHub Actions: https://github.com/[your-repo]/actions
    - Select workflow: **"production - Deploy Prod Frontend"**
    - Click **"Run workflow"**
-   - Choose branch: `develop` or `main` (usually `develop` after testing)
+   - Choose branch: `main` (or `develop` if you prefer)
    - Click **"Run workflow"** button
    - Frontend deploys to `https://traccems.com`
 
-3. **Backend Deployment (If Needed):**
+4. **Backend Deployment (If Needed):**
    - Only deploy backend if:
      - Backend code changed
      - **Database schema changed** (Prisma migrations)
    - Go to GitHub Actions
    - Select workflow: **"production - Deploy Prod Backend"**
    - Click **"Run workflow"**
-   - Choose branch: `develop` or `main`
+   - Choose branch: `main`
    - Backend deploys to `https://api.traccems.com`
    - **Important:** Backend deployment runs Prisma migrations automatically
+
+5. **⚠️ CRITICAL: Sync Back to Develop:**
+   ```bash
+   # After production deployment, sync fixes back to develop
+   git checkout develop
+   git merge main --no-edit
+   git push origin develop
+   ```
+   This ensures dev-swa gets all production fixes.
 
 **Database Considerations:**
 - Production database (`traccems-prod-pgsql`) contains **REAL CLIENT DATA**
 - **Never sync production data to dev environments** (privacy/security)
 - Production data is different from dev data (by design)
 - Production database is backed up automatically by Azure
+
+---
+
+## Branch Synchronization Process
+
+### When to Sync
+
+**Always sync `main` → `develop` after:**
+- ✅ Deploying fixes to production
+- ✅ Making hotfixes directly on `main`
+- ✅ Any production deployment
+- ✅ Before starting new development work
+
+### Sync Command
+
+```bash
+# Quick sync script
+git checkout develop
+git merge main --no-edit
+git push origin develop
+```
+
+This will:
+- Merge all production fixes into develop
+- Trigger automatic dev-swa deployment
+- Keep both environments in sync
+
+### Preventing Sync Issues
+
+**Best Practice:**
+1. **Develop on `develop` branch first**
+2. **Test on dev-swa** (auto-deploys)
+3. **Merge to `main`** after testing
+4. **Deploy to production**
+5. **Sync back: `develop` ← `main`**
+
+This prevents the need for emergency syncs.
 
 ---
 
@@ -234,56 +332,6 @@ Each environment maintains its own database for important reasons:
    - Data: **REAL CLIENT DATA** (confidential)
    - **Never sync production data to dev** (privacy/security)
    - Must be backed up regularly (Azure automated backups)
-
-### Data Flow Diagram
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    DATABASE DATA FLOW                        │
-└─────────────────────────────────────────────────────────────┘
-
-┌──────────────────────┐
-│  Dev Azure Database  │  ← Source of Truth for Test Data
-│  (traccems-dev-      │
-│   pgsql)             │
-└──────────┬───────────┘
-           │
-           │ Sync Scripts (one-way)
-           │ - sync-users-across-environments.js
-           │ - sync-reference-data.js
-           │ - sync-dropdown-and-pickup-data.js
-           │
-           ▼
-┌──────────────────────┐
-│  Local Dev Database  │  ← Synced FROM dev Azure
-│  (medport_ems)       │     (for local testing)
-└──────────────────────┘
-
-┌──────────────────────┐
-│  Production Database │  ← Separate, Real Client Data
-│  (traccems-prod-     │     (NEVER synced to dev)
-│   pgsql)             │
-└──────────────────────┘
-```
-
-### When to Sync Data
-
-**Sync FROM Dev Azure TO Local Dev:**
-- ✅ When you need test data for local development
-- ✅ When reference data (hospitals, facilities, agencies) is updated
-- ✅ When you want to test with realistic data locally
-- ✅ After restoring dev Azure database from backup
-
-**Sync FROM Dev Azure TO Production:**
-- ✅ Initial setup (reference data, dropdowns, pickup locations)
-- ✅ Adding new reference data types
-- ⚠️ **Never sync user data or client-specific data**
-- ⚠️ **Never sync trips or transport requests** (production has real data)
-
-**Never Sync Production TO Dev:**
-- ❌ **NEVER** sync production data to dev (privacy/security)
-- ❌ Production contains real client data (confidential)
-- ❌ Dev environments are for testing only
 
 ---
 
@@ -338,126 +386,13 @@ git push origin develop
 
 # 3. Test on dev-swa first (automatic deployment)
 
-# 4. After testing, deploy to production via GitHub Actions
-#    - Go to GitHub Actions
-#    - Run "production - Deploy Prod Backend" workflow
-#    - Select branch: develop
-#    - Migrations run automatically during deployment
+# 4. After testing, merge to main and deploy to production via GitHub Actions
+
+# 5. ⚠️ CRITICAL: Sync back to develop
+git checkout develop
+git merge main --no-edit
+git push origin develop
 ```
-
----
-
-## Production Data Backup Strategy
-
-### Azure Automated Backups
-
-**Production database (`traccems-prod-pgsql`) is automatically backed up by Azure:**
-
-1. **Automated Backups:**
-   - Azure PostgreSQL Flexible Server provides automated backups
-   - **Retention:** 7-35 days (configurable)
-   - **Frequency:** Daily backups
-   - **Point-in-Time Restore:** Available for last 7 days
-
-2. **Backup Configuration:**
-   - Configured in Azure Portal → `traccems-prod-pgsql` → Backup
-   - Set retention period (recommended: 30 days)
-   - Enable point-in-time restore
-
-3. **Manual Backup (If Needed):**
-   ```bash
-   # Using Azure CLI
-   az postgres flexible-server backup create \
-     --resource-group TraccEms-Prod-USCentral \
-     --server-name traccems-prod-pgsql \
-     --backup-name manual-backup-$(date +%Y%m%d)
-   ```
-
-### Backup Verification
-
-**Regular Backup Checks:**
-- ✅ Verify automated backups are running (Azure Portal)
-- ✅ Test restore process periodically (to test database)
-- ✅ Monitor backup storage usage
-- ✅ Verify backup retention settings
-
-**Backup Monitoring:**
-- Check Azure Portal → `traccems-prod-pgsql` → Backup
-- Verify latest backup timestamp
-- Check backup storage usage
-- Review backup retention policy
-
-### Disaster Recovery Plan
-
-**If Production Database is Lost:**
-
-1. **Restore from Azure Backup:**
-   - Azure Portal → `traccems-prod-pgsql` → Backup
-   - Select backup point
-   - Restore to new server or existing server
-
-2. **Point-in-Time Restore:**
-   - Available for last 7 days
-   - Select specific timestamp
-   - Restore to that exact point
-
-3. **Manual Backup Restore:**
-   ```bash
-   # Restore from backup
-   az postgres flexible-server restore \
-     --resource-group TraccEms-Prod-USCentral \
-     --name traccems-prod-pgsql-restored \
-     --source-server traccems-prod-pgsql \
-     --restore-time "2025-12-29T10:00:00Z"
-   ```
-
----
-
-## Testing Workflow
-
-### Testing Healthcare/EMS Organization Creation
-
-**After syncing data to local dev, test organization creation:**
-
-1. **Test on Local Dev:**
-   ```bash
-   # Start local dev environment
-   ./scripts/start-dev-complete.sh
-   
-   # Test creating healthcare organization
-   # - Login as healthcare user
-   # - Create new healthcare location
-   # - Verify it saves correctly
-   ```
-
-2. **Test on Dev-SWA:**
-   ```bash
-   # Deploy to dev-swa (push to develop branch)
-   git push origin develop
-   
-   # Wait for deployment (check GitHub Actions)
-   # Test at https://dev-swa.traccems.com
-   # - Login as healthcare user
-   # - Create new healthcare location
-   # - Verify it saves correctly
-   ```
-
-3. **Test on Production:**
-   ```bash
-   # After successful dev-swa testing
-   # Deploy to production via GitHub Actions
-   # Test at https://traccems.com
-   # - Login as healthcare user
-   # - Create new healthcare location
-   # - Verify it saves correctly
-   ```
-
-**Important:** Test in each environment to ensure:
-- ✅ Database schema supports new organizations
-- ✅ API endpoints work correctly
-- ✅ Frontend forms submit successfully
-- ✅ Data persists correctly
-- ✅ No errors in console/logs
 
 ---
 
@@ -478,9 +413,14 @@ git push origin develop
    - Verify widget displays correctly
 
 3. **Production Deployment:**
+   - Merge to `main`
    - Deploy frontend only via GitHub Actions
    - **No backend deployment needed**
    - Test at `https://traccems.com`
+
+4. **Sync Back:**
+   - Merge `main` → `develop`
+   - Push `develop` (keeps dev-swa in sync)
 
 **Backend Deployment:** ❌ Not required
 
@@ -501,9 +441,14 @@ git push origin develop
    - Verify endpoint works correctly
 
 3. **Production Deployment:**
+   - Merge to `main`
    - Deploy backend via GitHub Actions
    - **Frontend deployment not required** (unless frontend calls new endpoint)
    - Test at `https://api.traccems.com/api/reports`
+
+4. **Sync Back:**
+   - Merge `main` → `develop`
+   - Push `develop` (keeps dev-swa in sync)
 
 **Backend Deployment:** ✅ Required
 
@@ -511,148 +456,146 @@ git push origin develop
 
 ### Scenario 3: Database Schema Change
 
-**Example:** Adding new field to `transport_requests` table
+**Example:** Adding new column to `transport_requests` table
 
 1. **Local Development:**
    - Edit `backend/prisma/schema.prisma`
-   - Add field: `priority String?`
-   - Create migration: `npx prisma migrate dev --name add-priority-field`
+   - Create migration: `npx prisma migrate dev --name add-new-column`
    - Test locally
-   - Commit and push to `develop`
+   - Commit migration files and push to `develop`
 
 2. **Dev-SWA Testing:**
    - Automatic backend deployment on `develop` push
-   - Migration runs automatically during deployment
+   - Migration runs automatically (`npx prisma migrate deploy`)
    - Test at `https://dev-swa.traccems.com`
-   - Verify new field works correctly
+   - Verify database changes work correctly
 
 3. **Production Deployment:**
+   - Merge to `main`
    - Deploy backend via GitHub Actions
-   - **Migration runs automatically** during deployment
+   - Migration runs automatically in production
    - Test at `https://traccems.com`
-   - Verify new field works with production data
 
-**Backend Deployment:** ✅ Required (migrations run automatically)
+4. **Sync Back:**
+   - Merge `main` → `develop`
+   - Push `develop` (keeps dev-swa in sync)
+
+**Backend Deployment:** ✅ Required (migrations must run)
 
 ---
 
-### Scenario 4: Data Sync (Restoring Test Data)
+### Scenario 4: Emergency Production Hotfix
 
-**Example:** Syncing reference data to local dev
+**Example:** Critical bug found in production, needs immediate fix
 
-1. **Sync from Dev Azure:**
+1. **Fix on Main Branch:**
    ```bash
-   SOURCE_DB="postgresql://traccems_admin:password1!@traccems-dev-pgsql.postgres.database.azure.com:5432/postgres?sslmode=require" \
-   TARGET_DB="postgresql://scooper@localhost:5432/medport_ems?schema=public" \
-   node backend/sync-reference-data.js
+   git checkout main
+   git pull origin main
+   # Make fix
+   git add .
+   git commit -m "hotfix: critical bug fix"
+   git push origin main
    ```
 
-2. **Verify Sync:**
-   - Check local database has updated data
-   - Test locally with synced data
-   - Verify relationships are preserved
+2. **Deploy to Production:**
+   - Deploy via GitHub Actions immediately
+   - Test fix on production
 
-3. **No Deployment Needed:**
-   - Data sync is local operation
-   - No code changes
-   - No deployment required
-
-**Backend Deployment:** ❌ Not required (data-only operation)
+3. **⚠️ CRITICAL: Sync to Develop:**
+   ```bash
+   git checkout develop
+   git merge main --no-edit
+   git push origin develop
+   ```
+   - This ensures dev-swa gets the fix
+   - Prevents having to fix the same issue twice
 
 ---
 
-## Key Principles
+## Testing Workflow
 
-### 1. Environment Isolation
+### Local Testing Checklist
 
-- ✅ Each environment has its own database
-- ✅ Production data never syncs to dev
-- ✅ Dev data can sync to local dev for testing
-- ✅ Environments are completely isolated
+Before pushing to `develop`, verify locally:
+- [ ] Frontend builds without errors
+- [ ] Backend starts without errors
+- [ ] Database migrations run successfully (if schema changed)
+- [ ] All new features work as expected
+- [ ] No console errors in browser
+- [ ] API endpoints return correct responses
 
-### 2. Deployment Strategy
+### Dev-SWA Testing Checklist
 
-- ✅ Frontend deploys independently
-- ✅ Backend deploys only when needed
-- ✅ Database migrations run automatically
-- ✅ Test on dev-swa before production
+After automatic deployment, verify on dev-swa:
+- [ ] Site loads correctly (`https://dev-swa.traccems.com`)
+- [ ] All features work as expected
+- [ ] No console errors
+- [ ] Database changes applied (if any)
+- [ ] Backend API responds correctly (`https://dev-api.traccems.com`)
 
-### 3. Data Management
+### Production Testing Checklist
 
-- ✅ Production has real client data (confidential)
-- ✅ Dev environments have test data
-- ✅ Sync scripts handle reference data
-- ✅ Production backups are automated (Azure)
-
-### 4. Testing Workflow
-
-- ✅ Test locally first
-- ✅ Test on dev-swa before production
-- ✅ Verify in production after deployment
-- ✅ Test organization creation in each environment
+After manual deployment, verify on production:
+- [ ] Site loads correctly (`https://traccems.com`)
+- [ ] All features work as expected
+- [ ] No console errors
+- [ ] Database migrations completed (if any)
+- [ ] Backend API responds correctly (`https://api.traccems.com`)
+- [ ] **Sync back to develop** (don't forget!)
 
 ---
 
 ## Quick Reference Commands
 
-### Local Development
+### Sync Main → Develop (After Production Fixes)
+
 ```bash
-# Start local dev environment
-./scripts/start-dev-complete.sh
-
-# Or manually
-npm run dev
-```
-
-### Git Workflow
-```bash
-# Create feature branch
-git checkout -b feature/my-feature
-
-# Commit changes
-git add .
-git commit -m "feat: description"
-
-# Merge to main
-git checkout main
-git merge feature/my-feature
-
-# Merge to develop (triggers dev-swa deployment)
+# After deploying fixes to production, sync back to develop
 git checkout develop
-git merge main
+git merge main --no-edit
 git push origin develop
 ```
 
-### Data Sync
-```bash
-# Sync users
-SOURCE_DB="postgresql://traccems_admin:password1!@traccems-dev-pgsql.postgres.database.azure.com:5432/postgres?sslmode=require" \
-TARGET_DB="postgresql://scooper@localhost:5432/medport_ems?schema=public" \
-node backend/sync-users-across-environments.js sync
+### Standard Development Flow
 
-# Sync reference data
-SOURCE_DB="postgresql://traccems_admin:password1!@traccems-dev-pgsql.postgres.database.azure.com:5432/postgres?sslmode=require" \
-TARGET_DB="postgresql://scooper@localhost:5432/medport_ems?schema=public" \
-node backend/sync-reference-data.js
+```bash
+# 1. Develop on develop branch
+git checkout develop
+# ... make changes ...
+git add .
+git commit -m "feat: new feature"
+git push origin develop
+# → Auto-deploys to dev-swa
+
+# 2. After testing, merge to main
+git checkout main
+git merge develop
+git push origin main
+# → Deploy to production via GitHub Actions
+
+# 3. Sync back (keeps dev-swa in sync)
+git checkout develop
+git merge main --no-edit
+git push origin develop
 ```
 
-### Production Deployment
-```bash
-# Frontend: Via GitHub Actions UI
-# - Go to GitHub Actions
-# - Run "production - Deploy Prod Frontend"
-# - Select branch: develop
+### Emergency Hotfix Flow
 
-# Backend: Via GitHub Actions UI
-# - Go to GitHub Actions
-# - Run "production - Deploy Prod Backend"
-# - Select branch: develop
-```
-
-### Backup Verification
 ```bash
-# Check Azure backup status (via Azure Portal)
-# Azure Portal → traccems-prod-pgsql → Backup
+# 1. Fix on main
+git checkout main
+# ... make fix ...
+git add .
+git commit -m "hotfix: critical fix"
+git push origin main
+# → Deploy to production
+
+# 2. IMMEDIATELY sync to develop
+git checkout develop
+git merge main --no-edit
+git push origin develop
+# → Auto-deploys fix to dev-swa
 ```
 
 ---
@@ -690,25 +633,12 @@ node backend/sync-reference-data.js
 
 6. **✅ Production Backups:**
    - Correct - Azure automated backups handle production
-   - 7-35 day retention (configurable)
-   - Point-in-time restore available
-   - Regular monitoring recommended
 
-### Workflow Summary
-
-```
-Local Dev → Git Commit → Develop Branch → Dev-SWA (Auto Deploy) → Test → Production (Manual Deploy)
-```
-
-**Key Points:**
-- ✅ Three separate databases (local, dev Azure, production)
-- ✅ Production data is different (real client data)
-- ✅ Backend deploys only when needed (schema/code changes)
-- ✅ Production backups are automated (Azure)
-- ✅ Test on dev-swa before production deployment
+7. **✅ Branch Synchronization:**
+   - **NEW:** Always sync `main` → `develop` after production fixes
+   - Prevents dev-swa and production from getting out of sync
+   - Ensures fixes are available in both environments
 
 ---
 
-**Last Updated:** December 29, 2025  
-**Status:** Active Reference Document
-
+**Updated:** December 31, 2025 - Added branch synchronization process to prevent dev-swa and production from getting out of sync

@@ -64,13 +64,20 @@ class UnitService {
       console.log('TCC_DEBUG: getAllUnits called');
       
       const prisma = databaseManager.getPrismaClient();
+      
+      // Use defensive includes - analytics might not exist in all environments
       const units = await prisma.unit.findMany({
         where: {
           // Remove isActive filter - show all units for admin users
         },
         include: {
           analytics: true,
-          agency: true
+          agency: {
+            select: {
+              id: true,
+              name: true
+            }
+          }
         },
         orderBy: {
           unitNumber: 'asc'
@@ -78,24 +85,51 @@ class UnitService {
       });
 
       // Transform Prisma units to our Unit interface
-      const transformedUnits: Unit[] = units.map((unit: any) => ({
-        id: unit.id,
-        agencyId: unit.agencyId,
-        unitNumber: unit.unitNumber,
-        type: unit.type as any,
-        capabilities: unit.capabilities,
-        currentStatus: unit.status as any,
-        currentLocation: unit.location ? JSON.stringify(unit.location) : 'Unknown',
-        crew: [], // Will be populated from separate crew management
-        isActive: unit.isActive,
-        totalTripsCompleted: unit.analytics?.totalTripsCompleted || 0,
-        averageResponseTime: unit.analytics?.averageResponseTime?.toNumber() || 0,
-        lastMaintenanceDate: unit.lastMaintenance || new Date(),
-        nextMaintenanceDate: unit.nextMaintenance || new Date(),
-        lastStatusUpdate: unit.lastStatusUpdate || new Date(),
-        createdAt: unit.createdAt,
-        updatedAt: unit.updatedAt
-      }));
+      const transformedUnits: Unit[] = units.map((unit: any) => {
+        try {
+          return {
+            id: unit.id,
+            agencyId: unit.agencyId,
+            unitNumber: unit.unitNumber,
+            type: unit.type as any,
+            capabilities: unit.capabilities || [],
+            // Use currentStatus if available, fallback to status
+            currentStatus: (unit.currentStatus || unit.status || 'AVAILABLE') as any,
+            currentLocation: unit.currentLocation || (unit.location ? JSON.stringify(unit.location) : 'Unknown'),
+            crew: [], // Will be populated from separate crew management
+            isActive: unit.isActive !== undefined ? unit.isActive : true,
+            totalTripsCompleted: unit.analytics?.totalTripsCompleted || 0,
+            averageResponseTime: unit.analytics?.averageResponseTime ? 
+              (typeof unit.analytics.averageResponseTime === 'number' ? unit.analytics.averageResponseTime : unit.analytics.averageResponseTime.toNumber()) : 0,
+            lastMaintenanceDate: unit.lastMaintenance || new Date(),
+            nextMaintenanceDate: unit.nextMaintenance || new Date(),
+            lastStatusUpdate: unit.lastStatusUpdate || unit.updatedAt || new Date(),
+            createdAt: unit.createdAt,
+            updatedAt: unit.updatedAt
+          };
+        } catch (error) {
+          console.error('TCC_DEBUG: Error transforming unit:', unit.id, error);
+          // Return minimal unit data if transformation fails
+          return {
+            id: unit.id,
+            agencyId: unit.agencyId,
+            unitNumber: unit.unitNumber || 'Unknown',
+            type: (unit.type || 'AMBULANCE') as any,
+            capabilities: unit.capabilities || [],
+            currentStatus: 'AVAILABLE' as any,
+            currentLocation: 'Unknown',
+            crew: [],
+            isActive: true,
+            totalTripsCompleted: 0,
+            averageResponseTime: 0,
+            lastMaintenanceDate: new Date(),
+            nextMaintenanceDate: new Date(),
+            lastStatusUpdate: new Date(),
+            createdAt: unit.createdAt || new Date(),
+            updatedAt: unit.updatedAt || new Date()
+          };
+        }
+      });
 
       console.log('TCC_DEBUG: Found all units:', transformedUnits.length);
       return transformedUnits;
