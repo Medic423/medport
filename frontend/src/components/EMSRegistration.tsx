@@ -117,7 +117,14 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
       }
     } catch (err: any) {
       console.error('TCC_DEBUG: Geocoding error:', err);
-      setError(err.response?.data?.error || 'Failed to lookup coordinates. Please enter them manually.');
+      console.error('TCC_DEBUG: Geocoding error details:', {
+        message: err.message,
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        data: err.response?.data,
+        code: err.code
+      });
+      setError(err.response?.data?.error || err.message || 'Failed to lookup coordinates. Please enter them manually.');
     } finally {
       setGeocoding(false);
     }
