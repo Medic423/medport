@@ -57,14 +57,10 @@ router.post('/login', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Login error:', error);
-    console.error('❌ Login error stack:', error instanceof Error ? error.stack : 'No stack trace');
-    console.error('❌ Login error message:', error instanceof Error ? error.message : String(error));
-    console.error('❌ Login error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+    console.error('Login error:', error);
     res.status(500).json({
       success: false,
-      error: 'Internal server error',
-      details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
+      error: 'Internal server error'
     });
   }
 });
@@ -372,14 +368,19 @@ router.get('/ems/agency/info', authenticateAdmin, async (req: AuthenticatedReque
       });
     }
 
-    // Find agency record - try by agencyId first, then by email
+    // Find agency record - try by agencyId first, then email fallback
     const agencyId = emsUser.agencyId || emsUser.id;
-    let agency = await centerDB.eMSAgency.findUnique({
-      where: { id: agencyId }
-    });
-
+    let agency = null;
+    
+    // First try to find by agencyId
+    if (agencyId) {
+      agency = await centerDB.eMSAgency.findUnique({
+        where: { id: agencyId }
+      });
+    }
+    
+    // Fallback to email lookup if not found by agencyId
     if (!agency) {
-      // Try by email as fallback
       agency = await centerDB.eMSAgency.findFirst({
         where: { email: emsUser.email }
       });
@@ -398,8 +399,6 @@ router.get('/ems/agency/info', authenticateAdmin, async (req: AuthenticatedReque
           city: '',
           state: '',
           zipCode: '',
-          latitude: null,
-          longitude: null,
           capabilities: [],
           operatingHours: '24/7'
         }
@@ -440,8 +439,7 @@ router.get('/ems/agency/info', authenticateAdmin, async (req: AuthenticatedReque
         operatingHours: {
           start: operatingHoursStart,
           end: operatingHoursEnd
-        },
-        acceptsNotifications: agency.acceptsNotifications !== undefined ? agency.acceptsNotifications : true
+        }
       }
     });
   } catch (error) {
@@ -507,37 +505,14 @@ router.put('/ems/agency/update', authenticateAdmin, async (req: AuthenticatedReq
     const emailChanged = typeof updateData.email === 'string' && updateData.email !== previousEmail;
     
     // Update EMS user record using the found user ID
-    // IMPORTANT: Only update email if it's actually changing, and handle conflicts
-    const userUpdateData: any = {
-      agencyName: updateData.agencyName,
-      name: updateData.contactName,
-      updatedAt: new Date()
-    };
-    
-    // Only update email if it's provided and different
-    if (updateData.email && updateData.email !== previousEmail) {
-      // Check if new email is already taken by another user
-      const emailConflict = await db.eMSUser.findFirst({
-        where: { 
-          email: updateData.email,
-          id: { not: existingUser.id } // Exclude current user
-        }
-      });
-      
-      if (emailConflict) {
-        console.warn('TCC_DEBUG: Email already in use by another user:', updateData.email);
-        return res.status(400).json({
-          success: false,
-          error: 'Email address is already in use by another account'
-        });
-      }
-      
-      userUpdateData.email = updateData.email;
-    }
-    
     const updatedUser = await db.eMSUser.update({
       where: { id: existingUser.id },
-      data: userUpdateData
+      data: {
+        agencyName: updateData.agencyName,
+        email: updateData.email,
+        name: updateData.contactName,
+        updatedAt: new Date()
+      }
     });
 
     console.log('TCC_DEBUG: EMS user updated successfully:', updatedUser);
@@ -580,7 +555,6 @@ router.put('/ems/agency/update', authenticateAdmin, async (req: AuthenticatedReq
           serviceArea: updateData.capabilities || [],
           capabilities: updateData.capabilities || [],
           operatingHours: updateData.operatingHours || '24/7',
-          acceptsNotifications: updateData.acceptsNotifications !== undefined ? updateData.acceptsNotifications : existingAgency.acceptsNotifications,
           updatedAt: new Date()
         }
       });
@@ -601,7 +575,6 @@ router.put('/ems/agency/update', authenticateAdmin, async (req: AuthenticatedReq
           serviceArea: updateData.capabilities || [],
           capabilities: updateData.capabilities || [],
           operatingHours: updateData.operatingHours || '24/7',
-          acceptsNotifications: updateData.acceptsNotifications !== undefined ? updateData.acceptsNotifications : true,
           isActive: true,
           status: "ACTIVE"
         }
@@ -660,210 +633,6 @@ router.put('/ems/agency/update', authenticateAdmin, async (req: AuthenticatedReq
     res.status(500).json({
       success: false,
       error: 'Failed to update agency information',
-      details: (error as Error).message
-    });
-  }
-});
-
-/**
- * GET /api/auth/ems/agency/availability
- * Get EMS agency availability status (Authenticated)
- */
-router.get('/ems/agency/availability', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
-  try {
-    if (!req.user?.email) {
-      return res.status(401).json({
-        success: false,
-        error: 'User not authenticated'
-      });
-    }
-
-    const db = databaseManager.getPrismaClient();
-
-    // Find EMS user by email
-    const emsUser = await db.eMSUser.findUnique({
-      where: { email: req.user.email }
-    });
-
-    if (!emsUser) {
-      return res.status(404).json({
-        success: false,
-        error: 'EMS user not found'
-      });
-    }
-
-    // Find agency record - try by email first, then by agencyId
-    const agencyId = emsUser.agencyId || emsUser.id;
-    let agency = await db.eMSAgency.findFirst({
-      where: { email: emsUser.email }
-    });
-
-    if (!agency) {
-      agency = await db.eMSAgency.findUnique({
-        where: { id: agencyId }
-      });
-    }
-
-    if (!agency) {
-      // Return default availability status if agency doesn't exist yet
-      return res.json({
-        success: true,
-        data: {
-          availabilityStatus: {
-            isAvailable: false,
-            availableLevels: []
-          }
-        }
-      });
-    }
-
-    // Parse availabilityStatus JSON or return default
-    let availabilityStatus = {
-      isAvailable: false,
-      availableLevels: [] as string[]
-    };
-
-    if (agency.availabilityStatus) {
-      try {
-        const status = typeof agency.availabilityStatus === 'string' 
-          ? JSON.parse(agency.availabilityStatus) 
-          : agency.availabilityStatus;
-        
-        availabilityStatus = {
-          isAvailable: status.isAvailable || false,
-          availableLevels: Array.isArray(status.availableLevels) ? status.availableLevels : []
-        };
-      } catch (error) {
-        console.error('Error parsing availabilityStatus:', error);
-        // Use default if parsing fails
-      }
-    }
-
-    res.json({
-      success: true,
-      data: {
-        availabilityStatus
-      }
-    });
-
-  } catch (error) {
-    console.error('Get EMS agency availability error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to retrieve agency availability status'
-    });
-  }
-});
-
-/**
- * PUT /api/auth/ems/agency/availability
- * Update EMS agency availability status (Authenticated)
- */
-router.put('/ems/agency/availability', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
-  try {
-    if (!req.user?.email) {
-      return res.status(401).json({
-        success: false,
-        error: 'User not authenticated'
-      });
-    }
-
-    // Verify user is EMS type
-    if (req.user.userType !== 'EMS') {
-      return res.status(403).json({
-        success: false,
-        error: 'Access denied: EMS users only'
-      });
-    }
-
-    const { isAvailable, availableLevels } = req.body;
-
-    // Validate input
-    if (typeof isAvailable !== 'boolean') {
-      return res.status(400).json({
-        success: false,
-        error: 'isAvailable must be a boolean'
-      });
-    }
-
-    if (!Array.isArray(availableLevels)) {
-      return res.status(400).json({
-        success: false,
-        error: 'availableLevels must be an array'
-      });
-    }
-
-    // Validate availableLevels contains only valid values
-    const validLevels = ['BLS', 'ALS', 'CCT'];
-    const invalidLevels = availableLevels.filter((level: string) => !validLevels.includes(level));
-    if (invalidLevels.length > 0) {
-      return res.status(400).json({
-        success: false,
-        error: `Invalid levels: ${invalidLevels.join(', ')}. Valid levels are: ${validLevels.join(', ')}`
-      });
-    }
-
-    const db = databaseManager.getPrismaClient();
-
-    // Find EMS user by email
-    const emsUser = await db.eMSUser.findUnique({
-      where: { email: req.user.email }
-    });
-
-    if (!emsUser) {
-      return res.status(404).json({
-        success: false,
-        error: 'EMS user not found'
-      });
-    }
-
-    // Find agency record - try by email first, then by agencyId
-    const agencyId = emsUser.agencyId || emsUser.id;
-    let agency = await db.eMSAgency.findFirst({
-      where: { email: emsUser.email }
-    });
-
-    if (!agency) {
-      agency = await db.eMSAgency.findUnique({
-        where: { id: agencyId }
-      });
-    }
-
-    if (!agency) {
-      return res.status(404).json({
-        success: false,
-        error: 'EMS agency not found. Please update your agency information first.'
-      });
-    }
-
-    // Prepare availability status object
-    const availabilityStatus = {
-      isAvailable,
-      availableLevels: availableLevels.filter((level: string) => validLevels.includes(level))
-    };
-
-    // Update agency availability status
-    const updatedAgency = await db.eMSAgency.update({
-      where: { id: agency.id },
-      data: {
-        availabilityStatus: availabilityStatus,
-        updatedAt: new Date()
-      }
-    });
-
-    res.json({
-      success: true,
-      message: 'Agency availability status updated successfully',
-      data: {
-        availabilityStatus
-      }
-    });
-
-  } catch (error) {
-    console.error('Update EMS agency availability error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to update agency availability status',
       details: (error as Error).message
     });
   }
@@ -942,22 +711,9 @@ router.post('/ems/register', async (req, res) => {
     const existingForAgency = await db.eMSUser.count({ where: { agencyName } });
     const isFirst = existingForAgency === 0;
 
-    // Create new EMS user
-    const user = await db.eMSUser.create({
-      data: {
-        email,
-        password: await bcrypt.hash(password, 10),
-        name,
-        agencyName,
-        userType: 'EMS',
-        isActive: true, // Auto-approve new EMS registrations
-        orgAdmin: isFirst
-      }
-    });
-
-    // Also create a corresponding EMSAgency record in Center database for TCC dashboard
+    // Create EMSAgency record first so we can link the user to it
     const centerDB = databaseManager.getPrismaClient();
-    await centerDB.eMSAgency.create({
+    const agency = await centerDB.eMSAgency.create({
       data: {
         name: agencyName,
         contactName: name,
@@ -973,7 +729,22 @@ router.post('/ems/register', async (req, res) => {
         latitude: latitude ? parseFloat(latitude) : null,
         longitude: longitude ? parseFloat(longitude) : null,
         isActive: true, // Auto-approve new EMS registrations
+        status: 'ACTIVE', // Set status explicitly
         requiresReview: false // No review needed for auto-approved agencies
+      }
+    });
+
+    // Create new EMS user with agencyId linked
+    const user = await db.eMSUser.create({
+      data: {
+        email,
+        password: await bcrypt.hash(password, 10),
+        name,
+        agencyName,
+        agencyId: agency.id, // Link user to agency
+        userType: 'EMS',
+        isActive: true, // Auto-approve new EMS registrations
+        orgAdmin: isFirst
       }
     });
 
@@ -1090,41 +861,17 @@ router.get('/users', authenticateAdmin, async (req: AuthenticatedRequest, res) =
     const includeSubUsers = (req.query.includeSubUsers as string | undefined) === 'true';
     const onlySubUsers = (req.query.onlySubUsers as string | undefined) === 'true';
 
-    // Query each user type separately with error handling
-    let centers: any[] = [];
-    let healthcare: any[] = [];
-    let ems: any[] = [];
-
-    try {
-      centers = await db.centerUser.findMany({
-        where: { isDeleted: false },
+    const [centers, healthcare, ems] = await Promise.all([
+      db.centerUser.findMany({
         select: { id: true, email: true, name: true, userType: true, isActive: true, createdAt: true, updatedAt: true }
-      });
-    } catch (error: any) {
-      console.error('Error fetching center users:', error);
-      // Continue with empty array if table doesn't exist
-    }
-
-    try {
-      healthcare = await db.healthcareUser.findMany({
-        where: { isDeleted: false },
+      }),
+      db.healthcareUser.findMany({
         select: { id: true, email: true, name: true, userType: true, isActive: true, createdAt: true, updatedAt: true, isSubUser: true, parentUserId: true, facilityName: true, orgAdmin: true }
-      });
-    } catch (error: any) {
-      console.error('Error fetching healthcare users:', error);
-      // Continue with empty array if table doesn't exist
-    }
-
-    try {
-      ems = await db.eMSUser.findMany({
-        where: { isDeleted: false },
+      }),
+      db.eMSUser.findMany({
         select: { id: true, email: true, name: true, userType: true, isActive: true, createdAt: true, updatedAt: true, isSubUser: true, parentUserId: true, agencyName: true, orgAdmin: true }
-      });
-    } catch (error: any) {
-      console.error('Error fetching EMS users:', error);
-      // Continue with empty array if table doesn't exist
-      // This handles the case where ems_users table doesn't exist yet
-    }
+      })
+    ]);
 
     let all = [
       ...centers.map(u => ({ ...u, domain: 'CENTER', isSubUser: false, parentUserId: null })),
@@ -1283,125 +1030,6 @@ router.post('/admin/users/:domain/:id/reset-password', authenticateAdmin, async 
 });
 
 /**
- * DELETE /api/auth/admin/users/:domain/:id
- * Soft delete a user (ADMIN only). Domain: CENTER|HEALTHCARE|EMS
- * Soft delete sets isDeleted=true, deletedAt=now(), and isActive=false
- */
-router.delete('/admin/users/:domain/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
-  try {
-    if (req.user?.userType !== 'ADMIN') {
-      return res.status(403).json({ success: false, error: 'Only administrators can delete users' });
-    }
-    
-    const { domain, id } = req.params as { domain: string; id: string };
-    const db = (await import('../services/databaseManager')).databaseManager.getPrismaClient();
-
-    // Check if user exists and get details for validation
-    let user: any = null;
-    let subUserCount = 0;
-    let tripCount = 0;
-
-    if (domain === 'CENTER') {
-      user = await db.centerUser.findUnique({ where: { id } });
-      if (!user) {
-        return res.status(404).json({ success: false, error: 'User not found' });
-      }
-      if (user.isDeleted) {
-        return res.status(400).json({ success: false, error: 'User is already deleted' });
-      }
-    } else if (domain === 'HEALTHCARE') {
-      user = await db.healthcareUser.findUnique({ where: { id } });
-      if (!user) {
-        return res.status(404).json({ success: false, error: 'User not found' });
-      }
-      if (user.isDeleted) {
-        return res.status(400).json({ success: false, error: 'User is already deleted' });
-      }
-      // Check for sub-users
-      subUserCount = await db.healthcareUser.count({ where: { parentUserId: id, isDeleted: false } });
-      if (subUserCount > 0) {
-        return res.status(400).json({ 
-          success: false, 
-          error: `Cannot delete user: ${subUserCount} sub-user(s) exist. Please delete sub-users first.` 
-        });
-      }
-      // Count trips created by this user
-      tripCount = await db.transportRequest.count({ where: { healthcareCreatedById: id } });
-    } else if (domain === 'EMS') {
-      user = await db.eMSUser.findUnique({ where: { id } });
-      if (!user) {
-        return res.status(404).json({ success: false, error: 'User not found' });
-      }
-      if (user.isDeleted) {
-        return res.status(400).json({ success: false, error: 'User is already deleted' });
-      }
-      // Check for sub-users
-      subUserCount = await db.eMSUser.count({ where: { parentUserId: id, isDeleted: false } });
-      if (subUserCount > 0) {
-        return res.status(400).json({ 
-          success: false, 
-          error: `Cannot delete user: ${subUserCount} sub-user(s) exist. Please delete sub-users first.` 
-        });
-      }
-    } else {
-      return res.status(400).json({ success: false, error: 'Invalid domain' });
-    }
-
-    // Perform soft delete
-    const deletedAt = new Date();
-    let deleted: any = null;
-
-    if (domain === 'CENTER') {
-      deleted = await db.centerUser.update({
-        where: { id },
-        data: { 
-          isDeleted: true,
-          deletedAt: deletedAt,
-          isActive: false
-        },
-        select: { id: true, email: true, name: true, userType: true, isActive: true, isDeleted: true, deletedAt: true }
-      });
-    } else if (domain === 'HEALTHCARE') {
-      deleted = await db.healthcareUser.update({
-        where: { id },
-        data: { 
-          isDeleted: true,
-          deletedAt: deletedAt,
-          isActive: false
-        },
-        select: { id: true, email: true, name: true, userType: true, isActive: true, isDeleted: true, deletedAt: true }
-      });
-    } else if (domain === 'EMS') {
-      deleted = await db.eMSUser.update({
-        where: { id },
-        data: { 
-          isDeleted: true,
-          deletedAt: deletedAt,
-          isActive: false
-        },
-        select: { id: true, email: true, name: true, userType: true, isActive: true, isDeleted: true, deletedAt: true }
-      });
-    }
-
-    res.json({ 
-      success: true, 
-      message: 'User deleted successfully',
-      data: {
-        ...deleted,
-        tripsCreated: tripCount,
-        subUsersDeleted: subUserCount
-      }
-    });
-  } catch (error: any) {
-    console.error('Admin delete user error:', error);
-    if (error.code === 'P2025') {
-      return res.status(404).json({ success: false, error: 'User not found' });
-    }
-    res.status(500).json({ success: false, error: 'Failed to delete user' });
-  }
-});
-
-/**
  * POST /api/auth/ems/login
  * EMS Agency login endpoint
  */
@@ -1423,35 +1051,19 @@ router.post('/ems/login', async (req, res) => {
 
     const db = databaseManager.getPrismaClient();
     console.log('TCC_DEBUG: Looking for EMS user with email:', email);
-    
-    // First check if user exists at all (including deleted)
     const user = await db.eMSUser.findFirst({
-      where: { email }
+      where: { 
+        email,
+        isActive: true
+      }
     });
-    console.log('TCC_DEBUG: EMS user lookup result:', user ? { id: user.id, email: user.email, name: user.name, isDeleted: user.isDeleted, isActive: user.isActive } : 'NOT FOUND');
+    console.log('TCC_DEBUG: EMS user lookup result:', user ? { id: user.id, email: user.email, name: user.name } : 'NOT FOUND');
 
     if (!user) {
       console.log('TCC_DEBUG: No EMS user found for email:', email);
       return res.status(401).json({
         success: false,
-        error: 'No account found with this email address. Please check your email or contact support.'
-      });
-    }
-
-    // Check if user is deleted
-    if (user.isDeleted) {
-      console.log('TCC_DEBUG: EMS user account has been deleted:', email);
-      return res.status(401).json({
-        success: false,
-        error: 'This account has been deleted. Please contact support if you believe this is an error.'
-      });
-    }
-
-    // Check if user is inactive
-    if (!user.isActive) {
-      return res.status(401).json({
-        success: false,
-        error: 'This account has been deactivated. Please contact support to reactivate your account.'
+        error: 'Invalid credentials'
       });
     }
 
@@ -1461,7 +1073,7 @@ router.post('/ems/login', async (req, res) => {
       console.log('TCC_DEBUG: Password mismatch for user:', email);
       return res.status(401).json({
         success: false,
-        error: 'Incorrect password. Please check your password and try again.'
+        error: 'Invalid credentials'
       });
     }
 
@@ -1530,66 +1142,26 @@ router.post('/healthcare/login', async (req, res) => {
     }
 
     const db = databaseManager.getPrismaClient();
-    
-    // Use raw query to handle missing columns gracefully
-    let user: any = null;
-    try {
-      // Try to get user with all fields first
-      user = await db.healthcareUser.findFirst({
-        where: { email }
-      });
-    } catch (queryError: any) {
-      // If Prisma query fails due to missing columns, use raw SQL
-      console.log('TCC_DEBUG: Prisma query failed, trying raw SQL:', queryError.message);
-      try {
-        const rawUsers = await db.$queryRaw`
-          SELECT id, email, password, name, "facilityName", "facilityType", "userType", "isActive"
-          FROM healthcare_users 
-          WHERE email = ${email}
-          LIMIT 1
-        `;
-        if (rawUsers && Array.isArray(rawUsers) && rawUsers.length > 0) {
-          user = rawUsers[0];
-        }
-      } catch (rawError) {
-        console.error('TCC_DEBUG: Raw SQL query also failed:', rawError);
-        throw queryError; // Throw original error
+    const user = await db.healthcareUser.findFirst({
+      where: { 
+        email,
+        isActive: true
       }
-    }
+    });
 
     if (!user) {
       console.log('TCC_DEBUG: No Healthcare user found for email:', email);
       return res.status(401).json({
         success: false,
-        error: 'No account found with this email address. Please check your email or contact support.'
-      });
-    }
-
-    // Check if user is deleted (handle missing column gracefully)
-    const isDeleted = (user as any).isDeleted === true || (user as any).isDeleted === 1;
-    if (isDeleted) {
-      console.log('TCC_DEBUG: Healthcare user account has been deleted:', email);
-      return res.status(401).json({
-        success: false,
-        error: 'This account has been deleted. Please contact support if you believe this is an error.'
-      });
-    }
-
-    // Check if user is inactive (handle missing column gracefully)
-    const isActive = (user as any).isActive !== false && (user as any).isActive !== 0;
-    if (!isActive) {
-      return res.status(401).json({
-        success: false,
-        error: 'This account has been deactivated. Please contact support to reactivate your account.'
+        error: 'Invalid credentials'
       });
     }
 
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
-      console.log('TCC_DEBUG: Password mismatch for Healthcare user:', email);
       return res.status(401).json({
         success: false,
-        error: 'Incorrect password. Please check your password and try again.'
+        error: 'Invalid credentials'
       });
     }
 
@@ -1611,12 +1183,7 @@ router.post('/healthcare/login', async (req, res) => {
       maxAge: 24 * 60 * 60 * 1000
     });
 
-    // Handle optional fields gracefully
-    const manageMultipleLocations = (user as any).manageMultipleLocations === true || (user as any).manageMultipleLocations === 1;
-    const orgAdmin = (user as any).orgAdmin === true || (user as any).orgAdmin === 1;
-    const mustChangePassword = (user as any).mustChangePassword === true || (user as any).mustChangePassword === 1;
-    
-    console.log('MULTI_LOC: Healthcare login - manageMultipleLocations:', manageMultipleLocations);
+    console.log('MULTI_LOC: Healthcare login - manageMultipleLocations:', user.manageMultipleLocations);
     res.json({
       success: true,
       message: 'Login successful',
@@ -1627,20 +1194,15 @@ router.post('/healthcare/login', async (req, res) => {
         userType: 'HEALTHCARE',
         facilityName: user.facilityName,
         facilityType: user.facilityType,
-        manageMultipleLocations: manageMultipleLocations || false,
-        orgAdmin: orgAdmin || false
+        manageMultipleLocations: user.manageMultipleLocations, // ✅ NEW: Multi-location flag
+        orgAdmin: (user as any).orgAdmin === true
       },
       token,
-      mustChangePassword: mustChangePassword || false
+      mustChangePassword: !!(user as any).mustChangePassword
     });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Healthcare Login error:', error);
-    console.error('Error details:', {
-      message: error.message,
-      code: error.code,
-      meta: error.meta
-    });
     res.status(500).json({
       success: false,
       error: 'Internal server error'

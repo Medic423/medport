@@ -75,7 +75,7 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
     'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
   ];
 
-  // Geocoding function using backend API endpoint
+  // Geocoding function using backend geocoding API endpoint
   // Backend handles multiple address variations and rate limiting
   const geocodeAddress = async () => {
     if (!formData.address || !formData.city || !formData.state || !formData.zipCode) {

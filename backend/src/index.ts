@@ -4,7 +4,6 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { databaseManager } from './services/databaseManager';
 import cookieParser from 'cookie-parser';
-import { GeocodingService } from './utils/geocodingService';
 
 // Import routes
 import authRoutes from './routes/auth';
@@ -20,7 +19,6 @@ import notificationRoutes from './routes/notifications';
 import unitRoutes from './routes/units';
 import tccUnitRoutes from './routes/tccUnits';
 import dropdownOptionsRoutes from './routes/dropdownOptions';
-import dropdownCategoriesRoutes from './routes/dropdownCategories';
 import pickupLocationRoutes from './routes/pickupLocations';
 import emsAnalyticsRoutes from './routes/emsAnalytics';
 import backupRoutes from './routes/backup';
@@ -31,6 +29,7 @@ import healthcareAgenciesRoutes from './routes/healthcareAgencies';
 import healthcareDestinationsRoutes from './routes/healthcareDestinations';
 import healthcareSubUsersRoutes from './routes/healthcareSubUsers';
 import emsSubUsersRoutes from './routes/emsSubUsers';
+import { GeocodingService } from './utils/geocodingService';
 
 // Load environment variables
 // Load .env first, then .env.local (which will override .env values)
@@ -49,52 +48,33 @@ console.log('TCC_DEBUG: FRONTEND_URL =', JSON.stringify(process.env.FRONTEND_URL
 console.log('TCC_DEBUG: Cleaned frontendUrl =', JSON.stringify(frontendUrl));
 console.log('TCC_DEBUG: Cleaned corsOrigin =', JSON.stringify(corsOrigin));
 
-// Handle OPTIONS preflight requests FIRST - before any other middleware
-app.options('*', (req, res) => {
-  const origin = req.headers.origin;
-  if (origin === corsOrigin || corsOrigin === '*') {
-    res.header('Access-Control-Allow-Origin', origin || corsOrigin);
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-TCC-Env');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Max-Age', '86400'); // 24 hours
-  }
-  res.sendStatus(200);
-});
-
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" }
-}));
+app.use(helmet());
 app.use(cors({
-  origin: corsOrigin,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-TCC-Env'],
-  exposedHeaders: ['Content-Type', 'Authorization']
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // List of allowed origins
+    const allowedOrigins = [
+      corsOrigin,
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'https://traccems.com',
+      'https://dev-swa.traccems.com'
+    ];
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn('TCC_DEBUG: CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
 }));
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Global request logger - catches ALL requests before routing
-app.use((req, res, next) => {
-  // Log ALL POST requests to help debug
-  if (req.method === 'POST') {
-    console.log('========================================');
-    console.log('🌐 GLOBAL REQUEST LOGGER: POST request detected');
-    console.log('Path:', req.path);
-    console.log('URL:', req.url);
-    console.log('Original URL:', req.originalUrl);
-    console.log('Method:', req.method);
-    if (req.path.includes('/trips') || req.url.includes('/trips') || req.originalUrl.includes('/trips')) {
-      console.log('✅ This is a trips-related request');
-      console.log('Body keys:', Object.keys(req.body || {}));
-      console.log('notificationRadius:', req.body?.notificationRadius);
-    }
-    console.log('========================================');
-  }
-  next();
-});
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -147,7 +127,6 @@ app.use('/api/tcc/facilities', facilityRoutes);
 app.use('/api/tcc/analytics', analyticsRoutes);
 app.use('/api/tcc/units', tccUnitRoutes);
 app.use('/api/dropdown-options', dropdownOptionsRoutes);
-app.use('/api/dropdown-categories', dropdownCategoriesRoutes);
 app.use('/api/tcc/pickup-locations', pickupLocationRoutes);
 app.use('/api/ems/analytics', emsAnalyticsRoutes);
 app.use('/api/optimize', optimizationRoutes);
@@ -185,6 +164,47 @@ app.get('/api/public/categories', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to get categories'
+    });
+  }
+});
+
+app.get('/api/public/hospitals', async (req, res) => {
+  try {
+    const prisma = databaseManager.getPrismaClient();
+    
+    // Only query hospitals table for production data (schema uses Hospital model)
+    const hospitals = await prisma.hospital.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        name: true,
+        address: true,
+        city: true,
+        state: true,
+        zipCode: true,
+        phone: true,
+        email: true,
+        type: true,
+        latitude: true,
+        longitude: true
+      }
+    });
+
+    // Sort by name
+    hospitals.sort((a, b) => a.name.localeCompare(b.name));
+
+    console.log('TCC_DEBUG: Public hospitals endpoint - Hospitals:', hospitals.length);
+
+    res.json({
+      success: true,
+      data: hospitals,
+      message: 'Hospitals retrieved successfully'
+    });
+  } catch (error) {
+    console.error('TCC_DEBUG: Get public hospitals error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get hospitals'
     });
   }
 });
@@ -235,47 +255,6 @@ app.post('/api/public/geocode', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to geocode address'
-    });
-  }
-});
-
-app.get('/api/public/hospitals', async (req, res) => {
-  try {
-    const prisma = databaseManager.getPrismaClient();
-    
-    // Only query hospitals table for production data (schema uses Hospital model)
-    const hospitals = await prisma.hospital.findMany({
-      where: { isActive: true },
-      select: {
-        id: true,
-        name: true,
-        address: true,
-        city: true,
-        state: true,
-        zipCode: true,
-        phone: true,
-        email: true,
-        type: true,
-        latitude: true,
-        longitude: true
-      }
-    });
-
-    // Sort by name
-    hospitals.sort((a, b) => a.name.localeCompare(b.name));
-
-    console.log('TCC_DEBUG: Public hospitals endpoint - Hospitals:', hospitals.length);
-
-    res.json({
-      success: true,
-      data: hospitals,
-      message: 'Hospitals retrieved successfully'
-    });
-  } catch (error) {
-    console.error('TCC_DEBUG: Get public hospitals error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to get hospitals'
     });
   }
 });
@@ -421,16 +400,6 @@ async function startServer() {
       console.log(`🚑 Agencies API: http://localhost:${PORT}/api/tcc/agencies`);
       console.log(`🏢 Facilities API: http://localhost:${PORT}/api/tcc/facilities`);
       console.log(`📈 Analytics API: http://localhost:${PORT}/api/tcc/analytics`);
-      
-      // SMS Configuration Logging
-      console.log('========================================');
-      console.log('📱 SMS CONFIGURATION STATUS');
-      console.log('========================================');
-      console.log('AZURE_SMS_ENABLED:', process.env.AZURE_SMS_ENABLED || 'NOT SET (defaults to false)');
-      console.log('AZURE_COMMUNICATION_CONNECTION_STRING:', process.env.AZURE_COMMUNICATION_CONNECTION_STRING ? 'SET (hidden)' : 'NOT SET');
-      console.log('AZURE_SMS_PHONE_NUMBER:', process.env.AZURE_SMS_PHONE_NUMBER || 'NOT SET');
-      console.log('SMS Enabled Check:', process.env.AZURE_SMS_ENABLED === 'true' ? '✅ ENABLED' : '❌ DISABLED');
-      console.log('========================================');
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);

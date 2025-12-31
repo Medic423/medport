@@ -14,8 +14,7 @@ import {
   Star,
   StarOff
 } from 'lucide-react';
-import { healthcareAgenciesAPI } from '../services/api';
-import api from '../services/api';
+import api, { healthcareAgenciesAPI } from '../services/api';
 
 interface Agency {
   id: string;
@@ -194,8 +193,7 @@ const HealthcareEMSAgencies: React.FC<HealthcareEMSAgenciesProps> = ({ user }) =
     }));
   };
 
-  // Geocoding function using OpenStreetMap Nominatim API
-  // Geocoding function using backend API endpoint
+  // Geocoding function using backend geocoding API endpoint
   // Backend handles multiple address variations and rate limiting
   const geocodeAddress = async () => {
     if (!addFormData.address || !addFormData.city || !addFormData.state || !addFormData.zipCode) {
@@ -206,7 +204,7 @@ const HealthcareEMSAgencies: React.FC<HealthcareEMSAgenciesProps> = ({ user }) =
     setGeocoding(true);
     setAddError(null);
 
-    console.log('TCC_DEBUG: Geocoding agency address:', {
+    console.log('TCC_DEBUG: Geocoding healthcare agency address:', {
       address: addFormData.address,
       city: addFormData.city,
       state: addFormData.state,
@@ -215,6 +213,7 @@ const HealthcareEMSAgencies: React.FC<HealthcareEMSAgenciesProps> = ({ user }) =
     });
 
     try {
+      // Use backend geocoding endpoint which handles multiple variations and rate limiting
       const response = await api.post('/api/public/geocode', {
         address: addFormData.address,
         city: addFormData.city,
@@ -227,16 +226,16 @@ const HealthcareEMSAgencies: React.FC<HealthcareEMSAgenciesProps> = ({ user }) =
         const { latitude, longitude } = response.data.data;
         setAddFormData(prev => ({
           ...prev,
-          latitude: latitude,
-          longitude: longitude
+          latitude: latitude.toString(),
+          longitude: longitude.toString()
         }));
         setAddError(null);
-        console.log('TCC_DEBUG: Coordinates set successfully:', { latitude, longitude });
+        console.log('TCC_DEBUG: Coordinates set successfully:', latitude, longitude);
       } else {
         setAddError(response.data.error || 'No coordinates found for this address. Please enter them manually.');
       }
     } catch (err: any) {
-      console.error('TCC_DEBUG: Geocoding error:', err);
+      console.error('Geocoding error:', err);
       setAddError(err.response?.data?.error || 'Failed to lookup coordinates. Please enter them manually.');
     } finally {
       setGeocoding(false);

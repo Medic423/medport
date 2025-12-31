@@ -58,8 +58,7 @@ const HealthcareRegistration: React.FC<HealthcareRegistrationProps> = ({ onBack,
     'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
   ];
 
-  // Geocoding function using multiple services for better reliability
-  // Geocoding function using backend API endpoint
+  // Geocoding function using backend geocoding API endpoint
   // Backend handles multiple address variations and rate limiting
   const geocodeAddress = async () => {
     if (!formData.address || !formData.city || !formData.state || !formData.zipCode) {
@@ -79,6 +78,7 @@ const HealthcareRegistration: React.FC<HealthcareRegistrationProps> = ({ onBack,
     });
 
     try {
+      // Use backend geocoding endpoint which handles multiple variations and rate limiting
       const response = await api.post('/api/public/geocode', {
         address: formData.address,
         city: formData.city,
@@ -95,7 +95,7 @@ const HealthcareRegistration: React.FC<HealthcareRegistrationProps> = ({ onBack,
           longitude: longitude.toString()
         }));
         setError(null);
-        console.log('TCC_DEBUG: Coordinates set successfully:', { latitude, longitude });
+        console.log('TCC_DEBUG: Coordinates set successfully:', latitude, longitude);
       } else {
         setError(response.data.error || 'Address not found. Please enter coordinates manually or try a different address format.');
       }

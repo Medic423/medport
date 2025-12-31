@@ -196,7 +196,8 @@ const HealthcareLocationSettings: React.FC<HealthcareLocationSettingsProps> = ({
       formData.address.trim(),
       formData.city.trim(),
       formData.state,
-      formData.zipCode.trim()
+      formData.zipCode.trim(),
+      formData.locationName
     );
   };
 
@@ -220,7 +221,7 @@ const HealthcareLocationSettings: React.FC<HealthcareLocationSettingsProps> = ({
           formData.city.trim(),
           formData.state,
           formData.zipCode.trim(),
-          formData.locationName.trim() // Pass location name for better geocoding
+          formData.locationName
         );
       }
 

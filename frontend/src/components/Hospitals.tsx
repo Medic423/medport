@@ -159,7 +159,7 @@ const Hospitals: React.FC = () => {
     }));
   };
 
-  // Geocoding function using backend API endpoint
+  // Geocoding function using backend geocoding API endpoint
   // Backend handles multiple address variations and rate limiting
   const geocodeAddress = async () => {
     if (!editFormData.address || !editFormData.city || !editFormData.state || !editFormData.zipCode) {
@@ -176,9 +176,10 @@ const Hospitals: React.FC = () => {
         city: editFormData.city,
         state: editFormData.state,
         zipCode: editFormData.zipCode,
-        name: editFormData.name
+        hospitalName: editFormData.name
       });
 
+      // Use backend geocoding endpoint which handles multiple variations and rate limiting
       const response = await api.post('/api/public/geocode', {
         address: editFormData.address,
         city: editFormData.city,
@@ -191,16 +192,16 @@ const Hospitals: React.FC = () => {
         const { latitude, longitude } = response.data.data;
         setEditFormData(prev => ({
           ...prev,
-          latitude: latitude.toString(),
-          longitude: longitude.toString()
+          latitude: parseFloat(latitude.toString()),
+          longitude: parseFloat(longitude.toString())
         }));
         setEditError(null);
-        console.log('TCC_DEBUG: Coordinates set successfully:', { latitude, longitude });
+        console.log('TCC_DEBUG: Coordinates set successfully:', latitude, longitude);
       } else {
         setEditError(response.data.error || 'Address not found. Please enter coordinates manually.');
       }
     } catch (err: any) {
-      console.error('TCC_DEBUG: Geocoding error:', err);
+      console.error('Geocoding error:', err);
       setEditError(err.response?.data?.error || 'Failed to lookup coordinates. Please enter them manually.');
     } finally {
       setGeocoding(false);
