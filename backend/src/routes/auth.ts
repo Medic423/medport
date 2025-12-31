@@ -1050,8 +1050,14 @@ router.post('/ems/register', async (req, res) => {
       });
       
       // If error is due to missing column (addedAt/addedBy), use raw SQL
-      if (createError.code === 'P2022' && createError.meta?.column) {
-        console.log('TCC_DEBUG: Column missing in database, using raw SQL fallback');
+      // Check both code and message to catch the error reliably
+      const isColumnError = createError.code === 'P2022' || 
+                            (createError.message && createError.message.includes('addedAt')) ||
+                            (createError.meta && createError.meta.column && createError.meta.column.includes('addedAt'));
+      
+      if (isColumnError) {
+        console.log('TCC_DEBUG: Column missing in database (addedAt), using raw SQL fallback');
+        console.log('TCC_DEBUG: Error details:', { code: createError.code, message: createError.message, meta: createError.meta });
         try {
           const agencyId = `c${Date.now().toString(36)}${randomBytes(6).toString('hex').substring(0, 10)}`;
           await centerDB.$executeRaw`

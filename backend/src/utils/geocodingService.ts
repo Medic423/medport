@@ -15,6 +15,8 @@ export class GeocodingService {
   private static readonly NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org/search';
   private static readonly USER_AGENT = 'TCC-Healthcare-App/1.0';
   private static readonly REQUEST_DELAY = 1000; // 1 second delay between requests (Nominatim rate limit)
+  private static readonly REQUEST_TIMEOUT = 5000; // 5 second timeout per request
+  private static readonly MAX_VARIATIONS = 3; // Limit to 3 variations max for faster response
 
   /**
    * Geocode an address to get coordinates
@@ -62,22 +64,40 @@ export class GeocodingService {
       addressVariations.push(`${city}, ${state}`);
     }
     
-    // Remove duplicates
-    const uniqueVariations = [...new Set(addressVariations)];
+    // Remove duplicates and limit to MAX_VARIATIONS
+    const uniqueVariations = [...new Set(addressVariations)].slice(0, this.MAX_VARIATIONS);
     console.log('GEOCODING: Trying', uniqueVariations.length, 'address variations:', uniqueVariations);
 
-    // Try each variation
-    for (let i = 0; i < addressVariations.length; i++) {
-      const variation = addressVariations[i];
-      const result = await this.geocodeVariation(variation);
-
-      if (result.success) {
-        console.log('GEOCODING: Success with variation:', variation);
-        return result;
+    // Try each variation with timeout
+    for (let i = 0; i < uniqueVariations.length; i++) {
+      const variation = uniqueVariations[i];
+      
+      // Use AbortController for proper timeout/cancellation
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), this.REQUEST_TIMEOUT);
+      
+      try {
+        const result = await this.geocodeVariation(variation, controller.signal);
+        clearTimeout(timeoutId);
+        
+        if (result.success) {
+          console.log('GEOCODING: Success with variation:', variation);
+          return result;
+        }
+        // If not successful, continue to next variation
+      } catch (error: any) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          console.warn('GEOCODING: Request timeout for variation:', variation);
+          // Continue to next variation
+        } else {
+          // Other errors - log and continue
+          console.error('GEOCODING: Error for variation:', variation, error);
+        }
       }
 
-      // Rate limiting - wait between requests
-      if (i < addressVariations.length - 1) {
+      // Rate limiting - wait between requests (but skip if last one)
+      if (i < uniqueVariations.length - 1) {
         await this.delay(this.REQUEST_DELAY);
       }
     }
@@ -94,7 +114,7 @@ export class GeocodingService {
   /**
    * Geocode a single address variation
    */
-  private static async geocodeVariation(address: string): Promise<GeocodeResult> {
+  private static async geocodeVariation(address: string, signal?: AbortSignal): Promise<GeocodeResult> {
     try {
       const url = new URL(this.NOMINATIM_BASE_URL);
       url.searchParams.set('q', address);
@@ -108,7 +128,8 @@ export class GeocodingService {
       const response = await fetch(url.toString(), {
         headers: {
           'User-Agent': this.USER_AGENT
-        }
+        },
+        signal: signal
       });
 
       if (!response.ok) {
