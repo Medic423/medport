@@ -257,8 +257,8 @@ const NotificationSettings: React.FC = () => {
           })()}
 
           <div className="space-y-6">
-            {/* Email Notifications Toggle */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            {/* Email Notifications Toggle - REMOVED: Only SMS is used */}
+            {/* <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center">
                 <Mail className="h-5 w-5 text-gray-600 mr-3" />
                 <div>
@@ -277,7 +277,7 @@ const NotificationSettings: React.FC = () => {
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
               </label>
-            </div>
+            </div> */}
 
             {/* Phone Number */}
             <div className="p-4 bg-blue-50 rounded-lg">
@@ -331,7 +331,8 @@ const NotificationSettings: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex space-x-6">
-                  <label className="flex items-center">
+                  {/* Email checkbox removed - only SMS is used */}
+                  {/* <label className="flex items-center">
                     <input
                       type="checkbox"
                       checked={settings.notificationTypes.trip_assignment?.email || false}
@@ -342,7 +343,7 @@ const NotificationSettings: React.FC = () => {
                     <span className={`text-sm ${!settings.emailNotifications ? 'text-gray-400' : 'text-gray-700'}`}>
                       Email
                     </span>
-                  </label>
+                  </label> */}
                   <label className="flex items-center">
                     <input
                       type="checkbox"
@@ -367,7 +368,8 @@ const NotificationSettings: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex space-x-6">
-                  <label className="flex items-center">
+                  {/* Email checkbox removed - only SMS is used */}
+                  {/* <label className="flex items-center">
                     <input
                       type="checkbox"
                       checked={settings.notificationTypes.trip_status_update?.email || false}
@@ -378,7 +380,7 @@ const NotificationSettings: React.FC = () => {
                     <span className={`text-sm ${!settings.emailNotifications ? 'text-gray-400' : 'text-gray-700'}`}>
                       Email
                     </span>
-                  </label>
+                  </label> */}
                   <label className="flex items-center">
                     <input
                       type="checkbox"
@@ -403,7 +405,8 @@ const NotificationSettings: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex space-x-6">
-                  <label className="flex items-center">
+                  {/* Email checkbox removed - only SMS is used */}
+                  {/* <label className="flex items-center">
                     <input
                       type="checkbox"
                       checked={settings.notificationTypes.trip_accepted?.email || false}
@@ -414,7 +417,7 @@ const NotificationSettings: React.FC = () => {
                     <span className={`text-sm ${!settings.emailNotifications ? 'text-gray-400' : 'text-gray-700'}`}>
                       Email
                     </span>
-                  </label>
+                  </label> */}
                   <label className="flex items-center">
                     <input
                       type="checkbox"
@@ -434,8 +437,8 @@ const NotificationSettings: React.FC = () => {
 
           {/* Service Tests */}
           <div className="mt-8 space-y-4">
-            {/* Email Service Test */}
-            <div className="p-4 bg-yellow-50 rounded-lg">
+            {/* Email Service Test - REMOVED: Only SMS is used */}
+            {/* <div className="p-4 bg-yellow-50 rounded-lg">
               <h3 className="text-lg font-medium text-gray-900 mb-2">Email Service Test</h3>
               <p className="text-sm text-gray-600 mb-4">
                 Test the email service connection to ensure notifications are working properly.
@@ -472,7 +475,7 @@ const NotificationSettings: React.FC = () => {
                   'Test Email Connection'
                 )}
               </button>
-            </div>
+            </div> */}
 
             {/* SMS Service Test */}
             <div className="p-4 bg-green-50 rounded-lg">

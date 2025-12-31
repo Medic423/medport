@@ -689,7 +689,8 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
                 Notification Preferences
               </label>
               <div className="space-y-2">
-                <label className="flex items-center space-x-2 cursor-pointer">
+                {/* Email notifications removed - only SMS is used */}
+                {/* <label className="flex items-center space-x-2 cursor-pointer">
                   <input
                     type="checkbox"
                     name="emailNotifications"
@@ -698,7 +699,7 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
                     className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                   />
                   <span className="text-sm text-gray-700">Email Notifications</span>
-                </label>
+                </label> */}
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input
                     type="checkbox"
