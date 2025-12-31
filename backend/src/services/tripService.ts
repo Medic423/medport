@@ -1439,10 +1439,10 @@ export class TripService {
           estimatedArrival: response.estimatedArrival,
           isSelected: response.isSelected,
           assignedUnitId: response.assignedUnitId,
-          assignedUnit: response.assignedUnit ? {
-            id: response.assignedUnit.id,
-            unitNumber: response.assignedUnit.unitNumber,
-            type: response.assignedUnit.type
+          assignedUnit: (response as any).assignedUnit && typeof (response as any).assignedUnit === 'object' && !Array.isArray((response as any).assignedUnit) ? {
+            id: (response as any).assignedUnit.id,
+            unitNumber: (response as any).assignedUnit.unitNumber,
+            type: (response as any).assignedUnit.type
           } : null,
           createdAt: response.createdAt,
           updatedAt: response.updatedAt,
@@ -1559,7 +1559,9 @@ export class TripService {
         status: unit.status,
         isActive: unit.isActive,
         agencyId: unit.agencyId,
-        agencyName: unit.agency?.name
+        agencyName: (unit as any).agency && typeof (unit as any).agency === 'object' && !Array.isArray((unit as any).agency) 
+          ? (unit as any).agency.name 
+          : undefined
       } : 'NOT FOUND');
 
       if (!unit) {
