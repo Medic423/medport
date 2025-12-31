@@ -552,17 +552,34 @@ router.put('/ems/agency/update', authenticateAdmin, async (req: AuthenticatedReq
     console.log('TCC_DEBUG: Found EMS user:', existingUser.id);
     const previousEmail = existingUser.email;
     const agencyId = existingUser.agencyId || existingUser.id;
-    const emailChanged = typeof updateData.email === 'string' && updateData.email !== previousEmail;
+    
+    // Only update email if it's provided and valid (not null/undefined/empty)
+    const newEmail = typeof updateData.email === 'string' && updateData.email.trim() !== '' 
+      ? updateData.email.trim() 
+      : previousEmail;
+    const emailChanged = newEmail !== previousEmail;
+    
+    // Build update data object - only include fields that are provided
+    const userUpdateData: any = {
+      updatedAt: new Date()
+    };
+    
+    // Only update fields that are provided and valid
+    if (updateData.agencyName !== undefined && updateData.agencyName !== null) {
+      userUpdateData.agencyName = updateData.agencyName;
+    }
+    if (updateData.contactName !== undefined && updateData.contactName !== null) {
+      userUpdateData.name = updateData.contactName;
+    }
+    // Always update email (either to new value or keep existing)
+    userUpdateData.email = newEmail;
+    
+    console.log('TCC_DEBUG: Updating EMS user with data:', userUpdateData);
     
     // Update EMS user record using the found user ID
     const updatedUser = await db.eMSUser.update({
       where: { id: existingUser.id },
-      data: {
-        agencyName: updateData.agencyName,
-        email: updateData.email,
-        name: updateData.contactName,
-        updatedAt: new Date()
-      }
+      data: userUpdateData
     });
 
     console.log('TCC_DEBUG: EMS user updated successfully:', updatedUser);
@@ -574,9 +591,9 @@ router.put('/ems/agency/update', authenticateAdmin, async (req: AuthenticatedReq
       where: { email: previousEmail }
     });
     
-    if (!existingAgency && updateData.email !== previousEmail) {
+    if (!existingAgency && newEmail !== previousEmail) {
       existingAgency = await centerDB.eMSAgency.findFirst({
-        where: { email: updateData.email }
+        where: { email: newEmail }
       });
     }
     
@@ -592,9 +609,9 @@ router.put('/ems/agency/update', authenticateAdmin, async (req: AuthenticatedReq
       agencyUpdateResult = await centerDB.eMSAgency.update({
         where: { id: existingAgency.id },
         data: {
-          name: updateData.agencyName,
-          email: updateData.email,
-          contactName: updateData.contactName,
+          name: updateData.agencyName || existingAgency.name,
+          email: newEmail,
+          contactName: updateData.contactName || existingAgency.contactName,
           phone: updateData.phone,
           address: updateData.address,
           city: updateData.city,
@@ -612,9 +629,9 @@ router.put('/ems/agency/update', authenticateAdmin, async (req: AuthenticatedReq
       console.log('TCC_DEBUG: Creating new Agency record...');
       agencyUpdateResult = await centerDB.eMSAgency.create({
         data: {
-          name: updateData.agencyName,
-          email: updateData.email,
-          contactName: updateData.contactName,
+          name: updateData.agencyName || 'Unknown Agency',
+          email: newEmail,
+          contactName: updateData.contactName || 'Unknown Contact',
           phone: updateData.phone,
           address: updateData.address,
           city: updateData.city,
@@ -684,6 +701,197 @@ router.put('/ems/agency/update', authenticateAdmin, async (req: AuthenticatedReq
       success: false,
       error: 'Failed to update agency information',
       details: (error as Error).message
+    });
+  }
+});
+
+/**
+ * GET /api/auth/ems/agency/availability
+ * Get EMS agency availability status (Authenticated)
+ */
+router.get('/ems/agency/availability', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    console.log('TCC_DEBUG: Get EMS agency availability request:', {
+      userId: req.user?.id,
+      userType: req.user?.userType,
+      email: req.user?.email
+    });
+
+    if (req.user?.userType !== 'EMS') {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: EMS users only'
+      });
+    }
+
+    const db = databaseManager.getPrismaClient();
+    
+    // Find EMS user to get agencyId
+    const emsUser = await db.eMSUser.findUnique({
+      where: { email: req.user.email }
+    });
+
+    if (!emsUser) {
+      return res.status(404).json({
+        success: false,
+        error: 'EMS user not found'
+      });
+    }
+
+    const agencyId = emsUser.agencyId || emsUser.id;
+    
+    // Find agency
+    const agency = await db.eMSAgency.findUnique({
+      where: { id: agencyId },
+      select: { availabilityStatus: true }
+    });
+
+    // Default availability status if not set
+    const defaultStatus = {
+      isAvailable: false,
+      availableLevels: []
+    };
+
+    let availabilityStatus = defaultStatus;
+    
+    if (agency?.availabilityStatus) {
+      try {
+        // Parse if it's a string, otherwise use as-is
+        if (typeof agency.availabilityStatus === 'string') {
+          availabilityStatus = JSON.parse(agency.availabilityStatus);
+        } else {
+          availabilityStatus = agency.availabilityStatus as any;
+        }
+        
+        // Ensure it has the required fields
+        if (!availabilityStatus.hasOwnProperty('isAvailable')) {
+          availabilityStatus.isAvailable = false;
+        }
+        if (!Array.isArray(availabilityStatus.availableLevels)) {
+          availabilityStatus.availableLevels = [];
+        }
+      } catch (parseError) {
+        console.error('TCC_DEBUG: Error parsing availabilityStatus:', parseError);
+        availabilityStatus = defaultStatus;
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        availabilityStatus
+      }
+    });
+
+  } catch (error) {
+    console.error('TCC_DEBUG: Get EMS agency availability error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve availability status',
+      details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+    });
+  }
+});
+
+/**
+ * PUT /api/auth/ems/agency/availability
+ * Update EMS agency availability status (Authenticated)
+ */
+router.put('/ems/agency/availability', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    console.log('TCC_DEBUG: Update EMS agency availability request:', {
+      userId: req.user?.id,
+      userType: req.user?.userType,
+      body: req.body
+    });
+
+    if (req.user?.userType !== 'EMS') {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: EMS users only'
+      });
+    }
+
+    const { isAvailable, availableLevels } = req.body;
+
+    // Validate input
+    if (typeof isAvailable !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        error: 'isAvailable must be a boolean'
+      });
+    }
+
+    if (!Array.isArray(availableLevels)) {
+      return res.status(400).json({
+        success: false,
+        error: 'availableLevels must be an array'
+      });
+    }
+
+    // Validate availableLevels contains only valid values
+    const validLevels = ['BLS', 'ALS', 'CCT'];
+    const invalidLevels = availableLevels.filter((level: string) => !validLevels.includes(level));
+    if (invalidLevels.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid levels: ${invalidLevels.join(', ')}. Valid levels are: ${validLevels.join(', ')}`
+      });
+    }
+
+    const db = databaseManager.getPrismaClient();
+    
+    // Find EMS user to get agencyId
+    const emsUser = await db.eMSUser.findUnique({
+      where: { email: req.user.email }
+    });
+
+    if (!emsUser) {
+      return res.status(404).json({
+        success: false,
+        error: 'EMS user not found'
+      });
+    }
+
+    const agencyId = emsUser.agencyId || emsUser.id;
+    
+    // Update agency availability status
+    const availabilityStatus = {
+      isAvailable,
+      availableLevels
+    };
+
+    await db.eMSAgency.update({
+      where: { id: agencyId },
+      data: {
+        availabilityStatus: availabilityStatus as any,
+        updatedAt: new Date()
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Availability status updated successfully',
+      data: {
+        availabilityStatus
+      }
+    });
+
+  } catch (error: any) {
+    console.error('TCC_DEBUG: Update EMS agency availability error:', error);
+    
+    // Handle case where agency doesn't exist yet
+    if (error.code === 'P2025') {
+      return res.status(404).json({
+        success: false,
+        error: 'Agency not found'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update availability status',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
