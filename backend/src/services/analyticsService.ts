@@ -81,6 +81,11 @@ export class AnalyticsService {
       };
     } catch (error) {
       console.error('Error getting system overview:', error);
+      console.error('Error details:', {
+        message: (error as Error).message,
+        stack: (error as Error).stack
+      });
+      // Return zeros but log the actual error for debugging
       return {
         totalTrips: 0,
         totalHospitals: 0,

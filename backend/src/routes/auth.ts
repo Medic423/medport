@@ -730,7 +730,8 @@ router.post('/ems/register', async (req, res) => {
         longitude: longitude ? parseFloat(longitude) : null,
         isActive: true, // Auto-approve new EMS registrations
         status: 'ACTIVE', // Set status explicitly
-        requiresReview: false // No review needed for auto-approved agencies
+        requiresReview: false, // No review needed for auto-approved agencies
+        addedAt: new Date() // Explicitly set addedAt timestamp
       }
     });
 
@@ -763,6 +764,12 @@ router.post('/ems/register', async (req, res) => {
 
   } catch (error: any) {
     console.error('EMS registration error:', error);
+    console.error('EMS registration error details:', {
+      message: error.message,
+      code: error.code,
+      meta: error.meta,
+      stack: error.stack
+    });
     
     if (error.code === 'P2002') {
       return res.status(400).json({
@@ -771,9 +778,15 @@ router.post('/ems/register', async (req, res) => {
       });
     }
 
+    // Return more detailed error in development, generic in production
+    const errorMessage = process.env.NODE_ENV === 'production' 
+      ? 'Registration failed. Please try again.'
+      : error.message || 'Registration failed. Please try again.';
+
     res.status(500).json({
       success: false,
-      error: 'Registration failed. Please try again.'
+      error: errorMessage,
+      ...(process.env.NODE_ENV !== 'production' && { details: error.message, code: error.code })
     });
   }
 });
