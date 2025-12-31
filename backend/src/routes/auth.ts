@@ -643,6 +643,9 @@ router.put('/ems/agency/update', authenticateAdmin, async (req: AuthenticatedReq
  * Register new EMS Agency (Public)
  */
 router.post('/ems/register', async (req, res) => {
+  console.log('TCC_DEBUG: EMS registration endpoint called');
+  console.log('TCC_DEBUG: Request body:', JSON.stringify(req.body, null, 2));
+  
   try {
     const { 
       email, 
@@ -661,7 +664,25 @@ router.post('/ems/register', async (req, res) => {
       operatingHours 
     } = req.body;
 
+    console.log('TCC_DEBUG: Extracted fields:', {
+      email: email ? 'present' : 'missing',
+      password: password ? 'present' : 'missing',
+      name: name ? 'present' : 'missing',
+      agencyName: agencyName ? 'present' : 'missing',
+      serviceArea: serviceArea,
+      address: address,
+      city: city,
+      state: state,
+      zipCode: zipCode,
+      phone: phone,
+      latitude: latitude,
+      longitude: longitude,
+      capabilities: capabilities,
+      operatingHours: operatingHours
+    });
+
     if (!email || !password || !name || !agencyName) {
+      console.log('TCC_DEBUG: Missing required fields');
       return res.status(400).json({
         success: false,
         error: 'Email, password, name, and agencyName are required'
@@ -669,11 +690,15 @@ router.post('/ems/register', async (req, res) => {
     }
 
     // Validate coordinates if provided
+    console.log('TCC_DEBUG: Validating coordinates');
     if (latitude && longitude) {
       const lat = parseFloat(latitude);
       const lng = parseFloat(longitude);
       
+      console.log('TCC_DEBUG: Parsed coordinates:', { lat, lng });
+      
       if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        console.log('TCC_DEBUG: Invalid coordinates');
         return res.status(400).json({
           success: false,
           error: 'Invalid latitude or longitude coordinates'
@@ -681,14 +706,19 @@ router.post('/ems/register', async (req, res) => {
       }
     }
 
+    console.log('TCC_DEBUG: Getting Prisma client');
     const db = databaseManager.getPrismaClient();
+    console.log('TCC_DEBUG: Prisma client obtained');
     
     // Check if user already exists in EMS database
+    console.log('TCC_DEBUG: Checking for existing user with email:', email);
     const existingUser = await db.eMSUser.findUnique({
       where: { email }
     });
+    console.log('TCC_DEBUG: Existing user check result:', existingUser ? 'found' : 'not found');
 
     if (existingUser) {
+      console.log('TCC_DEBUG: User already exists, returning 400');
       return res.status(400).json({
         success: false,
         error: 'An account with this email already exists. Please use a different email or try logging in.'
@@ -696,11 +726,14 @@ router.post('/ems/register', async (req, res) => {
     }
     
     // Also check if agency name already exists
+    console.log('TCC_DEBUG: Checking for existing agency with name:', agencyName);
     const existingAgency = await db.eMSAgency.findFirst({
       where: { name: agencyName }
     });
+    console.log('TCC_DEBUG: Existing agency check result:', existingAgency ? 'found' : 'not found');
 
     if (existingAgency) {
+      console.log('TCC_DEBUG: Agency already exists, returning 400');
       return res.status(400).json({
         success: false,
         error: 'An agency with this name already exists. Please use a different agency name.'
@@ -708,47 +741,100 @@ router.post('/ems/register', async (req, res) => {
     }
 
     // Determine if this is the first account for this agency (orgAdmin=true for first)
+    console.log('TCC_DEBUG: Checking if first account for agency');
     const existingForAgency = await db.eMSUser.count({ where: { agencyName } });
     const isFirst = existingForAgency === 0;
+    console.log('TCC_DEBUG: Is first account:', isFirst);
 
     // Create EMSAgency record first so we can link the user to it
+    console.log('TCC_DEBUG: Creating EMSAgency record');
     const centerDB = databaseManager.getPrismaClient();
-    const agency = await centerDB.eMSAgency.create({
-      data: {
-        name: agencyName,
-        contactName: name,
-        phone: phone || 'Phone to be provided',
-        email: email,
-        address: address || 'Address to be provided',
-        city: city || 'City to be provided',
-        state: state || 'State to be provided',
-        zipCode: zipCode || '00000',
-        serviceArea: serviceArea || [],
-        capabilities: capabilities || [],
-        operatingHours: operatingHours || null,
-        latitude: latitude ? parseFloat(latitude) : null,
-        longitude: longitude ? parseFloat(longitude) : null,
-        isActive: true, // Auto-approve new EMS registrations
-        status: 'ACTIVE', // Set status explicitly
-        requiresReview: false, // No review needed for auto-approved agencies
-        addedAt: new Date() // Explicitly set addedAt timestamp
-      }
-    });
+    
+    const agencyData = {
+      name: agencyName,
+      contactName: name,
+      phone: phone || 'Phone to be provided',
+      email: email,
+      address: address || 'Address to be provided',
+      city: city || 'City to be provided',
+      state: state || 'State to be provided',
+      zipCode: zipCode || '00000',
+      serviceArea: serviceArea || [],
+      capabilities: capabilities || [],
+      operatingHours: operatingHours || null,
+      latitude: latitude ? parseFloat(latitude) : null,
+      longitude: longitude ? parseFloat(longitude) : null,
+      isActive: true, // Auto-approve new EMS registrations
+      status: 'ACTIVE', // Set status explicitly
+      requiresReview: false, // No review needed for auto-approved agencies
+      addedAt: new Date() // Explicitly set addedAt timestamp
+    };
+    
+    console.log('TCC_DEBUG: Agency data to create:', JSON.stringify(agencyData, null, 2));
+    
+    let agency;
+    try {
+      agency = await centerDB.eMSAgency.create({
+        data: agencyData
+      });
+      console.log('TCC_DEBUG: Agency created successfully, ID:', agency.id);
+    } catch (createError: any) {
+      console.error('TCC_DEBUG: Error creating agency:', createError);
+      console.error('TCC_DEBUG: Agency creation error details:', {
+        message: createError.message,
+        code: createError.code,
+        meta: createError.meta
+      });
+      throw createError; // Re-throw to be caught by outer catch
+    }
 
     // Create new EMS user with agencyId linked
-    const user = await db.eMSUser.create({
-      data: {
-        email,
-        password: await bcrypt.hash(password, 10),
-        name,
-        agencyName,
-        agencyId: agency.id, // Link user to agency
-        userType: 'EMS',
-        isActive: true, // Auto-approve new EMS registrations
-        orgAdmin: isFirst
-      }
+    console.log('TCC_DEBUG: Creating EMS user with agencyId:', agency.id);
+    console.log('TCC_DEBUG: Hashing password');
+    const hashedPassword = await bcrypt.hash(password, 10);
+    console.log('TCC_DEBUG: Password hashed');
+    
+    const userData = {
+      email,
+      password: hashedPassword,
+      name,
+      agencyName,
+      agencyId: agency.id, // Link user to agency
+      userType: 'EMS',
+      isActive: true, // Auto-approve new EMS registrations
+      orgAdmin: isFirst
+    };
+    
+    console.log('TCC_DEBUG: User data to create (password hidden):', {
+      ...userData,
+      password: '[HIDDEN]'
     });
+    
+    let user;
+    try {
+      user = await db.eMSUser.create({
+        data: userData
+      });
+      console.log('TCC_DEBUG: User created successfully, ID:', user.id);
+    } catch (createError: any) {
+      console.error('TCC_DEBUG: Error creating user:', createError);
+      console.error('TCC_DEBUG: User creation error details:', {
+        message: createError.message,
+        code: createError.code,
+        meta: createError.meta
+      });
+      // If user creation fails, try to clean up the agency
+      try {
+        console.log('TCC_DEBUG: Attempting to clean up agency:', agency.id);
+        await centerDB.eMSAgency.delete({ where: { id: agency.id } });
+        console.log('TCC_DEBUG: Agency cleaned up successfully');
+      } catch (cleanupError) {
+        console.error('TCC_DEBUG: Failed to clean up agency:', cleanupError);
+      }
+      throw createError; // Re-throw to be caught by outer catch
+    }
 
+    console.log('TCC_DEBUG: Registration successful, sending response');
     res.status(201).json({
       success: true,
       message: 'EMS agency registration successful - agency is now active and available for trip requests',
@@ -778,16 +864,27 @@ router.post('/ems/register', async (req, res) => {
       });
     }
 
-    // Return more detailed error in development, generic in production
-    const errorMessage = process.env.NODE_ENV === 'production' 
-      ? 'Registration failed. Please try again.'
-      : error.message || 'Registration failed. Please try again.';
-
-    res.status(500).json({
+    // Return error details - include code and message for debugging
+    // In production, we'll still include the error code so we can diagnose issues
+    const errorResponse: any = {
       success: false,
-      error: errorMessage,
-      ...(process.env.NODE_ENV !== 'production' && { details: error.message, code: error.code })
-    });
+      error: error.message || 'Registration failed. Please try again.',
+      code: error.code || 'UNKNOWN_ERROR'
+    };
+    
+    // Include additional details for debugging (even in production for now)
+    if (error.meta) {
+      errorResponse.meta = error.meta;
+    }
+    
+    // Include Prisma error details if available
+    if (error.code && error.code.startsWith('P')) {
+      errorResponse.prismaError = true;
+      errorResponse.prismaCode = error.code;
+    }
+
+    console.error('TCC_DEBUG: Sending error response:', JSON.stringify(errorResponse, null, 2));
+    res.status(500).json(errorResponse);
   }
 });
 
