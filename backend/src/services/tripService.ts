@@ -335,12 +335,18 @@ export class TripService {
       console.log('TCC_DEBUG: Found trips:', trips.length);
       try {
         console.log('TCC_DEBUG: Trips sample fields →',
-          trips.slice(0, 3).map(t => ({
-            id: t.id,
-            status: (t as any).status,
-            assignedUnitId: (t as any).assignedUnitId,
-            assignedUnit: t.assignedUnit ? { id: t.assignedUnit.id, unitNumber: t.assignedUnit.unitNumber, type: t.assignedUnit.type } : null
-          }))
+          trips.slice(0, 3).map(t => {
+            const tripAny = t as any;
+            const assignedUnit = tripAny.assignedUnit;
+            return {
+              id: t.id,
+              status: tripAny.status,
+              assignedUnitId: tripAny.assignedUnitId,
+              assignedUnit: assignedUnit && typeof assignedUnit === 'object' && !Array.isArray(assignedUnit) 
+                ? { id: assignedUnit.id, unitNumber: assignedUnit.unitNumber, type: assignedUnit.type } 
+                : null
+            };
+          })
         );
         console.log('TCC_FILTER_DEBUG: Trips healthcareCreatedById sample →',
           trips.slice(0, 3).map(t => ({
@@ -360,19 +366,21 @@ export class TripService {
         if (index === 0) console.log('TCC_DEBUG: Processing first trip:', trip.id);
         try {
           // Format fromLocation: use healthcareLocation, originFacility, or fallback to fromLocation string
-          let fromLocationStr = (trip as any).fromLocation || '';
-          if (!fromLocationStr && trip.healthcareLocation) {
-            fromLocationStr = trip.healthcareLocation.locationName || 
-              `${trip.healthcareLocation.city || ''}, ${trip.healthcareLocation.state || ''}`.trim();
+          const tripAny = trip as any;
+          let fromLocationStr = tripAny.fromLocation || '';
+          if (!fromLocationStr && tripAny.healthcareLocation) {
+            const hl = tripAny.healthcareLocation;
+            fromLocationStr = (hl.locationName || 
+              `${hl.city || ''}, ${hl.state || ''}`.trim()) || '';
           }
-          if (!fromLocationStr && trip.originFacility) {
-            fromLocationStr = trip.originFacility.name || '';
+          if (!fromLocationStr && tripAny.originFacility) {
+            fromLocationStr = tripAny.originFacility.name || '';
           }
 
           // Format toLocation: use destinationFacility or fallback to toLocation string
-          let toLocationStr = (trip as any).toLocation || '';
-          if (!toLocationStr && trip.destinationFacility) {
-            toLocationStr = trip.destinationFacility.name || '';
+          let toLocationStr = tripAny.toLocation || '';
+          if (!toLocationStr && tripAny.destinationFacility) {
+            toLocationStr = tripAny.destinationFacility.name || '';
           }
 
           // Calculate distance and time if we have location data
@@ -404,11 +412,12 @@ export class TripService {
         } catch (error) {
           console.error('TCC_DEBUG: Error calculating distance for trip:', trip.id, error);
           // Format locations even on error
-          const fromLocationStr = (trip as any).fromLocation || 
-            (trip.healthcareLocation?.locationName) || 
-            (trip.originFacility?.name) || '';
-          const toLocationStr = (trip as any).toLocation || 
-            (trip.destinationFacility?.name) || '';
+          const tripAny = trip as any;
+          const fromLocationStr = tripAny.fromLocation || 
+            (tripAny.healthcareLocation?.locationName) || 
+            (tripAny.originFacility?.name) || '';
+          const toLocationStr = tripAny.toLocation || 
+            (tripAny.destinationFacility?.name) || '';
           return {
             ...trip,
             fromLocation: fromLocationStr,
