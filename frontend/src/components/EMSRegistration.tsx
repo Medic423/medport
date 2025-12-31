@@ -255,13 +255,26 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
       }, 2000);
     } catch (err: any) {
       console.error('EMS registration error:', err);
+      console.error('EMS registration error details:', {
+        message: err.message,
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        data: err.response?.data,
+        code: err.response?.data?.code,
+        meta: err.response?.data?.meta
+      });
+      
       // Show the specific error message
       let errorMessage = 'Registration failed. Please try again.';
       
-      if (err.message) {
-        errorMessage = err.message;
-      } else if (err.response?.data?.error) {
+      if (err.response?.data?.error) {
         errorMessage = err.response.data.error;
+        // Include error code if available
+        if (err.response.data.code) {
+          errorMessage += ` (Error Code: ${err.response.data.code})`;
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
       }
       
       setError(errorMessage);
