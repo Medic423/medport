@@ -727,8 +727,10 @@ router.post('/ems/register', async (req, res) => {
     
     // Also check if agency name already exists
     console.log('TCC_DEBUG: Checking for existing agency with name:', agencyName);
+    // Use select to only get id field to avoid accessing non-existent columns
     const existingAgency = await db.eMSAgency.findFirst({
-      where: { name: agencyName }
+      where: { name: agencyName },
+      select: { id: true } // Only select id to avoid column issues
     });
     console.log('TCC_DEBUG: Existing agency check result:', existingAgency ? 'found' : 'not found');
 
@@ -750,7 +752,7 @@ router.post('/ems/register', async (req, res) => {
     console.log('TCC_DEBUG: Creating EMSAgency record');
     const centerDB = databaseManager.getPrismaClient();
     
-    const agencyData = {
+    const agencyData: any = {
       name: agencyName,
       contactName: name,
       phone: phone || 'Phone to be provided',
@@ -768,6 +770,7 @@ router.post('/ems/register', async (req, res) => {
       status: 'ACTIVE', // Set status explicitly
       requiresReview: false, // No review needed for auto-approved agencies
       addedAt: new Date() // Explicitly set addedAt timestamp
+      // Note: Not setting addedBy as it may not exist in production database
     };
     
     console.log('TCC_DEBUG: Agency data to create:', JSON.stringify(agencyData, null, 2));
