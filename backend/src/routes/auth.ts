@@ -368,11 +368,23 @@ router.get('/ems/agency/info', authenticateAdmin, async (req: AuthenticatedReque
       });
     }
 
-    // Find agency record
+    // Find agency record - try by agencyId first, then email fallback
     const agencyId = emsUser.agencyId || emsUser.id;
-    const agency = await centerDB.eMSAgency.findFirst({
-      where: { email: emsUser.email }
-    });
+    let agency = null;
+    
+    // First try to find by agencyId
+    if (agencyId) {
+      agency = await centerDB.eMSAgency.findUnique({
+        where: { id: agencyId }
+      });
+    }
+    
+    // Fallback to email lookup if not found by agencyId
+    if (!agency) {
+      agency = await centerDB.eMSAgency.findFirst({
+        where: { email: emsUser.email }
+      });
+    }
 
     if (!agency) {
       // Return user data with empty agency fields
@@ -699,22 +711,9 @@ router.post('/ems/register', async (req, res) => {
     const existingForAgency = await db.eMSUser.count({ where: { agencyName } });
     const isFirst = existingForAgency === 0;
 
-    // Create new EMS user
-    const user = await db.eMSUser.create({
-      data: {
-        email,
-        password: await bcrypt.hash(password, 10),
-        name,
-        agencyName,
-        userType: 'EMS',
-        isActive: true, // Auto-approve new EMS registrations
-        orgAdmin: isFirst
-      }
-    });
-
-    // Also create a corresponding EMSAgency record in Center database for TCC dashboard
+    // Create EMSAgency record first so we can link the user to it
     const centerDB = databaseManager.getPrismaClient();
-    await centerDB.eMSAgency.create({
+    const agency = await centerDB.eMSAgency.create({
       data: {
         name: agencyName,
         contactName: name,
@@ -730,7 +729,22 @@ router.post('/ems/register', async (req, res) => {
         latitude: latitude ? parseFloat(latitude) : null,
         longitude: longitude ? parseFloat(longitude) : null,
         isActive: true, // Auto-approve new EMS registrations
+        status: 'ACTIVE', // Set status explicitly
         requiresReview: false // No review needed for auto-approved agencies
+      }
+    });
+
+    // Create new EMS user with agencyId linked
+    const user = await db.eMSUser.create({
+      data: {
+        email,
+        password: await bcrypt.hash(password, 10),
+        name,
+        agencyName,
+        agencyId: agency.id, // Link user to agency
+        userType: 'EMS',
+        isActive: true, // Auto-approve new EMS registrations
+        orgAdmin: isFirst
       }
     });
 

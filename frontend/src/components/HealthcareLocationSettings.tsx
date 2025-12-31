@@ -147,29 +147,34 @@ const HealthcareLocationSettings: React.FC<HealthcareLocationSettingsProps> = ({
     setShowModal(true);
   };
 
-  // GPS lookup function using a geocoding service
-  const geocodeAddress = async (address: string, city: string, state: string, zipCode: string): Promise<{latitude: number, longitude: number} | null> => {
+  // GPS lookup function using backend geocoding API endpoint
+  // Backend handles multiple address variations and rate limiting
+  const geocodeAddress = async (address: string, city: string, state: string, zipCode: string, locationName?: string): Promise<{latitude: number, longitude: number} | null> => {
     try {
       setGpsLookupStatus('looking');
-      const fullAddress = `${address}, ${city}, ${state} ${zipCode}`;
-      console.log('MULTI_LOC: Geocoding address:', fullAddress);
+      console.log('MULTI_LOC: Geocoding address:', { address, city, state, zipCode, locationName });
       
-      // Using OpenStreetMap Nominatim (free geocoding service)
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&limit=1`);
-      const data = await response.json();
+      // Use backend geocoding endpoint
+      const response = await api.post('/api/public/geocode', {
+        address,
+        city,
+        state,
+        zipCode,
+        facilityName: locationName
+      });
       
-      if (data && data.length > 0) {
-        const { lat, lon } = data[0];
+      if (response.data.success) {
+        const { latitude, longitude } = response.data.data;
         const coordinates = {
-          latitude: parseFloat(lat),
-          longitude: parseFloat(lon)
+          latitude,
+          longitude
         };
         console.log('MULTI_LOC: Geocoded coordinates:', coordinates);
         setGpsCoordinates(coordinates);
         setGpsLookupStatus('found');
         return coordinates;
       } else {
-        console.warn('MULTI_LOC: No coordinates found for address:', fullAddress);
+        console.warn('MULTI_LOC: No coordinates found for address:', { address, city, state, zipCode });
         setGpsLookupStatus('error');
         return null;
       }
@@ -191,7 +196,8 @@ const HealthcareLocationSettings: React.FC<HealthcareLocationSettingsProps> = ({
       formData.address.trim(),
       formData.city.trim(),
       formData.state,
-      formData.zipCode.trim()
+      formData.zipCode.trim(),
+      formData.locationName
     );
   };
 
@@ -214,7 +220,8 @@ const HealthcareLocationSettings: React.FC<HealthcareLocationSettingsProps> = ({
           formData.address.trim(),
           formData.city.trim(),
           formData.state,
-          formData.zipCode.trim()
+          formData.zipCode.trim(),
+          formData.locationName
         );
       }
 
