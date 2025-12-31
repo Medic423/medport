@@ -346,7 +346,11 @@ router.put('/healthcare/facility/update', authenticateAdmin, async (req: Authent
  */
 router.get('/ems/agency/info', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
+    console.log('TCC_DEBUG: GET /api/auth/ems/agency/info - Request received');
+    console.log('TCC_DEBUG: User:', { id: req.user?.id, email: req.user?.email, userType: req.user?.userType });
+    
     if (!req.user?.email) {
+      console.log('TCC_DEBUG: No user email found');
       return res.status(401).json({
         success: false,
         error: 'User not authenticated'
@@ -357,36 +361,54 @@ router.get('/ems/agency/info', authenticateAdmin, async (req: AuthenticatedReque
     const centerDB = databaseManager.getPrismaClient();
 
     // Find EMS user by email
+    console.log('TCC_DEBUG: Looking up EMS user by email:', req.user.email);
     const emsUser = await db.eMSUser.findUnique({
       where: { email: req.user.email }
     });
 
     if (!emsUser) {
+      console.log('TCC_DEBUG: EMS user not found');
       return res.status(404).json({
         success: false,
         error: 'EMS user not found'
       });
     }
 
+    console.log('TCC_DEBUG: Found EMS user:', { id: emsUser.id, agencyId: emsUser.agencyId, agencyName: emsUser.agencyName });
+
     // Find agency record - try by agencyId first, then email fallback
-    const agencyId = emsUser.agencyId || emsUser.id;
+    const agencyId = emsUser.agencyId;
     let agency = null;
     
     // First try to find by agencyId
     if (agencyId) {
-      agency = await centerDB.eMSAgency.findUnique({
-        where: { id: agencyId }
-      });
+      console.log('TCC_DEBUG: Looking up agency by agencyId:', agencyId);
+      try {
+        agency = await centerDB.eMSAgency.findUnique({
+          where: { id: agencyId }
+        });
+        console.log('TCC_DEBUG: Agency lookup result:', agency ? 'found' : 'not found');
+      } catch (agencyError: any) {
+        console.error('TCC_DEBUG: Error looking up agency by ID:', agencyError.message);
+        // Continue to fallback
+      }
     }
     
     // Fallback to email lookup if not found by agencyId
     if (!agency) {
-      agency = await centerDB.eMSAgency.findFirst({
-        where: { email: emsUser.email }
-      });
+      console.log('TCC_DEBUG: Trying fallback lookup by email:', emsUser.email);
+      try {
+        agency = await centerDB.eMSAgency.findFirst({
+          where: { email: emsUser.email }
+        });
+        console.log('TCC_DEBUG: Email lookup result:', agency ? 'found' : 'not found');
+      } catch (emailError: any) {
+        console.error('TCC_DEBUG: Error looking up agency by email:', emailError.message);
+      }
     }
 
     if (!agency) {
+      console.log('TCC_DEBUG: No agency found, returning user data only');
       // Return user data with empty agency fields
       return res.json({
         success: true,
@@ -400,34 +422,52 @@ router.get('/ems/agency/info', authenticateAdmin, async (req: AuthenticatedReque
           state: '',
           zipCode: '',
           capabilities: [],
-          operatingHours: '24/7'
+          operatingHours: {
+            start: '00:00',
+            end: '23:59'
+          }
         }
       });
     }
 
-    // Parse operating hours if it's a string like "00:00 - 23:59"
+    console.log('TCC_DEBUG: Found agency:', { id: agency.id, name: agency.name });
+
+    // Parse operating hours - handle both string and JSON
     let operatingHoursStart = '00:00';
     let operatingHoursEnd = '23:59';
-    if (agency.operatingHours) {
-      if (typeof agency.operatingHours === 'string') {
-        const match = agency.operatingHours.match(/(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})/);
+    
+    try {
+      if (agency.operatingHours) {
+        let operatingHoursStr = '';
+        
+        // Handle JSON format
+        if (typeof agency.operatingHours === 'object') {
+          operatingHoursStr = JSON.stringify(agency.operatingHours);
+        } else {
+          operatingHoursStr = String(agency.operatingHours);
+        }
+        
+        // Try to parse time range format "00:00 - 23:59"
+        const match = operatingHoursStr.match(/(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})/);
         if (match) {
           operatingHoursStart = match[1];
           operatingHoursEnd = match[2];
-        } else if (agency.operatingHours !== '24/7') {
-          // Try to parse other formats
+        } else if (operatingHoursStr.includes('24/7') || operatingHoursStr.includes('24-7')) {
           operatingHoursStart = '00:00';
           operatingHoursEnd = '23:59';
         }
       }
+    } catch (hoursError: any) {
+      console.error('TCC_DEBUG: Error parsing operating hours:', hoursError.message);
+      // Use defaults
     }
 
-    res.json({
+    const responseData = {
       success: true,
       data: {
         agencyName: agency.name,
-        contactName: agency.contactName,
-        email: agency.email,
+        contactName: agency.contactName || emsUser.name,
+        email: agency.email || emsUser.email,
         phone: agency.phone || '',
         address: agency.address || '',
         city: agency.city || '',
@@ -435,18 +475,28 @@ router.get('/ems/agency/info', authenticateAdmin, async (req: AuthenticatedReque
         zipCode: agency.zipCode || '',
         latitude: agency.latitude || null,
         longitude: agency.longitude || null,
-        capabilities: agency.capabilities || [],
+        capabilities: Array.isArray(agency.capabilities) ? agency.capabilities : [],
         operatingHours: {
           start: operatingHoursStart,
           end: operatingHoursEnd
         }
       }
+    };
+
+    console.log('TCC_DEBUG: Returning agency info successfully');
+    res.json(responseData);
+  } catch (error: any) {
+    console.error('TCC_DEBUG: Get EMS agency info error:', error);
+    console.error('TCC_DEBUG: Error stack:', error.stack);
+    console.error('TCC_DEBUG: Error details:', {
+      message: error.message,
+      code: error.code,
+      meta: error.meta
     });
-  } catch (error) {
-    console.error('Get EMS agency info error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to retrieve agency information'
+      error: 'Failed to retrieve agency information',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });

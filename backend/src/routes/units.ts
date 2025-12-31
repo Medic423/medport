@@ -11,32 +11,67 @@ const router = express.Router();
 router.get('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     const user = req.user;
-    console.log('🔍 Units API: req.user:', req.user);
+    console.log('TCC_DEBUG: GET /api/units - Request received');
+    console.log('TCC_DEBUG: User:', { id: user?.id, email: user?.email, userType: user?.userType, agencyId: user?.agencyId });
     
     let units;
     
     if (user?.userType === 'EMS') {
       // For EMS users, get units for their agency
-      const agencyId = user.agencyId || user.id; // Use agencyId if available, fallback to user.id for EMS
-      console.log('🔍 Units API: agencyId for EMS user:', agencyId);
+      // First try to get agencyId from user object, then lookup from database
+      let agencyId = user.agencyId;
+      
+      if (!agencyId && user.email) {
+        console.log('TCC_DEBUG: No agencyId in user object, looking up EMS user');
+        try {
+          const db = databaseManager.getPrismaClient();
+          const emsUser = await db.eMSUser.findUnique({
+            where: { email: user.email },
+            select: { agencyId: true }
+          });
+          if (emsUser?.agencyId) {
+            agencyId = emsUser.agencyId;
+            console.log('TCC_DEBUG: Found agencyId from database:', agencyId);
+          }
+        } catch (lookupError: any) {
+          console.error('TCC_DEBUG: Error looking up EMS user:', lookupError.message);
+        }
+      }
+      
+      if (!agencyId) {
+        console.log('TCC_DEBUG: No agencyId found, returning empty array');
+        return res.json({
+          success: true,
+          data: []
+        });
+      }
+      
+      console.log('TCC_DEBUG: Getting units for agencyId:', agencyId);
       units = await unitService.getUnitsByAgency(agencyId);
     } else {
       // For admin users, get all units
-      console.log('🔍 Units API: Getting all units for admin user');
+      console.log('TCC_DEBUG: Getting all units for admin user');
       units = await unitService.getAllUnits();
     }
     
-    console.log('🔍 Units API: units found:', units.length);
+    console.log('TCC_DEBUG: Units found:', units.length);
     
     res.json({
       success: true,
       data: units
     });
-  } catch (error) {
-    console.error('Error getting units:', error);
+  } catch (error: any) {
+    console.error('TCC_DEBUG: Error getting units:', error);
+    console.error('TCC_DEBUG: Error stack:', error.stack);
+    console.error('TCC_DEBUG: Error details:', {
+      message: error.message,
+      code: error.code,
+      meta: error.meta
+    });
     res.status(500).json({
       success: false,
-      error: 'Failed to retrieve units'
+      error: 'Failed to retrieve units',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });

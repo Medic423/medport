@@ -126,39 +126,88 @@ router.put('/:id', async (req, res) => {
 /**
  * GET /api/agency-responses
  * Get agency responses with optional filtering
+ * For EMS users, automatically filters by their agencyId
  */
-router.get('/', async (req, res) => {
+router.get('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     console.log('TCC_DEBUG: Get agency responses request with query:', req.query);
+    console.log('TCC_DEBUG: User:', { id: req.user?.id, email: req.user?.email, userType: req.user?.userType });
+    
+    // For EMS users, automatically filter by their agencyId
+    let agencyId = req.query.agencyId as string | undefined;
+    
+    if (req.user?.userType === 'EMS') {
+      // Get agencyId from user object or database
+      if (!agencyId) {
+        agencyId = req.user.agencyId;
+        
+        // If not in user object, look it up
+        if (!agencyId && req.user.email) {
+          try {
+            const db = databaseManager.getPrismaClient();
+            const emsUser = await db.eMSUser.findUnique({
+              where: { email: req.user.email },
+              select: { agencyId: true }
+            });
+            if (emsUser?.agencyId) {
+              agencyId = emsUser.agencyId;
+              console.log('TCC_DEBUG: Found agencyId from database:', agencyId);
+            }
+          } catch (lookupError: any) {
+            console.error('TCC_DEBUG: Error looking up EMS user:', lookupError.message);
+          }
+        }
+      }
+      
+      if (!agencyId) {
+        console.log('TCC_DEBUG: No agencyId found for EMS user, returning empty array');
+        return res.json({
+          success: true,
+          data: []
+        });
+      }
+      
+      console.log('TCC_DEBUG: Filtering responses by agencyId:', agencyId);
+    }
     
     const filters = {
       tripId: req.query.tripId as string,
-      agencyId: req.query.agencyId as string,
+      agencyId: agencyId,
       response: req.query.response as 'ACCEPTED' | 'DECLINED' | 'PENDING',
       isSelected: req.query.isSelected ? req.query.isSelected === 'true' : undefined,
       dateFrom: req.query.dateFrom as string,
       dateTo: req.query.dateTo as string,
     };
 
+    console.log('TCC_DEBUG: Filters:', filters);
     const result = await tripService.getAgencyResponses(filters);
 
     if (!result.success) {
+      console.error('TCC_DEBUG: getAgencyResponses returned error:', result.error);
       return res.status(400).json({
         success: false,
-        error: result.error
+        error: result.error || 'Failed to fetch agency responses'
       });
     }
 
+    console.log('TCC_DEBUG: Returning', result.data?.length || 0, 'responses');
     res.json({
       success: true,
-      data: result.data
+      data: result.data || []
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('TCC_DEBUG: Get agency responses error:', error);
+    console.error('TCC_DEBUG: Error stack:', error.stack);
+    console.error('TCC_DEBUG: Error details:', {
+      message: error.message,
+      code: error.code,
+      meta: error.meta
+    });
     res.status(500).json({
       success: false,
-      error: 'Internal server error'
+      error: 'Failed to fetch agency responses',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
