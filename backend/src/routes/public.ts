@@ -6,6 +6,7 @@ const router = express.Router();
 
 // Public geocoding endpoint (no auth required)
 router.post('/geocode', async (req, res) => {
+  const startTime = Date.now();
   try {
     console.log('TCC_DEBUG: Public geocoding endpoint called with body:', JSON.stringify(req.body));
     const { address, city, state, zipCode, facilityName } = req.body;
@@ -27,7 +28,8 @@ router.post('/geocode', async (req, res) => {
       facilityName
     );
 
-    console.log('TCC_DEBUG: GeocodingService result:', result);
+    const duration = Date.now() - startTime;
+    console.log(`TCC_DEBUG: GeocodingService completed in ${duration}ms, result:`, JSON.stringify(result));
 
     if (result.success) {
       res.json({
@@ -46,11 +48,12 @@ router.post('/geocode', async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('TCC_DEBUG: Geocoding endpoint error:', error);
+    const duration = Date.now() - startTime;
+    console.error(`TCC_DEBUG: Geocoding endpoint error after ${duration}ms:`, error);
     console.error('TCC_DEBUG: Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     res.status(500).json({
       success: false,
-      error: 'Failed to geocode address'
+      error: error instanceof Error ? error.message : 'Failed to geocode address'
     });
   }
 });

@@ -13,10 +13,11 @@ export interface GeocodeResult {
 
 export class GeocodingService {
   private static readonly NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org/search';
-  private static readonly USER_AGENT = 'TCC-Healthcare-App/1.0';
+  private static readonly USER_AGENT = 'TCC-EMS-System/1.0 (contact@traccems.com)';
   private static readonly REQUEST_DELAY = 1000; // 1 second delay between requests (Nominatim rate limit)
-  private static readonly REQUEST_TIMEOUT = 5000; // 5 second timeout per request
+  private static readonly REQUEST_TIMEOUT = 10000; // 10 second timeout per request (increased from 5s)
   private static readonly MAX_VARIATIONS = 3; // Limit to 3 variations max for faster response
+  private static readonly MAX_RETRIES = 2; // Retry failed requests up to 2 times
 
   /**
    * Geocode an address to get coordinates
@@ -34,34 +35,60 @@ export class GeocodingService {
     // Build address variations to try (more comprehensive)
     const addressVariations: string[] = [];
     
-    // 1. Full address with ZIP
-    if (address && city && state && zipCode) {
-      addressVariations.push(`${address}, ${city}, ${state} ${zipCode}`);
+    // Clean and normalize address components
+    const cleanAddress = address?.trim() || '';
+    const cleanCity = city?.trim() || '';
+    const cleanState = state?.trim() || '';
+    const cleanZip = zipCode?.trim() || '';
+    
+    // 1. Full address with ZIP (standard format)
+    if (cleanAddress && cleanCity && cleanState && cleanZip) {
+      addressVariations.push(`${cleanAddress}, ${cleanCity}, ${cleanState} ${cleanZip}`);
     }
     
-    // 2. Full address without ZIP
-    if (address && city && state) {
-      addressVariations.push(`${address}, ${city}, ${state}`);
+    // 2. Full address with ZIP (alternative format - comma before state)
+    if (cleanAddress && cleanCity && cleanState && cleanZip) {
+      addressVariations.push(`${cleanAddress}, ${cleanCity}, ${cleanState}, ${cleanZip}`);
     }
     
-    // 3. Facility name with full address (if provided)
-    if (facilityName && address && city && state && zipCode) {
-      addressVariations.push(`${facilityName}, ${address}, ${city}, ${state} ${zipCode}`);
+    // 3. Full address without ZIP
+    if (cleanAddress && cleanCity && cleanState) {
+      addressVariations.push(`${cleanAddress}, ${cleanCity}, ${cleanState}`);
     }
     
-    // 4. Facility name with city/state (if provided)
-    if (facilityName && city && state) {
-      addressVariations.push(`${facilityName}, ${city}, ${state}`);
+    // 4. Address with abbreviated street type (e.g., "Drive" -> "Dr")
+    if (cleanAddress && cleanCity && cleanState && cleanZip) {
+      const abbrevAddress = cleanAddress
+        .replace(/\bDrive\b/gi, 'Dr')
+        .replace(/\bStreet\b/gi, 'St')
+        .replace(/\bAvenue\b/gi, 'Ave')
+        .replace(/\bRoad\b/gi, 'Rd')
+        .replace(/\bLane\b/gi, 'Ln')
+        .replace(/\bCourt\b/gi, 'Ct')
+        .replace(/\bBoulevard\b/gi, 'Blvd');
+      if (abbrevAddress !== cleanAddress) {
+        addressVariations.push(`${abbrevAddress}, ${cleanCity}, ${cleanState} ${cleanZip}`);
+      }
     }
     
-    // 5. Just street address and city/state
-    if (address && city && state) {
-      addressVariations.push(`${address}, ${city}, ${state}`);
+    // 5. Facility name with full address (if provided)
+    if (facilityName && cleanAddress && cleanCity && cleanState && cleanZip) {
+      addressVariations.push(`${facilityName}, ${cleanAddress}, ${cleanCity}, ${cleanState} ${cleanZip}`);
     }
     
-    // 6. City and state only (fallback)
-    if (city && state) {
-      addressVariations.push(`${city}, ${state}`);
+    // 6. Facility name with city/state (if provided)
+    if (facilityName && cleanCity && cleanState) {
+      addressVariations.push(`${facilityName}, ${cleanCity}, ${cleanState}`);
+    }
+    
+    // 7. Just street address and city/state
+    if (cleanAddress && cleanCity && cleanState) {
+      addressVariations.push(`${cleanAddress}, ${cleanCity}, ${cleanState}`);
+    }
+    
+    // 8. City and state only (fallback)
+    if (cleanCity && cleanState) {
+      addressVariations.push(`${cleanCity}, ${cleanState}`);
     }
     
     // Remove duplicates and limit to MAX_VARIATIONS
@@ -74,7 +101,9 @@ export class GeocodingService {
       
       // Use AbortController for proper timeout/cancellation
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), this.REQUEST_TIMEOUT);
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, this.REQUEST_TIMEOUT);
       
       try {
         const result = await this.geocodeVariation(variation, controller.signal);
@@ -85,6 +114,7 @@ export class GeocodingService {
           return result;
         }
         // If not successful, continue to next variation
+        console.warn('GEOCODING: Variation failed:', variation, result.error);
       } catch (error: any) {
         clearTimeout(timeoutId);
         if (error.name === 'AbortError') {
@@ -98,6 +128,7 @@ export class GeocodingService {
 
       // Rate limiting - wait between requests (but skip if last one)
       if (i < uniqueVariations.length - 1) {
+        console.log(`GEOCODING: Waiting ${this.REQUEST_DELAY}ms before next variation (rate limiting)`);
         await this.delay(this.REQUEST_DELAY);
       }
     }
@@ -112,9 +143,9 @@ export class GeocodingService {
   }
 
   /**
-   * Geocode a single address variation
+   * Geocode a single address variation with retry logic
    */
-  private static async geocodeVariation(address: string, signal?: AbortSignal): Promise<GeocodeResult> {
+  private static async geocodeVariation(address: string, signal?: AbortSignal, retryCount: number = 0): Promise<GeocodeResult> {
     try {
       const url = new URL(this.NOMINATIM_BASE_URL);
       url.searchParams.set('q', address);
@@ -123,45 +154,92 @@ export class GeocodingService {
       url.searchParams.set('addressdetails', '1');
       url.searchParams.set('countrycodes', 'us');
 
-      console.log('GEOCODING: Requesting:', url.toString());
+      console.log(`GEOCODING: Requesting (attempt ${retryCount + 1}):`, url.toString());
 
-      const response = await fetch(url.toString(), {
+      // Create a timeout promise
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout')), this.REQUEST_TIMEOUT);
+      });
+
+      // Create fetch promise
+      const fetchPromise = fetch(url.toString(), {
         headers: {
-          'User-Agent': this.USER_AGENT
+          'User-Agent': this.USER_AGENT,
+          'Accept': 'application/json',
+          'Accept-Language': 'en-US,en;q=0.9'
         },
         signal: signal
       });
 
+      // Race between fetch and timeout
+      const response = await Promise.race([fetchPromise, timeoutPromise]);
+
       if (!response.ok) {
-        console.error('GEOCODING: HTTP error:', response.status);
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error(`GEOCODING: HTTP error ${response.status}:`, errorText);
+        
+        // Retry on 429 (Too Many Requests) or 503 (Service Unavailable)
+        if ((response.status === 429 || response.status === 503) && retryCount < this.MAX_RETRIES) {
+          console.log(`GEOCODING: Retrying after ${this.REQUEST_DELAY}ms due to ${response.status} status`);
+          await this.delay(this.REQUEST_DELAY * (retryCount + 1)); // Exponential backoff
+          return this.geocodeVariation(address, signal, retryCount + 1);
+        }
+        
         return {
           latitude: null,
           longitude: null,
           success: false,
-          error: `HTTP ${response.status}`
+          error: `HTTP ${response.status}: ${errorText.substring(0, 100)}`
         };
       }
 
       const data = await response.json();
-      console.log('GEOCODING: Response data:', data);
+      console.log('GEOCODING: Response data length:', data?.length || 0);
 
-      if (data && data.length > 0) {
+      if (data && Array.isArray(data) && data.length > 0) {
         const result = data[0];
+        const lat = parseFloat(result.lat);
+        const lon = parseFloat(result.lon);
+        
+        if (isNaN(lat) || isNaN(lon)) {
+          console.error('GEOCODING: Invalid coordinates in response:', result);
+          return {
+            latitude: null,
+            longitude: null,
+            success: false,
+            error: 'Invalid coordinates in response'
+          };
+        }
+        
+        console.log('GEOCODING: Successfully geocoded:', { address, lat, lon });
         return {
-          latitude: parseFloat(result.lat),
-          longitude: parseFloat(result.lon),
+          latitude: lat,
+          longitude: lon,
           success: true
         };
       }
 
+      console.warn('GEOCODING: No results found for address:', address);
       return {
         latitude: null,
         longitude: null,
         success: false,
         error: 'No results found'
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('GEOCODING: Error:', error);
+      
+      // Retry on network errors or timeouts
+      if (retryCount < this.MAX_RETRIES && 
+          (error.name === 'AbortError' || 
+           error.message?.includes('timeout') || 
+           error.message?.includes('ECONNRESET') ||
+           error.message?.includes('ENOTFOUND'))) {
+        console.log(`GEOCODING: Retrying after ${this.REQUEST_DELAY}ms due to network error`);
+        await this.delay(this.REQUEST_DELAY * (retryCount + 1)); // Exponential backoff
+        return this.geocodeVariation(address, signal, retryCount + 1);
+      }
+      
       return {
         latitude: null,
         longitude: null,

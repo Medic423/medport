@@ -7,7 +7,8 @@ import {
   Mail,
   Phone,
   MapPin,
-  Clock
+  Clock,
+  AlertTriangle
 } from 'lucide-react';
 import api from '../services/api';
 
@@ -42,6 +43,8 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
+  const [showCoordinateWarning, setShowCoordinateWarning] = useState(false);
+  const [geocodingError, setGeocodingError] = useState<string | null>(null); // Separate error for GPS lookup
 
   const serviceAreas = [
     'Emergency Medical Services',
@@ -84,7 +87,8 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
     }
 
     setGeocoding(true);
-    setError(null);
+    setGeocodingError(null); // Clear previous GPS lookup errors
+    setError(null); // Also clear general errors
 
     console.log('TCC_DEBUG: Geocoding EMS registration address:', {
       address: formData.address,
@@ -95,9 +99,11 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
     });
 
     try {
-      // Add a timeout wrapper to ensure we don't hang indefinitely
+      console.log('TCC_DEBUG: Starting geocoding request...');
+      
+      // Increase timeout to 30 seconds to account for backend retries and rate limiting
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Geocoding request timed out after 20 seconds')), 20000);
+        setTimeout(() => reject(new Error('Geocoding request timed out after 30 seconds')), 30000);
       });
 
       const geocodePromise = api.post('/api/public/geocode', {
@@ -108,7 +114,9 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
         facilityName: formData.agencyName
       });
 
+      console.log('TCC_DEBUG: Geocoding request sent, waiting for response...');
       const response = await Promise.race([geocodePromise, timeoutPromise]) as any;
+      console.log('TCC_DEBUG: Geocoding response received:', response?.data);
 
       if (response.data.success) {
         const { latitude, longitude } = response.data.data;
@@ -117,10 +125,13 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
           latitude: latitude.toString(),
           longitude: longitude.toString()
         }));
+        setGeocodingError(null); // Clear any GPS errors
         setError(null);
+        setShowCoordinateWarning(false); // Clear warning when coordinates are set
         console.log('TCC_DEBUG: Coordinates set successfully:', { latitude, longitude });
       } else {
-        setError(response.data.error || 'No coordinates found for this address. Please enter them manually.');
+        // Set GPS lookup error (non-blocking, informational only)
+        setGeocodingError(response.data.error || 'No coordinates found for this address. You can still create the account and add coordinates later.');
       }
     } catch (err: any) {
       console.error('TCC_DEBUG: Geocoding error:', err);
@@ -132,17 +143,27 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
         code: err.code
       });
       
-      // Provide user-friendly error messages
-      let errorMessage = 'Failed to lookup coordinates. Please enter them manually.';
+      // Provide user-friendly error messages (non-blocking, informational only)
+      let errorMessage = 'Failed to lookup coordinates. You can still create the account and add coordinates later.';
+      
       if (err.message && err.message.includes('timeout')) {
-        errorMessage = 'Geocoding request timed out. Please try again or enter coordinates manually.';
+        errorMessage = 'Geocoding request timed out. You can still create the account and add coordinates later via Agency Info.';
       } else if (err.response?.data?.error) {
-        errorMessage = err.response.data.error;
+        const backendError = err.response.data.error;
+        if (backendError.includes('HTTP 429') || backendError.includes('Too Many Requests')) {
+          errorMessage = 'Too many geocoding requests. You can still create the account and add coordinates later.';
+        } else if (backendError.includes('HTTP 503') || backendError.includes('Service Unavailable')) {
+          errorMessage = 'Geocoding service is temporarily unavailable. You can still create the account and add coordinates later.';
+        } else if (backendError.includes('No results found') || backendError.includes('Could not find coordinates')) {
+          errorMessage = 'Could not find coordinates for this address. You can still create the account and add coordinates later via Agency Info.';
+        } else {
+          errorMessage = backendError + ' You can still create the account and add coordinates later.';
+        }
       } else if (err.message) {
-        errorMessage = err.message;
+        errorMessage = err.message + ' You can still create the account and add coordinates later.';
       }
       
-      setError(errorMessage);
+      setGeocodingError(errorMessage); // Set as GPS lookup error, not blocking error
     } finally {
       setGeocoding(false);
     }
@@ -159,10 +180,17 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
         }
       }));
     } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
+      setFormData(prev => {
+        const updated = {
+          ...prev,
+          [name]: value
+        };
+        // Clear warning if coordinates are now provided
+        if ((name === 'latitude' || name === 'longitude') && updated.latitude && updated.longitude) {
+          setShowCoordinateWarning(false);
+        }
+        return updated;
+      });
     }
   };
 
@@ -186,8 +214,18 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('TCC_DEBUG: ========== SUBMIT BUTTON CLICKED ==========');
+    console.log('TCC_DEBUG: Form submission initiated');
+    console.log('TCC_DEBUG: Current form state:', {
+      hasEmail: !!formData.email,
+      hasAgencyName: !!formData.agencyName,
+      hasPassword: !!formData.password,
+      hasCoordinates: !!(formData.latitude && formData.longitude)
+    });
+    
     setLoading(true);
-    setError(null);
+    setError(null); // Clear any blocking errors
+    setGeocodingError(null); // Clear GPS lookup errors (they're informational only)
 
     // Basic validation
     if (formData.password !== formData.confirmPassword) {
@@ -202,51 +240,49 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
       return;
     }
 
-    if (formData.serviceArea.length === 0) {
-      setError('Please select at least one service area');
-      setLoading(false);
-      return;
-    }
-
-    if (formData.capabilities.length === 0) {
-      setError('Please select at least one service capability');
-      setLoading(false);
-      return;
-    }
-
-    // Coordinate validation
-    if (!formData.latitude || !formData.longitude) {
-      setError('Location coordinates are required. Please lookup or enter latitude and longitude.');
-      setLoading(false);
-      return;
-    }
-
-    // Validate coordinate ranges
-    const lat = parseFloat(formData.latitude);
-    const lng = parseFloat(formData.longitude);
+    // Coordinate validation - only validate if coordinates are provided
+    const hasCoordinates = formData.latitude && formData.longitude;
     
-    if (isNaN(lat) || isNaN(lng)) {
-      setError('Please enter valid numeric coordinates.');
-      setLoading(false);
-      return;
-    }
+    if (hasCoordinates) {
+      // Validate coordinate ranges only if coordinates are provided
+      const lat = parseFloat(formData.latitude);
+      const lng = parseFloat(formData.longitude);
+      
+      if (isNaN(lat) || isNaN(lng)) {
+        setError('Please enter valid numeric coordinates.');
+        setLoading(false);
+        return;
+      }
 
-    if (lat < -90 || lat > 90) {
-      setError('Latitude must be between -90 and 90 degrees.');
-      setLoading(false);
-      return;
-    }
+      if (lat < -90 || lat > 90) {
+        setError('Latitude must be between -90 and 90 degrees.');
+        setLoading(false);
+        return;
+      }
 
-    if (lng < -180 || lng > 180) {
-      setError('Longitude must be between -180 and 180 degrees.');
-      setLoading(false);
-      return;
+      if (lng < -180 || lng > 180) {
+        setError('Longitude must be between -180 and 180 degrees.');
+        setLoading(false);
+        return;
+      }
+    } else {
+      // Show warning if coordinates are missing, but allow submission
+      setShowCoordinateWarning(true);
+      setError(null); // Clear any previous errors
     }
 
     try {
+      console.log('TCC_DEBUG: ========== STARTING REGISTRATION SUBMISSION ==========');
       console.log('TCC_DEBUG: Submitting EMS agency registration with data:', formData);
+      console.log('TCC_DEBUG: Email being submitted:', formData.email);
+      console.log('TCC_DEBUG: Agency name being submitted:', formData.agencyName);
+      console.log('TCC_DEBUG: Has coordinates:', !!(formData.latitude && formData.longitude));
 
-      const response = await api.post('/api/auth/ems/register', {
+      // Prepare coordinates - send null/undefined if not provided
+      const latitude = formData.latitude ? parseFloat(formData.latitude) : null;
+      const longitude = formData.longitude ? parseFloat(formData.longitude) : null;
+
+      const registrationPayload = {
         name: formData.contactName,
         email: formData.email,
         password: formData.password,
@@ -256,23 +292,32 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
         city: formData.city,
         state: formData.state,
         zipCode: formData.zipCode,
-        latitude: parseFloat(formData.latitude),
-        longitude: parseFloat(formData.longitude),
+        latitude: latitude,
+        longitude: longitude,
         serviceArea: formData.serviceArea, // Send as array
         capabilities: formData.capabilities, // Send capabilities array
         operatingHours: formData.operatingHours.start && formData.operatingHours.end 
           ? `${formData.operatingHours.start} - ${formData.operatingHours.end}`
           : '24/7',
-      });
+      };
 
+      console.log('TCC_DEBUG: Registration payload:', JSON.stringify(registrationPayload, null, 2));
+      console.log('TCC_DEBUG: Making API POST request to /api/auth/ems/register...');
+
+      const response = await api.post('/api/auth/ems/register', registrationPayload);
+
+      console.log('TCC_DEBUG: API response received:', response.status, response.data);
       const data = response.data;
 
       if (!data.success) {
         // Show the specific error message from the backend
         const errorMessage = data.error || data.message || 'Registration failed. Please try again.';
+        console.error('TCC_DEBUG: Registration failed - backend returned success: false');
+        console.error('TCC_DEBUG: Error message:', errorMessage);
         throw new Error(errorMessage);
       }
 
+      console.log('TCC_DEBUG: ========== REGISTRATION SUCCESSFUL ==========');
       console.log('TCC_DEBUG: EMS registration successful:', data);
       setSuccess(true);
       setTimeout(() => {
@@ -298,9 +343,16 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
         if (err.response.data.code) {
           errorMessage += ` (Error Code: ${err.response.data.code})`;
         }
+        // Include meta information if available (for debugging)
+        if (err.response.data.meta) {
+          console.error('TCC_DEBUG: Error meta:', err.response.data.meta);
+        }
       } else if (err.message) {
         errorMessage = err.message;
       }
+      
+      // Log full error response for debugging
+      console.error('TCC_DEBUG: Full error response:', JSON.stringify(err.response?.data, null, 2));
       
       setError(errorMessage);
     } finally {
@@ -309,20 +361,30 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
   };
 
   if (success) {
+    console.log('TCC_DEBUG: Rendering success screen');
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
           <div className="text-center">
             <CheckCircle className="mx-auto h-16 w-16 text-orange-500" />
             <h2 className="mt-6 text-3xl font-bold text-gray-900">
-              Registration Submitted!
+              Registration Successful!
             </h2>
             <p className="mt-2 text-sm text-gray-600">
-              We've sent a verification email to {formData.email}. 
-              Please check your inbox and click the verification link to activate your account.
+              Your EMS agency account has been created successfully.
             </p>
+            <p className="mt-2 text-sm text-gray-600">
+              Email: <strong>{formData.email}</strong>
+            </p>
+            {!formData.latitude || !formData.longitude ? (
+              <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                <p className="text-sm font-medium text-yellow-800">
+                  ⚠️ GPS coordinates were not set. You can add them later in the Agency Info menu after logging in.
+                </p>
+              </div>
+            ) : null}
             <p className="mt-4 text-sm text-gray-500">
-              Your account will be reviewed by our team and approved within 24 hours.
+              You can now log in with your email and password.
             </p>
           </div>
         </div>
@@ -345,13 +407,57 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
           </p>
         </div>
 
-        {/* Error Message */}
+        {/* Error Message (Blocking errors only) */}
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
             <div className="flex">
               <XCircle className="h-5 w-5 text-red-400" />
               <div className="ml-3">
                 <p className="text-sm font-medium text-red-800">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* GPS Lookup Error (Informational, non-blocking) */}
+        {geocodingError && (
+          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-md p-4">
+            <div className="flex">
+              <AlertTriangle className="h-5 w-5 text-blue-600" />
+              <div className="ml-3 flex-1">
+                <p className="text-sm font-medium text-blue-800">{geocodingError}</p>
+                <div className="mt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setGeocodingError(null)}
+                    className="text-sm text-blue-800 hover:text-blue-900 underline"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Warning Message for Missing Coordinates */}
+        {showCoordinateWarning && (
+          <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-md p-4">
+            <div className="flex">
+              <AlertTriangle className="h-5 w-5 text-yellow-600" />
+              <div className="ml-3 flex-1">
+                <p className="text-sm font-medium text-yellow-800">
+                  This account will not have full functionality until GPS Coordinates are provided. You can add them in the Agency Info menu after creating the account.
+                </p>
+                <div className="mt-3 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setShowCoordinateWarning(false)}
+                    className="text-sm text-yellow-800 hover:text-yellow-900 underline"
+                  >
+                    Dismiss
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -365,7 +471,18 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
             </p>
           </div>
           <div className="px-6 py-6">
-            <form className="space-y-6" onSubmit={handleSubmit}>
+            <form 
+              className="space-y-6" 
+              onSubmit={(e) => {
+                console.log('TCC_DEBUG: ========== FORM onSubmit EVENT FIRED ==========');
+                console.log('TCC_DEBUG: Form onSubmit event fired');
+                console.log('TCC_DEBUG: Event target:', e.target);
+                console.log('TCC_DEBUG: Event type:', e.type);
+                console.log('TCC_DEBUG: Form validity:', (e.target as HTMLFormElement).checkValidity());
+                handleSubmit(e);
+              }}
+              noValidate
+            >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label htmlFor="agencyName" className="block text-sm font-medium text-gray-700 mb-2">
@@ -413,8 +530,13 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
                       id="email"
                       name="email"
                       required
+                      autoComplete="email"
                       value={formData.email}
                       onChange={handleInputChange}
+                      onBlur={(e) => {
+                        // Log email value on blur to help debug
+                        console.log('TCC_DEBUG: Email field value on blur:', e.target.value);
+                      }}
                       className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                       placeholder="Enter email address"
                     />
@@ -517,7 +639,7 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
               {/* Service Areas */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Service Areas * (Select all that apply)
+                  Service Areas (Optional - Select all that apply)
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   {serviceAreas.map(area => (
@@ -607,8 +729,11 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
                       value={formData.latitude}
                       onChange={handleInputChange}
                       className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
-                      placeholder="e.g., 40.1234"
+                      placeholder="e.g., 40.451437"
                     />
+                    <p className="mt-1 text-xs text-gray-500">
+                      You can find coordinates at <a href="https://gps-coordinates.org/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">gps-coordinates.org</a>
+                    </p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
@@ -621,8 +746,11 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
                       value={formData.longitude}
                       onChange={handleInputChange}
                       className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
-                      placeholder="e.g., -78.5678"
+                      placeholder="e.g., -78.4009901"
                     />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Enter manually if GPS lookup fails
+                    </p>
                   </div>
                 </div>
                 
@@ -637,7 +765,7 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
               {/* Service Capabilities */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Service Capabilities * (Select all that apply)
+                  Service Capabilities (Optional - Select all that apply)
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   {capabilities.map(capability => (
@@ -742,6 +870,17 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
                 <button
                   type="submit"
                   disabled={loading}
+                  onClick={(e) => {
+                    console.log('TCC_DEBUG: Submit button clicked directly');
+                    console.log('TCC_DEBUG: Event:', e);
+                    console.log('TCC_DEBUG: Loading state:', loading);
+                    console.log('TCC_DEBUG: Form data at button click:', {
+                      email: formData.email,
+                      agencyName: formData.agencyName,
+                      hasPassword: !!formData.password
+                    });
+                    // Don't preventDefault - let form onSubmit handle it
+                  }}
                   className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Creating Account...' : 'Create Account'}
