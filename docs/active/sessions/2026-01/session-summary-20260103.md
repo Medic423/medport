@@ -34,17 +34,27 @@
 
 ## 🧪 Testing Results
 
-### Healthcare Registration
+### Healthcare Registration (Local Dev)
 - ✅ Successfully created "Monumental Medical Center" account
 - ✅ Facility appears in Facilities List as inactive (correct default)
 - ✅ Can activate/deactivate facility via checkbox
 - ✅ Facility shows in list with both "Active" and "All Status" filters
 
-### EMS Registration
-- ✅ Successfully created EMS agency account
+### Healthcare Registration (Dev-SWA)
+- ✅ Account creation works with GPS lookup
+- ✅ Email field populates correctly in edit form
+- ✅ Email can be updated and saves to healthcareUser record
+- ✅ Default Status filter is "All Status" (shows all facilities)
+- ✅ Active/Inactive toggle works correctly
+- ✅ Can log into healthcare facility account
+
+### EMS Registration (Dev-SWA)
+- ✅ Account creation works with GPS lookup
 - ✅ Agency appears in Command -> EMS -> Agencies list
 - ✅ No partial registrations (transaction working correctly)
 - ✅ Browser autofill no longer overriding user input
+- ✅ Active/Inactive toggle works correctly
+- ✅ Can log into EMS agency account
 
 ### Active/Inactive Checkboxes
 - ✅ Healthcare facilities: Can activate/deactivate (working)
@@ -67,9 +77,9 @@
 - `frontend/src/components/AgencySettings.tsx` - GPS fixes
 - `frontend/src/components/HealthcareEMSAgencies.tsx` - GPS fixes
 
-## 🚀 Ready for Dev-SWA Deployment
+## 🚀 Ready for Production Deployment
 
-**Status:** ✅ All critical fixes tested and working locally
+**Status:** ✅ All critical fixes tested and working on Dev-SWA
 
 **Prerequisites Met:**
 - ✅ All Priority 1 tests pass (Healthcare Registration)
@@ -78,13 +88,16 @@
 - ✅ No regressions found
 - ✅ Transaction support prevents partial registrations
 - ✅ Browser autofill issues resolved
+- ✅ Email field population fixed
+- ✅ Default Status filter fixed
+- ✅ All tests passing on Dev-SWA
 
 **Next Steps:**
-1. Commit all changes to git
-2. Merge main → develop
-3. Push to develop (triggers Dev-SWA deployment)
-4. Test on Dev-SWA
-5. If successful, deploy to Production
+1. ✅ Commit all changes to git
+2. ✅ Merge main → develop
+3. ✅ Push to develop (triggers Dev-SWA deployment)
+4. ✅ Test on Dev-SWA - **ALL TESTS PASSING**
+5. **Ready for Production:** Merge develop → main and push
 
 ---
 
