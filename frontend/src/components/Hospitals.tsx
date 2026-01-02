@@ -437,12 +437,12 @@ const Hospitals: React.FC = () => {
                   ? 'Get started by adding a new hospital.'
                   : 'Try adjusting your search or filter criteria.'}
               </p>
-              {(searchTerm || stateFilter || statusFilter !== 'active') && (
+              {(searchTerm || stateFilter || statusFilter !== 'all') && (
                 <button
                   onClick={() => {
                     setSearchTerm('');
                     setStateFilter('');
-                    setStatusFilter('active');
+                    setStatusFilter('all');
                   }}
                   className="mt-4 text-sm text-blue-600 hover:text-blue-800 underline"
                 >
