@@ -36,7 +36,15 @@ router.get('/all', async (req, res) => {
     const db = databaseManager.getPrismaClient();
     
     // Include inactive locations so admins can see pending facilities for approval
+    // Include healthcareUser to get email address
     const locations = await db.healthcareLocation.findMany({
+      include: {
+        healthcareUser: {
+          select: {
+            email: true
+          }
+        }
+      },
       orderBy: [
         { isActive: 'desc' }, // Active locations first
         { state: 'asc' },
@@ -111,9 +119,17 @@ router.put('/:id/admin', async (req, res) => {
     const { databaseManager } = require('../services/databaseManager');
     const db = databaseManager.getPrismaClient();
     
-    // Get the location to verify it exists
+    // Get the location to verify it exists and get healthcareUserId
     const location = await db.healthcareLocation.findUnique({
-      where: { id }
+      where: { id },
+      include: {
+        healthcareUser: {
+          select: {
+            id: true,
+            email: true
+          }
+        }
+      }
     });
     
     if (!location) {
@@ -160,16 +176,28 @@ router.put('/:id/admin', async (req, res) => {
       updatedAt: new Date()
     };
     
+    // Remove email from location update (it's stored in healthcareUser)
+    const { email, ...locationUpdateData } = updatePayload;
+    
     // Explicitly handle isActive to ensure it's a boolean
-    if ('isActive' in updateData) {
-      updatePayload.isActive = Boolean(updateData.isActive);
-      console.log('TCC_COMMAND: Setting isActive to:', updatePayload.isActive);
+    if ('isActive' in locationUpdateData) {
+      locationUpdateData.isActive = Boolean(locationUpdateData.isActive);
+      console.log('TCC_COMMAND: Setting isActive to:', locationUpdateData.isActive);
     }
     
     const updatedLocation = await db.healthcareLocation.update({
       where: { id },
-      data: updatePayload
+      data: locationUpdateData
     });
+    
+    // Update healthcareUser email if provided
+    if (email && email !== location.healthcareUser.email) {
+      console.log('TCC_COMMAND: Updating healthcareUser email from', location.healthcareUser.email, 'to', email);
+      await db.healthcareUser.update({
+        where: { id: location.healthcareUserId },
+        data: { email, updatedAt: new Date() }
+      });
+    }
     
     console.log('TCC_COMMAND: Location updated successfully. New isActive:', updatedLocation.isActive);
     

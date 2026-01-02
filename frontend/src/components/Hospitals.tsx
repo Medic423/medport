@@ -61,7 +61,7 @@ const Hospitals: React.FC = () => {
           state: loc.state,
           zipCode: loc.zipCode,
           phone: loc.phone || '',
-          email: '',
+          email: loc.healthcareUser?.email || '', // Get email from linked healthcareUser
           type: loc.facilityType,
           capabilities: [],
           region: loc.state,
@@ -262,7 +262,8 @@ const Hospitals: React.FC = () => {
         facilityType: editFormData.type,
         latitude: editFormData.latitude ? parseFloat(editFormData.latitude) : null,
         longitude: editFormData.longitude ? parseFloat(editFormData.longitude) : null,
-        isActive: Boolean(editFormData.isActive) // Ensure boolean value
+        isActive: Boolean(editFormData.isActive), // Ensure boolean value
+        email: editFormData.email || null // Include email to update healthcareUser
       });
       
       console.log('TCC_DEBUG: Update response:', response.data);
