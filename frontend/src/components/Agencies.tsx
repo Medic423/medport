@@ -56,7 +56,8 @@ const Agencies: React.FC = () => {
     city: '',
     state: '',
     zipCode: '',
-    serviceType: 'BLS/ALS'
+    serviceType: 'BLS/ALS',
+    isActive: true
   });
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
@@ -117,16 +118,18 @@ const Agencies: React.FC = () => {
       city: agency.city,
       state: agency.state,
       zipCode: agency.zipCode,
-      serviceType: 'BLS/ALS' // Default value, could be enhanced to store this
+      serviceType: 'BLS/ALS', // Default value, could be enhanced to store this
+      isActive: agency.isActive ?? true
     });
     setEditError(null);
   };
 
   const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
     setEditFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
@@ -517,6 +520,26 @@ const Agencies: React.FC = () => {
                     <option value="BLS/ALS">BLS/ALS</option>
                     <option value="Critical Care">Critical Care</option>
                   </select>
+                </div>
+
+                {/* Active Status */}
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="isActive"
+                      name="isActive"
+                      checked={editFormData.isActive ?? true}
+                      onChange={handleEditInputChange}
+                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="isActive" className="ml-3 block text-sm font-medium text-gray-700">
+                      Active Agency
+                    </label>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Uncheck to deactivate this agency. Inactive agencies won't appear in trip requests.
+                  </p>
                 </div>
 
                 <div className="flex justify-end space-x-3 pt-4">

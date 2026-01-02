@@ -165,10 +165,10 @@ router.post('/healthcare/register', async (req, res) => {
       }
     }
 
-    const hospitalDB = databaseManager.getPrismaClient();
+    const db = databaseManager.getPrismaClient();
     
     // Check if user already exists
-    const existingUser = await hospitalDB.healthcareUser.findUnique({
+    const existingUser = await db.healthcareUser.findUnique({
       where: { email }
     });
 
@@ -193,44 +193,73 @@ router.post('/healthcare/register', async (req, res) => {
     }
 
     // Determine if this is the first account for this facility (orgAdmin=true for first)
-    const existingForFacility = await hospitalDB.healthcareUser.count({ where: { facilityName } });
+    const existingForFacility = await db.healthcareUser.count({ where: { facilityName } });
     const isFirst = existingForFacility === 0;
 
-    // Create new healthcare user
-    console.log('MULTI_LOC: Creating healthcare user with manageMultipleLocations:', manageMultipleLocations);
-    const user = await hospitalDB.healthcareUser.create({
-      data: {
-        email,
-        password: await bcrypt.hash(password, 10),
-        name,
-        facilityName,
-        facilityType,
-        manageMultipleLocations: manageMultipleLocations || false, // ✅ NEW: Multi-location flag
-        userType: 'HEALTHCARE',
-        isActive: false, // Requires admin approval
-        orgAdmin: isFirst
-      }
+    // Use transaction to ensure all records are created atomically
+    // This prevents partial registrations if any step fails
+    const result = await db.$transaction(async (tx) => {
+      // Create new healthcare user
+      console.log('MULTI_LOC: Creating healthcare user with manageMultipleLocations:', manageMultipleLocations);
+      const user = await tx.healthcareUser.create({
+        data: {
+          email,
+          password: await bcrypt.hash(password, 10),
+          name,
+          facilityName,
+          facilityType,
+          manageMultipleLocations: manageMultipleLocations || false, // ✅ NEW: Multi-location flag
+          userType: 'HEALTHCARE',
+          isActive: false, // Requires admin approval
+          orgAdmin: isFirst
+        }
+      });
+
+      // Also create a corresponding Hospital record in Center database for TCC dashboard
+      // Note: db and centerDB use the same connection, so this is in the same transaction
+      await tx.hospital.create({
+        data: {
+          name: facilityName,
+          address: address || 'Address to be provided',
+          city: city || 'City to be provided',
+          state: state || 'State to be provided',
+          zipCode: zipCode || '00000',
+          phone: phone || null,
+          email: email,
+          type: facilityType,
+          capabilities: [], // Will be updated when approved
+          region: 'Region to be determined',
+          latitude: latitude ? parseFloat(latitude) : null,
+          longitude: longitude ? parseFloat(longitude) : null,
+          isActive: false, // Requires admin approval
+          requiresReview: true // Flag for admin review
+        }
+      });
+
+      // Create a healthcareLocation record so it appears in Facilities List (even if inactive)
+      // This allows admins to see and approve pending facilities
+      const location = await tx.healthcareLocation.create({
+        data: {
+          healthcareUserId: user.id,
+          locationName: facilityName,
+          address: address || 'Address to be provided',
+          city: city || 'City to be provided',
+          state: state || 'State to be provided',
+          zipCode: zipCode || '00000',
+          phone: phone || null,
+          facilityType: facilityType,
+          isActive: false, // Requires admin approval - will be set to true when approved
+          isPrimary: true, // First location is always primary
+          latitude: latitude ? parseFloat(latitude) : null,
+          longitude: longitude ? parseFloat(longitude) : null,
+        }
+      });
+
+      return { user, location };
     });
 
-    // Also create a corresponding Hospital record in Center database for TCC dashboard
-    await centerDB.hospital.create({
-      data: {
-        name: facilityName,
-        address: address || 'Address to be provided',
-        city: city || 'City to be provided',
-        state: state || 'State to be provided',
-        zipCode: zipCode || '00000',
-        phone: phone || null,
-        email: email,
-        type: facilityType,
-        capabilities: [], // Will be updated when approved
-        region: 'Region to be determined',
-        latitude: latitude ? parseFloat(latitude) : null,
-        longitude: longitude ? parseFloat(longitude) : null,
-        isActive: false, // Requires admin approval
-        requiresReview: true // Flag for admin review
-      }
-    });
+    const { user, location } = result;
+    console.log('MULTI_LOC: Successfully created user, hospital, and healthcareLocation in transaction');
 
     res.status(201).json({
       success: true,
@@ -248,18 +277,55 @@ router.post('/healthcare/register', async (req, res) => {
 
   } catch (error: any) {
     console.error('Healthcare registration error:', error);
+    console.error('Healthcare registration error details:', {
+      message: error.message,
+      code: error.code,
+      meta: error.meta,
+      stack: error.stack
+    });
     
+    // Handle Prisma unique constraint violations
     if (error.code === 'P2002') {
+      const target = error.meta?.target;
+      if (target && target.includes('email')) {
+        return res.status(400).json({
+          success: false,
+          error: 'An account with this email already exists. Please use a different email or try logging in.'
+        });
+      }
+      if (target && target.includes('name')) {
+        return res.status(400).json({
+          success: false,
+          error: 'A facility with this name already exists. Please use a different facility name.'
+        });
+      }
       return res.status(400).json({
         success: false,
         error: 'Email already exists'
       });
     }
 
-    res.status(500).json({
+    // Return more detailed error for debugging
+    const errorResponse: any = {
       success: false,
-      error: 'Registration failed. Please try again.'
-    });
+      error: error.message || 'Registration failed. Please try again.'
+    };
+    
+    // Include error code for debugging
+    if (error.code) {
+      errorResponse.code = error.code;
+    }
+    
+    // Include Prisma error details if available
+    if (error.meta) {
+      errorResponse.meta = error.meta;
+    }
+
+    console.error('TCC_DEBUG: Sending error response:', JSON.stringify(errorResponse, null, 2));
+    
+    // Return 400 for validation errors, 500 for server errors
+    const statusCode = error.code && error.code.startsWith('P') ? 400 : 500;
+    res.status(statusCode).json(errorResponse);
   }
 });
 
@@ -1007,60 +1073,62 @@ router.post('/ems/register', async (req, res) => {
     const isFirst = existingForAgency === 0;
     console.log('TCC_DEBUG: Is first account:', isFirst);
 
-    // Create EMSAgency record first so we can link the user to it
-    console.log('TCC_DEBUG: Creating EMSAgency record');
-    const centerDB = databaseManager.getPrismaClient();
-    
-    // Only set fields that definitely exist in production database
-    // Don't set addedAt or addedBy as they may not exist
-    const agencyData: any = {
-      name: agencyName,
-      contactName: name,
-      phone: phone || 'Phone to be provided',
-      email: email,
-      address: address || 'Address to be provided',
-      city: city || 'City to be provided',
-      state: state || 'State to be provided',
-      zipCode: zipCode || '00000',
-      serviceArea: serviceArea || [],
-      capabilities: capabilities || [],
-      operatingHours: operatingHours || null,
-      latitude: latitude ? parseFloat(latitude) : null,
-      longitude: longitude ? parseFloat(longitude) : null,
-      isActive: true, // Auto-approve new EMS registrations
-      status: 'ACTIVE', // Set status explicitly
-      requiresReview: false // No review needed for auto-approved agencies
-      // Note: Not setting addedAt or addedBy as they may not exist in production database
-    };
-    
-    console.log('TCC_DEBUG: Agency data to create:', JSON.stringify(agencyData, null, 2));
-    
-    let agency;
-    try {
-      agency = await centerDB.eMSAgency.create({
-        data: agencyData
-      });
-      console.log('TCC_DEBUG: Agency created successfully, ID:', agency.id);
-    } catch (createError: any) {
-      console.error('TCC_DEBUG: Error creating agency:', createError);
-      console.error('TCC_DEBUG: Agency creation error details:', {
-        message: createError.message,
-        code: createError.code,
-        meta: createError.meta
-      });
+    // Use transaction to ensure agency and user are created atomically
+    // This prevents partial registrations if any step fails
+    console.log('TCC_DEBUG: Starting transaction for EMS registration');
+    const result = await db.$transaction(async (tx) => {
+      // Create EMSAgency record first so we can link the user to it
+      console.log('TCC_DEBUG: Creating EMSAgency record');
       
-      // If error is due to missing column (addedAt/addedBy), use raw SQL
-      // Check both code and message to catch the error reliably
-      const isColumnError = createError.code === 'P2022' || 
-                            (createError.message && createError.message.includes('addedAt')) ||
-                            (createError.meta && createError.meta.column && createError.meta.column.includes('addedAt'));
+      // Only set fields that definitely exist in production database
+      // Don't set addedAt or addedBy as they may not exist
+      const agencyData: any = {
+        name: agencyName,
+        contactName: name,
+        phone: phone || 'Phone to be provided',
+        email: email,
+        address: address || 'Address to be provided',
+        city: city || 'City to be provided',
+        state: state || 'State to be provided',
+        zipCode: zipCode || '00000',
+        serviceArea: serviceArea || [],
+        capabilities: capabilities || [],
+        operatingHours: operatingHours || null,
+        latitude: latitude ? parseFloat(latitude) : null,
+        longitude: longitude ? parseFloat(longitude) : null,
+        isActive: true, // Auto-approve new EMS registrations
+        status: 'ACTIVE', // Set status explicitly
+        requiresReview: false // No review needed for auto-approved agencies
+        // Note: Not setting addedAt or addedBy as they may not exist in production database
+      };
       
-      if (isColumnError) {
-        console.log('TCC_DEBUG: Column missing in database (addedAt), using raw SQL fallback');
-        console.log('TCC_DEBUG: Error details:', { code: createError.code, message: createError.message, meta: createError.meta });
-        try {
+      console.log('TCC_DEBUG: Agency data to create:', JSON.stringify(agencyData, null, 2));
+      
+      let agency;
+      try {
+        agency = await tx.eMSAgency.create({
+          data: agencyData
+        });
+        console.log('TCC_DEBUG: Agency created successfully, ID:', agency.id);
+      } catch (createError: any) {
+        console.error('TCC_DEBUG: Error creating agency:', createError);
+        console.error('TCC_DEBUG: Agency creation error details:', {
+          message: createError.message,
+          code: createError.code,
+          meta: createError.meta
+        });
+        
+        // If error is due to missing column (addedAt/addedBy), use raw SQL
+        // Check both code and message to catch the error reliably
+        const isColumnError = createError.code === 'P2022' || 
+                              (createError.message && createError.message.includes('addedAt')) ||
+                              (createError.meta && createError.meta.column && createError.meta.column.includes('addedAt'));
+        
+        if (isColumnError) {
+          console.log('TCC_DEBUG: Column missing in database (addedAt), using raw SQL fallback');
+          console.log('TCC_DEBUG: Error details:', { code: createError.code, message: createError.message, meta: createError.meta });
           const agencyId = `c${Date.now().toString(36)}${randomBytes(6).toString('hex').substring(0, 10)}`;
-          await centerDB.$executeRaw`
+          await tx.$executeRaw`
             INSERT INTO ems_agencies (
               id, name, "contactName", phone, email, address, city, state, "zipCode",
               "serviceArea", capabilities, "isActive", status, "createdAt", "updatedAt",
@@ -1090,64 +1158,47 @@ router.post('/ems/register', async (req, res) => {
           `;
           
           // Fetch the created agency
-          agency = await centerDB.eMSAgency.findUnique({
+          agency = await tx.eMSAgency.findUnique({
             where: { id: agencyId }
           });
           console.log('TCC_DEBUG: Agency created via raw SQL, ID:', agency?.id);
-        } catch (rawSqlError: any) {
-          console.error('TCC_DEBUG: Raw SQL creation also failed:', rawSqlError);
-          throw createError; // Re-throw original error
+        } else {
+          throw createError; // Re-throw to be caught by outer catch
         }
-      } else {
-        throw createError; // Re-throw to be caught by outer catch
       }
-    }
 
-    // Create new EMS user with agencyId linked
-    console.log('TCC_DEBUG: Creating EMS user with agencyId:', agency.id);
-    console.log('TCC_DEBUG: Hashing password');
-    const hashedPassword = await bcrypt.hash(password, 10);
-    console.log('TCC_DEBUG: Password hashed');
-    
-    const userData = {
-      email,
-      password: hashedPassword,
-      name,
-      agencyName,
-      agencyId: agency.id, // Link user to agency
-      userType: 'EMS',
-      isActive: true, // Auto-approve new EMS registrations
-      orgAdmin: isFirst
-    };
-    
-    console.log('TCC_DEBUG: User data to create (password hidden):', {
-      ...userData,
-      password: '[HIDDEN]'
-    });
-    
-    let user;
-    try {
-      user = await db.eMSUser.create({
+      // Create new EMS user with agencyId linked
+      console.log('TCC_DEBUG: Creating EMS user with agencyId:', agency.id);
+      console.log('TCC_DEBUG: Hashing password');
+      const hashedPassword = await bcrypt.hash(password, 10);
+      console.log('TCC_DEBUG: Password hashed');
+      
+      const userData = {
+        email,
+        password: hashedPassword,
+        name,
+        agencyName,
+        agencyId: agency.id, // Link user to agency
+        userType: 'EMS',
+        isActive: true, // Auto-approve new EMS registrations
+        orgAdmin: isFirst
+      };
+      
+      console.log('TCC_DEBUG: User data to create (password hidden):', {
+        ...userData,
+        password: '[HIDDEN]'
+      });
+      
+      const user = await tx.eMSUser.create({
         data: userData
       });
       console.log('TCC_DEBUG: User created successfully, ID:', user.id);
-    } catch (createError: any) {
-      console.error('TCC_DEBUG: Error creating user:', createError);
-      console.error('TCC_DEBUG: User creation error details:', {
-        message: createError.message,
-        code: createError.code,
-        meta: createError.meta
-      });
-      // If user creation fails, try to clean up the agency
-      try {
-        console.log('TCC_DEBUG: Attempting to clean up agency:', agency.id);
-        await centerDB.eMSAgency.delete({ where: { id: agency.id } });
-        console.log('TCC_DEBUG: Agency cleaned up successfully');
-      } catch (cleanupError) {
-        console.error('TCC_DEBUG: Failed to clean up agency:', cleanupError);
-      }
-      throw createError; // Re-throw to be caught by outer catch
-    }
+      
+      return { agency, user };
+    });
+
+    const { agency, user } = result;
+    console.log('TCC_DEBUG: Transaction completed successfully - agency and user created atomically');
 
     console.log('TCC_DEBUG: Registration successful, sending response');
     res.status(201).json({

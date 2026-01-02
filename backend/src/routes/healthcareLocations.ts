@@ -35,9 +35,10 @@ router.get('/all', async (req, res) => {
     const { databaseManager } = require('../services/databaseManager');
     const db = databaseManager.getPrismaClient();
     
+    // Include inactive locations so admins can see pending facilities for approval
     const locations = await db.healthcareLocation.findMany({
-      where: { isActive: true },
       orderBy: [
+        { isActive: 'desc' }, // Active locations first
         { state: 'asc' },
         { city: 'asc' },
         { locationName: 'asc' }
@@ -83,6 +84,107 @@ router.get('/statistics', (req, res) => healthcareLocationsController.getLocatio
  * Get a specific location
  */
 router.get('/:id', (req, res) => healthcareLocationsController.getLocationById(req, res));
+
+/**
+ * PUT /api/healthcare/locations/:id/admin
+ * Update a location (Admin only - no ownership check)
+ */
+router.put('/:id/admin', async (req, res) => {
+  try {
+    const user = (req as any).user;
+    
+    // Only TCC command staff can update any location
+    if (user?.userType !== 'ADMIN' && user?.userType !== 'USER') {
+      return res.status(403).json({ 
+        success: false,
+        error: 'Access denied. TCC command staff only.' 
+      });
+    }
+    
+    const { id } = req.params;
+    const updateData = req.body;
+    
+    console.log('TCC_COMMAND: Admin updating healthcare location:', id);
+    console.log('TCC_COMMAND: Update data received:', JSON.stringify(updateData, null, 2));
+    console.log('TCC_COMMAND: isActive value:', updateData.isActive, 'type:', typeof updateData.isActive);
+    
+    const { databaseManager } = require('../services/databaseManager');
+    const db = databaseManager.getPrismaClient();
+    
+    // Get the location to verify it exists
+    const location = await db.healthcareLocation.findUnique({
+      where: { id }
+    });
+    
+    if (!location) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Location not found' 
+      });
+    }
+    
+    // For admin updates, directly update the database (bypass ownership check)
+    // Auto-geocode if address fields changed but no new coordinates provided
+    let latitude = updateData.latitude;
+    let longitude = updateData.longitude;
+    
+    const addressFieldsChanged = updateData.address || updateData.city || updateData.state || updateData.zipCode;
+    if (addressFieldsChanged && (!latitude && !longitude)) {
+      const { GeocodingService } = require('../utils/geocodingService');
+      const address = updateData.address || location.address;
+      const city = updateData.city || location.city;
+      const state = updateData.state || location.state;
+      const zipCode = updateData.zipCode || location.zipCode;
+      const locationName = updateData.locationName || location.locationName;
+      
+      const geocodeResult = await GeocodingService.geocodeAddress(
+        address,
+        city,
+        state,
+        zipCode,
+        locationName
+      );
+      
+      if (geocodeResult.success) {
+        latitude = geocodeResult.latitude;
+        longitude = geocodeResult.longitude;
+        updateData.latitude = latitude;
+        updateData.longitude = longitude;
+      }
+    }
+    
+    // Update the location directly (admin bypass)
+    // Ensure isActive is explicitly set as boolean
+    const updatePayload: any = {
+      ...updateData,
+      updatedAt: new Date()
+    };
+    
+    // Explicitly handle isActive to ensure it's a boolean
+    if ('isActive' in updateData) {
+      updatePayload.isActive = Boolean(updateData.isActive);
+      console.log('TCC_COMMAND: Setting isActive to:', updatePayload.isActive);
+    }
+    
+    const updatedLocation = await db.healthcareLocation.update({
+      where: { id },
+      data: updatePayload
+    });
+    
+    console.log('TCC_COMMAND: Location updated successfully. New isActive:', updatedLocation.isActive);
+    
+    res.json({ 
+      success: true, 
+      data: updatedLocation 
+    });
+  } catch (error: any) {
+    console.error('TCC_COMMAND: Error updating healthcare location:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message || 'Failed to update healthcare location' 
+    });
+  }
+});
 
 /**
  * PUT /api/healthcare/locations/:id

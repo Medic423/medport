@@ -115,13 +115,38 @@ export class HospitalService {
 
   async updateHospital(id: string, data: Partial<HospitalData>): Promise<any> {
     const centerDB = databaseManager.getPrismaClient();
-    return await centerDB.hospital.update({
+    const hospitalDB = databaseManager.getPrismaClient();
+    
+    // Update hospital record
+    const updatedHospital = await centerDB.hospital.update({
       where: { id },
       data: {
         ...data,
         updatedAt: new Date()
       }
     });
+
+    // Also sync isActive to healthcareLocation records if isActive is being updated
+    // Find healthcareLocation records by matching name (since they're linked by facility name)
+    if (data.isActive !== undefined) {
+      try {
+        await hospitalDB.healthcareLocation.updateMany({
+          where: {
+            locationName: updatedHospital.name
+          },
+          data: {
+            isActive: data.isActive,
+            updatedAt: new Date()
+          }
+        });
+        console.log(`Synced isActive=${data.isActive} to healthcareLocation records for facility: ${updatedHospital.name}`);
+      } catch (error) {
+        console.warn('Failed to sync isActive to healthcareLocation records:', error);
+        // Don't fail the update if sync fails
+      }
+    }
+
+    return updatedHospital;
   }
 
   async deleteHospital(id: string): Promise<void> {

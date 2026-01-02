@@ -6,7 +6,8 @@ import {
   XCircle,
   Mail,
   Phone,
-  MapPin
+  MapPin,
+  AlertTriangle
 } from 'lucide-react';
 import api from '../services/api';
 
@@ -37,6 +38,8 @@ const HealthcareRegistration: React.FC<HealthcareRegistrationProps> = ({ onBack,
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
+  const [showCoordinateWarning, setShowCoordinateWarning] = useState(false);
+  const [geocodingError, setGeocodingError] = useState<string | null>(null); // Separate error for GPS lookup
 
   const facilityTypes = [
     'Hospital',
@@ -67,7 +70,8 @@ const HealthcareRegistration: React.FC<HealthcareRegistrationProps> = ({ onBack,
     }
 
     setGeocoding(true);
-    setError(null);
+    setGeocodingError(null); // Clear previous GPS lookup errors
+    setError(null); // Also clear general errors
 
     console.log('TCC_DEBUG: Geocoding healthcare registration address:', {
       address: formData.address,
@@ -78,9 +82,9 @@ const HealthcareRegistration: React.FC<HealthcareRegistrationProps> = ({ onBack,
     });
 
     try {
-      // Add a timeout wrapper to ensure we don't hang indefinitely
+      // Increase timeout to 30 seconds to account for backend retries and rate limiting
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Geocoding request timed out after 20 seconds')), 20000);
+        setTimeout(() => reject(new Error('Geocoding request timed out after 30 seconds')), 30000);
       });
 
       const geocodePromise = api.post('/api/public/geocode', {
@@ -100,25 +104,45 @@ const HealthcareRegistration: React.FC<HealthcareRegistrationProps> = ({ onBack,
           latitude: latitude.toString(),
           longitude: longitude.toString()
         }));
+        setGeocodingError(null); // Clear any GPS errors
         setError(null);
-        console.log('TCC_DEBUG: Coordinates set successfully:', latitude, longitude);
+        setShowCoordinateWarning(false); // Clear warning when coordinates are set
+        console.log('TCC_DEBUG: Coordinates set successfully:', { latitude, longitude });
       } else {
-        setError(response.data.error || 'Address not found. Please enter coordinates manually or try a different address format.');
+        // Set GPS lookup error (non-blocking, informational only)
+        setGeocodingError(response.data.error || 'No coordinates found for this address. You can still create the account and add coordinates later.');
       }
     } catch (err: any) {
       console.error('TCC_DEBUG: Geocoding error:', err);
+      console.error('TCC_DEBUG: Geocoding error details:', {
+        message: err.message,
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        data: err.response?.data,
+        code: err.code
+      });
       
-      // Provide user-friendly error messages
-      let errorMessage = 'Failed to lookup coordinates. Please enter them manually.';
+      // Provide user-friendly error messages (non-blocking, informational only)
+      let errorMessage = 'Failed to lookup coordinates. You can still create the account and add coordinates later.';
+      
       if (err.message && err.message.includes('timeout')) {
-        errorMessage = 'Geocoding request timed out. Please try again or enter coordinates manually.';
+        errorMessage = 'Geocoding request timed out. You can still create the account and add coordinates later via Facility Settings.';
       } else if (err.response?.data?.error) {
-        errorMessage = err.response.data.error;
+        const backendError = err.response.data.error;
+        if (backendError.includes('HTTP 429') || backendError.includes('Too Many Requests')) {
+          errorMessage = 'Too many geocoding requests. You can still create the account and add coordinates later.';
+        } else if (backendError.includes('HTTP 503') || backendError.includes('Service Unavailable')) {
+          errorMessage = 'Geocoding service is temporarily unavailable. You can still create the account and add coordinates later.';
+        } else if (backendError.includes('No results found') || backendError.includes('Could not find coordinates')) {
+          errorMessage = 'Could not find coordinates for this address. You can still create the account and add coordinates later via Facility Settings.';
+        } else {
+          errorMessage = backendError + ' You can still create the account and add coordinates later.';
+        }
       } else if (err.message) {
-        errorMessage = err.message;
+        errorMessage = err.message + ' You can still create the account and add coordinates later.';
       }
       
-      setError(errorMessage);
+      setGeocodingError(errorMessage); // Set as GPS lookup error, not blocking error
     } finally {
       setGeocoding(false);
     }
@@ -128,16 +152,50 @@ const HealthcareRegistration: React.FC<HealthcareRegistrationProps> = ({ onBack,
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
     
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    // Debug logging for email field to catch autofill issues
+    if (name === 'email') {
+      console.log('TCC_DEBUG: Email field onChange - value:', value, 'type:', type);
+    }
+    
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      };
+      // Clear warning if coordinates are now provided
+      if ((name === 'latitude' || name === 'longitude') && updated.latitude && updated.longitude) {
+        setShowCoordinateWarning(false);
+      }
+      
+      // Debug logging for email field after state update
+      if (name === 'email') {
+        console.log('TCC_DEBUG: Email field state updated to:', updated.email);
+      }
+      
+      return updated;
+    });
+  };
+
+  const handleEmailBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    // Log the actual value when field loses focus (after browser autofill might have occurred)
+    console.log('TCC_DEBUG: Email field onBlur - actual value:', e.target.value);
+    console.log('TCC_DEBUG: Email field onBlur - formData.email:', formData.email);
+    
+    // If browser autofilled a different value, update state
+    if (e.target.value !== formData.email) {
+      console.warn('TCC_DEBUG: Browser autofill detected! Updating state from', formData.email, 'to', e.target.value);
+      setFormData(prev => ({
+        ...prev,
+        email: e.target.value
+      }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
+    setError(null); // Clear any blocking errors
+    setGeocodingError(null); // Clear GPS lookup errors (they're informational only)
 
     // Basic validation
     if (formData.password !== formData.confirmPassword) {
@@ -152,37 +210,58 @@ const HealthcareRegistration: React.FC<HealthcareRegistrationProps> = ({ onBack,
       return;
     }
 
-    // Coordinate validation
-    if (!formData.latitude || !formData.longitude) {
-      setError('Location coordinates are required. Please lookup or enter latitude and longitude.');
-      setLoading(false);
-      return;
-    }
-
-    // Validate coordinate ranges
-    const lat = parseFloat(formData.latitude);
-    const lng = parseFloat(formData.longitude);
+    // Coordinate validation - only validate if coordinates are provided
+    const hasCoordinates = formData.latitude && formData.longitude;
     
-    if (isNaN(lat) || isNaN(lng)) {
-      setError('Please enter valid numeric coordinates.');
-      setLoading(false);
-      return;
-    }
+    if (hasCoordinates) {
+      // Validate coordinate ranges only if coordinates are provided
+      const lat = parseFloat(formData.latitude);
+      const lng = parseFloat(formData.longitude);
+      
+      if (isNaN(lat) || isNaN(lng)) {
+        setError('Please enter valid numeric coordinates.');
+        setLoading(false);
+        return;
+      }
 
-    if (lat < -90 || lat > 90) {
-      setError('Latitude must be between -90 and 90 degrees.');
-      setLoading(false);
-      return;
-    }
+      if (lat < -90 || lat > 90) {
+        setError('Latitude must be between -90 and 90 degrees.');
+        setLoading(false);
+        return;
+      }
 
-    if (lng < -180 || lng > 180) {
-      setError('Longitude must be between -180 and 180 degrees.');
-      setLoading(false);
-      return;
+      if (lng < -180 || lng > 180) {
+        setError('Longitude must be between -180 and 180 degrees.');
+        setLoading(false);
+        return;
+      }
+    } else {
+      // Show warning if coordinates are missing, but allow submission
+      setShowCoordinateWarning(true);
+      setError(null); // Clear any previous errors
     }
 
     try {
-      console.log('TCC_DEBUG: Submitting healthcare registration with data:', formData);
+      // Log the actual form data being submitted
+      const submitData = {
+        name: formData.contactName,
+        email: formData.email,
+        password: formData.password ? '[HIDDEN]' : '[MISSING]',
+        facilityName: formData.facilityName,
+        facilityType: formData.facilityType,
+        manageMultipleLocations: formData.manageMultipleLocations,
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        zipCode: formData.zipCode,
+        latitude: formData.latitude ? parseFloat(formData.latitude) : null,
+        longitude: formData.longitude ? parseFloat(formData.longitude) : null,
+      };
+      
+      console.log('TCC_DEBUG: Submitting healthcare registration with data:', submitData);
+      console.log('TCC_DEBUG: Email field value:', formData.email);
+      console.log('TCC_DEBUG: Contact name:', formData.contactName);
 
       const response = await api.post('/api/auth/healthcare/register', {
         name: formData.contactName,
@@ -196,8 +275,8 @@ const HealthcareRegistration: React.FC<HealthcareRegistrationProps> = ({ onBack,
         city: formData.city,
         state: formData.state,
         zipCode: formData.zipCode,
-        latitude: parseFloat(formData.latitude),
-        longitude: parseFloat(formData.longitude),
+        latitude: formData.latitude ? parseFloat(formData.latitude) : null,
+        longitude: formData.longitude ? parseFloat(formData.longitude) : null,
       });
 
       const data = response.data;
@@ -240,6 +319,19 @@ const HealthcareRegistration: React.FC<HealthcareRegistrationProps> = ({ onBack,
               Registration Submitted!
             </h2>
             <p className="mt-2 text-sm text-gray-600">
+              Your healthcare facility account has been created successfully.
+            </p>
+            <p className="mt-2 text-sm text-gray-600">
+              Email: <strong>{formData.email}</strong>
+            </p>
+            {!formData.latitude || !formData.longitude ? (
+              <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                <p className="text-sm font-medium text-yellow-800">
+                  ⚠️ GPS coordinates were not set. You can add them later in the Facility Settings menu after logging in.
+                </p>
+              </div>
+            ) : null}
+            <p className="mt-2 text-sm text-gray-600">
               We've sent a verification email to {formData.email}. 
               Please check your inbox and click the verification link to activate your account.
             </p>
@@ -267,13 +359,57 @@ const HealthcareRegistration: React.FC<HealthcareRegistrationProps> = ({ onBack,
           </p>
         </div>
 
-        {/* Error Message */}
+        {/* Error Message (Blocking errors only) */}
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
             <div className="flex">
               <XCircle className="h-5 w-5 text-red-400" />
               <div className="ml-3">
                 <p className="text-sm font-medium text-red-800">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* GPS Lookup Error (Informational, non-blocking) */}
+        {geocodingError && (
+          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-md p-4">
+            <div className="flex">
+              <AlertTriangle className="h-5 w-5 text-blue-600" />
+              <div className="ml-3 flex-1">
+                <p className="text-sm font-medium text-blue-800">{geocodingError}</p>
+                <div className="mt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setGeocodingError(null)}
+                    className="text-sm text-blue-800 hover:text-blue-900 underline"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Warning Message for Missing Coordinates */}
+        {showCoordinateWarning && (
+          <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-md p-4">
+            <div className="flex">
+              <AlertTriangle className="h-5 w-5 text-yellow-600" />
+              <div className="ml-3 flex-1">
+                <p className="text-sm font-medium text-yellow-800">
+                  This account will not have full functionality until GPS Coordinates are provided. You can add them in the Facility Settings menu after creating the account.
+                </p>
+                <div className="mt-3 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setShowCoordinateWarning(false)}
+                    className="text-sm text-yellow-800 hover:text-yellow-900 underline"
+                  >
+                    Dismiss
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -366,6 +502,7 @@ const HealthcareRegistration: React.FC<HealthcareRegistrationProps> = ({ onBack,
                     id="contactName"
                     name="contactName"
                     required
+                    autoComplete="off"
                     value={formData.contactName}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
@@ -385,8 +522,10 @@ const HealthcareRegistration: React.FC<HealthcareRegistrationProps> = ({ onBack,
                       id="email"
                       name="email"
                       required
+                      autoComplete="off"
                       value={formData.email}
                       onChange={handleInputChange}
+                      onBlur={handleEmailBlur}
                       className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                       placeholder="Enter email address"
                     />
@@ -591,6 +730,22 @@ const HealthcareRegistration: React.FC<HealthcareRegistrationProps> = ({ onBack,
                       ✓ Coordinates set: {formData.latitude}, {formData.longitude}
                     </div>
                   )}
+                  
+                  {/* Manual Coordinate Entry Helper */}
+                  <div className="mt-2 text-xs text-gray-600">
+                    <p>
+                      Need help finding coordinates? Visit{' '}
+                      <a 
+                        href="https://www.gps-coordinates.org" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800 underline"
+                      >
+                        gps-coordinates.org
+                      </a>
+                      {' '}to look them up manually.
+                    </p>
+                  </div>
                 </div>
               </div>
 

@@ -187,14 +187,20 @@ const HealthcareDestinations: React.FC<HealthcareDestinationsProps> = ({ user })
     });
 
     try {
-      // Use backend geocoding endpoint which handles multiple variations and rate limiting
-      const response = await api.post('/api/public/geocode', {
+      // Add timeout wrapper to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Geocoding request timed out after 30 seconds')), 30000);
+      });
+
+      const geocodePromise = api.post('/api/public/geocode', {
         address: addFormData.address,
         city: addFormData.city,
         state: addFormData.state,
         zipCode: addFormData.zipCode,
         facilityName: addFormData.name
       });
+
+      const response = await Promise.race([geocodePromise, timeoutPromise]) as any;
 
       if (response.data.success) {
         const { latitude, longitude } = response.data.data;
@@ -206,11 +212,33 @@ const HealthcareDestinations: React.FC<HealthcareDestinationsProps> = ({ user })
         setAddError(null);
         console.log('TCC_DEBUG: Coordinates set successfully:', latitude, longitude);
       } else {
-        setAddError(response.data.error || 'No coordinates found for this address. Please enter them manually.');
+        const errorMsg = response.data.error || 'Could not find coordinates for this address. You can still save the destination and add coordinates manually.';
+        setAddError(errorMsg);
       }
     } catch (err: any) {
       console.error('Geocoding error:', err);
-      setAddError(err.response?.data?.error || 'Failed to lookup coordinates. Please enter them manually.');
+      
+      // Provide user-friendly error messages
+      let errorMessage = 'Failed to lookup coordinates. You can still save the destination and add coordinates manually.';
+      
+      if (err.message && err.message.includes('timeout')) {
+        errorMessage = 'Geocoding request timed out. You can still save the destination and add coordinates manually.';
+      } else if (err.response?.data?.error) {
+        const backendError = err.response.data.error;
+        if (backendError.includes('HTTP 429') || backendError.includes('Too Many Requests')) {
+          errorMessage = 'Too many geocoding requests. Please try again later or enter coordinates manually.';
+        } else if (backendError.includes('HTTP 503') || backendError.includes('Service Unavailable')) {
+          errorMessage = 'Geocoding service is temporarily unavailable. Please try again later or enter coordinates manually.';
+        } else if (backendError.includes('No results found') || backendError.includes('Could not find coordinates')) {
+          errorMessage = 'Could not find coordinates for this address. You can still save the destination and add coordinates manually.';
+        } else {
+          errorMessage = backendError + ' You can still save the destination and add coordinates manually.';
+        }
+      } else if (err.message) {
+        errorMessage = err.message + ' You can still save the destination and add coordinates manually.';
+      }
+      
+      setAddError(errorMessage);
     } finally {
       setGeocoding(false);
     }

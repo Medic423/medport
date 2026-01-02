@@ -145,17 +145,19 @@ const Hospitals: React.FC = () => {
         capabilities: hospital.capabilities,
         region: hospital.region,
         latitude: hospital.latitude?.toString() || '',
-        longitude: hospital.longitude?.toString() || ''
+        longitude: hospital.longitude?.toString() || '',
+        isActive: hospital.isActive ?? true
       });
       setEditError(null);
     }
   };
 
   const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
     setEditFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
@@ -179,14 +181,20 @@ const Hospitals: React.FC = () => {
         hospitalName: editFormData.name
       });
 
-      // Use backend geocoding endpoint which handles multiple variations and rate limiting
-      const response = await api.post('/api/public/geocode', {
+      // Add timeout wrapper to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Geocoding request timed out after 30 seconds')), 30000);
+      });
+
+      const geocodePromise = api.post('/api/public/geocode', {
         address: editFormData.address,
         city: editFormData.city,
         state: editFormData.state,
         zipCode: editFormData.zipCode,
         facilityName: editFormData.name
       });
+
+      const response = await Promise.race([geocodePromise, timeoutPromise]) as any;
 
       if (response.data.success) {
         const { latitude, longitude } = response.data.data;
@@ -198,11 +206,33 @@ const Hospitals: React.FC = () => {
         setEditError(null);
         console.log('TCC_DEBUG: Coordinates set successfully:', latitude, longitude);
       } else {
-        setEditError(response.data.error || 'Address not found. Please enter coordinates manually.');
+        const errorMsg = response.data.error || 'Could not find coordinates for this address. You can still save the hospital and add coordinates manually.';
+        setEditError(errorMsg);
       }
     } catch (err: any) {
       console.error('Geocoding error:', err);
-      setEditError(err.response?.data?.error || 'Failed to lookup coordinates. Please enter them manually.');
+      
+      // Provide user-friendly error messages
+      let errorMessage = 'Failed to lookup coordinates. You can still save the hospital and add coordinates manually.';
+      
+      if (err.message && err.message.includes('timeout')) {
+        errorMessage = 'Geocoding request timed out. You can still save the hospital and add coordinates manually.';
+      } else if (err.response?.data?.error) {
+        const backendError = err.response.data.error;
+        if (backendError.includes('HTTP 429') || backendError.includes('Too Many Requests')) {
+          errorMessage = 'Too many geocoding requests. Please try again later or enter coordinates manually.';
+        } else if (backendError.includes('HTTP 503') || backendError.includes('Service Unavailable')) {
+          errorMessage = 'Geocoding service is temporarily unavailable. Please try again later or enter coordinates manually.';
+        } else if (backendError.includes('No results found') || backendError.includes('Could not find coordinates')) {
+          errorMessage = 'Could not find coordinates for this address. You can still save the hospital and add coordinates manually.';
+        } else {
+          errorMessage = backendError + ' You can still save the hospital and add coordinates manually.';
+        }
+      } else if (err.message) {
+        errorMessage = err.message + ' You can still save the hospital and add coordinates manually.';
+      }
+      
+      setEditError(errorMessage);
     } finally {
       setGeocoding(false);
     }
@@ -216,7 +246,26 @@ const Hospitals: React.FC = () => {
     setEditError(null);
 
     try {
-      const response = await api.put(`/api/tcc/hospitals/${editingHospital.id}`, editFormData);
+      // Update healthcareLocation record directly (since the list shows healthcareLocation records)
+      // Use admin endpoint since we're in Command dashboard
+      console.log('TCC_DEBUG: Updating healthcare location:', editingHospital.id);
+      console.log('TCC_DEBUG: Edit form data:', editFormData);
+      console.log('TCC_DEBUG: isActive value:', editFormData.isActive, 'type:', typeof editFormData.isActive);
+      
+      const response = await api.put(`/api/healthcare/locations/${editingHospital.id}/admin`, {
+        locationName: editFormData.name,
+        address: editFormData.address,
+        city: editFormData.city,
+        state: editFormData.state,
+        zipCode: editFormData.zipCode,
+        phone: editFormData.phone || null,
+        facilityType: editFormData.type,
+        latitude: editFormData.latitude ? parseFloat(editFormData.latitude) : null,
+        longitude: editFormData.longitude ? parseFloat(editFormData.longitude) : null,
+        isActive: Boolean(editFormData.isActive) // Ensure boolean value
+      });
+      
+      console.log('TCC_DEBUG: Update response:', response.data);
 
       // Refresh the hospitals list
       await fetchHospitals();
@@ -666,6 +715,26 @@ const Hospitals: React.FC = () => {
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                     required
                   />
+                </div>
+
+                {/* Active Status */}
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="isActive"
+                      name="isActive"
+                      checked={editFormData.isActive ?? true}
+                      onChange={handleEditInputChange}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="isActive" className="ml-3 block text-sm font-medium text-gray-700">
+                      Active Facility
+                    </label>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Uncheck to deactivate this facility. Inactive facilities won't appear in trip requests.
+                  </p>
                 </div>
 
                 {/* Location Coordinates */}

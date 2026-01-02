@@ -282,6 +282,11 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
       const latitude = formData.latitude ? parseFloat(formData.latitude) : null;
       const longitude = formData.longitude ? parseFloat(formData.longitude) : null;
 
+      // Log the actual form data being submitted
+      console.log('TCC_DEBUG: Submitting EMS registration - Email:', formData.email);
+      console.log('TCC_DEBUG: Submitting EMS registration - Contact Name:', formData.contactName);
+      console.log('TCC_DEBUG: Submitting EMS registration - Agency Name:', formData.agencyName);
+
       const registrationPayload = {
         name: formData.contactName,
         email: formData.email,
@@ -508,6 +513,7 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
                     id="contactName"
                     name="contactName"
                     required
+                    autoComplete="off"
                     value={formData.contactName}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
@@ -530,12 +536,22 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
                       id="email"
                       name="email"
                       required
-                      autoComplete="email"
+                      autoComplete="off"
                       value={formData.email}
                       onChange={handleInputChange}
                       onBlur={(e) => {
                         // Log email value on blur to help debug
                         console.log('TCC_DEBUG: Email field value on blur:', e.target.value);
+                        console.log('TCC_DEBUG: Email field formData.email:', formData.email);
+                        
+                        // If browser autofilled a different value, update state
+                        if (e.target.value !== formData.email) {
+                          console.warn('TCC_DEBUG: Browser autofill detected! Updating state from', formData.email, 'to', e.target.value);
+                          setFormData(prev => ({
+                            ...prev,
+                            email: e.target.value
+                          }));
+                        }
                       }}
                       className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                       placeholder="Enter email address"
