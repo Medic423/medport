@@ -1139,8 +1139,8 @@ router.post('/ems/register', async (req, res) => {
         
         // Check if error is due to missing column (addedAt/addedBy), use raw SQL fallback
         const isColumnError = createError.code === 'P2022' || 
-                              (createError.message && createError.message.includes('addedAt')) ||
-                              (createError.meta && createError.meta.column && createError.meta.column.includes('addedAt'));
+                              (createError.message && (createError.message.includes('addedAt') || createError.message.includes('addedBy'))) ||
+                              (createError.meta && createError.meta.column && (createError.meta.column.includes('addedAt') || createError.meta.column.includes('addedBy')));
         
         if (isColumnError) {
           console.log('TCC_DEBUG: Column missing in database (addedAt), using raw SQL fallback');
@@ -1181,14 +1181,73 @@ router.post('/ems/register', async (req, res) => {
             
             console.log('TCC_DEBUG: Raw SQL executed successfully, fetching agency');
             
-            // Fetch the created agency
-            agency = await tx.eMSAgency.findUnique({
-              where: { id: agencyId }
-            });
+            // Fetch the created agency using raw SQL to avoid Prisma schema mismatch
+            // Prisma's findUnique tries to select all columns including addedBy/addedAt which don't exist in production
+            const agencyResult = await tx.$queryRaw<Array<{
+              id: string;
+              name: string;
+              contactName: string;
+              phone: string;
+              email: string;
+              address: string;
+              city: string;
+              state: string;
+              zipCode: string;
+              serviceArea: string[];
+              capabilities: string[];
+              isActive: boolean;
+              status: string;
+              createdAt: Date;
+              updatedAt: Date;
+              latitude: number | null;
+              longitude: number | null;
+              operatingHours: any;
+              requiresReview: boolean;
+            }>>`
+              SELECT 
+                id, name, "contactName", phone, email, address, city, state, "zipCode",
+                "serviceArea", capabilities, "isActive", status, "createdAt", "updatedAt",
+                latitude, longitude, "operatingHours", "requiresReview"
+              FROM ems_agencies
+              WHERE id = ${agencyId}
+            `;
             
-            if (!agency) {
+            if (!agencyResult || agencyResult.length === 0) {
               throw new Error('Agency was not created successfully via raw SQL');
             }
+            
+            // Convert raw SQL result to match Prisma model structure
+            const rawAgency = agencyResult[0];
+            agency = {
+              id: rawAgency.id,
+              name: rawAgency.name,
+              contactName: rawAgency.contactName,
+              phone: rawAgency.phone,
+              email: rawAgency.email,
+              address: rawAgency.address,
+              city: rawAgency.city,
+              state: rawAgency.state,
+              zipCode: rawAgency.zipCode,
+              serviceArea: rawAgency.serviceArea,
+              capabilities: rawAgency.capabilities,
+              isActive: rawAgency.isActive,
+              status: rawAgency.status,
+              createdAt: rawAgency.createdAt,
+              updatedAt: rawAgency.updatedAt,
+              latitude: rawAgency.latitude,
+              longitude: rawAgency.longitude,
+              operatingHours: rawAgency.operatingHours,
+              requiresReview: rawAgency.requiresReview,
+              // Add required fields with defaults for Prisma model compatibility
+              addedBy: null,
+              addedAt: rawAgency.createdAt, // Use createdAt as fallback
+              acceptsNotifications: true,
+              availableUnits: 0,
+              lastUpdated: rawAgency.updatedAt,
+              notificationMethods: [],
+              totalUnits: 0,
+              availabilityStatus: { isAvailable: false, availableLevels: [] }
+            } as any; // Type assertion needed because Prisma expects all fields
             
             console.log('TCC_DEBUG: Agency created via raw SQL, ID:', agency.id);
           } catch (rawSqlError: any) {
