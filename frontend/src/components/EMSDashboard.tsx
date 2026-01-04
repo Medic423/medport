@@ -21,7 +21,8 @@ import ChangePasswordModal from './ChangePasswordModal';
 import Notifications from './Notifications';
 import AgencySettings from './AgencySettings';
 import EMSSubUsersPanel from './EMSSubUsersPanel';
-import UnitsManagement from './UnitsManagement';
+// Units Management disabled - see docs/active/sessions/2026-01/units-management-disabled.md
+// import UnitsManagement from './UnitsManagement';
 import TripStatusButtons from './TripStatusButtons';
 import EMSTripCalculator from './EMSTripCalculator';
 import EMSAgencyAvailabilityStatus from './EMSAgencyAvailabilityStatus';
@@ -752,7 +753,7 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
                     'available': 'available-trips',
                     'accepted': 'my-trips',
                     'completed': 'completed-trips',
-                    'units': 'units',
+                    // 'units': 'units', // Units Management disabled
                     'users': 'users',
                     'agency-info': 'agency-info',
                     'trip-calculator': 'trip-calculator',
@@ -797,7 +798,8 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
               { id: 'available', name: 'Available Trips', icon: MapPin },
               { id: 'accepted', name: 'My Trips', icon: CheckCircle },
               { id: 'completed', name: 'Completed Trips', icon: Archive },
-              { id: 'units', name: 'Units', icon: Truck },
+              // Units Management disabled - see docs/active/sessions/2026-01/units-management-disabled.md
+              // { id: 'units', name: 'Units', icon: Truck },
               { id: 'availability-status', name: 'Availability Status', icon: Radio },
               { id: 'users', name: 'Users', icon: Settings },
               { id: 'agency-info', name: 'Agency Info', icon: Settings },
@@ -1201,9 +1203,10 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
           <EMSTripCalculator user={user} />
         )}
 
-        {activeTab === 'units' && (
+        {/* Units Management disabled - see docs/active/sessions/2026-01/units-management-disabled.md */}
+        {/* {activeTab === 'units' && (
           <UnitsManagement user={user} acceptedTrips={acceptedTrips} />
-        )}
+        )} */}
 
         {activeTab === 'availability-status' && (
           <EMSAgencyAvailabilityStatus user={user} />

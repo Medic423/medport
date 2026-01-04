@@ -7,7 +7,8 @@ import TCCCreateTrip from './TCCCreateTrip';
 import Hospitals from './Hospitals';
 import TCCHospitalSettings from './TCCHospitalSettings';
 import Agencies from './Agencies';
-import TCCUnitsManagement from './TCCUnitsManagement';
+// Units Management disabled - see docs/active/sessions/2026-01/units-management-disabled.md
+// import TCCUnitsManagement from './TCCUnitsManagement';
 import TCCRouteOptimizer from './TCCRouteOptimizer';
 // import EnhancedRouteOptimizer from './EnhancedRouteOptimizer'; // Temporarily disabled - file deleted during cleanup
 import Analytics from './Analytics';
@@ -46,7 +47,8 @@ const TCCDashboard: React.FC<TCCDashboardProps> = ({ user, onLogout }) => {
           
           {/* EMS Management */}
           <Route path="/ems/agencies" element={<Agencies />} />
-          <Route path="/ems/units" element={<TCCUnitsManagement />} />
+          {/* Units Management disabled - see docs/active/sessions/2026-01/units-management-disabled.md */}
+          {/* <Route path="/ems/units" element={<TCCUnitsManagement />} /> */}
           
           {/* Operations */}
           <Route path="/operations/trips" element={<TripsView user={user} />} />
@@ -62,7 +64,8 @@ const TCCDashboard: React.FC<TCCDashboardProps> = ({ user, onLogout }) => {
           <Route path="/hospitals" element={<Hospitals />} />
           <Route path="/hospitals/:facilityId/settings" element={<TCCHospitalSettings user={user} />} />
           <Route path="/agencies/*" element={<Agencies />} />
-          <Route path="/units" element={<TCCUnitsManagement />} />
+          {/* Units Management disabled - see docs/active/sessions/2026-01/units-management-disabled.md */}
+          {/* <Route path="/units" element={<TCCUnitsManagement />} /> */}
           <Route path="/route-optimization" element={<TCCRouteOptimizer />} />
           <Route path="/analytics" element={<Analytics />} />
         </Routes>

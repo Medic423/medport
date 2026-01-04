@@ -1,3 +1,17 @@
+/**
+ * TCC Units Management Routes
+ * 
+ * NOTE: Units Management UI has been disabled (see docs/active/sessions/2026-01/units-management-disabled.md)
+ * These endpoints remain functional but are not accessible through the UI.
+ * 
+ * Reason for disabling:
+ * - Schema mismatch between dev and production databases
+ * - Not core functionality (trips/dispatch/acceptance work without units)
+ * - No current customer demand
+ * 
+ * To re-enable: See documentation for implementation options
+ */
+
 import express from 'express';
 import { authenticateAdmin, AuthenticatedRequest } from '../middleware/authenticateAdmin';
 import { databaseManager } from '../services/databaseManager';

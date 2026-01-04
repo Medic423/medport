@@ -74,7 +74,8 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
       items: [
         { label: 'Agencies List', path: '/dashboard/ems/agencies' },
         { label: 'Add Agency', path: '/ems-register' },
-        { label: 'Units Management', path: '/dashboard/ems/units' },
+        // Units Management disabled - see docs/active/sessions/2026-01/units-management-disabled.md
+        // { label: 'Units Management', path: '/dashboard/ems/units' },
         { label: 'Route Optimization', path: '/dashboard/operations/route-optimization' },
         { label: 'Trip Calculator', path: '/dashboard/operations/analytics' },
       ]
@@ -113,7 +114,7 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
         '/dashboard/operations/trips': 'trip-management',
         '/dashboard/healthcare/facilities': 'healthcare-facilities',
         '/dashboard/ems/agencies': 'ems-agencies',
-        '/dashboard/ems/units': 'units',
+        // '/dashboard/ems/units': 'units', // Units Management disabled
         '/dashboard/operations/route-optimization': 'route-optimization',
         '/dashboard/operations/analytics': 'analytics',
         '/dashboard/admin/users': 'user-management',

@@ -49,6 +49,20 @@ export interface UnitAnalytics {
   efficiency: number;
 }
 
+/**
+ * Unit Service
+ * 
+ * NOTE: Units Management UI has been disabled (see docs/active/sessions/2026-01/units-management-disabled.md)
+ * This service remains functional but unit creation may fail in production due to schema differences.
+ * 
+ * Known Issues:
+ * - Unit creation tries to create unit_analytics record (doesn't exist in production)
+ * - Unit creation tries to set fields that don't exist in production schema
+ * - Works in local dev, fails in dev-swa/production
+ * 
+ * To re-enable: See documentation for schema alignment options
+ */
+
 class UnitService {
   private prisma: EMSPrismaClient;
 
