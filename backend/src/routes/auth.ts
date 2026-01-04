@@ -1110,43 +1110,12 @@ router.post('/ems/register', async (req, res) => {
       await tx.$executeRawUnsafe(`SAVEPOINT ${savepointName}`);
       console.log('TCC_DEBUG: Savepoint created before Prisma create:', savepointName);
       
+      // Always use raw SQL for agency creation to avoid Prisma schema validation issues
+      // Production database doesn't have addedBy/addedAt columns that Prisma schema expects
       let agency;
+      console.log('TCC_DEBUG: Using raw SQL for agency creation (production schema compatibility)');
+      
       try {
-        agency = await tx.eMSAgency.create({
-          data: agencyData
-        });
-        console.log('TCC_DEBUG: Agency created successfully via Prisma, ID:', agency.id);
-        // Release savepoint on success
-        await tx.$executeRawUnsafe(`RELEASE SAVEPOINT ${savepointName}`);
-      } catch (createError: any) {
-        console.error('TCC_DEBUG: Error creating agency via Prisma:', createError);
-        console.error('TCC_DEBUG: Agency creation error details:', {
-          message: createError.message,
-          code: createError.code,
-          meta: createError.meta
-        });
-        
-        // Rollback to savepoint to undo the failed Prisma operation
-        // This restores the transaction to a valid state for raw SQL
-        try {
-          await tx.$executeRawUnsafe(`ROLLBACK TO SAVEPOINT ${savepointName}`);
-          console.log('TCC_DEBUG: Rolled back to savepoint after Prisma error');
-        } catch (rollbackError: any) {
-          console.error('TCC_DEBUG: Error rolling back to savepoint:', rollbackError);
-          // If rollback fails, transaction is likely aborted - can't recover
-          throw new Error('Transaction failed. Please try again.');
-        }
-        
-        // Check if error is due to missing column (addedAt/addedBy), use raw SQL fallback
-        const isColumnError = createError.code === 'P2022' || 
-                              (createError.message && (createError.message.includes('addedAt') || createError.message.includes('addedBy'))) ||
-                              (createError.meta && createError.meta.column && (createError.meta.column.includes('addedAt') || createError.meta.column.includes('addedBy')));
-        
-        if (isColumnError) {
-          console.log('TCC_DEBUG: Column missing in database (addedAt), using raw SQL fallback');
-          console.log('TCC_DEBUG: Error details:', { code: createError.code, message: createError.message, meta: createError.meta });
-          
-          try {
             const agencyId = `c${Date.now().toString(36)}${randomBytes(6).toString('hex').substring(0, 10)}`;
             
             // Execute raw SQL - transaction is now in valid state after rollback
@@ -1268,11 +1237,6 @@ router.post('/ems/register', async (req, res) => {
             // For other raw SQL errors, throw to rollback transaction
             throw new Error(`Failed to create agency: ${rawSqlError.message || 'Unknown error'}`);
           }
-        } else {
-          // Not a column error - re-throw to be caught by outer catch
-          throw createError;
-        }
-      }
 
       // Create new EMS user with agencyId linked
       console.log('TCC_DEBUG: Creating EMS user with agencyId:', agency.id);
