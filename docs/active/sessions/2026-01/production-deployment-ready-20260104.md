@@ -41,7 +41,12 @@
    - Pushed to `origin/main`
    - Latest commit: `fda3ec5d`
 
-2. **Deploy Backend (Required - Manual Trigger):**
+2. ✅ **Deploy Backend:** COMPLETED (via automatic workflow)
+   - **Note:** Automatic workflow triggered on push to `main`
+   - **Workflow:** `Build and deploy Node.js app to Azure Web App - TraccEms-Prod-Backend`
+   - **Status:** ✅ Successfully deployed
+   - **Completed:** 15:27 UTC
+   - **Commit:** `fda3ec5d`
    - Go to GitHub Actions: https://github.com/Medic423/medport/actions
    - Select workflow: **"production - Deploy Prod Backend"**
    - Click **"Run workflow"**
