@@ -1104,22 +1104,40 @@ router.post('/ems/register', async (req, res) => {
       
       console.log('TCC_DEBUG: Agency data to create:', JSON.stringify(agencyData, null, 2));
       
+      // Use SAVEPOINT before Prisma create so we can rollback and try raw SQL if it fails
+      // This prevents transaction abort from blocking the raw SQL fallback
+      const savepointName = `sp_ems_agency_${Date.now()}`;
+      await tx.$executeRawUnsafe(`SAVEPOINT ${savepointName}`);
+      console.log('TCC_DEBUG: Savepoint created before Prisma create:', savepointName);
+      
       let agency;
       try {
         agency = await tx.eMSAgency.create({
           data: agencyData
         });
-        console.log('TCC_DEBUG: Agency created successfully, ID:', agency.id);
+        console.log('TCC_DEBUG: Agency created successfully via Prisma, ID:', agency.id);
+        // Release savepoint on success
+        await tx.$executeRawUnsafe(`RELEASE SAVEPOINT ${savepointName}`);
       } catch (createError: any) {
-        console.error('TCC_DEBUG: Error creating agency:', createError);
+        console.error('TCC_DEBUG: Error creating agency via Prisma:', createError);
         console.error('TCC_DEBUG: Agency creation error details:', {
           message: createError.message,
           code: createError.code,
           meta: createError.meta
         });
         
-        // If error is due to missing column (addedAt/addedBy), use raw SQL
-        // Check both code and message to catch the error reliably
+        // Rollback to savepoint to undo the failed Prisma operation
+        // This restores the transaction to a valid state for raw SQL
+        try {
+          await tx.$executeRawUnsafe(`ROLLBACK TO SAVEPOINT ${savepointName}`);
+          console.log('TCC_DEBUG: Rolled back to savepoint after Prisma error');
+        } catch (rollbackError: any) {
+          console.error('TCC_DEBUG: Error rolling back to savepoint:', rollbackError);
+          // If rollback fails, transaction is likely aborted - can't recover
+          throw new Error('Transaction failed. Please try again.');
+        }
+        
+        // Check if error is due to missing column (addedAt/addedBy), use raw SQL fallback
         const isColumnError = createError.code === 'P2022' || 
                               (createError.message && createError.message.includes('addedAt')) ||
                               (createError.meta && createError.meta.column && createError.meta.column.includes('addedAt'));
@@ -1127,43 +1145,72 @@ router.post('/ems/register', async (req, res) => {
         if (isColumnError) {
           console.log('TCC_DEBUG: Column missing in database (addedAt), using raw SQL fallback');
           console.log('TCC_DEBUG: Error details:', { code: createError.code, message: createError.message, meta: createError.meta });
-          const agencyId = `c${Date.now().toString(36)}${randomBytes(6).toString('hex').substring(0, 10)}`;
-          await tx.$executeRaw`
-            INSERT INTO ems_agencies (
-              id, name, "contactName", phone, email, address, city, state, "zipCode",
-              "serviceArea", capabilities, "isActive", status, "createdAt", "updatedAt",
-              latitude, longitude, "operatingHours", "requiresReview"
-            )
-            VALUES (
-              ${agencyId},
-              ${agencyData.name},
-              ${agencyData.contactName},
-              ${agencyData.phone},
-              ${agencyData.email},
-              ${agencyData.address},
-              ${agencyData.city},
-              ${agencyData.state},
-              ${agencyData.zipCode},
-              ${agencyData.serviceArea || []}::text[],
-              ${agencyData.capabilities || []}::text[],
-              ${agencyData.isActive},
-              ${agencyData.status},
-              NOW(),
-              NOW(),
-              ${agencyData.latitude || null},
-              ${agencyData.longitude || null},
-              ${agencyData.operatingHours ? JSON.stringify(agencyData.operatingHours) : null}::jsonb,
-              ${agencyData.requiresReview || false}
-            )
-          `;
           
-          // Fetch the created agency
-          agency = await tx.eMSAgency.findUnique({
-            where: { id: agencyId }
-          });
-          console.log('TCC_DEBUG: Agency created via raw SQL, ID:', agency?.id);
+          try {
+            const agencyId = `c${Date.now().toString(36)}${randomBytes(6).toString('hex').substring(0, 10)}`;
+            
+            // Execute raw SQL - transaction is now in valid state after rollback
+            await tx.$executeRaw`
+              INSERT INTO ems_agencies (
+                id, name, "contactName", phone, email, address, city, state, "zipCode",
+                "serviceArea", capabilities, "isActive", status, "createdAt", "updatedAt",
+                latitude, longitude, "operatingHours", "requiresReview"
+              )
+              VALUES (
+                ${agencyId},
+                ${agencyData.name},
+                ${agencyData.contactName},
+                ${agencyData.phone},
+                ${agencyData.email},
+                ${agencyData.address},
+                ${agencyData.city},
+                ${agencyData.state},
+                ${agencyData.zipCode},
+                ${agencyData.serviceArea || []}::text[],
+                ${agencyData.capabilities || []}::text[],
+                ${agencyData.isActive},
+                ${agencyData.status},
+                NOW(),
+                NOW(),
+                ${agencyData.latitude || null},
+                ${agencyData.longitude || null},
+                ${agencyData.operatingHours ? JSON.stringify(agencyData.operatingHours) : null}::jsonb,
+                ${agencyData.requiresReview || false}
+              )
+            `;
+            
+            console.log('TCC_DEBUG: Raw SQL executed successfully, fetching agency');
+            
+            // Fetch the created agency
+            agency = await tx.eMSAgency.findUnique({
+              where: { id: agencyId }
+            });
+            
+            if (!agency) {
+              throw new Error('Agency was not created successfully via raw SQL');
+            }
+            
+            console.log('TCC_DEBUG: Agency created via raw SQL, ID:', agency.id);
+          } catch (rawSqlError: any) {
+            console.error('TCC_DEBUG: Raw SQL execution failed:', rawSqlError);
+            console.error('TCC_DEBUG: Raw SQL error details:', {
+              message: rawSqlError.message,
+              code: rawSqlError.code,
+              meta: rawSqlError.meta
+            });
+            
+            // If transaction was aborted, we can't recover
+            if (rawSqlError.code === 'P2010' || rawSqlError.code === '25P02' ||
+                (rawSqlError.message && rawSqlError.message.includes('transaction is aborted'))) {
+              throw new Error('Transaction failed during agency creation. Please try again.');
+            }
+            
+            // For other raw SQL errors, throw to rollback transaction
+            throw new Error(`Failed to create agency: ${rawSqlError.message || 'Unknown error'}`);
+          }
         } else {
-          throw createError; // Re-throw to be caught by outer catch
+          // Not a column error - re-throw to be caught by outer catch
+          throw createError;
         }
       }
 
