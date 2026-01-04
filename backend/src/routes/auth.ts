@@ -1183,7 +1183,15 @@ router.post('/ems/register', async (req, res) => {
             
             // Fetch the created agency using raw SQL to avoid Prisma schema mismatch
             // Prisma's findUnique tries to select all columns including addedBy/addedAt which don't exist in production
-            const agencyResult = await tx.$queryRaw<Array<{
+            // Use $queryRawUnsafe to have full control and avoid any Prisma schema validation
+            const agencyResult = await tx.$queryRawUnsafe(`
+              SELECT 
+                id, name, "contactName", phone, email, address, city, state, "zipCode",
+                "serviceArea", capabilities, "isActive", status, "createdAt", "updatedAt",
+                latitude, longitude, "operatingHours", "requiresReview"
+              FROM ems_agencies
+              WHERE id = $1
+            `, agencyId) as Array<{
               id: string;
               name: string;
               contactName: string;
@@ -1203,14 +1211,7 @@ router.post('/ems/register', async (req, res) => {
               longitude: number | null;
               operatingHours: any;
               requiresReview: boolean;
-            }>>`
-              SELECT 
-                id, name, "contactName", phone, email, address, city, state, "zipCode",
-                "serviceArea", capabilities, "isActive", status, "createdAt", "updatedAt",
-                latitude, longitude, "operatingHours", "requiresReview"
-              FROM ems_agencies
-              WHERE id = ${agencyId}
-            `;
+            }>;
             
             if (!agencyResult || agencyResult.length === 0) {
               throw new Error('Agency was not created successfully via raw SQL');
