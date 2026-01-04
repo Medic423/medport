@@ -7,7 +7,6 @@ import {
   FileText,
   BarChart3,
   TrendingUp,
-  Users,
   MapPin,
   Activity
 } from 'lucide-react';
@@ -31,8 +30,9 @@ interface SystemOverview {
   activeHospitals: number;
   activeAgencies: number;
   activeFacilities: number;
-  totalUnits: number;
-  activeUnits: number;
+  // Units removed - Units Management feature disabled
+  // totalUnits: number;
+  // activeUnits: number;
 }
 
 const TCCOverview: React.FC<TCCOverviewProps> = ({ user, onClearSession }) => {
@@ -126,15 +126,9 @@ const TCCOverview: React.FC<TCCOverviewProps> = ({ user, onClearSession }) => {
       changeType: 'positive' as const,
       icon: Truck,
       color: 'bg-red-50 text-red-600'
-    },
-    {
-      title: 'Active Units',
-      value: overview?.activeUnits?.toString() || '0',
-      change: `${overview?.totalUnits || 0} total`,
-      changeType: 'positive' as const,
-      icon: Users,
-      color: 'bg-purple-50 text-purple-600'
     }
+    // Active Units tile removed - Units Management feature disabled
+    // See docs/active/sessions/2026-01/units-management-disabled.md
   ];
 
   return (
@@ -163,7 +157,7 @@ const TCCOverview: React.FC<TCCOverviewProps> = ({ user, onClearSession }) => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {statsCards.map((stat, index) => (
           <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between">
