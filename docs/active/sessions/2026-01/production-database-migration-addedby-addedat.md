@@ -166,9 +166,25 @@ After migration:
 ## Post-Migration Steps
 
 1. ✅ Verify columns added successfully
-2. ⏳ Test EMS registration in production
-3. ⏳ Verify no Prisma validation errors
+2. ✅ Test EMS registration in production - **SUCCESSFUL**
+3. ✅ Verify no Prisma validation errors - **NO ERRORS**
 4. ⏳ Consider reverting raw SQL workarounds (optional - can keep for safety)
+
+### Testing Results
+
+**Production Testing (January 4, 2026):**
+- ✅ Account creation successful
+- ✅ No `addedBy`/`addedAt` column errors
+- ✅ EMS registration working correctly
+- ✅ Agency appears in Command list
+
+**Dev-SWA Testing:**
+- ✅ Already tested and working (Southern Cove EMS registration successful)
+- ✅ No retesting needed - Dev-SWA already has these columns
+
+**Local Dev Testing:**
+- ✅ Already tested and working (test script passes)
+- ✅ No retesting needed - Local dev works correctly
 
 ---
 
