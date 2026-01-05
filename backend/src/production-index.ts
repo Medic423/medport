@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
 import { productionDatabaseManager } from './services/productionDatabaseManager';
 
 // Import routes
@@ -11,10 +12,24 @@ import agencyRoutes from './routes/agencies';
 import facilityRoutes from './routes/facilities';
 import analyticsRoutes from './routes/analytics';
 import tripRoutes from './routes/trips';
+import agencyResponseRoutes from './routes/agencyResponses';
 import optimizationRoutes from './routes/optimization';
 import notificationRoutes from './routes/notifications';
 import unitRoutes from './routes/units';
 import tccUnitRoutes from './routes/tccUnits';
+import dropdownOptionsRoutes from './routes/dropdownOptions';
+import dropdownCategoriesRoutes from './routes/dropdownCategories';
+import pickupLocationRoutes from './routes/pickupLocations';
+import emsAnalyticsRoutes from './routes/emsAnalytics';
+import backupRoutes from './routes/backup';
+import maintenanceRoutes from './routes/maintenance';
+import healthcareLocationsRoutes from './routes/healthcareLocations';
+import agencyTransportRoutes from './routes/agency';
+import healthcareAgenciesRoutes from './routes/healthcareAgencies';
+import healthcareDestinationsRoutes from './routes/healthcareDestinations';
+import healthcareSubUsersRoutes from './routes/healthcareSubUsers';
+import emsSubUsersRoutes from './routes/emsSubUsers';
+import publicRoutes from './routes/public';
 
 // Load environment variables
 dotenv.config();
@@ -23,11 +38,35 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 
 // Middleware
+// Clean environment variables (remove any whitespace/newlines)
+const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').trim().replace(/[\r\n]/g, '');
+const corsOrigin = (process.env.CORS_ORIGIN || frontendUrl).trim().replace(/[\r\n]/g, '');
+
 app.use(helmet());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // List of allowed origins
+    const allowedOrigins = [
+      corsOrigin,
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'https://traccems.com',
+      'https://dev-swa.traccems.com'
+    ];
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn('CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -71,16 +110,30 @@ app.get('/health', async (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/trips', tripRoutes);
-app.use('/api/units', unitRoutes);
+app.use('/api/agency-responses', agencyResponseRoutes);
 app.use('/api/notifications', notificationRoutes);
-app.use('/api/optimize', optimizationRoutes);
-
-// TCC Admin Routes
+app.use('/api/units', unitRoutes);
 app.use('/api/tcc/hospitals', hospitalRoutes);
 app.use('/api/tcc/agencies', agencyRoutes);
 app.use('/api/tcc/facilities', facilityRoutes);
 app.use('/api/tcc/analytics', analyticsRoutes);
 app.use('/api/tcc/units', tccUnitRoutes);
+app.use('/api/dropdown-options', dropdownOptionsRoutes);
+app.use('/api/dropdown-categories', dropdownCategoriesRoutes);
+app.use('/api/tcc/pickup-locations', pickupLocationRoutes);
+app.use('/api/ems/analytics', emsAnalyticsRoutes);
+app.use('/api/optimize', optimizationRoutes);
+app.use('/api/backup', backupRoutes);
+app.use('/api/maintenance', maintenanceRoutes);
+app.use('/api/healthcare/locations', healthcareLocationsRoutes);
+app.use('/api/healthcare/agencies', healthcareAgenciesRoutes);
+app.use('/api/healthcare/destinations', healthcareDestinationsRoutes);
+app.use('/api/healthcare/sub-users', healthcareSubUsersRoutes);
+app.use('/api/ems/sub-users', emsSubUsersRoutes);
+app.use('/api/agency', agencyTransportRoutes);
+
+// Public endpoints (no auth required)
+app.use('/api/public', publicRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
