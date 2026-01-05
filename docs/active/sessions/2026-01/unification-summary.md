@@ -93,13 +93,31 @@ Successfully unified production environment to match dev/dev-swa environments. A
 
 ## Next Steps
 
-### 1. Deploy to Production ⏳
+### 1. ✅ Deploy to Dev-SWA - COMPLETE
 
 **Process:**
-1. Merge `feature/unify-environments` → `develop`
-2. Test in dev-swa (auto-deploys)
-3. Merge `develop` → `main`
-4. Deploy to production via GitHub Actions
+1. ✅ Merged `feature/unify-environments` → `develop`
+2. ✅ Deployed to dev-swa (auto-deployed)
+3. ✅ Fixed 409 conflicts with concurrency controls
+4. ✅ Deployment successful
+
+### 2. Test in Dev-SWA ⏳
+
+**Test Core Functionality:**
+1. ⏳ Verify backend health: `https://dev-api.traccems.com/health`
+2. ⏳ Verify frontend loads: `https://dev-swa.traccems.com`
+3. ⏳ Test trip creation
+4. ⏳ Test dispatch
+5. ⏳ Test EMS acceptance
+6. ⏳ Verify all API routes are accessible
+
+### 3. Deploy to Production ⏳
+
+**After Dev-SWA Testing Passes:**
+1. Merge `develop` → `main`
+2. Deploy to production via GitHub Actions
+3. Migrations will run automatically
+4. Missing tables will be created
 
 **What Will Happen:**
 - GitHub Actions will run `prisma migrate deploy`
