@@ -99,6 +99,24 @@ app.get('/health', async (req, res) => {
         databases: 'connected'
       });
     } else {
+      // Ensure CORS headers even on unhealthy status
+      const origin = req.headers.origin;
+      if (origin) {
+        const allowedOrigins = [
+          process.env.FRONTEND_URL,
+          process.env.CORS_ORIGIN,
+          'http://localhost:3000',
+          'http://localhost:5173',
+          'https://traccems.com',
+          'https://dev-swa.traccems.com'
+        ].filter(Boolean);
+        
+        if (allowedOrigins.includes(origin)) {
+          res.header('Access-Control-Allow-Origin', origin);
+          res.header('Access-Control-Allow-Credentials', 'true');
+        }
+      }
+      
       res.status(503).json({
         status: 'unhealthy',
         timestamp: new Date().toISOString(),
@@ -106,6 +124,24 @@ app.get('/health', async (req, res) => {
       });
     }
   } catch (error) {
+    // Ensure CORS headers even on error
+    const origin = req.headers.origin;
+    if (origin) {
+      const allowedOrigins = [
+        process.env.FRONTEND_URL,
+        process.env.CORS_ORIGIN,
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'https://traccems.com',
+        'https://dev-swa.traccems.com'
+      ].filter(Boolean);
+      
+      if (allowedOrigins.includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin);
+        res.header('Access-Control-Allow-Credentials', 'true');
+      }
+    }
+    
     res.status(503).json({
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
@@ -234,6 +270,24 @@ app.use('*', (req, res) => {
 
 // Error handler
 app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  // Ensure CORS headers are set even on errors
+  const origin = req.headers.origin;
+  if (origin) {
+    const allowedOrigins = [
+      process.env.FRONTEND_URL,
+      process.env.CORS_ORIGIN,
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'https://traccems.com',
+      'https://dev-swa.traccems.com'
+    ].filter(Boolean);
+    
+    if (allowedOrigins.includes(origin)) {
+      res.header('Access-Control-Allow-Origin', origin);
+      res.header('Access-Control-Allow-Credentials', 'true');
+    }
+  }
+  
   console.error('Unhandled error:', error);
   res.status(500).json({
     success: false,
