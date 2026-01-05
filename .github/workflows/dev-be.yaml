@@ -9,9 +9,12 @@ on:
       - develop
 
 # Prevent concurrent deployments to avoid 409 conflicts
+# Strategy: Wait for in-progress, but allow queued workflows (they'll run in order)
 concurrency:
   group: deploy-dev-backend
-  cancel-in-progress: false # Don't cancel - wait for previous to complete
+  cancel-in-progress: false # Don't cancel in-progress deployments
+  # Note: If multiple are queued, they'll run in order (oldest first)
+  # This prevents 409 conflicts while ensuring all deployments eventually run
 
 env:
   APP_NAME: 'TraccEms-Dev-Backend'
