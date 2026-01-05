@@ -8,6 +8,11 @@ on:
     branches:
       - develop
 
+# Prevent concurrent deployments to avoid 409 conflicts
+concurrency:
+  group: deploy-dev-frontend
+  cancel-in-progress: false # Don't cancel - wait for previous to complete
+
 env:
   APP_NAME: 'TraccEms-Dev-Frontend'
   SLOT_NAME: 'production'
