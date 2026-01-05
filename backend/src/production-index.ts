@@ -42,7 +42,35 @@ const PORT = process.env.PORT || 5001;
 const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').trim().replace(/[\r\n]/g, '');
 const corsOrigin = (process.env.CORS_ORIGIN || frontendUrl).trim().replace(/[\r\n]/g, '');
 
-app.use(helmet());
+// Configure Helmet to allow CORS preflight requests
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginEmbedderPolicy: false
+}));
+
+// Handle OPTIONS preflight requests immediately (before CORS middleware)
+app.options('*', (req, res) => {
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    corsOrigin,
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'https://traccems.com',
+    'https://dev-swa.traccems.com'
+  ].filter(Boolean);
+  
+  if (origin && allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Max-Age', '86400'); // 24 hours
+    return res.status(204).send();
+  }
+  
+  res.status(403).send('CORS not allowed');
+});
+
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl requests)
@@ -55,7 +83,7 @@ app.use(cors({
       'http://localhost:5173',
       'https://traccems.com',
       'https://dev-swa.traccems.com'
-    ];
+    ].filter(Boolean);
     
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
@@ -64,7 +92,9 @@ app.use(cors({
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 app.use(cookieParser());
 app.use(express.json());
