@@ -37,8 +37,34 @@ else
         echo "Archive size: $(ls -lh deps.tar.gz | awk '{print $5}')"
         
         # Extract with progress output (extract to current directory)
-        echo "Extracting archive (this may take 30-60 seconds)..."
-        tar -xzf deps.tar.gz 2>&1 | tail -5
+        echo "Extracting archive (this may take 30-90 seconds for 49MB archive)..."
+        echo "Starting extraction at $(date)..."
+        # Extract in background and show progress
+        tar -xzf deps.tar.gz > /dev/null 2>&1 &
+        TAR_PID=$!
+        
+        # Show progress every 10 seconds
+        EXTRACTION_START=$(date +%s)
+        while kill -0 $TAR_PID 2>/dev/null; do
+            sleep 10
+            ELAPSED=$(($(date +%s) - $EXTRACTION_START))
+            echo "Extraction in progress... (${ELAPSED}s elapsed)"
+            # Timeout after 3 minutes
+            if [ $ELAPSED -gt 180 ]; then
+                echo "⚠️ Extraction taking longer than expected, but continuing..."
+            fi
+        done
+        
+        # Wait for tar to complete and get exit code
+        wait $TAR_PID
+        TAR_EXIT=$?
+        
+        if [ $TAR_EXIT -eq 0 ]; then
+            EXTRACTION_TIME=$(($(date +%s) - $EXTRACTION_START))
+            echo "✅ Extraction completed in ${EXTRACTION_TIME} seconds"
+        else
+            echo "⚠️ Extraction exited with code $TAR_EXIT"
+        fi
         
         if [ $? -eq 0 ] && [ -d node_modules ] && [ -n "$(ls -A node_modules 2>/dev/null)" ]; then
             echo "✅ Successfully extracted node_modules from archive."
