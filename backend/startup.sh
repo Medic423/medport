@@ -36,52 +36,38 @@ else
         echo "Found deps.tar.gz archive. Extracting..."
         echo "Archive size: $(ls -lh deps.tar.gz | awk '{print $5}')"
         
-        # Extract with progress output and timeout protection
-        echo "Extracting archive (this may take 30-90 seconds for 49MB archive)..."
-        echo "Starting extraction at $(date)..."
-        
-        # Check disk space first
-        echo "Checking disk space..."
-        df -h /home | tail -1
-        
-        # Extract with timeout and progress monitoring
+        # Extract to /tmp first (faster, more reliable than extracting directly to wwwroot)
+        echo "Extracting to /tmp first (more reliable in Azure)..."
         EXTRACTION_START=$(date +%s)
-        timeout 180 tar -xzf deps.tar.gz 2>&1 &
-        TAR_PID=$!
         
-        # Show progress every 5 seconds
-        while kill -0 $TAR_PID 2>/dev/null; do
-            sleep 5
-            ELAPSED=$(($(date +%s) - $EXTRACTION_START))
-            echo "[${ELAPSED}s] Extraction in progress..."
+        # Create temp directory
+        TEMP_DIR="/tmp/node_modules_extract_$$"
+        mkdir -p "$TEMP_DIR"
+        
+        # Extract to temp directory with timeout
+        echo "Starting extraction at $(date)..."
+        if timeout 120 tar -xzf deps.tar.gz -C "$TEMP_DIR" 2>&1; then
+            EXTRACTION_TIME=$(($(date +%s) - $EXTRACTION_START))
+            echo "✅ Extraction to /tmp completed in ${EXTRACTION_TIME} seconds"
             
-            # Check if node_modules is being created
-            if [ -d node_modules ]; then
-                COUNT=$(find node_modules -type d 2>/dev/null | wc -l)
-                echo "[${ELAPSED}s] Found $COUNT directories in node_modules so far..."
+            # Move extracted node_modules to current directory
+            echo "Moving node_modules to current directory..."
+            if [ -d "$TEMP_DIR/node_modules" ]; then
+                mv "$TEMP_DIR/node_modules" .
+                MOVE_TIME=$(($(date +%s) - $EXTRACTION_START))
+                echo "✅ Move completed. Total time: ${MOVE_TIME} seconds"
+                rm -rf "$TEMP_DIR"
+            else
+                echo "⚠️ node_modules not found in extracted archive"
+                rm -rf "$TEMP_DIR"
             fi
-            
-            # Warn if taking too long
-            if [ $ELAPSED -gt 120 ]; then
-                echo "⚠️ [${ELAPSED}s] Extraction taking longer than expected..."
-            fi
-        done
-        
-        # Wait for tar to complete and get exit code
-        wait $TAR_PID
-        TAR_EXIT=$?
-        
-        EXTRACTION_TIME=$(($(date +%s) - $EXTRACTION_START))
-        
-        if [ $TAR_EXIT -eq 0 ]; then
-            echo "✅ Extraction completed in ${EXTRACTION_TIME} seconds"
-        elif [ $TAR_EXIT -eq 124 ]; then
-            echo "❌ Extraction timed out after ${EXTRACTION_TIME} seconds (180s limit)"
         else
-            echo "⚠️ Extraction exited with code $TAR_EXIT after ${EXTRACTION_TIME} seconds"
+            EXTRACTION_TIME=$(($(date +%s) - $EXTRACTION_START))
+            echo "❌ Extraction failed or timed out after ${EXTRACTION_TIME} seconds"
+            rm -rf "$TEMP_DIR"
         fi
         
-        if [ $? -eq 0 ] && [ -d node_modules ] && [ -n "$(ls -A node_modules 2>/dev/null)" ]; then
+        if [ -d node_modules ] && [ -n "$(ls -A node_modules 2>/dev/null)" ]; then
             echo "✅ Successfully extracted node_modules from archive."
             echo "node_modules size: $(du -sh node_modules | awk '{print $1}')"
             
