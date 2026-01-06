@@ -28,7 +28,7 @@ class DatabaseManager {
             url: process.env.DATABASE_URL
           }
         },
-        // Add connection configuration for Render PostgreSQL
+        // Add connection configuration for Azure PostgreSQL
         log: process.env.NODE_ENV === 'production' ? ['error'] : ['error', 'warn'],
         errorFormat: 'pretty',
       });
