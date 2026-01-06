@@ -3,14 +3,22 @@
 # This script runs AFTER Azure's built-in startup script
 # It ensures node_modules exists before starting the app
 
+# Immediate output to confirm script is running
+echo "=========================================="
+echo "STARTUP SCRIPT STARTING - $(date)"
+echo "=========================================="
+
 cd /home/site/wwwroot
 
 # Strategy: Extract pre-built node_modules archive (fast) instead of npm install (hangs)
 # This avoids npm install hanging in Azure App Service environment
+# Using deps.tar.gz instead of node_modules.tar.gz to prevent Azure's script from detecting it
 
 echo "=== Azure App Service Startup Script ==="
 echo "Current directory: $(pwd)"
 echo "Checking for node_modules..."
+echo "Listing files in current directory:"
+ls -lah | head -10
 
 # Check if node_modules exists and is populated
 if [ -d node_modules ] && [ -n "$(ls -A node_modules 2>/dev/null)" ]; then
@@ -20,22 +28,37 @@ else
     echo "⚠️ node_modules is missing or empty."
     
     # Try to extract pre-built archive first (fast, reliable)
-    if [ -f node_modules.tar.gz ]; then
-        echo "Found node_modules.tar.gz archive. Extracting..."
-        echo "Archive size: $(ls -lh node_modules.tar.gz | awk '{print $5}')"
+    # Use deps.tar.gz instead of node_modules.tar.gz to prevent Azure's built-in script from detecting it
+    if [ -f deps.tar.gz ]; then
+        echo "Found deps.tar.gz archive. Extracting..."
+        echo "Archive size: $(ls -lh deps.tar.gz | awk '{print $5}')"
         
-        # Extract with progress output
-        tar -xzf node_modules.tar.gz 2>&1 | head -20
+        # Extract with progress output (extract to current directory)
+        echo "Extracting archive (this may take 30-60 seconds)..."
+        tar -xzf deps.tar.gz 2>&1 | tail -5
         
         if [ $? -eq 0 ] && [ -d node_modules ] && [ -n "$(ls -A node_modules 2>/dev/null)" ]; then
             echo "✅ Successfully extracted node_modules from archive."
             echo "node_modules size: $(du -sh node_modules | awk '{print $1}')"
             
-            # Clean up archive to prevent Azure's script from interfering
-            echo "Removing archive to prevent Azure script interference..."
-            rm -f node_modules.tar.gz
+            # Clean up archive
+            echo "Removing archive..."
+            rm -f deps.tar.gz
         else
             echo "⚠️ Extraction failed or incomplete. Falling back to npm install..."
+            rm -rf node_modules 2>/dev/null || true
+        fi
+    elif [ -f node_modules.tar.gz ]; then
+        # Fallback: if old name exists (from previous deployments), try it but warn
+        echo "⚠️ Found node_modules.tar.gz (old name). Azure's script may interfere."
+        echo "Extracting node_modules.tar.gz..."
+        tar -xzf node_modules.tar.gz 2>&1 | tail -5
+        
+        if [ $? -eq 0 ] && [ -d node_modules ] && [ -n "$(ls -A node_modules 2>/dev/null)" ]; then
+            echo "✅ Successfully extracted node_modules from archive."
+            rm -f node_modules.tar.gz
+        else
+            echo "⚠️ Extraction failed. Falling back to npm install..."
             rm -rf node_modules 2>/dev/null || true
         fi
     fi

@@ -62,20 +62,28 @@ jobs:
           echo "Creating compressed node_modules archive..."
           echo "node_modules size before compression:"
           du -sh node_modules || echo "node_modules not found"
-          tar -czf node_modules.tar.gz node_modules
+          # Use different name to prevent Azure's built-in script from detecting it
+          # Azure's script looks for "node_modules.tar.gz" and tries to extract it to /node_modules
+          tar -czf deps.tar.gz node_modules
           echo "Archive created:"
-          ls -lh node_modules.tar.gz
+          ls -lh deps.tar.gz
           echo "Archive size:"
-          du -sh node_modules.tar.gz
+          du -sh deps.tar.gz
         working-directory: '${{ env.FOLDER_PATH }}'
-        # Create compressed archive of node_modules for fast extraction in Azure
-        # This avoids npm install hanging in Azure App Service
+        # Create compressed archive with non-standard name to avoid Azure script detection
+        # Azure's built-in script detects "node_modules.tar.gz" and extracts it (hangs)
+        # Using "deps.tar.gz" prevents Azure from interfering
 
       - name: Remove node_modules before deployment
         run: rm -rf node_modules
         working-directory: '${{ env.FOLDER_PATH }}'
         # Remove node_modules directory to reduce deployment package size (184MB → ~50MB compressed)
-        # Startup script will extract node_modules.tar.gz instead of running npm install
+        # Startup script will extract deps.tar.gz instead of running npm install
+
+      - name: Ensure startup.sh is executable
+        run: chmod +x startup.sh
+        working-directory: '${{ env.FOLDER_PATH }}'
+        # Ensure startup script is executable in deployment package
 
       - name: Ensure startup.sh is executable
         run: chmod +x startup.sh
