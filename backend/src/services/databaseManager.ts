@@ -93,9 +93,37 @@ class DatabaseManager {
   }
 
   public async disconnect(): Promise<void> {
-    await this.prisma.$disconnect();
+    if (this.prisma) {
+      await this.prisma.$disconnect();
+    }
   }
 }
 
-export const databaseManager = DatabaseManager.getInstance();
+// Lazy initialization - only create instance when first accessed
+let databaseManagerInstance: DatabaseManager | null = null;
+
+export const databaseManager = {
+  getInstance: (): DatabaseManager => {
+    if (!databaseManagerInstance) {
+      databaseManagerInstance = DatabaseManager.getInstance();
+    }
+    return databaseManagerInstance;
+  },
+  
+  getPrismaClient: () => {
+    return databaseManager.getInstance().getPrismaClient();
+  },
+  
+  healthCheck: async (): Promise<boolean> => {
+    return databaseManager.getInstance().healthCheck();
+  },
+  
+  disconnect: async (): Promise<void> => {
+    if (databaseManagerInstance) {
+      await databaseManagerInstance.disconnect();
+      databaseManagerInstance = null;
+    }
+  }
+};
+
 export default databaseManager;
