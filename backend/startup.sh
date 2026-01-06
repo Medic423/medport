@@ -14,7 +14,7 @@ fi
 # Check if /node_modules is empty or missing
 if [ ! -d /node_modules ] || [ -z "$(ls -A /node_modules 2>/dev/null)" ]; then
     echo "node_modules is missing or empty. Installing dependencies..."
-    npm install --production
+    npm install --omit=dev
     echo "Dependencies installed."
 else
     echo "node_modules already exists, skipping install."
