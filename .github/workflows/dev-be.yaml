@@ -40,6 +40,17 @@ jobs:
         run: npm install # Install project dependencies
         working-directory: '${{ env.FOLDER_PATH }}'
         
+      - name: Ensure package-lock.json exists
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "package-lock.json not found, generating it..."
+            npm install --package-lock-only
+          else
+            echo "package-lock.json exists"
+            ls -lh package-lock.json
+          fi
+        working-directory: '${{ env.FOLDER_PATH }}'
+        
       - name: Generate Prisma Models
         run: npx prisma generate # Install project dependencies
         working-directory: '${{ env.FOLDER_PATH }}'
