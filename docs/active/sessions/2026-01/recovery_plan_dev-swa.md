@@ -298,6 +298,16 @@ If reverting doesn't restore working state:
 }
 ```
 
+### Startup Logs Analysis
+From the Azure log stream (22:39:47 UTC):
+- ✅ Azure's built-in startup script detected `node_modules.tar.gz` (created by Oryx build system)
+- ✅ Successfully extracted `node_modules.tar.gz` to `/node_modules`
+- ✅ Ran `npm start` directly (no custom startup.sh - correct!)
+- ✅ Backend started successfully: "🚀 TCC Backend server running on port 8080"
+- ✅ All services initialized: Database, Auth, SMS, CORS configured
+
+**Note:** Azure's Oryx build system automatically creates `node_modules.tar.gz` when it detects `node_modules` in the deployment package. This is expected behavior and works correctly with the reverted workflow.
+
 ### Recovery Summary
 - **Branch:** `recovery/revert-to-jan5-working-state` → merged to `develop`
 - **Commits Reverted:** All npm install hang fixes (from `0940ffef` onwards)
