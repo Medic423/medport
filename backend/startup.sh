@@ -36,22 +36,34 @@ else
         echo "Found deps.tar.gz archive. Extracting..."
         echo "Archive size: $(ls -lh deps.tar.gz | awk '{print $5}')"
         
-        # Extract with progress output (extract to current directory)
+        # Extract with progress output and timeout protection
         echo "Extracting archive (this may take 30-90 seconds for 49MB archive)..."
         echo "Starting extraction at $(date)..."
-        # Extract in background and show progress
-        tar -xzf deps.tar.gz > /dev/null 2>&1 &
+        
+        # Check disk space first
+        echo "Checking disk space..."
+        df -h /home | tail -1
+        
+        # Extract with timeout and progress monitoring
+        EXTRACTION_START=$(date +%s)
+        timeout 180 tar -xzf deps.tar.gz 2>&1 &
         TAR_PID=$!
         
-        # Show progress every 10 seconds
-        EXTRACTION_START=$(date +%s)
+        # Show progress every 5 seconds
         while kill -0 $TAR_PID 2>/dev/null; do
-            sleep 10
+            sleep 5
             ELAPSED=$(($(date +%s) - $EXTRACTION_START))
-            echo "Extraction in progress... (${ELAPSED}s elapsed)"
-            # Timeout after 3 minutes
-            if [ $ELAPSED -gt 180 ]; then
-                echo "⚠️ Extraction taking longer than expected, but continuing..."
+            echo "[${ELAPSED}s] Extraction in progress..."
+            
+            # Check if node_modules is being created
+            if [ -d node_modules ]; then
+                COUNT=$(find node_modules -type d 2>/dev/null | wc -l)
+                echo "[${ELAPSED}s] Found $COUNT directories in node_modules so far..."
+            fi
+            
+            # Warn if taking too long
+            if [ $ELAPSED -gt 120 ]; then
+                echo "⚠️ [${ELAPSED}s] Extraction taking longer than expected..."
             fi
         done
         
@@ -59,11 +71,14 @@ else
         wait $TAR_PID
         TAR_EXIT=$?
         
+        EXTRACTION_TIME=$(($(date +%s) - $EXTRACTION_START))
+        
         if [ $TAR_EXIT -eq 0 ]; then
-            EXTRACTION_TIME=$(($(date +%s) - $EXTRACTION_START))
             echo "✅ Extraction completed in ${EXTRACTION_TIME} seconds"
+        elif [ $TAR_EXIT -eq 124 ]; then
+            echo "❌ Extraction timed out after ${EXTRACTION_TIME} seconds (180s limit)"
         else
-            echo "⚠️ Extraction exited with code $TAR_EXIT"
+            echo "⚠️ Extraction exited with code $TAR_EXIT after ${EXTRACTION_TIME} seconds"
         fi
         
         if [ $? -eq 0 ] && [ -d node_modules ] && [ -n "$(ls -A node_modules 2>/dev/null)" ]; then
