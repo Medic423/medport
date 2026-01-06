@@ -57,49 +57,6 @@ jobs:
         working-directory: '${{ env.FOLDER_PATH }}'
         continue-on-error: false # Fail fast if build fails
 
-      - name: Create compressed node_modules archive
-        run: |
-          echo "Creating compressed node_modules archive..."
-          echo "node_modules size before compression:"
-          du -sh node_modules || echo "node_modules not found"
-          # Use different name to prevent Azure's built-in script from detecting it
-          # Azure's script looks for "node_modules.tar.gz" and tries to extract it to /node_modules
-          tar -czf deps.tar.gz node_modules
-          echo "Archive created:"
-          ls -lh deps.tar.gz
-          echo "Archive size:"
-          du -sh deps.tar.gz
-        working-directory: '${{ env.FOLDER_PATH }}'
-        # Create compressed archive with non-standard name to avoid Azure script detection
-        # Azure's built-in script detects "node_modules.tar.gz" and extracts it (hangs)
-        # Using "deps.tar.gz" prevents Azure from interfering
-
-      - name: Remove node_modules before deployment
-        run: rm -rf node_modules
-        working-directory: '${{ env.FOLDER_PATH }}'
-        # Remove node_modules directory to reduce deployment package size (184MB → ~50MB compressed)
-        # Startup script will extract deps.tar.gz instead of running npm install
-
-      - name: Create dummy node_modules to prevent Azure auto-install
-        run: |
-          mkdir -p node_modules
-          touch node_modules/.gitkeep
-          echo "Created dummy node_modules directory to prevent Azure from auto-installing dependencies"
-        working-directory: '${{ env.FOLDER_PATH }}'
-        # Create empty node_modules directory so Azure's Oryx script doesn't detect it as missing
-        # This prevents Azure from running npm ci before our custom startup script runs
-        # Our startup script will extract deps.tar.gz over this dummy directory
-
-      - name: Ensure startup.sh is executable
-        run: chmod +x startup.sh
-        working-directory: '${{ env.FOLDER_PATH }}'
-        # Ensure startup script is executable in deployment package
-
-      - name: Ensure startup.sh is executable
-        run: chmod +x startup.sh
-        working-directory: '${{ env.FOLDER_PATH }}'
-        # Ensure startup script is executable in deployment package
-
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2 # Action for deploying to Azure Web Apps
         with:

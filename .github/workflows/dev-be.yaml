@@ -40,17 +40,6 @@ jobs:
         run: npm install # Install project dependencies
         working-directory: '${{ env.FOLDER_PATH }}'
         
-      - name: Ensure package-lock.json exists
-        run: |
-          if [ ! -f package-lock.json ]; then
-            echo "package-lock.json not found, generating it..."
-            npm install --package-lock-only
-          else
-            echo "package-lock.json exists"
-            ls -lh package-lock.json
-          fi
-        working-directory: '${{ env.FOLDER_PATH }}'
-        
       - name: Generate Prisma Models
         run: npx prisma generate # Install project dependencies
         working-directory: '${{ env.FOLDER_PATH }}'
@@ -66,86 +55,6 @@ jobs:
         run: npm run build # Run your build script if you have one
         working-directory: '${{ env.FOLDER_PATH }}'
         continue-on-error: false # Fail fast if build fails
-
-      - name: Create compressed node_modules archive
-        run: |
-          echo "Creating compressed node_modules archive..."
-          echo "node_modules size before compression:"
-          du -sh node_modules || echo "node_modules not found"
-          # Use different name to prevent Azure's built-in script from detecting it
-          # Azure's script looks for "node_modules.tar.gz" and tries to extract it to /node_modules
-          tar -czf deps.tar.gz node_modules
-          echo "Archive created:"
-          ls -lh deps.tar.gz
-          echo "Archive size:"
-          du -sh deps.tar.gz
-        working-directory: '${{ env.FOLDER_PATH }}'
-        # Create compressed archive with non-standard name to avoid Azure script detection
-        # Azure's built-in script detects "node_modules.tar.gz" and extracts it (hangs)
-        # Using "deps.tar.gz" prevents Azure from interfering
-
-      - name: Remove node_modules before deployment
-        run: rm -rf node_modules
-        working-directory: '${{ env.FOLDER_PATH }}'
-        # Remove node_modules directory to reduce deployment package size (184MB → ~50MB compressed)
-        # Startup script will extract deps.tar.gz instead of running npm install
-
-      - name: Create dummy node_modules to prevent Azure auto-install
-        run: |
-          mkdir -p node_modules
-          touch node_modules/.gitkeep
-          echo "Created dummy node_modules directory to prevent Azure from auto-installing dependencies"
-        working-directory: '${{ env.FOLDER_PATH }}'
-        # Create empty node_modules directory so Azure's Oryx script doesn't detect it as missing
-        # This prevents Azure from running npm ci before our custom startup script runs
-        # Our startup script will extract deps.tar.gz over this dummy directory
-
-      - name: Ensure startup.sh is executable
-        run: chmod +x startup.sh
-        working-directory: '${{ env.FOLDER_PATH }}'
-        # Ensure startup script is executable in deployment package
-
-      - name: Verify deployment package contents
-        run: |
-          echo "=== Deployment Package Verification ==="
-          echo "Current directory: $(pwd)"
-          echo ""
-          echo "Package contents:"
-          ls -lah | head -20
-          echo ""
-          echo "Checking startup.sh:"
-          if [ -f startup.sh ]; then
-            echo "✅ startup.sh found"
-            ls -lh startup.sh
-            echo "Permissions: $(stat -c '%a' startup.sh 2>/dev/null || stat -f '%A' startup.sh 2>/dev/null || echo 'unknown')"
-            echo "First few lines of startup.sh:"
-            head -5 startup.sh
-          else
-            echo "❌ startup.sh MISSING - checking current directory:"
-            ls -la | grep -i startup || echo "No startup files found"
-            echo "This will cause startup to fail!"
-          fi
-          echo ""
-          echo "Checking for deps.tar.gz archive:"
-          if [ -f deps.tar.gz ]; then
-            echo "✅ deps.tar.gz found"
-            ls -lh deps.tar.gz
-            echo "Archive size: $(du -sh deps.tar.gz | awk '{print $1}')"
-          else
-            echo "❌ deps.tar.gz MISSING - archive was not created!"
-            echo "This will cause npm install to hang in Azure!"
-          fi
-          echo ""
-          echo "Package size:"
-          du -sh . 2>/dev/null || echo "Size check failed"
-          echo ""
-          echo "Key files check:"
-          [ -f package.json ] && echo "✅ package.json" || echo "❌ package.json missing"
-          [ -f dist/index.js ] && echo "✅ dist/index.js" || echo "❌ dist/index.js missing"
-          [ -d dist ] && echo "✅ dist/ directory exists" || echo "❌ dist/ missing"
-          [ -f deps.tar.gz ] && echo "✅ deps.tar.gz" || echo "❌ deps.tar.gz missing"
-        working-directory: '${{ env.FOLDER_PATH }}'
-        continue-on-error: true
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2 # Action for deploying to Azure Web Apps
