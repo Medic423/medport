@@ -62,6 +62,19 @@ jobs:
         # Remove node_modules to reduce deployment package size (184MB)
         # Startup script will install dependencies if needed
 
+      - name: Ensure startup.sh is executable
+        run: chmod +x startup.sh
+        working-directory: '${{ env.FOLDER_PATH }}'
+        # Ensure startup script is executable in deployment package
+
+      - name: Verify deployment package contents
+        run: |
+          echo "Deployment package contents:"
+          ls -lah | head -20
+          echo "startup.sh exists:"
+          test -f startup.sh && echo "✅ startup.sh found" || echo "❌ startup.sh missing"
+        working-directory: '${{ env.FOLDER_PATH }}'
+
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2 # Action for deploying to Azure Web Apps
         with:
