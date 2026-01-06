@@ -69,11 +69,32 @@ jobs:
 
       - name: Verify deployment package contents
         run: |
-          echo "Deployment package contents:"
+          echo "=== Deployment Package Verification ==="
+          echo "Current directory: $(pwd)"
+          echo ""
+          echo "Package contents:"
           ls -lah | head -20
-          echo "startup.sh exists:"
-          test -f startup.sh && echo "✅ startup.sh found" || echo "❌ startup.sh missing"
+          echo ""
+          echo "Checking startup.sh:"
+          if [ -f startup.sh ]; then
+            echo "✅ startup.sh found"
+            ls -lh startup.sh
+            echo "Permissions: $(stat -c '%a' startup.sh 2>/dev/null || stat -f '%A' startup.sh 2>/dev/null || echo 'unknown')"
+          else
+            echo "❌ startup.sh MISSING - checking current directory:"
+            ls -la | grep -i startup || echo "No startup files found"
+            echo "This will cause startup to fail!"
+          fi
+          echo ""
+          echo "Package size:"
+          du -sh . 2>/dev/null || echo "Size check failed"
+          echo ""
+          echo "Key files check:"
+          [ -f package.json ] && echo "✅ package.json" || echo "❌ package.json missing"
+          [ -f dist/index.js ] && echo "✅ dist/index.js" || echo "❌ dist/index.js missing"
+          [ -d dist ] && echo "✅ dist/ directory exists" || echo "❌ dist/ missing"
         working-directory: '${{ env.FOLDER_PATH }}'
+        continue-on-error: true
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2 # Action for deploying to Azure Web Apps
