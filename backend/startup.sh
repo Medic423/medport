@@ -20,12 +20,15 @@ echo "Checking for node_modules..."
 echo "Listing files in current directory:"
 ls -lah | head -10
 
-# Check if node_modules exists and is populated
-if [ -d node_modules ] && [ -n "$(ls -A node_modules 2>/dev/null)" ]; then
+# Check if node_modules exists and is populated (ignore .gitkeep file)
+# Azure may create a dummy node_modules/.gitkeep to prevent auto-install
+if [ -d node_modules ] && [ -n "$(ls -A node_modules 2>/dev/null | grep -v '^\.gitkeep$')" ]; then
     echo "✅ node_modules already exists and is populated."
     echo "Skipping dependency installation."
 else
-    echo "⚠️ node_modules is missing or empty."
+    echo "⚠️ node_modules is missing or empty (only .gitkeep found)."
+    # Remove dummy directory if it exists
+    rm -rf node_modules 2>/dev/null || true
     
     # Try to extract pre-built archive first (fast, reliable)
     # Use deps.tar.gz instead of node_modules.tar.gz to prevent Azure's built-in script from detecting it

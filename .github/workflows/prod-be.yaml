@@ -80,6 +80,16 @@ jobs:
         # Remove node_modules directory to reduce deployment package size (184MB → ~50MB compressed)
         # Startup script will extract deps.tar.gz instead of running npm install
 
+      - name: Create dummy node_modules to prevent Azure auto-install
+        run: |
+          mkdir -p node_modules
+          touch node_modules/.gitkeep
+          echo "Created dummy node_modules directory to prevent Azure from auto-installing dependencies"
+        working-directory: '${{ env.FOLDER_PATH }}'
+        # Create empty node_modules directory so Azure's Oryx script doesn't detect it as missing
+        # This prevents Azure from running npm ci before our custom startup script runs
+        # Our startup script will extract deps.tar.gz over this dummy directory
+
       - name: Ensure startup.sh is executable
         run: chmod +x startup.sh
         working-directory: '${{ env.FOLDER_PATH }}'
