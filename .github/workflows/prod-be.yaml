@@ -57,12 +57,24 @@ jobs:
         working-directory: '${{ env.FOLDER_PATH }}'
         continue-on-error: false # Fail fast if build fails
 
+      - name: Create deployment package (exclude node_modules)
+        run: |
+          echo "Creating deployment package without node_modules..."
+          # Create a temporary directory for deployment
+          mkdir -p ../deploy-package
+          # Copy all files except node_modules
+          rsync -av --exclude='node_modules' --exclude='.git' --exclude='*.log' --exclude='.env*' ./ ../deploy-package/
+          # Show package size
+          du -sh ../deploy-package
+        working-directory: '${{ env.FOLDER_PATH }}'
+
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2 # Action for deploying to Azure Web Apps
         with:
           app-name: '${{ env.APP_NAME }}' # Production Azure App Service name
           publish-profile: ${{ secrets.AZURE_WEBAPP_PROD_PUBLISH_PROFILE }} # Production publish profile secret
-          package: '${{ env.FOLDER_PATH }}' # Path to your application package (defaults to current directory)
+          package: '../deploy-package' # Path to deployment package without node_modules
+          # Azure will install dependencies automatically via package.json
         # Note: If this step fails, Azure keeps the previous deployment active
         # The site will NOT be empty - current deployment remains in place
         # 409 Conflict errors are usually transient - wait and retry
