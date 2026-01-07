@@ -429,9 +429,13 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
           setCompletedTrips(transformedCompleted);
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading trips:', error);
-      setError('Failed to load trips');
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      // Show actual backend error message if available
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to load trips';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

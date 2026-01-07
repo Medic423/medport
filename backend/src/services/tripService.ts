@@ -256,7 +256,11 @@ export class TripService {
               { OR: agencyFilter }
             ];
             delete where.OR;
+            // Remove status from top level since it's now in OR
+            delete where.status;
           } else {
+            // Remove status from top level before setting OR (status is already in agencyFilter)
+            delete where.status;
             where.OR = agencyFilter;
           }
         } catch (agencyFilterError: any) {
