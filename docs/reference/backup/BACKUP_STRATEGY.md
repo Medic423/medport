@@ -141,10 +141,16 @@ Local (if exists):
 
 Azure Databases (CRITICAL):
   traccems-dev-pgsql.sql      # Azure dev database (REQUIRED for disaster recovery)
-  traccems-prod-pgsql.sql     # Azure production database (optional, can restore from Azure backups)
+  traccems-prod-pgsql.sql     # Azure production database (REQUIRED for disaster recovery)
 ```
 
 **⚠️ CRITICAL:** The backup script will **FAIL** if no database backups are created. This ensures backups are usable for disaster recovery.
+
+**Production Database Backup:**
+- **REQUIRED:** Production database backup is now included in all backups
+- **Source:** Connection string retrieved from `TraccEms-Prod-Backend` App Service `DATABASE_URL` environment variable
+- **Purpose:** Complete disaster recovery capability for production environment
+- **Note:** Production database backups are critical for restoring production data in case of disaster
 
 ## **Document Cleanup During Backup**
 
@@ -403,8 +409,10 @@ The backup script verifies database backups contain:
 - Used for local development
 
 **Azure Production Database (`traccems-prod-pgsql`):**
-- ⚠️ Not backed up by script (use Azure Portal backups for production)
-- Azure provides automated backups for production databases
+- ✅ **REQUIRED** - Backup will fail if this cannot be backed up
+- Contains all production data
+- Can be restored to new Azure PostgreSQL instance or local PostgreSQL
+- **Source:** Connection string retrieved from `TraccEms-Prod-Backend` App Service `DATABASE_URL` environment variable
 
 ### **Disaster Recovery Scenarios**
 
@@ -440,6 +448,8 @@ psql -d medport_ems_restored -f traccems-dev-pgsql.sql
 - **Database Verification**: Ensures backups are usable for disaster recovery
 - **Multiple Layers**: Redundancy prevents total loss
 
-**Updated:** December 26, 2025 - Added Azure database backup support with PostgreSQL 17 requirement
+**Updated:** 
+- December 26, 2025 - Added Azure database backup support with PostgreSQL 17 requirement
+- January 7, 2026 - Added Azure production database backup as REQUIRED (previously optional)
 
 Your strategic thinking about this backup architecture was spot-on! 🎯

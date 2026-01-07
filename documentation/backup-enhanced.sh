@@ -142,10 +142,89 @@ else
     exit 1
 fi
 
+# 5c. Backup Azure production database (traccems-prod-pgsql)
+echo "📊 Backing up Azure production database (traccems-prod-pgsql)..."
+if command -v pg_dump >/dev/null 2>&1; then
+    # Get production database connection string from Azure App Service config
+    PROD_DB_CONNECTION=$(az webapp config appsettings list \
+        --name TraccEms-Prod-Backend \
+        --resource-group TraccEms-Prod-USCentral \
+        --query "[?name=='DATABASE_URL'].value" -o tsv 2>/dev/null || echo "")
+    
+    if [ -n "$PROD_DB_CONNECTION" ]; then
+        echo "📥 Exporting Azure production database..."
+        echo "   This may take a few minutes..."
+        
+        # Extract connection details from connection string
+        # Format: postgresql://user:password@host:port/database?sslmode=require
+        PROD_DB_USER=$(echo "$PROD_DB_CONNECTION" | sed -n 's|postgresql://\([^:]*\):.*|\1|p')
+        PROD_DB_PASSWORD=$(echo "$PROD_DB_CONNECTION" | sed -n 's|postgresql://[^:]*:\([^@]*\)@.*|\1|p')
+        PROD_DB_HOST=$(echo "$PROD_DB_CONNECTION" | sed -n 's|.*@\([^:]*\):.*|\1|p')
+        PROD_DB_PORT=$(echo "$PROD_DB_CONNECTION" | sed -n 's|.*:\([0-9]*\)/.*|\1|p')
+        PROD_DB_NAME=$(echo "$PROD_DB_CONNECTION" | sed -n 's|.*/[^?]*/\([^?]*\).*|\1|p' || echo "postgres")
+        
+        # If DB_NAME extraction failed, try alternative pattern
+        if [ -z "$PROD_DB_NAME" ] || [ "$PROD_DB_NAME" = "$PROD_DB_CONNECTION" ]; then
+            PROD_DB_NAME=$(echo "$PROD_DB_CONNECTION" | sed -n 's|.*/\([^?]*\)?.*|\1|p' || echo "postgres")
+        fi
+        
+        if [ -n "$PROD_DB_HOST" ] && [ -n "$PROD_DB_NAME" ] && [ -n "$PROD_DB_USER" ] && [ -n "$PROD_DB_PASSWORD" ]; then
+            # Use PostgreSQL 17 pg_dump if available (required for Azure PostgreSQL 17)
+            PG_DUMP_CMD="pg_dump"
+            if [ -f "/opt/homebrew/opt/postgresql@17/bin/pg_dump" ]; then
+                PG_DUMP_CMD="/opt/homebrew/opt/postgresql@17/bin/pg_dump"
+                echo "   Using PostgreSQL 17 pg_dump (required for Azure PostgreSQL 17)"
+            fi
+            
+            export PGPASSWORD="$PROD_DB_PASSWORD"
+            if PGPASSWORD="$PROD_DB_PASSWORD" "$PG_DUMP_CMD" \
+                -h "$PROD_DB_HOST" \
+                -p "${PROD_DB_PORT:-5432}" \
+                -U "$PROD_DB_USER" \
+                -d "$PROD_DB_NAME" \
+                --no-owner \
+                --no-acl \
+                -F p \
+                > "$BACKUP_DIR/$BACKUP_NAME/databases/traccems-prod-pgsql.sql" 2>&1; then
+                # Verify backup file exists and has content
+                if [ -s "$BACKUP_DIR/$BACKUP_NAME/databases/traccems-prod-pgsql.sql" ]; then
+                    PROD_BACKUP_SIZE=$(wc -l < "$BACKUP_DIR/$BACKUP_NAME/databases/traccems-prod-pgsql.sql")
+                    PROD_BACKUP_FILE_SIZE=$(ls -lh "$BACKUP_DIR/$BACKUP_NAME/databases/traccems-prod-pgsql.sql" | awk '{print $5}')
+                    echo "✅ Azure production database backed up: $PROD_BACKUP_FILE_SIZE ($PROD_BACKUP_SIZE lines)"
+                else
+                    echo "❌ ERROR: Azure production database backup file is empty!"
+                    rm -f "$BACKUP_DIR/$BACKUP_NAME/databases/traccems-prod-pgsql.sql"
+                fi
+            else
+                echo "❌ ERROR: Azure production database backup failed!"
+                echo "   Check firewall rules and network connectivity"
+                echo "   You may need to whitelist your IP in Azure Portal"
+            fi
+            unset PGPASSWORD
+        else
+            echo "❌ ERROR: Could not parse Azure production database connection string"
+            echo "   PROD_DB_HOST: ${PROD_DB_HOST:-empty}"
+            echo "   PROD_DB_NAME: ${PROD_DB_NAME:-empty}"
+            echo "   PROD_DB_USER: ${PROD_DB_USER:-empty}"
+            echo "   PROD_DB_PASSWORD: ${PROD_DB_PASSWORD:+set}"
+        fi
+    else
+        echo "❌ ERROR: Azure production database connection string not found!"
+        echo "   Cannot backup Azure production database without connection string"
+        echo "   Check that DATABASE_URL is set in TraccEms-Prod-Backend App Service"
+        exit 1
+    fi
+else
+    echo "❌ ERROR: pg_dump not found - cannot backup Azure production database"
+    echo "   Please install PostgreSQL client tools"
+    exit 1
+fi
+
 # Verify database backup integrity
 echo "🔍 Verifying database backups..."
 HAS_LOCAL_DB=false
-HAS_AZURE_DB=false
+HAS_AZURE_DEV_DB=false
+HAS_AZURE_PROD_DB=false
 BACKUP_FAILED=false
 
 if [ -f "$BACKUP_DIR/$BACKUP_NAME/databases/medport_ems_local.sql" ]; then
@@ -160,11 +239,11 @@ if [ -f "$BACKUP_DIR/$BACKUP_NAME/databases/medport_ems_local.sql" ]; then
 fi
 
 if [ -f "$BACKUP_DIR/$BACKUP_NAME/databases/traccems-dev-pgsql.sql" ]; then
-    HAS_AZURE_DB=true
-    AZURE_DB_SIZE=$(wc -l < "$BACKUP_DIR/$BACKUP_NAME/databases/traccems-dev-pgsql.sql")
-    AZURE_FILE_SIZE=$(ls -lh "$BACKUP_DIR/$BACKUP_NAME/databases/traccems-dev-pgsql.sql" | awk '{print $5}')
+    HAS_AZURE_DEV_DB=true
+    AZURE_DEV_DB_SIZE=$(wc -l < "$BACKUP_DIR/$BACKUP_NAME/databases/traccems-dev-pgsql.sql")
+    AZURE_DEV_FILE_SIZE=$(ls -lh "$BACKUP_DIR/$BACKUP_NAME/databases/traccems-dev-pgsql.sql" | awk '{print $5}')
     
-    if [ "$AZURE_DB_SIZE" -gt 100 ]; then
+    if [ "$AZURE_DEV_DB_SIZE" -gt 100 ]; then
         # Check for critical tables
         TABLES_FOUND=0
         for table in "_prisma_migrations" "transport_requests" "trips" "ems_users" "ems_agencies"; do
@@ -173,9 +252,9 @@ if [ -f "$BACKUP_DIR/$BACKUP_NAME/databases/traccems-dev-pgsql.sql" ]; then
                 TABLES_FOUND=$((TABLES_FOUND + 1))
             fi
         done
-        echo "✅ Azure dev database verified: $AZURE_FILE_SIZE ($AZURE_DB_SIZE lines, $TABLES_FOUND/5 critical tables found)"
+        echo "✅ Azure dev database verified: $AZURE_DEV_FILE_SIZE ($AZURE_DEV_DB_SIZE lines, $TABLES_FOUND/5 critical tables found)"
     else
-        echo "❌ ERROR: Azure dev database backup appears invalid ($AZURE_DB_SIZE lines)"
+        echo "❌ ERROR: Azure dev database backup appears invalid ($AZURE_DEV_DB_SIZE lines)"
         BACKUP_FAILED=true
     fi
 else
@@ -183,8 +262,32 @@ else
     BACKUP_FAILED=true
 fi
 
+if [ -f "$BACKUP_DIR/$BACKUP_NAME/databases/traccems-prod-pgsql.sql" ]; then
+    HAS_AZURE_PROD_DB=true
+    AZURE_PROD_DB_SIZE=$(wc -l < "$BACKUP_DIR/$BACKUP_NAME/databases/traccems-prod-pgsql.sql")
+    AZURE_PROD_FILE_SIZE=$(ls -lh "$BACKUP_DIR/$BACKUP_NAME/databases/traccems-prod-pgsql.sql" | awk '{print $5}')
+    
+    if [ "$AZURE_PROD_DB_SIZE" -gt 100 ]; then
+        # Check for critical tables
+        PROD_TABLES_FOUND=0
+        for table in "_prisma_migrations" "transport_requests" "trips" "ems_users" "ems_agencies"; do
+            if grep -q "CREATE TABLE.*${table}" "$BACKUP_DIR/$BACKUP_NAME/databases/traccems-prod-pgsql.sql" || \
+               grep -q "COPY public.${table}" "$BACKUP_DIR/$BACKUP_NAME/databases/traccems-prod-pgsql.sql"; then
+                PROD_TABLES_FOUND=$((PROD_TABLES_FOUND + 1))
+            fi
+        done
+        echo "✅ Azure production database verified: $AZURE_PROD_FILE_SIZE ($AZURE_PROD_DB_SIZE lines, $PROD_TABLES_FOUND/5 critical tables found)"
+    else
+        echo "❌ ERROR: Azure production database backup appears invalid ($AZURE_PROD_DB_SIZE lines)"
+        BACKUP_FAILED=true
+    fi
+else
+    echo "❌ ERROR: Azure production database backup file not found!"
+    BACKUP_FAILED=true
+fi
+
 # CRITICAL: Fail if no database backups exist
-if [ "$HAS_LOCAL_DB" = false ] && [ "$HAS_AZURE_DB" = false ]; then
+if [ "$HAS_LOCAL_DB" = false ] && [ "$HAS_AZURE_DEV_DB" = false ] && [ "$HAS_AZURE_PROD_DB" = false ]; then
     echo ""
     echo "❌ CRITICAL ERROR: No database backups found!"
     echo "   This backup is NOT usable for disaster recovery!"
@@ -192,10 +295,18 @@ if [ "$HAS_LOCAL_DB" = false ] && [ "$HAS_AZURE_DB" = false ]; then
     exit 1
 fi
 
+# CRITICAL: Require at least one Azure database backup (dev or prod)
+if [ "$HAS_AZURE_DEV_DB" = false ] && [ "$HAS_AZURE_PROD_DB" = false ]; then
+    echo ""
+    echo "❌ CRITICAL ERROR: No Azure database backups found!"
+    echo "   At least one Azure database backup (dev or prod) is REQUIRED for disaster recovery!"
+    exit 1
+fi
+
 # Warn if Azure backup failed (but allow if local backup exists)
 if [ "$BACKUP_FAILED" = true ] && [ "$HAS_LOCAL_DB" = false ]; then
     echo ""
-    echo "❌ CRITICAL ERROR: Azure dev database backup failed and no local backup exists!"
+    echo "❌ CRITICAL ERROR: Azure database backup failed and no local backup exists!"
     echo "   This backup is NOT usable for disaster recovery!"
     exit 1
 fi
