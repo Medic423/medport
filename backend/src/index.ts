@@ -332,36 +332,10 @@ app.use((error: any, req: express.Request, res: express.Response, next: express.
 // Initialize database and start server
 async function startServer() {
   try {
-    // Check if we're in production and need to initialize the database
-    if (process.env.NODE_ENV === 'production') {
-      console.log('🔧 Production mode: Attempting database initialization...');
-      
-      // Import execSync for running commands
-      const { execSync } = require('child_process');
-      
-      // Try to initialize database in background, don't block server startup
-      setTimeout(async () => {
-        try {
-          console.log('📊 Attempting to push production schema...');
-          execSync('npx prisma db push --schema=prisma/schema-production.prisma', { 
-            stdio: 'inherit',
-            cwd: process.cwd(),
-            timeout: 60000 // 60 second timeout
-          });
-          
-          console.log('🌱 Attempting to seed database...');
-          execSync('npx ts-node prisma/seed.ts', { 
-            stdio: 'inherit',
-            cwd: process.cwd(),
-            timeout: 60000 // 60 second timeout
-          });
-          
-          console.log('✅ Database initialized successfully!');
-        } catch (error) {
-          console.log('⚠️ Database initialization failed (will retry on next deployment):', error instanceof Error ? error.message : String(error));
-        }
-      }, 10000); // Wait 10 seconds before attempting database init
-    }
+    // REMOVED: Production database initialization on startup
+    // This was causing conflicts with GitHub Actions migrations (prisma migrate deploy)
+    // Database migrations are now handled exclusively by GitHub Actions deployment workflow
+    // See: docs/active/sessions/2026-01/BACKEND_DEPLOYMENT_FAILURE_ANALYSIS.md
     
     // Start the server
     app.listen(PORT, () => {
