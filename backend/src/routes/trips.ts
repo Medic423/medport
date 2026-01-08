@@ -266,14 +266,27 @@ router.get('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
       }
     }
     
+    const healthcareUserId = req.user?.userType === 'HEALTHCARE' ? req.user.id : undefined;
+    
+    // ✅ DIAGNOSTIC: Log user info for healthcare users
+    if (req.user?.userType === 'HEALTHCARE') {
+      console.log('TCC_DEBUG: Healthcare user requesting trips:', {
+        userId: req.user.id,
+        email: req.user.email,
+        userType: req.user.userType,
+        healthcareUserId: healthcareUserId
+      });
+    }
+    
     const filters = {
       status: req.query.status as string,
       transportLevel: req.query.transportLevel as string,
       priority: req.query.priority as string,
       agencyId: agencyId,
-      healthcareUserId: req.user?.userType === 'HEALTHCARE' ? req.user.id : undefined, // ✅ NEW: Filter by healthcare user
+      healthcareUserId: healthcareUserId, // ✅ NEW: Filter by healthcare user
     };
 
+    console.log('TCC_DEBUG: Filters being passed to getTrips:', filters);
     const result = await tripService.getTrips(filters);
 
     if (!result.success) {

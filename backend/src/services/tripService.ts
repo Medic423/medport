@@ -193,24 +193,48 @@ export class TripService {
           
           console.log('TCC_FILTER_DEBUG: Found', locationIds.length, 'locations for user');
           
+          // Build healthcare user filter conditions
+          const healthcareUserConditions: any[] = [];
+          
+          // Always include trips created by this user (even if fromLocationId doesn't match)
+          healthcareUserConditions.push({ healthcareCreatedById: filters.healthcareUserId });
+          
+          // If user has locations, also include trips from those locations
           if (locationIds.length > 0) {
-            // Multi-location user: filter by their locations OR trips they created
-            where.OR = [
-              { fromLocationId: { in: locationIds } },
-              { healthcareCreatedById: filters.healthcareUserId }
-            ];
+            healthcareUserConditions.push({ fromLocationId: { in: locationIds } });
             console.log('MULTI_LOC: Filtering by user locations OR created trips:', locationIds.length, 'locations');
-            console.log('TCC_FILTER_DEBUG: OR filter applied:', JSON.stringify(where.OR, null, 2));
           } else {
-            // Single-facility user: filter by trips they created
-            where.healthcareCreatedById = filters.healthcareUserId;
-            console.log('SINGLE_LOC: Filtering by created user ID:', filters.healthcareUserId);
-            console.log('TCC_FILTER_DEBUG: Filter applied - healthcareCreatedById:', filters.healthcareUserId);
+            console.log('SINGLE_LOC: Filtering by created user ID only:', filters.healthcareUserId);
+          }
+          
+          // Combine with existing filters properly
+          // If we already have an OR condition (e.g., from status filter), we need to combine them with AND
+          if (where.OR && Array.isArray(where.OR)) {
+            // Existing OR conditions need to be combined with healthcare user filter using AND
+            where.AND = [
+              { OR: where.OR },
+              { OR: healthcareUserConditions }
+            ];
+            delete where.OR;
+            console.log('TCC_FILTER_DEBUG: Combined existing OR with healthcare user filter using AND');
+          } else {
+            // No existing OR, so we can use OR directly
+            where.OR = healthcareUserConditions;
+            console.log('TCC_FILTER_DEBUG: OR filter applied:', JSON.stringify(where.OR, null, 2));
           }
         } catch (locationError: any) {
           console.error('TCC_DEBUG: Error fetching healthcare locations:', locationError);
           // If location query fails, fall back to filtering by healthcareCreatedById only
-          where.healthcareCreatedById = filters.healthcareUserId;
+          // Combine with existing filters properly
+          if (where.OR && Array.isArray(where.OR)) {
+            where.AND = [
+              { OR: where.OR },
+              { healthcareCreatedById: filters.healthcareUserId }
+            ];
+            delete where.OR;
+          } else {
+            where.healthcareCreatedById = filters.healthcareUserId;
+          }
           console.log('TCC_DEBUG: Fallback to healthcareCreatedById filter due to location query error');
         }
       }
@@ -324,6 +348,15 @@ export class TripService {
         console.warn('TCC_DEBUG: assignedUnit relation might not be available');
       }
       
+      // ✅ DIAGNOSTIC: Log the complete where clause before querying
+      console.log('TCC_DEBUG: Final where clause:', JSON.stringify(where, null, 2));
+      console.log('TCC_DEBUG: Querying transport_requests with filters:', {
+        healthcareUserId: filters?.healthcareUserId,
+        fromLocationId: filters?.fromLocationId,
+        status: filters?.status,
+        whereClause: where
+      });
+
       const trips = await prisma.transportRequest.findMany({
         where,
         orderBy: {
@@ -333,6 +366,64 @@ export class TripService {
       });
 
       console.log('TCC_DEBUG: Found trips:', trips.length);
+      
+      // ✅ DIAGNOSTIC: If no trips found and healthcareUserId filter is active, check what trips exist
+      if (trips.length === 0 && filters?.healthcareUserId) {
+        console.log('TCC_DEBUG: No trips found with healthcareUserId filter. Checking database...');
+        try {
+          // Check recent trips without filter to see what exists
+          const recentTrips = await prisma.transportRequest.findMany({
+            where: {
+              createdAt: {
+                gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
+              }
+            },
+            select: {
+              id: true,
+              patientId: true,
+              healthcareCreatedById: true,
+              fromLocationId: true,
+              status: true,
+              createdAt: true
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 10
+          });
+          console.log('TCC_DEBUG: Recent trips in database (last 24h):', recentTrips.length);
+          console.log('TCC_DEBUG: Recent trips sample:', recentTrips.map(t => ({
+            patientId: t.patientId,
+            healthcareCreatedById: (t as any).healthcareCreatedById,
+            fromLocationId: (t as any).fromLocationId,
+            status: (t as any).status
+          })));
+          
+          // Check if user has locations
+          const userLocations = await prisma.healthcareLocation.findMany({
+            where: { healthcareUserId: filters.healthcareUserId },
+            select: { id: true, locationName: true }
+          });
+          console.log('TCC_DEBUG: User locations:', userLocations.length, userLocations.map(l => ({ id: l.id, name: l.locationName })));
+          
+          // Check trips created by this user
+          const userCreatedTrips = await prisma.transportRequest.findMany({
+            where: {
+              healthcareCreatedById: filters.healthcareUserId,
+              createdAt: {
+                gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
+              }
+            },
+            select: {
+              id: true,
+              patientId: true,
+              status: true
+            },
+            take: 5
+          });
+          console.log('TCC_DEBUG: Trips created by this user (last 24h):', userCreatedTrips.length, userCreatedTrips);
+        } catch (diagError: any) {
+          console.error('TCC_DEBUG: Error in diagnostic query:', diagError.message);
+        }
+      }
       try {
         console.log('TCC_DEBUG: Trips sample fields →',
           trips.slice(0, 3).map(t => {
@@ -893,7 +984,12 @@ export class TripService {
         console.log('TCC_DEBUG: Validating healthcare location:', data.fromLocationId);
         // Verify the healthcare location exists
         const healthcareLocation = await prisma.healthcareLocation.findUnique({
-          where: { id: data.fromLocationId }
+          where: { id: data.fromLocationId },
+          select: {
+            id: true,
+            locationName: true,
+            healthcareUserId: true
+          }
         });
         
         console.log('TCC_DEBUG: Healthcare location lookup result:', healthcareLocation ? `Found: ${healthcareLocation.locationName}` : 'NOT FOUND');
@@ -908,6 +1004,12 @@ export class TripService {
         
         console.log('TCC_DEBUG: Healthcare location validated:', healthcareLocation.locationName);
         tripData.healthcareLocation = { connect: { id: data.fromLocationId } };
+        
+        // ✅ FIX: If healthcareUserId wasn't provided (e.g., TCC Command), set it from the location's owner
+        if (!tripData.healthcareCreatedById && healthcareLocation.healthcareUserId) {
+          tripData.healthcareCreatedById = healthcareLocation.healthcareUserId;
+          console.log('TCC_DEBUG: Set healthcareCreatedById from location owner:', healthcareLocation.healthcareUserId);
+        }
       } else {
         console.log('TCC_DEBUG: No fromLocationId provided, skipping healthcare location connection');
       }

@@ -487,8 +487,45 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
             }
           }
         }
+      } else if (user.userType === 'ADMIN' || user.userType === 'USER') {
+        // ✅ TCC Command: Load ALL facilities and healthcare locations for destination selection
+        console.log('TCC_COMMAND: Loading all facilities and healthcare locations for destination options');
+        
+        // Load ALL facilities from /api/public/hospitals for "To Location" dropdown
+        const facilitiesResponse = await api.get('/api/public/hospitals');
+        if (facilitiesResponse.data?.success && Array.isArray(facilitiesResponse.data.data)) {
+          facilities = facilitiesResponse.data.data;
+          console.log('TCC_COMMAND: Loaded', facilities.length, 'facilities for destination selection');
+        }
+        
+        // ✅ TCC Command: Also load ALL healthcare locations for destinations
+        try {
+          const cacheBuster = `_t=${Date.now()}`;
+          const healthcareLocationsResponse = await api.get(`/api/healthcare/locations/all?${cacheBuster}`);
+          if (healthcareLocationsResponse.data?.success && Array.isArray(healthcareLocationsResponse.data.data)) {
+            // Add healthcare locations to facilities list for destination dropdown
+            // ✅ Use actual ID (not prefixed) for consistency with backend
+            const healthcareLocationsForDest = healthcareLocationsResponse.data.data.map((loc: any) => ({
+              id: loc.id, // Use actual ID, not prefixed
+              name: loc.locationName,
+              address: loc.address,
+              city: loc.city,
+              state: loc.state,
+              zipCode: loc.zipCode,
+              phone: loc.phone || '',
+              type: loc.facilityType || 'Healthcare Location'
+            }));
+            facilities = [...facilities, ...healthcareLocationsForDest];
+            console.log('TCC_COMMAND: Added', healthcareLocationsForDest.length, 'healthcare locations to destinations');
+          }
+        } catch (error) {
+          console.error('TCC_COMMAND: Error loading healthcare locations for destinations:', error);
+        }
+        
+        // Ensure healthcareLocations is empty for TCC Command users (they use tccHealthcareFacilities instead)
+        healthcareLocations = [];
       } else {
-        // For single-location users, load ALL facilities for destination selection
+        // For single-location healthcare users, load ALL facilities for destination selection
         console.log('SINGLE_LOC: Single-location user - loading all facilities for destination options');
         
         // Load ALL facilities from /api/public/hospitals for "To Location" dropdown
@@ -533,17 +570,22 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
       
       // ✅ Phase 3: Load healthcare locations (9 Penn Highlands locations) and healthcare destinations (Maybrook Hills)
       // These should be combined with facilities for the "To Location" dropdown
+      // ✅ TCC Command: Also load ALL healthcare locations for destinations (not just active ones for the user)
       let healthcareLocationsForDestinations: any[] = [];
       let healthcareDestinations: any[] = [];
       
       try {
-        // Load healthcare locations (Hospital Settings -> Manage Locations)
-        // Add cache-busting timestamp to ensure fresh data
+        // Load healthcare locations
+        // For TCC Command, load ALL locations; for others, load active locations
         const cacheBuster2 = `_t=${Date.now()}`;
-        const locationsResponse = await api.get(`/api/healthcare/locations/active?${cacheBuster2}`);
+        const locationsEndpoint = (user.userType === 'ADMIN' || user.userType === 'USER') 
+          ? `/api/healthcare/locations/all?${cacheBuster2}` 
+          : `/api/healthcare/locations/active?${cacheBuster2}`;
+        
+        const locationsResponse = await api.get(locationsEndpoint);
         if (locationsResponse.data?.success && Array.isArray(locationsResponse.data.data)) {
           healthcareLocationsForDestinations = locationsResponse.data.data.map((loc: any) => ({
-            id: `loc_${loc.id}`,
+            id: loc.id, // ✅ Use actual ID, not prefixed (for TCC Command compatibility)
             name: loc.locationName,
             address: loc.address,
             city: loc.city,
@@ -1072,9 +1114,28 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
       console.log('TCC_DEBUG: Creating trip with data:', formData);
       
       // Find the selected facility for fromLocation
-      // For multi-location users, search in healthcareLocations; otherwise use facilities
+      // For TCC Command users, check tccHealthcareFacilities first; for multi-location users, search in healthcareLocations; otherwise use facilities
       let selectedFacility;
-      if (user.manageMultipleLocations) {
+      if (user.userType === 'ADMIN' || user.userType === 'USER') {
+        // ✅ TCC Command: Check tccHealthcareFacilities first (the facility they selected)
+        if (selectedTCCFacilityId) {
+          selectedFacility = tccHealthcareFacilities.find(f => f.id === selectedTCCFacilityId);
+          if (selectedFacility) {
+            console.log('TCC_COMMAND: Found selected facility in tccHealthcareFacilities:', selectedFacility.locationName);
+          }
+        }
+        // Fallback: search by name in tccHealthcareFacilities
+        if (!selectedFacility) {
+          selectedFacility = tccHealthcareFacilities.find(f => f.locationName === formData.fromLocation);
+          if (selectedFacility) {
+            console.log('TCC_COMMAND: Found facility by name in tccHealthcareFacilities:', selectedFacility.locationName);
+          }
+        }
+        // Final fallback: search in facilities (shouldn't be needed, but just in case)
+        if (!selectedFacility) {
+          selectedFacility = formOptions.facilities.find(f => f.name === formData.fromLocation);
+        }
+      } else if (user.manageMultipleLocations) {
         selectedFacility = formOptions.healthcareLocations.find(f => f.locationName === formData.fromLocation);
       } else {
         selectedFacility = formOptions.facilities.find(f => f.name === formData.fromLocation);
@@ -1082,14 +1143,36 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
       
       if (!selectedFacility) {
         console.error('TCC_DEBUG: Selected facility not found. fromLocation:', formData.fromLocation);
+        console.error('TCC_DEBUG: User type:', user.userType);
+        console.error('TCC_DEBUG: selectedTCCFacilityId:', selectedTCCFacilityId);
+        console.error('TCC_DEBUG: Available tccHealthcareFacilities:', tccHealthcareFacilities.map(f => f.locationName));
         console.error('TCC_DEBUG: Available healthcareLocations:', formOptions.healthcareLocations.map(l => l.locationName));
         console.error('TCC_DEBUG: Available facilities:', formOptions.facilities.map(f => f.name));
         throw new Error('Selected facility not found');
       }
 
       // Find the destination facility
-      const destinationFacility = formOptions.facilities.find(f => f.name === formData.toLocation);
+      // ✅ TCC Command: Also check healthcare locations (they might be in the facilities list now)
+      let destinationFacility = formOptions.facilities.find(f => f.name === formData.toLocation);
+      
+      // If not found, check if it's a healthcare location by name
+      if (!destinationFacility && formData.toLocation) {
+        // Try to find by matching name in all possible sources
+        const allPossibleDestinations = [
+          ...formOptions.facilities,
+          ...(tccHealthcareFacilities || []).map(f => ({ ...f, name: f.locationName })),
+          ...(formOptions.healthcareLocations || []).map(f => ({ ...f, name: f.locationName }))
+        ];
+        destinationFacility = allPossibleDestinations.find(f => 
+          f.name === formData.toLocation || 
+          f.locationName === formData.toLocation
+        );
+      }
+      
       if (!destinationFacility) {
+        console.error('TCC_DEBUG: Destination facility not found. toLocation:', formData.toLocation);
+        console.error('TCC_DEBUG: Available facilities:', formOptions.facilities.map(f => f.name));
+        console.error('TCC_DEBUG: Available tccHealthcareFacilities:', (tccHealthcareFacilities || []).map(f => f.locationName));
         throw new Error('Destination facility not found');
       }
 
@@ -1111,8 +1194,10 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
         pickupLocationId: formData.pickupLocationId,
         notes: formData.notes || '',
         // ✅ Multi-location support for healthcare users
-        fromLocationId: user.manageMultipleLocations ? formData.fromLocationId : 
-                       (user.userType === 'ADMIN' || user.userType === 'USER') ? selectedTCCFacilityId : undefined,
+        // ✅ TCC Command: Use selectedTCCFacilityId (the healthcare location ID) if available
+        fromLocationId: (user.userType === 'ADMIN' || user.userType === 'USER') ? 
+                       (selectedTCCFacilityId || selectedFacility?.id || formData.fromLocationId) :
+                       (user.manageMultipleLocations ? formData.fromLocationId : undefined),
         healthcareUserId: user.manageMultipleLocations ? user.id : undefined,
         // ✅ TCC Command: Audit trail for trips created by admin/user
         createdByTCCUserId: (user.userType === 'ADMIN' || user.userType === 'USER') ? user.id : undefined,
@@ -1135,9 +1220,14 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
             patientAgeCategory: ageCategory as any,
             patientAgeYears: ageYears,
             fromLocation: formData.fromLocation,
-            fromLocationId: formData.fromLocationId || undefined,
+            fromLocationId: (user.userType === 'ADMIN' || user.userType === 'USER') ? 
+                           (selectedTCCFacilityId || selectedFacility?.id || formData.fromLocationId) :
+                           (formData.fromLocationId || undefined),
             pickupLocationId: formData.pickupLocationId || undefined,
             toLocation: formData.toLocation,
+            // ✅ FIX: Include destinationFacilityId in enhanced payload
+            // Use the destination facility ID (already in correct format)
+            destinationFacilityId: destinationFacility?.id || undefined,
             scheduledTime: new Date(formData.scheduledTime).toISOString(),
             transportLevel: formData.transportLevel as any,
             urgencyLevel: formData.urgencyLevel as any,
@@ -1151,16 +1241,18 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
               : formData.notes,
             priority: (tripData as any).priority,
             status: 'PENDING_DISPATCH', // Phase 3: Set status to PENDING_DISPATCH for dispatch workflow
-            // assignedUnitId removed (not applicable)
-            createdVia: 'HEALTHCARE_PORTAL'
+            // ✅ TCC Command: Audit trail
+            createdByTCCUserId: (user.userType === 'ADMIN' || user.userType === 'USER') ? user.id : undefined,
+            createdByTCCUserEmail: (user.userType === 'ADMIN' || user.userType === 'USER') ? user.email : undefined,
+            createdVia: (user.userType === 'ADMIN' || user.userType === 'USER') ? 'TCC_ADMIN_PORTAL' : 'HEALTHCARE_PORTAL'
           };
       
       console.log('TCC_DEBUG: Enhanced payload being sent:', enhancedPayload);
       console.log('TCC_DEBUG: Age fields in payload:', { patientAgeCategory: enhancedPayload.patientAgeCategory, patientAgeYears: enhancedPayload.patientAgeYears });
+      console.log('TCC_DEBUG: Destination facility ID:', destinationFacility?.id);
 
-      const response = user.userType === 'HEALTHCARE'
-        ? await tripsAPI.createEnhanced(enhancedPayload)
-        : await tripsAPI.create({ ...tripData, assignedUnitId: undefined });
+      // ✅ FIX: Use enhanced endpoint for all users (healthcare and TCC Command)
+      const response = await tripsAPI.createEnhanced(enhancedPayload);
       
       if (response.data.success) {
         console.log('TCC_DEBUG: Trip created successfully:', response.data.data);
