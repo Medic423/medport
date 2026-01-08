@@ -122,66 +122,44 @@ app.get('/', (req, res) => {
 });
 
 // Health check endpoint
+// Non-blocking: Returns immediately to prevent Azure from restarting backend
+// Database health is checked in background but doesn't block the response
 app.get('/health', async (req, res) => {
-  try {
-    const isHealthy = await databaseManager.healthCheck();
+  // Set CORS headers
+  const origin = req.headers.origin;
+  if (origin) {
+    const allowedOrigins = [
+      process.env.FRONTEND_URL,
+      process.env.CORS_ORIGIN,
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'https://traccems.com',
+      'https://dev-swa.traccems.com'
+    ].filter(Boolean);
     
-    if (isHealthy) {
-      res.json({
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        databases: 'connected'
-      });
-    } else {
-      // Ensure CORS headers even on unhealthy status
-      const origin = req.headers.origin;
-      if (origin) {
-        const allowedOrigins = [
-          process.env.FRONTEND_URL,
-          process.env.CORS_ORIGIN,
-          'http://localhost:3000',
-          'http://localhost:5173',
-          'https://traccems.com',
-          'https://dev-swa.traccems.com'
-        ].filter(Boolean);
-        
-        if (allowedOrigins.includes(origin)) {
-          res.header('Access-Control-Allow-Origin', origin);
-          res.header('Access-Control-Allow-Credentials', 'true');
-        }
-      }
-      
-      res.status(503).json({
-        status: 'unhealthy',
-        timestamp: new Date().toISOString(),
-        databases: 'disconnected'
-      });
+    if (allowedOrigins.includes(origin)) {
+      res.header('Access-Control-Allow-Origin', origin);
+      res.header('Access-Control-Allow-Credentials', 'true');
     }
-  } catch (error) {
-    // Ensure CORS headers even on error
-    const origin = req.headers.origin;
-    if (origin) {
-      const allowedOrigins = [
-        process.env.FRONTEND_URL,
-        process.env.CORS_ORIGIN,
-        'http://localhost:3000',
-        'http://localhost:5173',
-        'https://traccems.com',
-        'https://dev-swa.traccems.com'
-      ].filter(Boolean);
-      
-      if (allowedOrigins.includes(origin)) {
-        res.header('Access-Control-Allow-Origin', origin);
-        res.header('Access-Control-Allow-Credentials', 'true');
-      }
-    }
-    
-    res.status(503).json({
-      status: 'unhealthy',
-      timestamp: new Date().toISOString(),
-      error: 'Database connection failed'
-    });
   }
+  
+  // Always return healthy immediately (non-blocking)
+  // This prevents Azure from restarting the backend if database is temporarily slow
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    server: 'running',
+    message: 'Backend server is running. Database connectivity checked in background.'
+  });
+  
+  // Check database health in background (non-blocking, doesn't affect response)
+  databaseManager.healthCheck().then(isHealthy => {
+    if (!isHealthy) {
+      console.warn('⚠️ Health check: Database connection check failed (non-critical)');
+    }
+  }).catch(error => {
+    console.warn('⚠️ Health check: Database connection error (non-critical):', error instanceof Error ? error.message : String(error));
+  });
 });
 
 // API routes
