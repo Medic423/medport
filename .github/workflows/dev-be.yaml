@@ -57,10 +57,15 @@ jobs:
         continue-on-error: false # Fail fast if build fails
 
       - name: Create compressed node_modules archive
+        timeout-minutes: 10
         run: |
           echo "Creating compressed node_modules archive..."
+          echo "Node modules size before compression: $(du -sh node_modules | cut -f1)"
+          echo "Starting compression (this may take 3-5 minutes)..."
           tar -czf node_modules.tar.gz node_modules
+          echo "Compression complete. Archive details:"
           ls -lh node_modules.tar.gz
+          echo "Archive size: $(du -h node_modules.tar.gz | cut -f1)"
           echo "Archive created successfully"
         working-directory: '${{ env.FOLDER_PATH }}'
 
