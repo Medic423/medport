@@ -189,13 +189,22 @@ app.use('*', (req, res) => {
 async function startServer() {
   try {
     console.log('🔧 Production mode: Starting TCC Backend...');
+    console.log('📋 Environment check:');
+    console.log(`   - PORT: ${PORT}`);
+    console.log(`   - NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
+    console.log(`   - DATABASE_URL: ${process.env.DATABASE_URL ? 'SET (' + process.env.DATABASE_URL.substring(0, 30) + '...)' : 'NOT SET'}`);
     
-    // Test database connection
-    const isHealthy = await productionDatabaseManager.healthCheck();
-    if (!isHealthy) {
-      console.log('⚠️ Database connection failed, but continuing with server startup...');
-    } else {
-      console.log('✅ Database connection successful');
+    // Test database connection (non-blocking - don't fail startup if DB is temporarily unavailable)
+    try {
+      const isHealthy = await productionDatabaseManager.healthCheck();
+      if (!isHealthy) {
+        console.log('⚠️ Database connection failed, but continuing with server startup...');
+      } else {
+        console.log('✅ Database connection successful');
+      }
+    } catch (dbError) {
+      console.error('⚠️ Database health check failed:', dbError instanceof Error ? dbError.message : String(dbError));
+      console.log('⚠️ Continuing with server startup - database will be checked on first request...');
     }
     
     // Start the server
@@ -211,6 +220,7 @@ async function startServer() {
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
+    console.error('❌ Error details:', error instanceof Error ? error.stack : String(error));
     process.exit(1);
   }
 }
