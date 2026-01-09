@@ -114,6 +114,16 @@ concurrency:
 
 ---
 
-**Last Updated:** January 5, 2026  
-**Status:** ⚠️ Waiting for deployment queue to clear
+**Last Updated:** January 9, 2026  
+**Status:** ⚠️ Known issue - Multiple deployments can trigger automatically
+
+## Related Issue: Automatic Deployments
+
+**See:** `docs/reference/DEPLOYMENT_AUTOMATIC_TRIGGERS.md` for details on why multiple deployments trigger automatically and how to prevent it.
+
+**Key Points:**
+- Pushing multiple commits quickly triggers multiple deployments
+- Azure Deployment Center may also trigger deployments independently
+- Wait for deployments to complete before pushing again
+- Consider batching commits to reduce deployment frequency
 
