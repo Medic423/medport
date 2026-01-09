@@ -17,6 +17,35 @@
 
 ## ⚠️ CRITICAL RULES
 
+### Rule 0: Documentation Changes Don't Trigger Deployments
+**Note:** Workflows are configured with path filters to only trigger on code changes:
+- **Backend deployments:** Only trigger on `backend/**` changes
+- **Frontend deployments:** Only trigger on `frontend/**` changes
+- **Workflow changes:** Changes to `.github/workflows/dev-be.yaml` or `dev-fe.yaml` will trigger deployments
+- **Documentation changes (`docs/**`):** Will NOT trigger deployments ✅
+- This prevents unnecessary deployments for documentation-only commits
+
+**Implementation:**
+```yaml
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - 'backend/**'           # Backend code changes
+      - '.github/workflows/dev-be.yaml'  # Workflow changes
+```
+
+**Benefits:**
+- ✅ Documentation commits don't trigger 5-10 minute deployments
+- ✅ Reduces deployment queue buildup
+- ✅ Faster development workflow for documentation
+- ✅ Deployment time is primarily due to 184MB node_modules, not docs
+
+**If you need to skip deployment for any commit (including code changes):**
+- Add `[skip ci]` or `[ci skip]` to commit message
+- Useful for temporary commits or testing
+
 ### Rule 1: Never Push While Deployment Is In Progress
 **Why:** Deployments on top of deployments cause incomplete/mixed code, backend crashes, and service interruption.
 
