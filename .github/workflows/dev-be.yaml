@@ -7,6 +7,11 @@ on:
   push:
     branches:
       - develop
+    paths:
+      - 'backend/**'
+      - '.github/workflows/dev-be.yaml'
+      # Skip deployments for documentation-only changes
+      # Use [skip ci] in commit message to skip deployment for any change
 
 # Prevent concurrent deployments to avoid 409 conflicts
 # Strategy: Wait for in-progress, but allow queued workflows (they'll run in order)

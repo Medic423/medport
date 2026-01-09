@@ -7,6 +7,11 @@ on:
   push:
     branches:
       - develop
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/dev-fe.yaml'
+      # Skip deployments for documentation-only changes
+      # Use [skip ci] in commit message to skip deployment for any change
 
 # Prevent concurrent deployments to avoid 409 conflicts
 concurrency:
