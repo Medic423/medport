@@ -85,4 +85,4 @@ jobs:
           package: '${{ env.FOLDER_PATH }}' # Path to your application package (defaults to current directory)
         # Note: If this step fails, Azure keeps the previous deployment active
         # The site will NOT be empty - current deployment remains in place
-        # Note: node_modules.tar.gz is included in deployment, Azure will extract it automatically
+        # Note: node_modules.tar.gz extraction is handled by prestart script in package.json
