@@ -435,12 +435,589 @@ When deployments trigger while another deployment is already in progress, the ne
 
 ---
 
+## Database Migrations: When to Use pgAdmin
+
+### ⚠️ CRITICAL: Consider pgAdmin for Complex Migrations
+
+**Key Insight:** When automated Prisma migrations fail during deployment, pgAdmin can be a more reliable approach, especially for production database synchronization and resolving database drift.
+
+---
+
+### What is Database Drift?
+
+**Database Drift** occurs when the actual database schema doesn't match what Prisma's migration tracking system thinks it should be. This happens when:
+
+1. **Manual Changes:** Database changes made directly via SQL (pgAdmin, psql, etc.) bypass Prisma's migration tracking
+2. **Partial Migrations:** Migrations that partially apply (some changes succeed, others fail)
+3. **Migration State Conflicts:** The `_prisma_migrations` table gets out of sync with actual schema
+4. **Failed Deployments:** Migration failures leave database in inconsistent state
+
+**Symptoms of Database Drift:**
+- ✅ "Column already exists" errors during migration
+- ✅ "Migration already applied" errors (but schema doesn't match)
+- ✅ Features work in dev/dev-swa but fail in production
+- ✅ Missing tables/columns in production that exist in dev
+- ✅ Prisma migration tracking shows migrations applied, but schema doesn't match
+
+---
+
+### Pre-Testing Drift Check: Do This First
+
+**⚠️ CRITICAL:** Before starting comprehensive testing, perform a quick drift assessment to identify any obvious schema differences. This prevents wasting time testing features that will fail due to missing database structures.
+
+#### Quick Pre-Testing Checklist
+
+**1. Check Critical Tables Exist:**
+```sql
+-- Run in pgAdmin for dev-swa database
+SELECT table_name 
+FROM information_schema.tables 
+WHERE table_schema = 'public'
+ORDER BY table_name;
+
+-- Compare with expected tables from Prisma schema
+-- Key tables to verify:
+-- - trips
+-- - agency_responses
+-- - dropdown_options
+-- - dropdown_categories
+-- - healthcare_locations
+-- - ems_agencies
+```
+
+**2. Check Critical Columns Exist:**
+```sql
+-- Example: Check trips table has essential columns
+SELECT column_name 
+FROM information_schema.columns 
+WHERE table_name = 'trips'
+ORDER BY column_name;
+
+-- Verify key columns exist (compare with local dev)
+```
+
+**3. Quick Functionality Test:**
+- ✅ Can login (already confirmed)
+- ✅ Can navigate to main pages
+- ✅ No immediate 500 errors on page load
+
+**If Pre-Testing Check Reveals Issues:**
+- ⚠️ **Missing critical tables/columns** → Fix drift BEFORE testing
+- ⚠️ **Obvious schema mismatches** → Fix drift BEFORE testing
+- ✅ **Minor differences** → Can proceed with testing, note for later
+
+**Time Investment:** 5-10 minutes for quick check vs. hours of testing that might fail due to drift.
+
+---
+
+### What to Do If Drift Symptoms Appear During Testing
+
+**Key Principle:** Not all drift symptoms require immediate stopping. It depends on the severity and impact.
+
+#### 🛑 STOP Testing and Fix Immediately If:
+
+1. **Critical Functionality Broken:**
+   - ✅ Cannot create trips (missing `trips` table or critical columns)
+   - ✅ Cannot dispatch (missing `agency_responses` table)
+   - ✅ Cannot login (missing user tables)
+   - ✅ 500 errors on core features
+   - **Reason:** Testing is meaningless if core features don't work
+
+2. **Widespread Schema Mismatches:**
+   - ✅ Multiple tables missing
+   - ✅ Many columns missing across multiple tables
+   - ✅ Database structure fundamentally different
+   - **Reason:** Fixing drift will likely resolve multiple test failures
+
+3. **Migration Errors During Deployment:**
+   - ✅ "Column already exists" errors
+   - ✅ "Migration already applied" errors
+   - ✅ Deployment failing due to migration conflicts
+   - **Reason:** This indicates active drift that will block future deployments
+
+#### ⚠️ Continue Testing But Document If:
+
+1. **Non-Critical Features Affected:**
+   - ✅ Advanced features not working (analytics, reporting)
+   - ✅ Optional features missing (notifications, preferences)
+   - ✅ Features that aren't part of core workflow
+   - **Action:** Continue testing core functionality, document issues for later fix
+
+2. **Minor Column Differences:**
+   - ✅ Missing optional columns (timestamps, metadata)
+   - ✅ Extra columns that don't break functionality
+   - ✅ Naming convention differences (if handled by Prisma @map)
+   - **Action:** Continue testing, note differences for later alignment
+
+3. **Isolated Issues:**
+   - ✅ One specific feature not working
+   - ✅ One table missing (non-critical)
+   - ✅ Can test other features successfully
+   - **Action:** Continue testing other features, fix isolated issue after testing
+
+#### ✅ Continue Testing If:
+
+1. **Symptoms Are Expected:**
+   - ✅ Different data (dev-swa has different test data than local)
+   - ✅ Different behavior due to data differences (not schema)
+   - ✅ UI differences (not database-related)
+   - **Action:** These aren't drift - continue testing
+
+2. **Symptoms Are Cosmetic:**
+   - ✅ Missing optional display fields
+   - ✅ Different default values
+   - ✅ UI layout differences
+   - **Action:** Not drift-related, continue testing
+
+---
+
+### Decision Tree: Stop Testing or Continue?
+
+```
+During Testing → Encounter Issue
+│
+├─ Is it a 500 error on core feature?
+│  ├─ YES → 🛑 STOP, check database schema
+│  └─ NO → Continue
+│
+├─ Is it "Column already exists" or migration error?
+│  ├─ YES → 🛑 STOP, fix drift immediately
+│  └─ NO → Continue
+│
+├─ Is it missing critical table/column?
+│  ├─ YES → 🛑 STOP, fix drift before continuing
+│  └─ NO → Continue
+│
+├─ Is it non-critical feature not working?
+│  ├─ YES → ⚠️ Document, continue testing core features
+│  └─ NO → Continue
+│
+└─ Is it data difference (not schema)?
+   ├─ YES → ✅ Continue (expected)
+   └─ NO → Investigate further
+```
+
+---
+
+### Recommended Workflow
+
+#### Before Testing:
+1. ✅ **Quick Pre-Testing Check** (5-10 minutes)
+   - Verify critical tables exist
+   - Verify critical columns exist
+   - Quick smoke test (login, navigate)
+
+2. ✅ **If Issues Found:**
+   - Fix critical drift issues first
+   - Then proceed with testing
+
+3. ✅ **If No Issues Found:**
+   - Proceed with comprehensive testing
+
+#### During Testing:
+1. ✅ **If Core Feature Fails:**
+   - Stop testing that feature
+   - Check if it's drift-related
+   - Fix drift if needed
+   - Resume testing
+
+2. ✅ **If Non-Critical Feature Fails:**
+   - Document the issue
+   - Continue testing other features
+   - Fix after testing complete
+
+3. ✅ **If Uncertain:**
+   - Check browser console for errors
+   - Check network tab for API errors
+   - Check Azure logs for backend errors
+   - Determine if drift-related or code issue
+
+#### After Testing:
+1. ✅ **Document All Drift Issues Found**
+2. ✅ **Prioritize Fixes:**
+   - Critical (blocks core functionality) → Fix immediately
+   - High (affects important features) → Fix soon
+   - Medium (affects optional features) → Fix when convenient
+   - Low (cosmetic/minor) → Fix if time permits
+
+3. ✅ **Fix Drift Issues:**
+   - Use pgAdmin for complex fixes
+   - Apply migrations incrementally
+   - Verify fixes
+   - Re-test affected features
+
+---
+
+### Why Fix Drift Before Testing?
+
+**Benefits:**
+- ✅ **Accurate Testing:** Tests reflect actual functionality, not drift issues
+- ✅ **Time Savings:** Don't waste time debugging drift-related failures
+- ✅ **Clear Results:** Test results show real issues vs. drift issues
+- ✅ **Efficient Workflow:** Fix once, test once
+
+**Cost of Not Fixing First:**
+- ❌ **Wasted Time:** Testing features that fail due to drift
+- ❌ **Confusion:** Unclear if failures are drift or code issues
+- ❌ **Re-testing:** May need to re-test after fixing drift
+- ❌ **Frustration:** Multiple failures that could be prevented
+
+**Exception:** If drift check reveals only minor, non-critical differences, it's acceptable to proceed with testing and fix drift issues afterward. The key is identifying critical drift before testing.
+
+---
+
+### Why pgAdmin Works When Automated Migrations Fail
+
+**The Problem with Automated Migrations:**
+
+1. **Migration State Tracking:**
+   - Prisma tracks migration state in `_prisma_migrations` table
+   - If migration partially applies, state gets out of sync
+   - Next deployment: "Column already exists" error → Deployment fails
+
+2. **Dual Management Conflicts:**
+   - GitHub Actions runs `prisma migrate deploy` (migration-based)
+   - If conflicts occur, entire deployment fails
+   - Backend doesn't start, service is down
+
+3. **Deployment Workflow Complexity:**
+   - Each failed migration requires:
+     - Debug in Azure logs (30-60 minutes)
+     - Fix manually in pgAdmin
+     - Retry deployment (5-10 minutes)
+     - **Total: 1-2 hours per issue**
+
+**Why pgAdmin Works:**
+
+- ✅ **Bypasses Migration Tracking:** Manual SQL execution doesn't update `_prisma_migrations` table
+- ✅ **Direct Schema Changes:** Apply changes directly without state conflicts
+- ✅ **Incremental Approach:** Apply changes one at a time, verify after each
+- ✅ **No Deployment Failures:** Database changes don't block code deployments
+- ✅ **Full Control:** See exactly what SQL is being executed
+- ✅ **Easier Debugging:** Can test queries before applying changes
+
+---
+
+### When to Use pgAdmin
+
+#### ✅ Use pgAdmin When:
+
+1. **Automated Migrations Fail:**
+   - `prisma migrate deploy` fails during deployment
+   - "Column already exists" or "Migration already applied" errors
+   - Deployment blocked by migration failures
+
+2. **Database Drift Exists:**
+   - Production schema doesn't match dev/dev-swa
+   - Missing tables/columns in production
+   - Need to "catch up" production with dev-swa
+
+3. **Complex Schema Changes:**
+   - Large migrations that might timeout
+   - Migrations with data transformations
+   - Migrations affecting multiple tables
+
+4. **Production Synchronization:**
+   - Bringing production database in sync with dev-swa
+   - Applying multiple migrations at once
+   - Verifying changes incrementally
+
+5. **Migration State Conflicts:**
+   - `_prisma_migrations` table out of sync
+   - Need to resolve migration tracking issues
+   - Manual fixes required
+
+#### ❌ Don't Use pgAdmin When:
+
+1. **Standard Deployments:**
+   - Automated migrations work correctly
+   - No database drift issues
+   - Standard schema changes
+
+2. **Simple Changes:**
+   - Single column additions
+   - Non-breaking schema changes
+   - Migrations that apply cleanly
+
+3. **First-Time Migrations:**
+   - New migrations that haven't been applied yet
+   - Migrations that should work automatically
+
+**Best Practice:** Always try automated migrations first. Use pgAdmin as a fallback when automated migrations fail or when dealing with database drift.
+
+---
+
+### pgAdmin Migration Process
+
+#### Step 1: Connect to Azure Database
+
+1. **Get Connection Details:**
+   - Azure Portal → PostgreSQL server → Connection strings
+   - Or from GitHub Secrets: `DATABASE_URL` or `DATABASE_URL_PROD`
+
+2. **Connect in pgAdmin:**
+   - Open pgAdmin 4
+   - Register new server
+   - **Host:** `your-server.postgres.database.azure.com`
+   - **Port:** `5432`
+   - **Username:** `username@server-name` (Azure format)
+   - **Password:** Database password
+   - **SSL Mode:** `Require` (Azure requires SSL)
+
+**Reference:** See `docs/reference/database/pgadmin/azure-database-migration-pgadmin.md` for detailed connection guide.
+
+#### Step 2: Assess Current State
+
+**Check Migration Status:**
+```sql
+SELECT migration_name, finished_at, applied_steps_count
+FROM _prisma_migrations
+ORDER BY finished_at DESC
+LIMIT 20;
+```
+
+**Check Schema:**
+```sql
+-- List all tables
+SELECT table_name 
+FROM information_schema.tables 
+WHERE table_schema = 'public'
+ORDER BY table_name;
+
+-- Check specific table structure
+SELECT column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_name = 'your_table_name'
+ORDER BY ordinal_position;
+```
+
+**Compare with Dev-SWA:**
+- Compare table lists between production and dev-swa
+- Identify missing tables/columns
+- Document differences
+
+#### Step 3: Apply Migrations Incrementally
+
+**Best Practice: Apply One Migration at a Time**
+
+1. **Open Migration File:**
+   - Navigate to `backend/prisma/migrations/[migration-name]/migration.sql`
+   - Review the SQL to understand what it does
+
+2. **Execute in pgAdmin:**
+   - Right-click database → Query Tool
+   - Open migration file (File → Open)
+   - Review SQL carefully
+   - Execute (F5)
+
+3. **Verify Success:**
+   - Check for errors in Messages tab
+   - Verify schema changes applied
+   - Test related functionality if possible
+
+4. **Update Migration Tracking (Optional):**
+   ```sql
+   -- If you want Prisma to recognize the migration as applied:
+   INSERT INTO _prisma_migrations (migration_name, checksum, finished_at, applied_steps_count)
+   VALUES ('20250109120000_migration_name', 'checksum', NOW(), 1);
+   ```
+   **Note:** Only do this if you're certain the migration matches exactly what Prisma expects.
+
+5. **Move to Next Migration:**
+   - Apply migrations in chronological order
+   - Verify each before moving to next
+   - Document any manual modifications
+
+#### Step 4: Verify Final State
+
+**Check All Tables Exist:**
+```sql
+SELECT table_name 
+FROM information_schema.tables 
+WHERE table_schema = 'public'
+ORDER BY table_name;
+```
+
+**Compare with Dev-SWA:**
+- Verify production has same tables as dev-swa
+- Verify column structures match
+- Test critical functionality
+
+**Check Migration Status:**
+```sql
+SELECT COUNT(*) as total_migrations
+FROM _prisma_migrations;
+```
+
+---
+
+### Best Practices for pgAdmin Migrations
+
+#### 1. Always Backup First
+- **Before making ANY changes:** Backup production database
+- Azure Portal → PostgreSQL server → Backups
+- Or use pgAdmin → Backup tool
+- **Critical:** Never apply migrations without backup
+
+#### 2. Test Locally First
+- Apply migrations to local dev database first
+- Verify SQL works correctly
+- Identify potential issues before production
+
+#### 3. Apply Incrementally
+- **One migration at a time**
+- Verify each migration before moving to next
+- Don't apply multiple migrations in one batch
+- Test functionality after each migration
+
+#### 4. Document Manual Changes
+- If you modify migration SQL, document why
+- Keep notes of what was changed
+- Update migration files if needed (for future reference)
+
+#### 5. Verify After Each Step
+- Check schema changes applied correctly
+- Verify no errors occurred
+- Test related functionality if possible
+- Check application logs for issues
+
+#### 6. Update Migration Tracking Carefully
+- Only update `_prisma_migrations` if migration matches exactly
+- If you modified SQL, consider not updating tracking
+- Document any tracking updates
+
+#### 7. Coordinate with Code Deployments
+- Apply database changes BEFORE code deployment
+- Or apply during maintenance window
+- Ensure code and database are compatible
+
+---
+
+### Common pgAdmin Migration Scenarios
+
+#### Scenario 1: Catching Up Production with Dev-SWA
+
+**Problem:** Production database missing tables/columns that exist in dev-swa.
+
+**Solution:**
+1. Compare schemas between production and dev-swa
+2. Identify missing migrations
+3. Apply missing migrations via pgAdmin (in order)
+4. Verify schema matches dev-swa
+5. Deploy code (should now work)
+
+**Example:**
+```sql
+-- Production missing 'agency_responses' table
+-- Apply migration: 20250106120000_create_agency_responses
+-- Copy SQL from: backend/prisma/migrations/20250106120000_create_agency_responses/migration.sql
+-- Execute in pgAdmin
+-- Verify table created
+```
+
+#### Scenario 2: Failed Migration During Deployment
+
+**Problem:** `prisma migrate deploy` fails with "Column already exists" error.
+
+**Solution:**
+1. Check what actually exists in database
+2. If column exists, migration partially applied
+3. Apply remaining changes manually via pgAdmin
+4. Update `_prisma_migrations` table to mark migration as complete
+5. Retry deployment (should now succeed)
+
+**Example:**
+```sql
+-- Migration failed: Column 'status' already exists in 'trips' table
+-- Check current schema:
+SELECT column_name FROM information_schema.columns 
+WHERE table_name = 'trips' AND column_name = 'status';
+
+-- If exists, migration partially applied
+-- Apply remaining changes from migration.sql manually
+-- Mark migration as complete:
+INSERT INTO _prisma_migrations (migration_name, checksum, finished_at, applied_steps_count)
+VALUES ('20250109120000_add_status_column', 'checksum', NOW(), 1);
+```
+
+#### Scenario 3: Resolving Database Drift
+
+**Problem:** `_prisma_migrations` table shows migrations applied, but schema doesn't match.
+
+**Solution:**
+1. Compare actual schema with expected schema (from Prisma schema)
+2. Identify differences
+3. Apply missing changes via pgAdmin
+4. Optionally: Reset `_prisma_migrations` table and re-apply all migrations
+5. Verify schema matches expected state
+
+---
+
+### Migration Tracking and Prisma
+
+**Important:** When using pgAdmin, you have two options:
+
+#### Option 1: Don't Update Migration Tracking
+- Apply changes via pgAdmin
+- Don't update `_prisma_migrations` table
+- Prisma will think migrations aren't applied
+- **Benefit:** No tracking conflicts
+- **Drawback:** Prisma may try to apply migrations again (will fail if changes already exist)
+
+#### Option 2: Update Migration Tracking
+- Apply changes via pgAdmin
+- Manually insert into `_prisma_migrations` table
+- Prisma will recognize migrations as applied
+- **Benefit:** Prisma knows migrations are applied
+- **Drawback:** Must match exact migration name and checksum
+
+**Recommendation:** For one-time "catch up" scenarios, Option 1 is safer. For ongoing maintenance, Option 2 may be better, but requires careful tracking.
+
+---
+
+### Troubleshooting pgAdmin Migrations
+
+#### Issue: "SSL connection required"
+**Solution:** Ensure SSL mode is set to `Require` in pgAdmin connection settings
+
+#### Issue: "Permission denied"
+**Solution:** Ensure Azure database user has proper permissions (usually needs to be database owner)
+
+#### Issue: "Column already exists"
+**Solution:** Migration partially applied. Check what exists, apply remaining changes manually
+
+#### Issue: "Table doesn't exist"
+**Solution:** Check if table name is correct, verify you're connected to correct database
+
+#### Issue: "Migration already applied"
+**Solution:** Check `_prisma_migrations` table. If migration exists but schema doesn't match, you have drift - fix schema manually
+
+---
+
+### Summary: pgAdmin vs Automated Migrations
+
+| Aspect | Automated Migrations | pgAdmin |
+|--------|---------------------|---------|
+| **When to Use** | Standard deployments, new migrations | Failed migrations, database drift, production sync |
+| **Speed** | Fast (if successful) | Slower (manual process) |
+| **Reliability** | Can fail due to state conflicts | More reliable for complex scenarios |
+| **Deployment Blocking** | Yes (fails entire deployment) | No (applied separately) |
+| **Error Recovery** | Difficult (requires manual fixes) | Easier (incremental approach) |
+| **Best For** | Routine schema changes | Complex migrations, drift resolution |
+
+**Key Takeaway:** Use automated migrations when possible, but don't hesitate to use pgAdmin when automated migrations fail or when dealing with database drift. pgAdmin has proven to be the most reliable method for "catching up" production databases with dev-swa.
+
+---
+
 ## Related Documentation
 
+- `docs/reference/database/pgadmin/azure-database-migration-pgadmin.md` - Detailed pgAdmin connection and usage guide
+- `docs/active/sessions/2026-01/BACKEND_DEPLOYMENT_FAILURE_ANALYSIS.md` - Comprehensive analysis of migration failures
+- `docs/active/sessions/2026-01/catchingup_dbs.md` - Database catch-up plan and strategy
+- `docs/reference/database/migrations/migration-troubleshooting.md` - Common migration issues and solutions
 - `docs/active/sessions/2026-01/concurrency-deployment-issue.md` - Concurrency control details
 - `docs/active/sessions/2026-01/production-deployment-conflict-20260104.md` - Production conflict example
 - `.github/workflows/dev-be.yaml` - Current workflow configuration
-- `docs/active/sessions/2026-01/BACKEND_DEPLOYMENT_FAILURE_ANALYSIS.md` - Comprehensive failure analysis
 
 ---
 
