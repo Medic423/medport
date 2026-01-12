@@ -115,8 +115,7 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
                   start: data.operatingHours.start || '00:00',
                   end: data.operatingHours.end || '23:59'
                 }
-              : prev.operatingHours,
-            smsNotifications: data.smsNotifications !== undefined ? data.smsNotifications : prev.smsNotifications
+              : prev.operatingHours
           }));
         } else {
           // Fallback to user data if API fails
@@ -280,7 +279,6 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
         longitude: agencyInfo.longitude,
         capabilities: agencyInfo.capabilities,
         operatingHours: operatingHoursString,
-        smsNotifications: agencyInfo.smsNotifications, // Include SMS notifications preference
       };
 
       console.log('TCC_DEBUG: Payload being sent:', payload);
@@ -316,8 +314,7 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
                     start: data.operatingHours.start || prev.operatingHours.start,
                     end: data.operatingHours.end || prev.operatingHours.end
                   }
-                : prev.operatingHours,
-              smsNotifications: data.smsNotifications !== undefined ? data.smsNotifications : prev.smsNotifications
+                : prev.operatingHours
             }));
           }
         } catch (reloadError) {
