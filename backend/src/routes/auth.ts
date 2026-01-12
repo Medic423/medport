@@ -548,7 +548,7 @@ router.get('/ems/agency/info', authenticateAdmin, async (req: AuthenticatedReque
           start: operatingHoursStart,
           end: operatingHoursEnd
         },
-        smsNotifications: agency.acceptsNotifications !== undefined ? agency.acceptsNotifications : true // Map acceptsNotifications to smsNotifications for frontend
+        smsNotifications: agency?.acceptsNotifications ?? true // Map acceptsNotifications to smsNotifications for frontend (using optional chaining for safety)
       }
     };
 
