@@ -103,11 +103,35 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
       message: 'Destination created successfully',
       data: destination,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Create healthcare destination error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      userId: req.user?.id,
+      destinationData: {
+        name: req.body?.name,
+        type: req.body?.type,
+        address: req.body?.address,
+        city: req.body?.city,
+        state: req.body?.state
+      }
+    });
+    
+    // Provide more detailed error messages
+    let errorMessage = 'Failed to create destination';
+    if (error.message) {
+      errorMessage = error.message;
+    } else if (error.code === 'P2002') {
+      errorMessage = 'A destination with this information already exists';
+    } else if (error.code === 'P2003') {
+      errorMessage = 'Invalid healthcare user reference';
+    }
+    
     res.status(500).json({
       success: false,
-      error: 'Failed to create destination',
+      error: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });

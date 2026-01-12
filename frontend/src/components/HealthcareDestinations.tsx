@@ -250,19 +250,55 @@ const HealthcareDestinations: React.FC<HealthcareDestinationsProps> = ({ user })
     setAddError(null);
 
     try {
-      const response = await healthcareDestinationsAPI.create({
-        ...addFormData,
-      });
+      // Clean up form data: remove empty strings for optional fields, convert empty lat/lng to null
+      const cleanedData: any = {
+        name: addFormData.name,
+        type: addFormData.type,
+        address: addFormData.address,
+        city: addFormData.city,
+        state: addFormData.state,
+        zipCode: addFormData.zipCode,
+        // Only include optional fields if they have values
+        ...(addFormData.contactName && { contactName: addFormData.contactName }),
+        ...(addFormData.phone && { phone: addFormData.phone }),
+        ...(addFormData.email && { email: addFormData.email }),
+        ...(addFormData.notes && { notes: addFormData.notes }),
+        // Convert empty strings to null for coordinates (or omit if empty)
+        ...(addFormData.latitude && addFormData.latitude.trim() !== '' 
+          ? { latitude: addFormData.latitude } 
+          : {}),
+        ...(addFormData.longitude && addFormData.longitude.trim() !== '' 
+          ? { longitude: addFormData.longitude } 
+          : {}),
+      };
+
+      const response = await healthcareDestinationsAPI.create(cleanedData);
       
       if (response.data.success) {
         await loadDestinations();
         setShowAddModal(false);
+        // Reset form
+        setAddFormData({
+          name: '',
+          type: '',
+          contactName: '',
+          phone: '',
+          email: '',
+          address: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          latitude: '',
+          longitude: '',
+          notes: '',
+        });
       } else {
         setAddError(response.data.error || 'Failed to create destination');
       }
     } catch (error: any) {
       console.error('Error creating destination:', error);
-      setAddError(error.response?.data?.error || 'Failed to create destination');
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to create destination';
+      setAddError(errorMessage);
     } finally {
       setAddLoading(false);
     }

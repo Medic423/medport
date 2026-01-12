@@ -218,9 +218,25 @@ export class HealthcareDestinationService {
     const prisma = databaseManager.getPrismaClient();
 
     // ✅ NEW: Auto-geocode if coordinates not provided
-    let latitude = data.latitude ? parseFloat(String(data.latitude)) : null;
-    let longitude = data.longitude ? parseFloat(String(data.longitude)) : null;
+    // Handle empty strings, null, undefined, and NaN properly
+    let latitude: number | null = null;
+    let longitude: number | null = null;
+    
+    if (data.latitude) {
+      const parsedLat = parseFloat(String(data.latitude));
+      if (!isNaN(parsedLat) && parsedLat !== 0) {
+        latitude = parsedLat;
+      }
+    }
+    
+    if (data.longitude) {
+      const parsedLng = parseFloat(String(data.longitude));
+      if (!isNaN(parsedLng) && parsedLng !== 0) {
+        longitude = parsedLng;
+      }
+    }
 
+    // Only geocode if both coordinates are missing (not just one)
     if (!latitude || !longitude) {
       console.log('HEALTHCARE_DESTINATION: No coordinates provided, attempting geocoding...');
       const geocodeResult = await GeocodingService.geocodeAddress(
@@ -237,6 +253,9 @@ export class HealthcareDestinationService {
         console.log('HEALTHCARE_DESTINATION: Geocoding successful:', { latitude, longitude });
       } else {
         console.warn('HEALTHCARE_DESTINATION: Geocoding failed:', geocodeResult.error);
+        // Set to null explicitly (not NaN) so database accepts it
+        latitude = null;
+        longitude = null;
       }
     }
 

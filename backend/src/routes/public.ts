@@ -47,13 +47,21 @@ router.post('/geocode', async (req, res) => {
         error: result.error || 'Could not find coordinates for this address'
       });
     }
-  } catch (error) {
+  } catch (error: any) {
     const duration = Date.now() - startTime;
     console.error(`TCC_DEBUG: Geocoding endpoint error after ${duration}ms:`, error);
     console.error('TCC_DEBUG: Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-    res.status(500).json({
+    console.error('TCC_DEBUG: Error details:', {
+      message: error.message,
+      name: error.name,
+      code: error.code
+    });
+    
+    // Return 200 with success: false for better frontend handling
+    // Frontend can distinguish between "not found" (200, success: false) and "server error" (500)
+    res.status(200).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to geocode address'
+      error: error instanceof Error ? error.message : 'Failed to geocode address. You can still save the destination and add coordinates manually.'
     });
   }
 });

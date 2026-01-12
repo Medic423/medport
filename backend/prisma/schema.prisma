@@ -98,22 +98,22 @@ model HealthcareAgencyPreference {
 
 model HealthcareDestination {
   id               String         @id @default(cuid())
-  healthcareUserId String         @map("healthcare_user_id")
+  healthcareUserId String
   name             String
   type             String
   address          String
   city             String
   state            String
-  zipCode          String         @map("zip_code")
+  zipCode          String
   phone            String?
   email            String?
-  contactName      String?        @map("contact_name")
+  contactName      String?
   latitude         Float?
   longitude        Float?
-  isActive         Boolean        @default(true) @map("is_active")
+  isActive         Boolean        @default(true)
   notes            String?
-  createdAt        DateTime       @default(now()) @map("created_at")
-  updatedAt        DateTime       @updatedAt @map("updated_at")
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
   healthcareUser   HealthcareUser @relation(fields: [healthcareUserId], references: [id], onDelete: Cascade)
 
   @@index([healthcareUserId])
