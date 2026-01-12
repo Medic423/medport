@@ -238,8 +238,15 @@ const HealthcareEMSAgencies: React.FC<HealthcareEMSAgenciesProps> = ({ user }) =
         setAddError(null);
         console.log('TCC_DEBUG: Coordinates set successfully:', latitude, longitude);
       } else {
+        // Handle success: false response (improved backend error handling)
         const errorMsg = response.data.error || 'Could not find coordinates for this address. You can still save the agency and add coordinates manually.';
         setAddError(errorMsg);
+        // Clear coordinates on failure
+        setAddFormData(prev => ({
+          ...prev,
+          latitude: '',
+          longitude: ''
+        }));
       }
     } catch (err: any) {
       console.error('Geocoding error:', err);
@@ -249,22 +256,36 @@ const HealthcareEMSAgencies: React.FC<HealthcareEMSAgenciesProps> = ({ user }) =
       
       if (err.message && err.message.includes('timeout')) {
         errorMessage = 'Geocoding request timed out. You can still save the agency and add coordinates manually.';
-      } else if (err.response?.data?.error) {
-        const backendError = err.response.data.error;
-        if (backendError.includes('HTTP 429') || backendError.includes('Too Many Requests')) {
-          errorMessage = 'Too many geocoding requests. Please try again later or enter coordinates manually.';
-        } else if (backendError.includes('HTTP 503') || backendError.includes('Service Unavailable')) {
-          errorMessage = 'Geocoding service is temporarily unavailable. Please try again later or enter coordinates manually.';
-        } else if (backendError.includes('No results found') || backendError.includes('Could not find coordinates')) {
-          errorMessage = 'Could not find coordinates for this address. You can still save the agency and add coordinates manually.';
-        } else {
-          errorMessage = backendError + ' You can still save the agency and add coordinates manually.';
+      } else if (err.response?.data) {
+        // Handle both success: false responses and error responses
+        const responseData = err.response.data;
+        if (responseData.success === false && responseData.error) {
+          // Backend returned 200 with success: false (our improved error handling)
+          errorMessage = responseData.error;
+        } else if (responseData.error) {
+          // Backend returned error in different format
+          const backendError = responseData.error;
+          if (backendError.includes('HTTP 429') || backendError.includes('Too Many Requests')) {
+            errorMessage = 'Too many geocoding requests. Please try again later or enter coordinates manually.';
+          } else if (backendError.includes('HTTP 503') || backendError.includes('Service Unavailable')) {
+            errorMessage = 'Geocoding service is temporarily unavailable. Please try again later or enter coordinates manually.';
+          } else if (backendError.includes('No results found') || backendError.includes('Could not find coordinates')) {
+            errorMessage = 'Could not find coordinates for this address. You can still save the agency and add coordinates manually.';
+          } else {
+            errorMessage = backendError + ' You can still save the agency and add coordinates manually.';
+          }
         }
       } else if (err.message) {
         errorMessage = err.message + ' You can still save the agency and add coordinates manually.';
       }
       
       setAddError(errorMessage);
+      // Clear coordinates on error
+      setAddFormData(prev => ({
+        ...prev,
+        latitude: '',
+        longitude: ''
+      }));
     } finally {
       setGeocoding(false);
     }
@@ -276,19 +297,54 @@ const HealthcareEMSAgencies: React.FC<HealthcareEMSAgenciesProps> = ({ user }) =
     setAddError(null);
 
     try {
-      const response = await healthcareAgenciesAPI.create({
-        ...addFormData,
-      });
+      // Clean up form data: remove empty strings for optional fields, convert empty lat/lng to null
+      const cleanedData: any = {
+        name: addFormData.name,
+        contactName: addFormData.contactName,
+        phone: addFormData.phone,
+        email: addFormData.email,
+        address: addFormData.address,
+        city: addFormData.city,
+        state: addFormData.state,
+        zipCode: addFormData.zipCode,
+        capabilities: addFormData.capabilities,
+        isPreferred: addFormData.isPreferred,
+        // Convert empty strings to null for coordinates (or omit if empty)
+        ...(addFormData.latitude && addFormData.latitude.trim() !== '' 
+          ? { latitude: addFormData.latitude } 
+          : {}),
+        ...(addFormData.longitude && addFormData.longitude.trim() !== '' 
+          ? { longitude: addFormData.longitude } 
+          : {}),
+      };
+
+      const response = await healthcareAgenciesAPI.create(cleanedData);
       
       if (response.data.success) {
         await loadAgencies();
         setShowAddModal(false);
+        // Reset form
+        setAddFormData({
+          name: '',
+          contactName: '',
+          phone: '',
+          email: '',
+          address: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          latitude: '',
+          longitude: '',
+          capabilities: [],
+          isPreferred: false,
+        });
       } else {
         setAddError(response.data.error || 'Failed to create agency');
       }
     } catch (error: any) {
       console.error('Error creating agency:', error);
-      setAddError(error.response?.data?.error || 'Failed to create agency');
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to create agency';
+      setAddError(errorMessage);
     } finally {
       setAddLoading(false);
     }
