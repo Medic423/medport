@@ -82,6 +82,11 @@ export const productionDatabaseManager = {
     return productionDatabaseManager.getInstance().getDatabase();
   },
   
+  // Compatibility method - same as getDatabase() but matches databaseManager interface
+  getPrismaClient: () => {
+    return productionDatabaseManager.getInstance().getDatabase();
+  },
+  
   disconnect: async (): Promise<void> => {
     if (productionDatabaseManagerInstance) {
       await productionDatabaseManagerInstance.disconnect();

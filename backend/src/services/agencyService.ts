@@ -1,4 +1,32 @@
 import { databaseManager } from './databaseManager';
+import { productionDatabaseManager } from './productionDatabaseManager';
+
+// Determine which database manager to use based on environment
+// In production (dev-swa), use productionDatabaseManager
+// In local dev, use databaseManager
+// Both should work, but we prefer productionDatabaseManager in production environments
+const getDatabaseClient = () => {
+  // Check if we're in production mode (dev-swa uses production-index.ts)
+  // Try productionDatabaseManager first if in production, otherwise use databaseManager
+  const isProduction = process.env.NODE_ENV === 'production' || 
+                       process.env.USE_PRODUCTION_DB === 'true' ||
+                       process.env.AZURE_ENVIRONMENT === 'dev-swa';
+  
+  if (isProduction) {
+    try {
+      console.log('TCC_DEBUG: Using productionDatabaseManager for database access');
+      return productionDatabaseManager.getPrismaClient();
+    } catch (error) {
+      console.log('TCC_DEBUG: Production database manager failed, falling back to databaseManager:', error);
+      // Fall back to regular database manager
+      return databaseManager.getPrismaClient();
+    }
+  }
+  
+  // Default to regular database manager (for local dev)
+  console.log('TCC_DEBUG: Using databaseManager for database access');
+  return databaseManager.getPrismaClient();
+};
 
 export interface AgencyData {
   name: string;
@@ -36,7 +64,7 @@ export interface AgencyListResult {
 
 export class AgencyService {
   async createAgency(data: AgencyData): Promise<any> {
-    const prisma = databaseManager.getPrismaClient();
+    const prisma = getDatabaseClient();
     
     return await prisma.eMSAgency.create({
       data: {
@@ -59,74 +87,90 @@ export class AgencyService {
   }
 
   async getAgencies(filters: AgencySearchFilters = {}): Promise<AgencyListResult> {
-    const prisma = databaseManager.getPrismaClient();
-    const { page = 1, limit = 50, ...whereFilters } = filters;
-    const skip = (page - 1) * limit;
+    try {
+      console.log('TCC_DEBUG: AgencyService.getAgencies() called with filters:', JSON.stringify(filters, null, 2));
+      const prisma = getDatabaseClient();
+      const { page = 1, limit = 50, ...whereFilters } = filters;
+      const skip = (page - 1) * limit;
 
-    const where: any = {};
-    if (whereFilters.name) {
-      where.name = { contains: whereFilters.name, mode: 'insensitive' };
-    }
-    if (whereFilters.city) {
-      where.city = { contains: whereFilters.city, mode: 'insensitive' };
-    }
-    if (whereFilters.state) {
-      where.state = { contains: whereFilters.state, mode: 'insensitive' };
-    }
-    if (whereFilters.capabilities && whereFilters.capabilities.length > 0) {
-      where.capabilities = { hasSome: whereFilters.capabilities };
-    }
-    if (whereFilters.isActive !== undefined) {
-      where.isActive = whereFilters.isActive;
-    }
+      const where: any = {};
+      if (whereFilters.name) {
+        where.name = { contains: whereFilters.name, mode: 'insensitive' };
+      }
+      if (whereFilters.city) {
+        where.city = { contains: whereFilters.city, mode: 'insensitive' };
+      }
+      if (whereFilters.state) {
+        where.state = { contains: whereFilters.state, mode: 'insensitive' };
+      }
+      if (whereFilters.capabilities && whereFilters.capabilities.length > 0) {
+        where.capabilities = { hasSome: whereFilters.capabilities };
+      }
+      if (whereFilters.isActive !== undefined) {
+        where.isActive = whereFilters.isActive;
+      }
 
-    const [agencies, total] = await Promise.all([
-      prisma.eMSAgency.findMany({
-        where,
-        orderBy: { name: 'asc' },
-        skip,
-        take: limit,
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          phone: true,
-          address: true,
-          city: true,
-          state: true,
-          zipCode: true,
-          latitude: true,
-          longitude: true,
-          capabilities: true,
-          serviceArea: true,
-          isActive: true,
-          status: true,
-          contactName: true,
-          operatingHours: true,
-          createdAt: true,
-          updatedAt: true
-        }
-      }),
-      prisma.eMSAgency.count({ where })
-    ]);
+      console.log('TCC_DEBUG: Prisma where clause:', JSON.stringify(where, null, 2));
+      console.log('TCC_DEBUG: Query params - skip:', skip, 'take:', limit);
 
-    return {
-      agencies,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit)
-    };
+      const [agencies, total] = await Promise.all([
+        prisma.eMSAgency.findMany({
+          where,
+          orderBy: { name: 'asc' },
+          skip,
+          take: limit,
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            address: true,
+            city: true,
+            state: true,
+            zipCode: true,
+            latitude: true,
+            longitude: true,
+            capabilities: true,
+            serviceArea: true,
+            isActive: true,
+            status: true,
+            contactName: true,
+            operatingHours: true,
+            createdAt: true,
+            updatedAt: true
+          }
+        }),
+        prisma.eMSAgency.count({ where })
+      ]);
+
+      console.log('TCC_DEBUG: Query completed - agencies found:', agencies.length, 'total:', total);
+
+      return {
+        agencies,
+        total,
+        page,
+        totalPages: Math.ceil(total / limit)
+      };
+    } catch (error) {
+      console.error('TCC_DEBUG: AgencyService.getAgencies() error:', error);
+      console.error('TCC_DEBUG: Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : undefined
+      });
+      throw error; // Re-throw to be handled by route handler
+    }
   }
 
   async getAgencyById(id: string): Promise<any | null> {
-    const prisma = databaseManager.getPrismaClient();
+    const prisma = getDatabaseClient();
     return await prisma.eMSAgency.findUnique({
       where: { id },
     });
   }
 
   async updateAgency(id: string, data: Partial<AgencyData>): Promise<any> {
-    const prisma = databaseManager.getPrismaClient();
+    const prisma = getDatabaseClient();
     
     return await prisma.eMSAgency.update({
       where: { id },
@@ -151,14 +195,14 @@ export class AgencyService {
   }
 
   async deleteAgency(id: string): Promise<void> {
-    const prisma = databaseManager.getPrismaClient();
+    const prisma = getDatabaseClient();
     await prisma.eMSAgency.delete({
       where: { id }
     });
   }
 
   async searchAgencies(query: string): Promise<any[]> {
-    const prisma = databaseManager.getPrismaClient();
+    const prisma = getDatabaseClient();
     return await prisma.eMSAgency.findMany({
       where: {
         OR: [
