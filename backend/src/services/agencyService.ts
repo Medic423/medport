@@ -1,30 +1,12 @@
 import { databaseManager } from './databaseManager';
-import { productionDatabaseManager } from './productionDatabaseManager';
 
-// Determine which database manager to use based on environment
-// In production (dev-swa), use productionDatabaseManager
-// In local dev, use databaseManager
-// Both should work, but we prefer productionDatabaseManager in production environments
+// Use databaseManager for all environments
+// Both databaseManager and productionDatabaseManager should work since they both
+// connect to the same DATABASE_URL. The productionDatabaseManager is used
+// for health checks in production-index.ts, but services can use databaseManager.
 const getDatabaseClient = () => {
-  // Check if we're in production mode (dev-swa uses production-index.ts)
-  // Try productionDatabaseManager first if in production, otherwise use databaseManager
-  const isProduction = process.env.NODE_ENV === 'production' || 
-                       process.env.USE_PRODUCTION_DB === 'true' ||
-                       process.env.AZURE_ENVIRONMENT === 'dev-swa';
-  
-  if (isProduction) {
-    try {
-      console.log('TCC_DEBUG: Using productionDatabaseManager for database access');
-      return productionDatabaseManager.getPrismaClient();
-    } catch (error) {
-      console.log('TCC_DEBUG: Production database manager failed, falling back to databaseManager:', error);
-      // Fall back to regular database manager
-      return databaseManager.getPrismaClient();
-    }
-  }
-  
-  // Default to regular database manager (for local dev)
-  console.log('TCC_DEBUG: Using databaseManager for database access');
+  // Always use databaseManager - it works in both local dev and production
+  // The productionDatabaseManager is only used for health checks in production-index.ts
   return databaseManager.getPrismaClient();
 };
 
