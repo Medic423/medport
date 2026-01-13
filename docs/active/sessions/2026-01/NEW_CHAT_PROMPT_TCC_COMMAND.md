@@ -63,13 +63,22 @@ I'm starting a new session focused on troubleshooting bugs and improving functio
 **Agencies Loading Fix:**
 - ✅ Fixed "Failed to load agencies" error in dev-swa TCC Command module
 - ✅ Root cause: `agencyService` used `databaseManager` but dev-swa uses `productionDatabaseManager`
-- ✅ Solution: Added `getPrismaClient()` compatibility method to `productionDatabaseManager`
-- ✅ Updated `agencyService` to detect environment and use appropriate database manager
+- ✅ Solution: Simplified to use `databaseManager` exclusively (both connect to same DATABASE_URL)
 - ✅ Enhanced error logging throughout backend route and service
 - ✅ Improved frontend error handling with detailed error messages
 - ✅ Tested locally - working as expected
 - ✅ Committed: `b52bd86f` - "fix: Fix agencies loading issue in dev-swa"
-- ⏳ **Status:** Deployed to dev-swa, awaiting verification
+- ✅ **Status:** Backend deployed and started successfully (January 13, 2026)
+
+**Azure Oryx Build Detection Issue:**
+- ✅ **FIXED** (January 13, 2026) - Azure Oryx build system was creating `oryx-manifest.toml` during deployment
+- ✅ **Root Cause:** Oryx detected node_modules and generated extraction scripts that tried to extract non-existent `node_modules.tar.gz`
+- ✅ **Permanent Fix Applied:** Configured Azure App Service settings via Azure CLI:
+  - `SCM_DO_BUILD_DURING_DEPLOYMENT=false`
+  - `ENABLE_ORYX_BUILD=false`
+- ✅ **Result:** Clean startup without Oryx manifest detection, backend initializes successfully
+- ✅ **Verification:** Logs show "Could not find build manifest file" and clean `npm start` execution
+- ✅ **Status:** Backend starting successfully (DatabaseManager, AuthService, SMS carriers initialized)
 
 **SMS Notifications Fix:**
 - ✅ Fixed SMS notifications checkbox persistence in EMS Agency Info

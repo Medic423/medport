@@ -1,5 +1,5 @@
 # Azure Deployment Guide
-**Last Updated:** January 9, 2026  
+**Last Updated:** January 13, 2026  
 **Status:** ✅ **COMPREHENSIVE REFERENCE** - All deployment knowledge in one place
 
 ---
@@ -98,6 +98,50 @@ on:
 - Wait 5 minutes
 - Check again
 - Better to wait than cause issues
+
+---
+
+## Azure Oryx Build Detection Fix
+
+### ✅ **RESOLVED** (January 13, 2026)
+
+**Problem:** Azure's Oryx build system was creating `oryx-manifest.toml` during deployment, which triggered problematic startup scripts that attempted to extract non-existent `node_modules.tar.gz` files, causing deployment failures and restart loops.
+
+**Solution:** Disable Oryx build detection by configuring Azure App Service application settings:
+- `SCM_DO_BUILD_DURING_DEPLOYMENT=false`
+- `ENABLE_ORYX_BUILD=false`
+
+**Configuration Method (Azure CLI):**
+```bash
+az webapp config appsettings set \
+  --name TraccEms-Dev-Backend \
+  --resource-group TraccEms-Dev-USCentral \
+  --settings \
+    SCM_DO_BUILD_DURING_DEPLOYMENT=false \
+    ENABLE_ORYX_BUILD=false
+```
+
+**Configuration Method (Azure Portal):**
+1. Navigate to: Azure Portal → TraccEms-Dev-Backend → Settings → Environment Variables
+2. Add/Update application settings:
+   - `SCM_DO_BUILD_DURING_DEPLOYMENT` = `false`
+   - `ENABLE_ORYX_BUILD` = `false`
+3. Save and restart App Service
+
+**Result:**
+- ✅ No more `oryx-manifest.toml` detection
+- ✅ Clean startup scripts (just `npm start`)
+- ✅ No tar.gz extraction attempts
+- ✅ Backend starts successfully without restart loops
+
+**Verification:**
+After configuration, Azure logs should show:
+- `Could not find build manifest file at '/home/site/wwwroot/oryx-manifest.toml'`
+- Clean startup script execution
+- Backend initializes and runs successfully
+
+**Workflow Cleanup:**
+The GitHub Actions workflow includes cleanup steps to remove tar.gz files and manifests before deployment, but the permanent fix is the App Service settings above.
 
 ---
 
