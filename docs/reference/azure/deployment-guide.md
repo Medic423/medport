@@ -1,5 +1,5 @@
 # Azure Deployment Guide
-**Last Updated:** January 13, 2026  
+**Last Updated:** January 14, 2026  
 **Status:** ✅ **COMPREHENSIVE REFERENCE** - All deployment knowledge in one place
 
 ---
@@ -7,11 +7,14 @@
 ## Table of Contents
 
 1. [Critical Rules](#critical-rules)
-2. [Node Modules Deployment Strategy](#node-modules-deployment-strategy)
-3. [Automatic Deployment Triggers](#automatic-deployment-triggers)
-4. [Deployment Workflow](#deployment-workflow)
-5. [Troubleshooting](#troubleshooting)
-6. [Quick Reference](#quick-reference)
+2. [Azure Oryx Build Detection Fix](#azure-oryx-build-detection-fix)
+3. [Production Deployment Guide](#production-deployment-guide)
+4. [Node Modules Deployment Strategy](#node-modules-deployment-strategy)
+5. [Automatic Deployment Triggers](#automatic-deployment-triggers)
+6. [Deployment Workflow](#deployment-workflow)
+7. [Database Migrations: When to Use pgAdmin](#database-migrations-when-to-use-pgadmin)
+8. [Troubleshooting](#troubleshooting)
+9. [Quick Reference](#quick-reference)
 
 ---
 
@@ -142,6 +145,289 @@ After configuration, Azure logs should show:
 
 **Workflow Cleanup:**
 The GitHub Actions workflow includes cleanup steps to remove tar.gz files and manifests before deployment, but the permanent fix is the App Service settings above.
+
+---
+
+## Production Deployment Guide
+
+### ✅ **PRODUCTION DEPLOYMENT COMPLETE** (January 14, 2026)
+
+**Status:** Production backend successfully deployed and running with complete database synchronization.
+
+### Production Environment Overview
+
+**Azure Resources:**
+- **Production Backend:** `TraccEms-Prod-Backend` (Resource Group: `TraccEms-Prod-USCentral`)
+- **Production Database:** `traccems-prod-pgsql` (Resource Group: `TraccEms-Prod-USCentral`)
+- **GitHub Workflow:** `.github/workflows/prod-be.yaml` (manual trigger via GitHub Actions UI)
+
+**Environment Isolation:**
+- ✅ Production deployments are **completely isolated** from dev-swa and local dev
+- ✅ Separate Azure resources, GitHub secrets, and workflow files
+- ✅ No changes to production affect dev-swa or local environments
+
+### Production Deployment Workflow
+
+#### Step 1: Database Comparison and Sync
+
+**Before deploying code, verify database schema alignment:**
+
+```bash
+cd backend
+node compare-database-structures.js
+```
+
+**What this does:**
+- Compares database schemas across local, dev-swa, and production
+- Identifies missing tables and column differences
+- Generates detailed comparison report
+
+**If database drift detected:**
+1. **Backup production database first** (CRITICAL):
+   ```bash
+   bash documentation/scripts/backup-production-database.sh
+   ```
+
+2. **Generate SQL sync script:**
+   ```bash
+   cd backend
+   npx prisma migrate diff \
+     --from-schema-datasource DATABASE_URL_PROD \
+     --to-schema-datamodel prisma/schema.prisma \
+     --script > production-database-sync.sql
+   ```
+
+3. **Review and refine SQL script:**
+   - Check `backend/production-database-sync.sql`
+   - Ensure data preservation logic is correct
+   - Verify `IF EXISTS` / `IF NOT EXISTS` clauses for safety
+
+4. **Execute SQL in pgAdmin 4:**
+   - Connect to production database in pgAdmin
+   - **⚠️ CRITICAL:** Verify you're connected to production (not dev-swa)
+   - Open Query Tool
+   - Execute `production-database-sync.sql`
+   - Verify all changes applied successfully
+
+**Reference:** See `backend/PGADMIN_EXECUTION_INSTRUCTIONS.md` for detailed pgAdmin execution guide.
+
+#### Step 2: Apply Oryx Fix to Production
+
+**Configure production App Service to disable Oryx build:**
+
+```bash
+az webapp config appsettings set \
+  --name TraccEms-Prod-Backend \
+  --resource-group TraccEms-Prod-USCentral \
+  --settings \
+    SCM_DO_BUILD_DURING_DEPLOYMENT=false \
+    ENABLE_ORYX_BUILD=false
+```
+
+**Verify settings:**
+```bash
+az webapp config appsettings list \
+  --name TraccEms-Prod-Backend \
+  --resource-group TraccEms-Prod-USCentral \
+  --query "[?name=='SCM_DO_BUILD_DURING_DEPLOYMENT' || name=='ENABLE_ORYX_BUILD']"
+```
+
+**Result:**
+- ✅ No Oryx build detection during deployment
+- ✅ Clean startup without tar.gz extraction attempts
+- ✅ Backend starts successfully
+
+#### Step 3: Enable Always On
+
+**Prevent App Service from going to sleep:**
+
+```bash
+az webapp config set \
+  --name TraccEms-Prod-Backend \
+  --resource-group TraccEms-Prod-USCentral \
+  --always-on true
+```
+
+**Why this matters:**
+- Without `alwaysOn`, Azure puts the app to sleep after inactivity
+- Causes automatic restarts when new requests arrive
+- Enabling `alwaysOn` keeps the app warm and prevents restart loops
+
+**Verify:**
+```bash
+az webapp show \
+  --name TraccEms-Prod-Backend \
+  --resource-group TraccEms-Prod-USCentral \
+  --query "{alwaysOn:siteConfig.alwaysOn, state:state}"
+```
+
+#### Step 4: Deploy to Production via GitHub Actions
+
+**Manual Trigger (Recommended):**
+1. Go to: https://github.com/Medic423/medport/actions
+2. Select: "production - Deploy Prod Backend"
+3. Click: "Run workflow"
+4. Branch: `develop`
+5. Click: "Run workflow"
+
+**What the workflow does:**
+1. Checks out `develop` branch
+2. Installs dependencies (`npm install`)
+3. Generates Prisma models (`npx prisma generate`)
+4. Runs migrations (`prisma migrate deploy` with `DATABASE_URL_PROD`)
+5. Builds application (`npm run build`)
+6. Deploys to `TraccEms-Prod-Backend`
+
+**Monitor deployment:**
+```bash
+# List recent runs
+gh run list --workflow="production - Deploy Prod Backend" --limit 5
+
+# Watch specific run (replace RUN_ID)
+gh run watch <RUN_ID>
+```
+
+#### Step 5: Post-Deployment Verification
+
+**1. Check App Service Status:**
+```bash
+az webapp show \
+  --name TraccEms-Prod-Backend \
+  --resource-group TraccEms-Prod-USCentral \
+  --query "{state:state, defaultHostName:defaultHostName}"
+```
+
+**2. Check Health Endpoint:**
+```bash
+curl https://traccems-prod-backend.azurewebsites.net/health
+```
+
+**Expected response:**
+```json
+{"status":"ok","timestamp":"2026-01-14T..."}
+```
+
+**3. Verify Database Alignment:**
+```bash
+cd backend
+node compare-database-structures.js
+```
+
+**Expected:** All three environments (local, dev-swa, production) should show identical schemas.
+
+**4. Check Log Stream:**
+```bash
+az webapp log tail \
+  --name TraccEms-Prod-Backend \
+  --resource-group TraccEms-Prod-USCentral
+```
+
+**Look for:**
+- ✅ Backend started successfully
+- ✅ No restart loops
+- ✅ No migration errors
+- ✅ Health endpoint responding
+
+### Production Database Sync Process (January 14, 2026)
+
+**What was done:**
+- Identified significant schema drift between dev-swa and production
+- Generated SQL sync script using `prisma migrate diff`
+- Refined SQL to handle complex migrations (snake_case → camelCase conversions)
+- Executed SQL via pgAdmin 4 (manual execution for safety)
+- Verified all 27 tables aligned between dev-swa and production
+
+**Key Files Created:**
+- `backend/production-database-sync.sql` - SQL script for schema synchronization
+- `backend/PGADMIN_EXECUTION_INSTRUCTIONS.md` - Detailed pgAdmin execution guide
+- `backend/compare-database-structures.js` - Database comparison tool
+
+**Lessons Learned:**
+- Automated `prisma migrate deploy` can report "up to date" even when schema drift exists
+- Manual SQL execution via pgAdmin provides more control for complex migrations
+- Always backup production database before schema changes
+- Verify database connection in pgAdmin (multiple verification methods)
+
+### Production Backup Strategy
+
+**Before any production changes, create comprehensive backup:**
+
+```bash
+bash documentation/scripts/backup-production-complete.sh /Volumes/Acasis/
+```
+
+**What this backs up:**
+- ✅ Complete project source code
+- ✅ Local development database (if exists)
+- ✅ Azure dev-swa database (`traccems-dev-pgsql`)
+- ✅ Azure production database (`traccems-prod-pgsql`) - **CRITICAL**
+- ✅ All environment files and configurations
+- ✅ Copies to both external drive and iCloud Drive
+
+**Reference:** See `docs/reference/backup/BACKUP_STRATEGY.md` for complete backup strategy.
+
+### Production Deployment Checklist
+
+**Before Deployment:**
+- [ ] Database comparison shows no drift (or drift resolved)
+- [ ] Production database backed up
+- [ ] Oryx fix applied to production App Service
+- [ ] Always On enabled
+- [ ] GitHub Actions workflow ready (`prod-be.yaml`)
+
+**During Deployment:**
+- [ ] Monitor GitHub Actions workflow
+- [ ] Watch for migration errors
+- [ ] Verify deployment completes successfully
+
+**After Deployment:**
+- [ ] Verify App Service is running
+- [ ] Check health endpoint responds
+- [ ] Verify database alignment (compare-database-structures.js)
+- [ ] Check log stream for errors
+- [ ] Create milestone backup (backup-production-complete.sh)
+
+### Troubleshooting Production Deployments
+
+#### Issue: App Service Restarting Automatically
+
+**Symptoms:**
+- App Service restarts without user intervention
+- Log stream shows repeated startup sequences
+
+**Solution:**
+```bash
+# Enable Always On
+az webapp config set \
+  --name TraccEms-Prod-Backend \
+  --resource-group TraccEms-Prod-USCentral \
+  --always-on true
+```
+
+#### Issue: Database Schema Drift
+
+**Symptoms:**
+- Features work in dev-swa but fail in production
+- Missing tables/columns in production
+- Migration errors during deployment
+
+**Solution:**
+1. Run `compare-database-structures.js` to identify drift
+2. Generate SQL sync script with `prisma migrate diff`
+3. Execute SQL in pgAdmin 4 (see `PGADMIN_EXECUTION_INSTRUCTIONS.md`)
+4. Verify schema alignment
+
+#### Issue: Migration Errors During Deployment
+
+**Symptoms:**
+- GitHub Actions workflow fails at migration step
+- "Column already exists" or "Migration already applied" errors
+
+**Solution:**
+- Check if migration partially applied
+- Use pgAdmin to apply remaining changes manually
+- Update `_prisma_migrations` table if needed
+- Retry deployment
 
 ---
 
@@ -1066,5 +1352,11 @@ VALUES ('20250109120000_add_status_column', 'checksum', NOW(), 1);
 ---
 
 **Status:** ✅ Comprehensive reference - All deployment knowledge in one place  
-**Last Updated:** January 9, 2026  
+**Last Updated:** January 14, 2026  
 **Location:** `docs/reference/azure/deployment-guide.md`
+
+**Recent Updates:**
+- January 14, 2026 - Added comprehensive Production Deployment Guide section
+- January 14, 2026 - Documented production database sync process via pgAdmin
+- January 14, 2026 - Documented Oryx fix and Always On configuration for production
+- January 14, 2026 - Added production deployment checklist and troubleshooting
