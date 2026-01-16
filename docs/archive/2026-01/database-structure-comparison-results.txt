@@ -1,0 +1,158 @@
+
+📊 Connecting to local...
+   ✅ Found 27 tables
+
+📊 Connecting to devSWA...
+   ✅ Found 27 tables
+
+📊 Connecting to production...
+   ✅ Found 22 tables
+
+
+🔍 COMPARISON RESULTS
+
+================================================================================
+
+📋 TABLE COMPARISON:
+--------------------------------------------------------------------------------
+Table Name                              Local Dev      Dev-SWA        Production
+--------------------------------------------------------------------------------
+_prisma_migrations                      ✅              ✅              ✅
+agencies                                ❌              ❌              ✅
+agency_responses                        ✅              ✅              ✅
+backhaul_opportunities                  ✅              ✅              ❌
+center_users                            ✅              ✅              ✅
+cost_centers                            ✅              ✅              ✅
+dropdown_categories                     ✅              ✅              ✅
+dropdown_category_defaults              ✅              ✅              ✅
+dropdown_options                        ✅              ✅              ✅
+ems_agencies                            ✅              ✅              ✅
+ems_users                               ✅              ✅              ✅
+facilities                              ✅              ✅              ✅
+healthcare_agency_preferences           ✅              ✅              ✅
+healthcare_destinations                 ✅              ✅              ✅
+healthcare_locations                    ✅              ✅              ✅
+healthcare_users                        ✅              ✅              ✅
+hospitals                               ✅              ✅              ✅
+notification_logs                       ✅              ✅              ❌
+notification_preferences                ✅              ✅              ❌
+pickup_locations                        ✅              ✅              ✅
+pricing_models                          ✅              ✅              ❌
+route_optimization_settings             ✅              ✅              ✅
+system_analytics                        ✅              ✅              ✅
+transport_requests                      ✅              ✅              ✅
+trip_cost_breakdowns                    ✅              ✅              ✅
+trips                                   ✅              ✅              ✅
+unit_analytics                          ✅              ✅              ❌
+units                                   ✅              ✅              ❌
+
+
+⚠️  MISSING TABLES:
+--------------------------------------------------------------------------------
+
+❌ Missing in Local Dev (1):
+   - agencies
+
+❌ Missing in Dev-SWA (1):
+   - agencies
+
+❌ Missing in Production (6):
+   - backhaul_opportunities
+   - notification_logs
+   - notification_preferences
+   - pricing_models
+   - unit_analytics
+   - units
+
+
+🔍 COLUMN STRUCTURE COMPARISON:
+--------------------------------------------------------------------------------
+
+⚠️  Found 5 table(s) with column differences:
+
+
+📊 Table: facilities
+   Column Name                Local Dev      Dev-SWA        Production
+   ---------------------------------------------------------------------------
+   approvedAt                    ✅              ✅              ❌
+   approvedBy                    ✅              ✅              ❌
+   capabilities                  ✅              ✅              ❌
+   coordinates                   ✅              ✅              ❌
+   latitude                      ✅              ✅              ❌
+   longitude                     ✅              ✅              ❌
+   operatingHours                ✅              ✅              ❌
+   requiresReview                ✅              ✅              ❌
+
+📊 Table: healthcare_destinations
+   Column Name                Local Dev      Dev-SWA        Production
+   ---------------------------------------------------------------------------
+   contactName                   ✅              ✅              ❌
+   createdAt                     ✅              ✅              ❌
+   healthcareUserId              ✅              ✅              ❌
+   isActive                      ✅              ✅              ❌
+   updatedAt                     ✅              ✅              ❌
+   zipCode                       ✅              ✅              ❌
+   healthcare_user_id            ❌              ❌              ✅
+   zip_code                      ❌              ❌              ✅
+   contact_name                  ❌              ❌              ✅
+   is_active                     ❌              ❌              ✅
+   created_at                    ❌              ❌              ✅
+   updated_at                    ❌              ❌              ✅
+
+📊 Table: system_analytics
+   Column Name                Local Dev      Dev-SWA        Production
+   ---------------------------------------------------------------------------
+   createdAt                     ✅              ✅              ❌
+
+📊 Table: transport_requests
+   Column Name                Local Dev      Dev-SWA        Production
+   ---------------------------------------------------------------------------
+   transferRequestTime           ❌              ❌              ✅
+   transferAcceptedTime          ❌              ❌              ✅
+   emsArrivalTime                ❌              ❌              ✅
+   emsDepartureTime              ❌              ❌              ✅
+   readyStart                    ❌              ❌              ✅
+   readyEnd                      ❌              ❌              ✅
+
+📊 Table: trips
+   Column Name                Local Dev      Dev-SWA        Production
+   ---------------------------------------------------------------------------
+   actualTripTimeMinutes         ✅              ✅              ❌
+   backhaulOpportunity           ✅              ✅              ❌
+   completionTimeMinutes         ✅              ✅              ❌
+   customerSatisfaction          ✅              ✅              ❌
+   deadheadMiles                 ✅              ✅              ❌
+   destinationLatitude           ✅              ✅              ❌
+   destinationLongitude          ✅              ✅              ❌
+   distanceMiles                 ✅              ✅              ❌
+   efficiency                    ✅              ✅              ❌
+   estimatedTripTimeMinutes      ✅              ✅              ❌
+   insuranceCompany              ✅              ✅              ❌
+   insurancePayRate              ✅              ✅              ❌
+   loadedMiles                   ✅              ✅              ❌
+   maxResponses                  ✅              ✅              ❌
+   originLatitude                ✅              ✅              ❌
+   originLongitude               ✅              ✅              ❌
+   perMileRate                   ✅              ✅              ❌
+   performanceScore              ✅              ✅              ❌
+   pickupLocationId              ✅              ✅              ❌
+   requestTimestamp              ✅              ✅              ❌
+   responseDeadline              ✅              ✅              ❌
+   responseStatus                ✅              ✅              ❌
+   responseTimeMinutes           ✅              ✅              ❌
+   revenuePerHour                ✅              ✅              ❌
+   selectionMode                 ✅              ✅              ❌
+   tripCost                      ✅              ✅              ❌
+
+
+📊 SUMMARY:
+================================================================================
+Local Dev:    27 tables
+Dev-SWA:      27 tables
+Production:   22 tables
+Total unique: 28 tables
+
+⚠️  DATABASES HAVE DIFFERENCES - See details above
+
+✅ Comparison complete!
+

@@ -71,36 +71,49 @@ const Agencies: React.FC = () => {
   const loadAgencies = async () => {
     try {
       setLoading(true);
+      setError(null); // Clear previous errors
       console.log('TCC_DEBUG: Agencies.loadAgencies(): calling agenciesAPI.getAll');
       const response = await agenciesAPI.getAll();
       console.log('TCC_DEBUG: Agencies.loadAgencies(): response status', response.status);
       console.log('TCC_DEBUG: Agencies.loadAgencies(): response data', response.data);
-      if (response.data.success) {
-        // Transform the data to match the expected structure
-        const transformedAgencies = response.data.data.map((agency: any) => ({
-          ...agency,
-          // Data comes directly from the database, not nested under contactInfo
-          contactName: agency.contactName || 'N/A',
-          phone: agency.phone || 'N/A',
-          email: agency.email || 'N/A',
-          address: agency.address || 'N/A',
-          city: agency.city || 'N/A',
-          state: agency.state || 'N/A',
-          zipCode: agency.zipCode || 'N/A',
-          capabilities: agency.capabilities || [],
-          serviceArea: agency.serviceArea || [],
-          operatingHours: agency.operatingHours || null,
-          pricingStructure: agency.pricingStructure || null,
-          status: agency.status || 'ACTIVE',
-        }));
-        console.log('TCC_DEBUG: Agencies.loadAgencies(): transformed count', transformedAgencies.length);
-        setAgencies(transformedAgencies);
+      
+      if (response.data && response.data.success) {
+        // Check if data exists and is an array
+        if (Array.isArray(response.data.data)) {
+          // Transform the data to match the expected structure
+          const transformedAgencies = response.data.data.map((agency: any) => ({
+            ...agency,
+            // Data comes directly from the database, not nested under contactInfo
+            contactName: agency.contactName || 'N/A',
+            phone: agency.phone || 'N/A',
+            email: agency.email || 'N/A',
+            address: agency.address || 'N/A',
+            city: agency.city || 'N/A',
+            state: agency.state || 'N/A',
+            zipCode: agency.zipCode || 'N/A',
+            capabilities: agency.capabilities || [],
+            serviceArea: agency.serviceArea || [],
+            operatingHours: agency.operatingHours || null,
+            pricingStructure: agency.pricingStructure || null,
+            status: agency.status || 'ACTIVE',
+          }));
+          console.log('TCC_DEBUG: Agencies.loadAgencies(): transformed count', transformedAgencies.length);
+          setAgencies(transformedAgencies);
+        } else {
+          console.error('TCC_DEBUG: Agencies.loadAgencies(): response.data.data is not an array', response.data.data);
+          setError(`Failed to load agencies: Invalid response format. Expected array, got ${typeof response.data.data}`);
+        }
       } else {
-        setError('Failed to load agencies');
+        const errorMsg = response.data?.error || response.data?.details || 'Unknown error';
+        console.error('TCC_DEBUG: Agencies.loadAgencies(): API returned success=false', response.data);
+        setError(`Failed to load agencies: ${errorMsg}`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('TCC_DEBUG: Agencies.loadAgencies(): error', err);
-      setError('Failed to load agencies');
+      console.error('TCC_DEBUG: Error response:', err.response?.data);
+      console.error('TCC_DEBUG: Error status:', err.response?.status);
+      const errorMsg = err.response?.data?.error || err.response?.data?.details || err.message || 'Unknown error';
+      setError(`Failed to load agencies: ${errorMsg}`);
     } finally {
       setLoading(false);
     }

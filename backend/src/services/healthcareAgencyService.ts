@@ -363,53 +363,70 @@ export class HealthcareAgencyService {
     healthcareUserId: string,
     radiusMiles?: number | null
   ): Promise<any[]> {
-    const prisma = databaseManager.getPrismaClient();
-    const { DistanceService } = await import('./distanceService');
+    try {
+      const prisma = databaseManager.getPrismaClient();
+      
+      // Import DistanceService with better error handling
+      let DistanceService;
+      try {
+        const distanceModule = await import('./distanceService');
+        DistanceService = distanceModule.DistanceService;
+      } catch (importError: any) {
+        console.error('Failed to import DistanceService:', importError);
+        throw new Error(`Distance calculation service unavailable: ${importError.message}`);
+      }
 
-    // Get healthcare user's primary location (or first active location)
-    const primaryLocation = await prisma.healthcareLocation.findFirst({
-      where: {
-        healthcareUserId: healthcareUserId,
-        isActive: true,
-        OR: [
-          { isPrimary: true },
-          { isPrimary: false } // If no primary, get first active
+      // Get healthcare user's primary location (or first active location)
+      const primaryLocation = await prisma.healthcareLocation.findFirst({
+        where: {
+          healthcareUserId: healthcareUserId,
+          isActive: true,
+          OR: [
+            { isPrimary: true },
+            { isPrimary: false } // If no primary, get first active
+          ]
+        },
+        orderBy: [
+          { isPrimary: 'desc' }, // Primary first
+          { createdAt: 'asc' } // Then oldest
         ]
-      },
-      orderBy: [
-        { isPrimary: 'desc' }, // Primary first
-        { createdAt: 'asc' } // Then oldest
-      ]
-    });
+      });
 
-    // Get all agencies: both registered agencies (with EMS accounts) and user-added agencies
-    // Registered agencies have addedBy = null (they have EMS user accounts)
-    // User-added agencies have addedBy = healthcareUserId (manually added by healthcare user)
-    const agencies = await prisma.eMSAgency.findMany({
-      where: {
-        OR: [
-          { addedBy: null }, // Registered agencies with EMS accounts
-          { addedBy: healthcareUserId } // Agencies manually added by this healthcare user
-        ],
-        isActive: true,
-      },
-      include: {
-        healthcarePreferences: {
-          where: {
-            healthcareUserId: healthcareUserId,
-          },
-          select: {
-            isPreferred: true,
+      if (!primaryLocation) {
+        console.warn(`No healthcare location found for user ${healthcareUserId} - distance calculation will be skipped`);
+      }
+
+      // Get all agencies: both registered agencies (with EMS accounts) and user-added agencies
+      // Registered agencies have addedBy = null (they have EMS user accounts)
+      // User-added agencies have addedBy = healthcareUserId (manually added by healthcare user)
+      const agencies = await prisma.eMSAgency.findMany({
+        where: {
+          OR: [
+            { addedBy: null }, // Registered agencies with EMS accounts
+            { addedBy: healthcareUserId } // Agencies manually added by this healthcare user
+          ],
+          isActive: true,
+        },
+        include: {
+          healthcarePreferences: {
+            where: {
+              healthcareUserId: healthcareUserId,
+            },
+            select: {
+              isPreferred: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    // Filter to only available agencies, calculate distances, and transform
-    const availableAgenciesWithDistance = agencies
+      console.log(`Found ${agencies.length} total agencies for healthcare user ${healthcareUserId}`);
+
+      // Filter to only available agencies, calculate distances, and transform
+      const availableAgenciesWithDistance = agencies
       .filter((agency: any) => {
         // Check if agency has availabilityStatus and isAvailable is true
         if (!agency.availabilityStatus) {
+          console.debug(`Agency ${agency.id} (${agency.name}) has no availabilityStatus`);
           return false;
         }
         
@@ -418,9 +435,13 @@ export class HealthcareAgencyService {
             ? JSON.parse(agency.availabilityStatus)
             : agency.availabilityStatus;
           
-          return status.isAvailable === true;
+          const isAvailable = status.isAvailable === true;
+          if (isAvailable) {
+            console.debug(`Agency ${agency.id} (${agency.name}) is marked as available`);
+          }
+          return isAvailable;
         } catch (error) {
-          console.error('Error parsing availabilityStatus:', error);
+          console.error(`Error parsing availabilityStatus for agency ${agency.id}:`, error);
           return false;
         }
       })
@@ -469,28 +490,35 @@ export class HealthcareAgencyService {
         return agency.distance <= radiusMiles;
       });
 
-    // Sort by preferred status first, then by distance, then alphabetically
-    availableAgenciesWithDistance.sort((a: any, b: any) => {
-      // Preferred agencies first
-      if (a.isPreferred && !b.isPreferred) return -1;
-      if (!a.isPreferred && b.isPreferred) return 1;
-      
-      // Then by distance (closest first)
-      if (a.distance !== null && b.distance !== null) {
-        if (a.distance !== b.distance) {
-          return a.distance - b.distance;
+      // Sort by preferred status first, then by distance, then alphabetically
+      availableAgenciesWithDistance.sort((a: any, b: any) => {
+        // Preferred agencies first
+        if (a.isPreferred && !b.isPreferred) return -1;
+        if (!a.isPreferred && b.isPreferred) return 1;
+        
+        // Then by distance (closest first)
+        if (a.distance !== null && b.distance !== null) {
+          if (a.distance !== b.distance) {
+            return a.distance - b.distance;
+          }
+        } else if (a.distance !== null && b.distance === null) {
+          return -1; // Agencies with distance come before those without
+        } else if (a.distance === null && b.distance !== null) {
+          return 1;
         }
-      } else if (a.distance !== null && b.distance === null) {
-        return -1; // Agencies with distance come before those without
-      } else if (a.distance === null && b.distance !== null) {
-        return 1;
-      }
-      
-      // Finally alphabetically by name
-      return a.name.localeCompare(b.name);
-    });
+        
+        // Finally alphabetically by name
+        return a.name.localeCompare(b.name);
+      });
 
-    return availableAgenciesWithDistance;
+      console.log(`Returning ${availableAgenciesWithDistance.length} available agencies`);
+      return availableAgenciesWithDistance;
+      
+    } catch (error: any) {
+      console.error('Error in getAvailableAgenciesForHealthcareUser:', error);
+      console.error('Error stack:', error.stack);
+      throw error; // Re-throw to be caught by route handler
+    }
   }
 }
 

@@ -212,8 +212,15 @@ const HealthcareDestinations: React.FC<HealthcareDestinationsProps> = ({ user })
         setAddError(null);
         console.log('TCC_DEBUG: Coordinates set successfully:', latitude, longitude);
       } else {
+        // Handle success: false response (improved backend error handling)
         const errorMsg = response.data.error || 'Could not find coordinates for this address. You can still save the destination and add coordinates manually.';
         setAddError(errorMsg);
+        // Clear coordinates on failure
+        setAddFormData(prev => ({
+          ...prev,
+          latitude: '',
+          longitude: ''
+        }));
       }
     } catch (err: any) {
       console.error('Geocoding error:', err);
@@ -223,22 +230,36 @@ const HealthcareDestinations: React.FC<HealthcareDestinationsProps> = ({ user })
       
       if (err.message && err.message.includes('timeout')) {
         errorMessage = 'Geocoding request timed out. You can still save the destination and add coordinates manually.';
-      } else if (err.response?.data?.error) {
-        const backendError = err.response.data.error;
-        if (backendError.includes('HTTP 429') || backendError.includes('Too Many Requests')) {
-          errorMessage = 'Too many geocoding requests. Please try again later or enter coordinates manually.';
-        } else if (backendError.includes('HTTP 503') || backendError.includes('Service Unavailable')) {
-          errorMessage = 'Geocoding service is temporarily unavailable. Please try again later or enter coordinates manually.';
-        } else if (backendError.includes('No results found') || backendError.includes('Could not find coordinates')) {
-          errorMessage = 'Could not find coordinates for this address. You can still save the destination and add coordinates manually.';
-        } else {
-          errorMessage = backendError + ' You can still save the destination and add coordinates manually.';
+      } else if (err.response?.data) {
+        // Handle both success: false responses and error responses
+        const responseData = err.response.data;
+        if (responseData.success === false && responseData.error) {
+          // Backend returned 200 with success: false (our improved error handling)
+          errorMessage = responseData.error;
+        } else if (responseData.error) {
+          // Backend returned error in different format
+          const backendError = responseData.error;
+          if (backendError.includes('HTTP 429') || backendError.includes('Too Many Requests')) {
+            errorMessage = 'Too many geocoding requests. Please try again later or enter coordinates manually.';
+          } else if (backendError.includes('HTTP 503') || backendError.includes('Service Unavailable')) {
+            errorMessage = 'Geocoding service is temporarily unavailable. Please try again later or enter coordinates manually.';
+          } else if (backendError.includes('No results found') || backendError.includes('Could not find coordinates')) {
+            errorMessage = 'Could not find coordinates for this address. You can still save the destination and add coordinates manually.';
+          } else {
+            errorMessage = backendError + ' You can still save the destination and add coordinates manually.';
+          }
         }
       } else if (err.message) {
         errorMessage = err.message + ' You can still save the destination and add coordinates manually.';
       }
       
       setAddError(errorMessage);
+      // Clear coordinates on error
+      setAddFormData(prev => ({
+        ...prev,
+        latitude: '',
+        longitude: ''
+      }));
     } finally {
       setGeocoding(false);
     }
@@ -250,19 +271,55 @@ const HealthcareDestinations: React.FC<HealthcareDestinationsProps> = ({ user })
     setAddError(null);
 
     try {
-      const response = await healthcareDestinationsAPI.create({
-        ...addFormData,
-      });
+      // Clean up form data: remove empty strings for optional fields, convert empty lat/lng to null
+      const cleanedData: any = {
+        name: addFormData.name,
+        type: addFormData.type,
+        address: addFormData.address,
+        city: addFormData.city,
+        state: addFormData.state,
+        zipCode: addFormData.zipCode,
+        // Only include optional fields if they have values
+        ...(addFormData.contactName && { contactName: addFormData.contactName }),
+        ...(addFormData.phone && { phone: addFormData.phone }),
+        ...(addFormData.email && { email: addFormData.email }),
+        ...(addFormData.notes && { notes: addFormData.notes }),
+        // Convert empty strings to null for coordinates (or omit if empty)
+        ...(addFormData.latitude && addFormData.latitude.trim() !== '' 
+          ? { latitude: addFormData.latitude } 
+          : {}),
+        ...(addFormData.longitude && addFormData.longitude.trim() !== '' 
+          ? { longitude: addFormData.longitude } 
+          : {}),
+      };
+
+      const response = await healthcareDestinationsAPI.create(cleanedData);
       
       if (response.data.success) {
         await loadDestinations();
         setShowAddModal(false);
+        // Reset form
+        setAddFormData({
+          name: '',
+          type: '',
+          contactName: '',
+          phone: '',
+          email: '',
+          address: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          latitude: '',
+          longitude: '',
+          notes: '',
+        });
       } else {
         setAddError(response.data.error || 'Failed to create destination');
       }
     } catch (error: any) {
       console.error('Error creating destination:', error);
-      setAddError(error.response?.data?.error || 'Failed to create destination');
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to create destination';
+      setAddError(errorMessage);
     } finally {
       setAddLoading(false);
     }

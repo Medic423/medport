@@ -267,10 +267,21 @@ export class TripService {
           console.log('TCC_DEBUG: Found', acceptedTripIds.length, 'trips accepted by agency');
           
           // Build agency filter - don't override existing OR from healthcare user filter
+          // EMS users should see:
+          // 1. PENDING trips (available for acceptance)
+          // 2. Trips they've accepted (via AgencyResponse)
+          // 3. Completed trips assigned to this agency (have emsCompletionTimestamp and assignedAgencyId matches)
           const agencyFilter: any[] = [{ status: 'PENDING' }];
           if (acceptedTripIds.length > 0) {
             agencyFilter.push({ id: { in: acceptedTripIds } });
           }
+          // Include completed trips assigned to this agency
+          agencyFilter.push({ 
+            AND: [
+              { emsCompletionTimestamp: { not: null } },
+              { assignedAgencyId: filters.agencyId }
+            ]
+          });
           
           // If we already have an OR condition (from healthcare user filter), combine them
           if (where.OR) {

@@ -401,13 +401,18 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
 
       // Load completed trips separately
       // Filter by EMS completion timestamp instead of status
+      // Backend already filters by agencyId for EMS users, so we just filter by completion timestamp
       const completedResponse = await api.get('/api/trips');
       
       if (completedResponse.data) {
         const completedData = completedResponse.data;
         if (completedData.success && completedData.data) {
           const transformedCompleted = completedData.data
-            .filter((trip: any) => trip.emsCompletionTimestamp !== null)
+            .filter((trip: any) => {
+              // Filter by EMS completion timestamp
+              // Backend already filters by agencyId, so we just need to check for completion
+              return trip.emsCompletionTimestamp !== null;
+            })
             .map((trip: any) => ({
               id: trip.id,
               patientId: trip.patientId,
@@ -426,6 +431,7 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
               emsCompletionTimestampISO: trip.emsCompletionTimestamp || null,
               scheduledTime: trip.scheduledTime
             }));
+          
           setCompletedTrips(transformedCompleted);
         }
       }
@@ -810,8 +816,11 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
                 <button
                   key={tab.id}
                   onClick={() => {
-                    console.log('🔍 EMSDashboard: Tab clicked:', tab.id);
                     setActiveTab(tab.id);
+                    // Reload trips when switching to completed tab to ensure fresh data
+                    if (tab.id === 'completed') {
+                      loadTrips();
+                    }
                   }}
                   className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === tab.id

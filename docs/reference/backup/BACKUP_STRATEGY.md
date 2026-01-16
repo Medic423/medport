@@ -237,6 +237,37 @@ This runs:
 2. Critical scripts backup to iCloud
 3. Full backup copy to iCloud Drive
 
+### **Run Complete Production Backup (All Three Environments):**
+```bash
+bash documentation/scripts/backup-production-complete.sh /Volumes/Acasis/
+```
+**Recommended for production deployments and critical milestones**
+
+This comprehensive script backs up **all three environments**:
+1. **Local Development Database** (`medport_ems`) - if exists
+2. **Azure Dev-SWA Database** (`traccems-dev-pgsql`) - REQUIRED
+3. **Azure Production Database** (`traccems-prod-pgsql`) - REQUIRED
+
+**What it does:**
+- Verifies Git status (warns if uncommitted changes)
+- Organizes project and external documentation
+- Creates enhanced backup to external drive (includes dev database)
+- Creates separate production database backup (most critical)
+- Backs up critical scripts to iCloud
+- Copies full backup to iCloud Drive with progress tracking
+- Creates backup manifest and symlinks
+- Ensures maximum safety: Local + Off-site backup complete
+
+**When to use:**
+- Before major production deployments
+- After successful production deployments (milestone backups)
+- Before significant database schema changes
+- Weekly production backups (recommended)
+
+**Output locations:**
+- External Drive: `/Volumes/Acasis/tcc-backups/tcc-backup-YYYYMMDD_HHMMSS/`
+- iCloud Drive: `~/Library/Mobile Documents/com~apple~CloudDocs/TCC-Backups/tcc-backup-YYYYMMDD_HHMMSS/`
+
 ### **Run Both Backups Together (Legacy):**
 ```bash
 ./scripts/backup-run-all.sh /Volumes/Acasis/
@@ -451,5 +482,6 @@ psql -d medport_ems_restored -f traccems-dev-pgsql.sql
 **Updated:** 
 - December 26, 2025 - Added Azure database backup support with PostgreSQL 17 requirement
 - January 7, 2026 - Added Azure production database backup as REQUIRED (previously optional)
+- January 14, 2026 - Added `backup-production-complete.sh` script for comprehensive three-environment backups (local, dev-swa, production)
 
 Your strategic thinking about this backup architecture was spot-on! 🎯

@@ -49,11 +49,18 @@ router.get('/available', async (req: AuthenticatedRequest, res) => {
       count: agencies.length,
       radiusMiles: radiusMiles,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get available healthcare agencies error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      userId: req.user?.id,
+      userType: req.user?.userType
+    });
     res.status(500).json({
       success: false,
-      error: 'Failed to retrieve available agencies',
+      error: error.message || 'Failed to retrieve available agencies',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });

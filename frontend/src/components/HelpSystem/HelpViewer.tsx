@@ -7,9 +7,10 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 interface HelpViewerProps {
   content: string;
   className?: string;
+  onTopicChange?: (topic: string) => void; // Callback when user clicks an internal help link
 }
 
-const HelpViewer: React.FC<HelpViewerProps> = ({ content, className = '' }) => {
+const HelpViewer: React.FC<HelpViewerProps> = ({ content, className = '', onTopicChange }) => {
   return (
     <div className={`help-viewer prose prose-lg max-w-none ${className}`}>
       <ReactMarkdown
@@ -82,16 +83,31 @@ const HelpViewer: React.FC<HelpViewerProps> = ({ content, className = '' }) => {
             <li {...props} className="ml-4 mb-1" />
           ),
           
-          // Custom link styling
+          // Custom link styling - intercept internal help file links
           a: ({ node, ...props }) => {
             const href = props.href || '';
             const isExternal = href.startsWith('http://') || href.startsWith('https://');
+            
+            // Check if this is an internal help file link (starts with ./ and ends with .md)
+            const isInternalHelpLink = href.startsWith('./') && href.endsWith('.md');
+            
+            const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+              if (isInternalHelpLink && onTopicChange) {
+                e.preventDefault();
+                // Extract filename from path (e.g., ./helpfile01_create-request.md -> helpfile01_create-request)
+                const filename = href.replace('./', '').replace('.md', '');
+                console.log('Internal help link clicked:', href, '-> topic:', filename);
+                onTopicChange(filename);
+              }
+              // External links and non-help links work normally
+            };
             
             return (
               <a
                 {...props}
                 href={href}
-                className="text-blue-600 hover:text-blue-800 underline"
+                onClick={handleClick}
+                className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
                 target={isExternal ? '_blank' : undefined}
                 rel={isExternal ? 'noopener noreferrer' : undefined}
               />

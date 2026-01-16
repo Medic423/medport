@@ -35,6 +35,7 @@ router.get('/test', async (req, res) => {
  */
 router.get('/', async (req, res) => {
   try {
+    console.log('TCC_DEBUG: GET /api/tcc/agencies called');
     const filters = {
       name: req.query.name as string,
       city: req.query.city as string,
@@ -45,7 +46,9 @@ router.get('/', async (req, res) => {
       limit: req.query.limit ? parseInt(req.query.limit as string) : 50
     };
 
+    console.log('TCC_DEBUG: Filters:', JSON.stringify(filters, null, 2));
     const result = await agencyService.getAgencies(filters);
+    console.log('TCC_DEBUG: getAgencies result - count:', result.agencies?.length || 0, 'total:', result.total);
 
     res.json({
       success: true,
@@ -59,10 +62,16 @@ router.get('/', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Get agencies error:', error);
+    console.error('TCC_DEBUG: Get agencies error:', error);
+    console.error('TCC_DEBUG: Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined
+    });
     res.status(500).json({
       success: false,
-      error: 'Failed to retrieve agencies'
+      error: 'Failed to retrieve agencies',
+      details: process.env.NODE_ENV !== 'production' ? (error instanceof Error ? error.message : String(error)) : undefined
     });
   }
 });
