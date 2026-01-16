@@ -14,6 +14,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, userType, topic 
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [currentTopic, setCurrentTopic] = useState<string | undefined>(topic);
 
   // Map user types to directory names
   const userTypeDir: Record<string, string> = {
@@ -58,6 +59,11 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, userType, topic 
     return topicMap[topic] || topic;
   };
 
+  // Update currentTopic when topic prop changes
+  useEffect(() => {
+    setCurrentTopic(topic);
+  }, [topic]);
+
   // Load help content when modal opens or topic changes
   useEffect(() => {
     if (!isOpen) return;
@@ -68,7 +74,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, userType, topic 
       
       try {
         const dir = userTypeDir[userType] || 'healthcare';
-        const fileName = getHelpFileName(topic);
+        const fileName = getHelpFileName(currentTopic);
         
         // Load from public/help/ directory (served as static assets)
         const filePath = `/help/${dir}/${fileName}.md`;
@@ -105,7 +111,14 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, userType, topic 
     };
 
     loadHelpContent();
-  }, [isOpen, userType, topic]);
+  }, [isOpen, userType, currentTopic]);
+
+  // Handle topic change from internal links
+  const handleTopicChange = (newTopic: string) => {
+    console.log('HelpModal: Topic changed to:', newTopic);
+    setCurrentTopic(newTopic);
+    setSearchQuery(''); // Clear search when navigating to new topic
+  };
 
   // Handle search (simple text search within content)
   const filteredContent = searchQuery
@@ -135,9 +148,9 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, userType, topic 
               <h2 className="text-xl font-semibold text-gray-900">
                 Help & Documentation
               </h2>
-              {topic && (
+              {currentTopic && currentTopic !== 'index' && (
                 <span className="text-sm text-gray-500">
-                  ({topic.replace(/-/g, ' ')})
+                  ({currentTopic.replace(/-/g, ' ').replace(/helpfile\d+_/g, '')})
                 </span>
               )}
             </div>
@@ -179,7 +192,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, userType, topic 
                 <p className="text-red-600 text-sm mt-1">{error}</p>
               </div>
             ) : (
-              <HelpViewer content={filteredContent} />
+              <HelpViewer content={filteredContent} onTopicChange={handleTopicChange} />
             )}
           </div>
 
