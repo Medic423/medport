@@ -100,6 +100,80 @@ The `HelpModal` component automatically maps topics to file names:
 
 ---
 
+## Updating Existing Help Files
+
+### ⚠️ Important: Copy Changes to Public Directory
+
+**When you edit files in the source location, you MUST copy them to the public directory for changes to appear in the application.**
+
+### Workflow for Editing Help Files
+
+1. **Edit the source file:**
+   ```
+   frontend/src/help/healthcare/helpfile01_create-request.md
+   ```
+   - This is your editing/source location
+   - Make all changes here
+
+2. **Copy to public directory:**
+   ```bash
+   # Copy single file
+   cp frontend/src/help/healthcare/helpfile01_create-request.md frontend/public/help/healthcare/helpfile01_create-request.md
+   
+   # Or copy all healthcare help files at once
+   cp frontend/src/help/healthcare/*.md frontend/public/help/healthcare/
+   ```
+
+3. **Test your changes:**
+   - Refresh the application
+   - Open the Help modal
+   - Verify your changes appear
+
+### Why Two Locations?
+
+- **`frontend/src/help/`** - Source/editing location (version controlled, easy to edit)
+- **`frontend/public/help/`** - Runtime location (files served by the application)
+
+The help system loads files from `/help/{userType}/{filename}.md` at runtime, which maps to the `public/help/` directory. Files in `src/help/` are not served directly - they're your source files.
+
+### Quick Copy Commands
+
+**Copy single file:**
+```bash
+cd /Users/scooper/Code/tcc-new-project
+cp frontend/src/help/healthcare/helpfile01_create-request.md frontend/public/help/healthcare/helpfile01_create-request.md
+```
+
+**Copy all files for a user type:**
+```bash
+cp frontend/src/help/healthcare/*.md frontend/public/help/healthcare/
+cp frontend/src/help/ems/*.md frontend/public/help/ems/
+cp frontend/src/help/tcc-admin/*.md frontend/public/help/tcc-admin/
+```
+
+**Copy all help files (all user types):**
+```bash
+cp -r frontend/src/help/* frontend/public/help/
+```
+
+### Remember to Commit Both Locations
+
+When committing changes:
+- Commit the source file (`src/help/`)
+- Commit the public file (`public/help/`)
+- Both should be in sync
+
+### Future Enhancement (Optional)
+
+You could automate this process with:
+- A build script that copies help files during the build process
+- A file watcher that auto-copies on save
+- A pre-commit hook that ensures files are synced
+
+For now, manual copying is required after each edit.
+
+---
+
 ## Using Help in Components
 
 ### Basic Example
