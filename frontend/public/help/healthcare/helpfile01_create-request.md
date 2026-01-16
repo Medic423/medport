@@ -192,7 +192,7 @@ You have three options for displaying the agencies to dispatch trips to:
 
 ## Related Topics
 
-- [Transport Requests](./transport-requests.md) - View and manage submitted requests
+- [Transport Requests](./healthcare_helpfile02_transport_requests.md) - View and manage submitted requests
 - [Destinations](./destinations.md) - Manage saved destination locations
 - [EMS Providers](./ems-providers.md) - View available EMS agencies
 - [Hospital Settings](./hospital-settings.md) - Configure default values and preferences

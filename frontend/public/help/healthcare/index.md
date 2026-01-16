@@ -6,7 +6,7 @@ Welcome to the Healthcare Dashboard Help documentation. This section provides co
 
 ## Available Topics
 
-### 📝 [Create Request](./create-request.md)
+### 📝 [Create Request](./helpfile01_create-request.md)
 Learn how to create new transport requests for patients. This is your primary tool for requesting EMS transport services.
 
 **Key Topics:**
@@ -19,7 +19,7 @@ Learn how to create new transport requests for patients. This is your primary to
 
 ---
 
-### 📋 [Transport Requests](./transport-requests.md)
+### 📋 [Transport Requests](./healthcare_helpfile02_transport_requests.md)
 View and manage all transport requests you've created. Monitor status, edit requests, and dispatch to EMS agencies.
 
 **Key Topics:**
@@ -100,8 +100,8 @@ Manage users for your healthcare facility. Add team members, assign roles, and m
 
 ## Quick Navigation
 
-- **New to the system?** Start with [Create Request](./create-request.md)
-- **Need to manage requests?** See [Transport Requests](./transport-requests.md)
+- **New to the system?** Start with [Create Request](./helpfile01_create-request.md)
+- **Need to manage requests?** See [Transport Requests](./healthcare_helpfile02_transport_requests.md)
 - **Setting up your facility?** Check [Hospital Settings](./hospital-settings.md)
 - **Adding team members?** Review [Team Members](./team-members.md)
 
