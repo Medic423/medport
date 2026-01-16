@@ -268,6 +268,26 @@ The Help System supports:
 - **External links:** Use absolute URLs: `https://example.com`
 - Link to related topics at the end of each file
 
+**Best Practice for Internal Links:**
+- ✅ **Store all linked files in the same directory** - All help files for each userType are stored together in the same directory (e.g., all `healthcare/` files together)
+- ✅ **Use relative paths** - Since all files are in the same directory, simple relative paths like `./transport-requests.md` work perfectly
+- ✅ **Benefits:**
+  - Simple, clean paths (no complex directory navigation)
+  - Easy to maintain (all related files in one place)
+  - Prevents broken links (files move together)
+  - Works seamlessly with the help system's directory structure
+
+**Example:**
+```
+frontend/src/help/healthcare/
+├── index.md                    # Links to: ./create-request.md
+├── create-request.md           # Links to: ./transport-requests.md
+├── transport-requests.md       # Links to: ./in-progress.md
+└── in-progress.md              # Links to: ./completed-trips.md
+```
+
+All files in the same directory, all using `./filename.md` relative paths.
+
 ### Images
 
 - **Storage:** `public/help/images/{userType}/image-name.png`
