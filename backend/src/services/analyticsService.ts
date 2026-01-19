@@ -40,6 +40,13 @@ interface HospitalActivity {
   lastActivity: Date | null;
 }
 
+interface AccountStatistics {
+  newFacilitiesLast60Days: number;
+  newAgenciesLast60Days: number;
+  newFacilitiesLast90Days: number;
+  newAgenciesLast90Days: number;
+}
+
 /**
  * SIMPLIFIED: Analytics Service for Phase 3
  * Focuses on basic metrics only - complex financial calculations removed
@@ -51,7 +58,7 @@ export class AnalyticsService {
     
     try {
       const [
-        totalTrips,
+        activeTrips,
         totalHospitals,
         activeHospitals,
         totalAgencies,
@@ -59,7 +66,14 @@ export class AnalyticsService {
         totalUnits,
         activeUnits
       ] = await Promise.all([
-        prisma.transportRequest.count(),
+        // Count only active trips: exclude COMPLETED, HEALTHCARE_COMPLETED, and CANCELLED
+        prisma.transportRequest.count({
+          where: {
+            status: {
+              notIn: ['COMPLETED', 'HEALTHCARE_COMPLETED', 'CANCELLED']
+            }
+          }
+        }),
         prisma.hospital.count(),
         prisma.hospital.count({ where: { isActive: true } }),
         prisma.eMSAgency.count(),
@@ -69,7 +83,7 @@ export class AnalyticsService {
       ]);
 
       return {
-        totalTrips,
+        totalTrips: activeTrips, // Return active trips count instead of total
         totalHospitals,
         totalAgencies,
         totalFacilities: totalHospitals, // Using hospitals as facilities count
@@ -282,6 +296,67 @@ export class AnalyticsService {
       tripId,
       message: 'Simplified cost breakdown creation - complex calculations removed for Phase 3'
     };
+  }
+
+  /**
+   * Get account creation statistics
+   * Returns counts of new accounts created in last 60 and 90 days
+   */
+  async getAccountStatistics(): Promise<AccountStatistics> {
+    const prisma = databaseManager.getPrismaClient();
+    
+    try {
+      const now = new Date();
+      const days60Ago = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+      const days90Ago = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+
+      const [
+        facilities60,
+        facilities90,
+        agencies60,
+        agencies90
+      ] = await Promise.all([
+        // Facilities (Hospitals) - last 60 days
+        prisma.hospital.count({
+          where: {
+            createdAt: { gte: days60Ago }
+          }
+        }),
+        // Facilities (Hospitals) - last 90 days
+        prisma.hospital.count({
+          where: {
+            createdAt: { gte: days90Ago }
+          }
+        }),
+        // EMS Agencies - last 60 days
+        prisma.eMSAgency.count({
+          where: {
+            createdAt: { gte: days60Ago }
+          }
+        }),
+        // EMS Agencies - last 90 days
+        prisma.eMSAgency.count({
+          where: {
+            createdAt: { gte: days90Ago }
+          }
+        })
+      ]);
+
+      return {
+        newFacilitiesLast60Days: facilities60,
+        newAgenciesLast60Days: agencies60,
+        newFacilitiesLast90Days: facilities90,
+        newAgenciesLast90Days: agencies90
+      };
+    } catch (error) {
+      console.error('Error getting account statistics:', error);
+      return {
+        newFacilitiesLast60Days: 0,
+        newAgenciesLast60Days: 0,
+        newFacilitiesLast90Days: 0,
+        newAgenciesLast90Days: 0
+      };
+    }
   }
 }
 

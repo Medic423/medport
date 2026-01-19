@@ -206,4 +206,26 @@ router.post('/cost-breakdown', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/tcc/analytics/accounts
+ * Get account creation statistics
+ */
+router.get('/accounts', async (req, res) => {
+  try {
+    const accountStats = await analyticsService.getAccountStatistics();
+
+    res.json({
+      success: true,
+      data: accountStats
+    });
+
+  } catch (error) {
+    console.error('Get account statistics error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve account statistics'
+    });
+  }
+});
+
 export default router;

@@ -209,6 +209,9 @@ export const analyticsAPI = {
   getTrips: () =>
     api.get('/api/tcc/analytics/trips'),
   
+  getAccountStatistics: () =>
+    api.get('/api/tcc/analytics/accounts'),
+  
   getCostAnalysis: (params?: any) =>
     api.get('/api/tcc/analytics/cost-analysis', { params }),
   

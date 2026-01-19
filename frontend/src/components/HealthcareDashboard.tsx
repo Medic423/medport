@@ -801,6 +801,20 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
     }
   };
 
+  const formatStatus = (status: string) => {
+    switch (status) {
+      case 'PENDING': return 'Pending';
+      case 'PENDING_DISPATCH': return 'Pending Dispatch';
+      case 'ACCEPTED': return 'Accepted';
+      case 'DECLINED': return 'Declined';
+      case 'CANCELLED': return 'Cancelled';
+      case 'IN_PROGRESS': return 'In Progress';
+      case 'COMPLETED': return 'Completed';
+      case 'HEALTHCARE_COMPLETED': return 'Completed';
+      default: return status;
+    }
+  };
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'HIGH': return 'text-red-600 bg-red-100';
@@ -1060,7 +1074,10 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                                     <div className="mt-2 space-y-2">
                                       <div className="flex items-center space-x-2">
                                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                          {trip.agencyResponses.filter((r: any) => r.response === 'ACCEPTED').length} agencies accepted
+                                          {(() => {
+                                            const acceptedCount = trip.agencyResponses.filter((r: any) => r.response === 'ACCEPTED').length;
+                                            return `${acceptedCount} ${acceptedCount === 1 ? 'Agency' : 'Agencies'} Accepted`;
+                                          })()}
                                         </span>
                                         {trip.agencyResponses.filter((r: any) => r.isSelected).length > 0 && (
                                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -1149,7 +1166,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                                   {trip.urgencyLevel || 'Routine'}
                                 </span>
                                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(trip.status)}`}>
-                                  {trip.status}
+                                  {formatStatus(trip.status)}
                                 </span>
                                 <div className="flex space-x-2 ml-4">
                                   {/* Show Dispatch button for PENDING_DISPATCH trips */}

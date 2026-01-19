@@ -622,12 +622,33 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
   };
 
   // Contact form handlers
+  const formatPhoneNumber = (value: string): string => {
+    // Remove all non-digit characters
+    const phoneNumber = value.replace(/\D/g, '');
+    
+    // Format as (XXX) XXX-XXXX
+    if (phoneNumber.length === 0) return '';
+    if (phoneNumber.length <= 3) return `(${phoneNumber}`;
+    if (phoneNumber.length <= 6) return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3)}`;
+    return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3, 6)}-${phoneNumber.slice(6, 10)}`;
+  };
+
   const handleContactInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setContactFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    // Format phone number if it's the contactPhone field
+    if (name === 'contactPhone') {
+      const formatted = formatPhoneNumber(value);
+      setContactFormData(prev => ({
+        ...prev,
+        [name]: formatted
+      }));
+    } else {
+      setContactFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleSaveContact = async (e: React.FormEvent) => {

@@ -38,7 +38,8 @@ const AvailableAgencies: React.FC<AvailableAgenciesProps> = ({ user }) => {
       
       if (response.data?.success && Array.isArray(response.data.data)) {
         setAgencies(response.data.data);
-        setCurrentRadius(response.data.radiusMiles ?? radiusMiles);
+        // Use the radius parameter passed to this function, or fall back to response data
+        setCurrentRadius(radius !== undefined ? radius : (response.data.radiusMiles ?? radiusMiles));
       } else {
         throw new Error('Invalid response format');
       }
