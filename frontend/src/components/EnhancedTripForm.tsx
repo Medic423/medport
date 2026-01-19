@@ -662,14 +662,15 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
       }
       
       // Load dropdown options from backend Hospital Settings
+      // Categories are now fixed to dropdown-1 through dropdown-7
       const [diagRes, mobRes, tlRes, urgRes, insRes, secInsRes, snRes] = await Promise.all([
-        dropdownOptionsAPI.getByCategory('diagnosis').catch(() => ({ data: { success: false, data: [] }})),
-        dropdownOptionsAPI.getByCategory('mobility').catch(() => ({ data: { success: false, data: [] }})),
-        dropdownOptionsAPI.getByCategory('transport-level').catch(() => ({ data: { success: false, data: [] }})),
-        dropdownOptionsAPI.getByCategory('urgency').catch(() => ({ data: { success: false, data: [] }})),
-        dropdownOptionsAPI.getByCategory('insurance').catch(() => ({ data: { success: false, data: [] }})),
-        dropdownOptionsAPI.getByCategory('secondary-insurance').catch(() => ({ data: { success: false, data: [] }})),
-        dropdownOptionsAPI.getByCategory('special-needs').catch(() => ({ data: { success: false, data: [] }})),
+        dropdownOptionsAPI.getByCategory('dropdown-3').catch(() => ({ data: { success: false, data: [] }})), // diagnosis
+        dropdownOptionsAPI.getByCategory('dropdown-4').catch(() => ({ data: { success: false, data: [] }})), // mobility
+        dropdownOptionsAPI.getByCategory('dropdown-1').catch(() => ({ data: { success: false, data: [] }})), // transport-level
+        dropdownOptionsAPI.getByCategory('dropdown-2').catch(() => ({ data: { success: false, data: [] }})), // urgency
+        dropdownOptionsAPI.getByCategory('dropdown-5').catch(() => ({ data: { success: false, data: [] }})), // insurance
+        dropdownOptionsAPI.getByCategory('dropdown-6').catch(() => ({ data: { success: false, data: [] }})), // secondary-insurance
+        dropdownOptionsAPI.getByCategory('dropdown-7').catch(() => ({ data: { success: false, data: [] }})), // special-needs
       ]);
 
       const toValues = (resp: any, fallback: string[]) => (resp?.data?.success && Array.isArray(resp.data.data) ? resp.data.data.map((o: any) => o.value) : fallback);
@@ -714,14 +715,15 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
       }
  
       // Apply defaults from backend
+      // Categories are now fixed to dropdown-1 through dropdown-7
       try {
         const [tl, urg, dx, mob, ins, sn] = await Promise.all([
-          api.get('/api/dropdown-options/transport-level/default'),
-          api.get('/api/dropdown-options/urgency/default'),
-          api.get('/api/dropdown-options/diagnosis/default'),
-          api.get('/api/dropdown-options/mobility/default'),
-          api.get('/api/dropdown-options/insurance/default'),
-          api.get('/api/dropdown-options/special-needs/default')
+          api.get('/api/dropdown-options/dropdown-1/default'), // transport-level
+          api.get('/api/dropdown-options/dropdown-2/default'), // urgency
+          api.get('/api/dropdown-options/dropdown-3/default'), // diagnosis
+          api.get('/api/dropdown-options/dropdown-4/default'), // mobility
+          api.get('/api/dropdown-options/dropdown-5/default'), // insurance
+          api.get('/api/dropdown-options/dropdown-7/default')  // special-needs
         ]);
         setFormData(prev => {
           // Filter out "Critical" from urgency default since backend doesn't accept it

@@ -395,11 +395,14 @@ export const dropdownCategoriesAPI = {
   getById: (id: string) =>
     api.get(`/api/dropdown-categories/${id}`),
 
-  // Create new category
+  // Create new category - DISABLED
+  // Categories are locked to exactly 7 fixed slugs (dropdown-1 through dropdown-7)
+  // This will return 403 Forbidden from the backend
   create: (data: { slug: string; displayName: string; displayOrder?: number }) =>
     api.post('/api/dropdown-categories', data),
 
   // Update category
+  // Only displayName, displayOrder, and isActive can be updated (slug cannot be changed)
   update: (id: string, data: Partial<{ displayName: string; displayOrder: number; isActive: boolean }>) =>
     api.put(`/api/dropdown-categories/${id}`, data),
 
