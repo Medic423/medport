@@ -657,17 +657,13 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
   };
 
   const getCategoryDisplayName = (category: string) => {
-    const displayNames: { [key: string]: string } = {
-      'insurance': 'Insurance Companies',
-      'secondary-insurance': 'Secondary Insurance',
-      'diagnosis': 'Primary Diagnosis',
-      'mobility': 'Mobility Levels',
-      'transport-level': 'Transport Levels',
-      'urgency': 'Urgency Levels',
-      'special-needs': 'Special Needs',
-      'secondary-insurance': 'Secondary Insurance'
-    };
-    return displayNames[category] || category;
+    // Look up display name from categoryList (loaded from database)
+    const categoryObj = categoryList.find(cat => cat.slug === category);
+    if (categoryObj) {
+      return categoryObj.displayName;
+    }
+    // Fallback to category slug if not found
+    return category;
   };
 
   return (
