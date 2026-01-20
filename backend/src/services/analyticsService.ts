@@ -45,6 +45,11 @@ interface AccountStatistics {
   newAgenciesLast60Days: number;
   newFacilitiesLast90Days: number;
   newAgenciesLast90Days: number;
+  idleAccounts: {
+    last30Days: { healthcare: number; ems: number; admin: number; total: number };
+    last60Days: { healthcare: number; ems: number; admin: number; total: number };
+    last90Days: { healthcare: number; ems: number; admin: number; total: number };
+  };
 }
 
 /**
@@ -299,8 +304,68 @@ export class AnalyticsService {
   }
 
   /**
+   * Get idle account counts for a given number of days
+   * Accounts with no lastLogin in the specified period (or NULL lastLogin)
+   */
+  async getIdleAccounts(days: 30 | 60 | 90): Promise<{ healthcare: number; ems: number; admin: number; total: number }> {
+    const prisma = databaseManager.getPrismaClient();
+    
+    try {
+      const now = new Date();
+      const cutoffDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+      const [healthcare, ems, admin] = await Promise.all([
+        // Healthcare users: no lastLogin or lastLogin before cutoff, active and not deleted
+        prisma.healthcareUser.count({
+          where: {
+            isActive: true,
+            isDeleted: false,
+            OR: [
+              { lastLogin: null },
+              { lastLogin: { lt: cutoffDate } }
+            ]
+          }
+        }),
+        // EMS users: no lastLogin or lastLogin before cutoff, active and not deleted
+        prisma.eMSUser.count({
+          where: {
+            isActive: true,
+            isDeleted: false,
+            OR: [
+              { lastLogin: null },
+              { lastLogin: { lt: cutoffDate } }
+            ]
+          }
+        }),
+        // Admin/Center users: no lastLogin or lastLogin before cutoff, active and not deleted
+        prisma.centerUser.count({
+          where: {
+            isActive: true,
+            isDeleted: false,
+            OR: [
+              { lastLogin: null },
+              { lastLogin: { lt: cutoffDate } }
+            ]
+          }
+        })
+      ]);
+
+      return {
+        healthcare,
+        ems,
+        admin,
+        total: healthcare + ems + admin
+      };
+    } catch (error) {
+      console.error(`Error getting idle accounts for ${days} days:`, error);
+      return { healthcare: 0, ems: 0, admin: 0, total: 0 };
+    }
+  }
+
+  /**
    * Get account creation statistics
    * Returns counts of new accounts created in last 60 and 90 days
+   * Also includes idle account statistics
    */
   async getAccountStatistics(): Promise<AccountStatistics> {
     const prisma = databaseManager.getPrismaClient();
@@ -314,7 +379,10 @@ export class AnalyticsService {
         facilities60,
         facilities90,
         agencies60,
-        agencies90
+        agencies90,
+        idle30,
+        idle60,
+        idle90
       ] = await Promise.all([
         // Facilities (Hospitals) - last 60 days
         prisma.hospital.count({
@@ -339,14 +407,25 @@ export class AnalyticsService {
           where: {
             createdAt: { gte: days90Ago }
           }
-        })
+        }),
+        // Idle accounts - 30 days
+        this.getIdleAccounts(30),
+        // Idle accounts - 60 days
+        this.getIdleAccounts(60),
+        // Idle accounts - 90 days
+        this.getIdleAccounts(90)
       ]);
 
       return {
         newFacilitiesLast60Days: facilities60,
         newAgenciesLast60Days: agencies60,
         newFacilitiesLast90Days: facilities90,
-        newAgenciesLast90Days: agencies90
+        newAgenciesLast90Days: agencies90,
+        idleAccounts: {
+          last30Days: idle30,
+          last60Days: idle60,
+          last90Days: idle90
+        }
       };
     } catch (error) {
       console.error('Error getting account statistics:', error);
@@ -354,7 +433,12 @@ export class AnalyticsService {
         newFacilitiesLast60Days: 0,
         newAgenciesLast60Days: 0,
         newFacilitiesLast90Days: 0,
-        newAgenciesLast90Days: 0
+        newAgenciesLast90Days: 0,
+        idleAccounts: {
+          last30Days: { healthcare: 0, ems: 0, admin: 0, total: 0 },
+          last60Days: { healthcare: 0, ems: 0, admin: 0, total: 0 },
+          last90Days: { healthcare: 0, ems: 0, admin: 0, total: 0 }
+        }
       };
     }
   }

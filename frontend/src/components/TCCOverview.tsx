@@ -41,6 +41,11 @@ interface AccountStatistics {
   newAgenciesLast60Days: number;
   newFacilitiesLast90Days: number;
   newAgenciesLast90Days: number;
+  idleAccounts: {
+    last30Days: { healthcare: number; ems: number; admin: number; total: number };
+    last60Days: { healthcare: number; ems: number; admin: number; total: number };
+    last90Days: { healthcare: number; ems: number; admin: number; total: number };
+  };
 }
 
 const TCCOverview: React.FC<TCCOverviewProps> = ({ user, onClearSession }) => {
@@ -289,40 +294,56 @@ const TCCOverview: React.FC<TCCOverviewProps> = ({ user, onClearSession }) => {
                 )}
               </div>
             </div>
+            {/* Idle Account Statistics */}
+            {accountStats.idleAccounts && (
+              <>
+                <div className="flex items-center space-x-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <div className="h-2 w-2 bg-yellow-600 rounded-full"></div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">Idle Accounts (Last 30 Days)</p>
+                    {accountStats.idleAccounts.last30Days.total > 0 ? (
+                      <p className="text-sm text-gray-500">
+                        {accountStats.idleAccounts.last30Days.total} total ({accountStats.idleAccounts.last30Days.healthcare} Healthcare, {accountStats.idleAccounts.last30Days.ems} EMS, {accountStats.idleAccounts.last30Days.admin} Admin)
+                      </p>
+                    ) : (
+                      <p className="text-sm text-gray-500 italic">No idle accounts in the last 30 days</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                  <div className="h-2 w-2 bg-orange-600 rounded-full"></div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">Idle Accounts (Last 60 Days)</p>
+                    {accountStats.idleAccounts.last60Days.total > 0 ? (
+                      <p className="text-sm text-gray-500">
+                        {accountStats.idleAccounts.last60Days.total} total ({accountStats.idleAccounts.last60Days.healthcare} Healthcare, {accountStats.idleAccounts.last60Days.ems} EMS, {accountStats.idleAccounts.last60Days.admin} Admin)
+                      </p>
+                    ) : (
+                      <p className="text-sm text-gray-500 italic">No idle accounts in the last 60 days</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3 p-3 bg-red-50 rounded-lg border border-red-200">
+                  <div className="h-2 w-2 bg-red-600 rounded-full"></div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">Idle Accounts (Last 90 Days)</p>
+                    {accountStats.idleAccounts.last90Days.total > 0 ? (
+                      <p className="text-sm text-gray-500">
+                        {accountStats.idleAccounts.last90Days.total} total ({accountStats.idleAccounts.last90Days.healthcare} Healthcare, {accountStats.idleAccounts.last90Days.ems} EMS, {accountStats.idleAccounts.last90Days.admin} Admin)
+                      </p>
+                    ) : (
+                      <p className="text-sm text-gray-500 italic">No idle accounts in the last 90 days</p>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         ) : (
           <div className="text-center py-4 text-gray-500">
             <p className="text-sm">No activity data available</p>
           </div>
         )}
-      </div>
-
-      {/* System Status */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">System Status</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
-            <div className="h-3 w-3 bg-green-500 rounded-full"></div>
-            <div>
-              <p className="text-sm font-medium text-gray-900">Backend API</p>
-              <p className="text-sm text-gray-500">All systems operational</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
-            <div className="h-3 w-3 bg-green-500 rounded-full"></div>
-            <div>
-              <p className="text-sm font-medium text-gray-900">Database</p>
-              <p className="text-sm text-gray-500">Connected & responsive</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
-            <div className="h-3 w-3 bg-green-500 rounded-full"></div>
-            <div>
-              <p className="text-sm font-medium text-gray-900">External Services</p>
-              <p className="text-sm text-gray-500">All integrations healthy</p>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

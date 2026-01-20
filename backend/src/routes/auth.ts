@@ -40,6 +40,9 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    // Note: lastLogin is already updated by authService.login() for all user types
+    // No need to update again here
+
     console.log('TCC_DEBUG: Login successful, user ID in token:', result.user?.id);
     // Set HttpOnly cookie for SSE/cookie-based auth
     res.cookie('tcc_token', result.token, {
@@ -1628,6 +1631,19 @@ router.post('/ems/login', async (req, res) => {
       });
     }
 
+    // Update lastLogin timestamp
+    console.log('TCC_DEBUG: Updating lastLogin for EMSUser:', { email, userId: user.id });
+    try {
+      const updateResult = await db.eMSUser.update({
+        where: { id: user.id },
+        data: { lastLogin: new Date() }
+      });
+      console.log('TCC_DEBUG: Successfully updated lastLogin for EMSUser:', { email, lastLogin: updateResult.lastLogin });
+    } catch (err) {
+      console.error('TCC_DEBUG: Error updating lastLogin for EMSUser:', err);
+      // Don't fail login if lastLogin update fails
+    }
+
     // For EMS users, use the user ID directly (agency lookup optional)
     const token = jwt.sign(
       { 
@@ -1714,6 +1730,15 @@ router.post('/healthcare/login', async (req, res) => {
         error: 'Invalid credentials'
       });
     }
+
+    // Update lastLogin timestamp
+    await db.healthcareUser.update({
+      where: { id: user.id },
+      data: { lastLogin: new Date() }
+    }).catch(err => {
+      console.error('Error updating lastLogin for HealthcareUser:', err);
+      // Don't fail login if lastLogin update fails
+    });
 
     const token = jwt.sign(
       { 
