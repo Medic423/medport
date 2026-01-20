@@ -228,4 +228,80 @@ router.get('/accounts', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/tcc/analytics/registrations
+ * Get recent registrations (facilities or agencies) for a specific time period
+ * Query params: type (facilities|agencies), days (60|90)
+ */
+router.get('/registrations', async (req, res) => {
+  try {
+    const { type, days } = req.query;
+
+    if (!type || (type !== 'facilities' && type !== 'agencies')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid type parameter. Must be "facilities" or "agencies"'
+      });
+    }
+
+    const daysNum = days ? parseInt(days as string) : 60;
+    if (daysNum !== 60 && daysNum !== 90) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid days parameter. Must be 60 or 90'
+      });
+    }
+
+    const registrations = await analyticsService.getRecentRegistrations(
+      type as 'facilities' | 'agencies',
+      daysNum as 60 | 90
+    );
+
+    res.json({
+      success: true,
+      data: registrations
+    });
+
+  } catch (error) {
+    console.error('Get recent registrations error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve recent registrations'
+    });
+  }
+});
+
+/**
+ * GET /api/tcc/analytics/idle-accounts
+ * Get detailed list of idle accounts for a specific time period
+ * Query params: days (30|60|90)
+ */
+router.get('/idle-accounts', async (req, res) => {
+  try {
+    const { days } = req.query;
+
+    const daysNum = days ? parseInt(days as string) : 30;
+    if (daysNum !== 30 && daysNum !== 60 && daysNum !== 90) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid days parameter. Must be 30, 60, or 90'
+      });
+    }
+
+    const idleAccounts = await analyticsService.getIdleAccountsList(daysNum as 30 | 60 | 90);
+
+    res.json({
+      success: true,
+      data: idleAccounts
+    });
+
+  } catch (error) {
+    console.error('Get idle accounts list error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve idle accounts list'
+    });
+  }
+});
+
 export default router;

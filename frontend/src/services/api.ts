@@ -212,6 +212,12 @@ export const analyticsAPI = {
   getAccountStatistics: () =>
     api.get('/api/tcc/analytics/accounts'),
   
+  getRecentRegistrations: (type: 'facilities' | 'agencies', days: 60 | 90) =>
+    api.get('/api/tcc/analytics/registrations', { params: { type, days } }),
+  
+  getIdleAccountsList: (days: 30 | 60 | 90) =>
+    api.get('/api/tcc/analytics/idle-accounts', { params: { days } }),
+  
   getCostAnalysis: (params?: any) =>
     api.get('/api/tcc/analytics/cost-analysis', { params }),
   

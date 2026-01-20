@@ -363,6 +363,202 @@ export class AnalyticsService {
   }
 
   /**
+   * Get detailed list of idle accounts for a given number of days
+   * Returns accounts with no lastLogin in the specified period (or NULL lastLogin)
+   */
+  async getIdleAccountsList(days: 30 | 60 | 90): Promise<{
+    healthcare: Array<{ id: string; email: string; name: string; facilityName?: string; lastLogin: string | null; createdAt: string }>;
+    ems: Array<{ id: string; email: string; name: string; agencyName?: string; lastLogin: string | null; createdAt: string }>;
+    admin: Array<{ id: string; email: string; name: string; lastLogin: string | null; createdAt: string }>;
+  }> {
+    const prisma = databaseManager.getPrismaClient();
+    
+    try {
+      const now = new Date();
+      const cutoffDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+      const [healthcare, ems, admin] = await Promise.all([
+        // Healthcare users: no lastLogin or lastLogin before cutoff, active and not deleted
+        prisma.healthcareUser.findMany({
+          where: {
+            isActive: true,
+            isDeleted: false,
+            OR: [
+              { lastLogin: null },
+              { lastLogin: { lt: cutoffDate } }
+            ]
+          },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            facilityName: true,
+            lastLogin: true,
+            createdAt: true
+          },
+          orderBy: {
+            lastLogin: 'asc' // NULLs will be first, then oldest first
+          }
+        }),
+        // EMS users: no lastLogin or lastLogin before cutoff, active and not deleted
+        prisma.eMSUser.findMany({
+          where: {
+            isActive: true,
+            isDeleted: false,
+            OR: [
+              { lastLogin: null },
+              { lastLogin: { lt: cutoffDate } }
+            ]
+          },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            agencyName: true,
+            lastLogin: true,
+            createdAt: true
+          },
+          orderBy: {
+            lastLogin: 'asc' // NULLs will be first, then oldest first
+          }
+        }),
+        // Admin/Center users: no lastLogin or lastLogin before cutoff, active and not deleted
+        prisma.centerUser.findMany({
+          where: {
+            isActive: true,
+            isDeleted: false,
+            OR: [
+              { lastLogin: null },
+              { lastLogin: { lt: cutoffDate } }
+            ]
+          },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            lastLogin: true,
+            createdAt: true
+          },
+          orderBy: {
+            lastLogin: 'asc' // NULLs will be first, then oldest first
+          }
+        })
+      ]);
+
+      return {
+        healthcare: healthcare.map(u => ({
+          id: u.id,
+          email: u.email,
+          name: u.name,
+          facilityName: u.facilityName,
+          lastLogin: u.lastLogin ? u.lastLogin.toISOString() : null,
+          createdAt: u.createdAt.toISOString()
+        })),
+        ems: ems.map(u => ({
+          id: u.id,
+          email: u.email,
+          name: u.name,
+          agencyName: u.agencyName,
+          lastLogin: u.lastLogin ? u.lastLogin.toISOString() : null,
+          createdAt: u.createdAt.toISOString()
+        })),
+        admin: admin.map(u => ({
+          id: u.id,
+          email: u.email,
+          name: u.name,
+          lastLogin: u.lastLogin ? u.lastLogin.toISOString() : null,
+          createdAt: u.createdAt.toISOString()
+        }))
+      };
+    } catch (error) {
+      console.error(`Error getting idle accounts list for ${days} days:`, error);
+      return { healthcare: [], ems: [], admin: [] };
+    }
+  }
+
+  /**
+   * Get recent registrations (facilities or agencies) for a specific time period
+   * Returns detailed list of facilities/agencies registered in the specified days
+   */
+  async getRecentRegistrations(type: 'facilities' | 'agencies', days: 60 | 90): Promise<any[]> {
+    const prisma = databaseManager.getPrismaClient();
+    
+    try {
+      const now = new Date();
+      const cutoffDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+      if (type === 'facilities') {
+        // Return hospitals/facilities registered in the time period
+        const facilities = await prisma.hospital.findMany({
+          where: {
+            createdAt: { gte: cutoffDate }
+          },
+          select: {
+            id: true,
+            name: true,
+            city: true,
+            state: true,
+            createdAt: true,
+            isActive: true,
+            email: true,
+            phone: true
+          },
+          orderBy: {
+            createdAt: 'desc'
+          }
+        });
+
+        return facilities.map(f => ({
+          id: f.id,
+          name: f.name,
+          city: f.city,
+          state: f.state,
+          createdAt: f.createdAt.toISOString(),
+          isActive: f.isActive,
+          email: f.email || undefined,
+          phone: f.phone || undefined
+        }));
+      } else {
+        // Return EMS agencies registered in the time period
+        const agencies = await prisma.eMSAgency.findMany({
+          where: {
+            createdAt: { gte: cutoffDate }
+          },
+          select: {
+            id: true,
+            name: true,
+            city: true,
+            state: true,
+            createdAt: true,
+            isActive: true,
+            email: true,
+            phone: true,
+            contactName: true
+          },
+          orderBy: {
+            createdAt: 'desc'
+          }
+        });
+
+        return agencies.map(a => ({
+          id: a.id,
+          name: a.name,
+          city: a.city,
+          state: a.state,
+          createdAt: a.createdAt.toISOString(),
+          isActive: a.isActive,
+          email: a.email,
+          phone: a.phone,
+          contactName: a.contactName
+        }));
+      }
+    } catch (error) {
+      console.error(`Error getting recent registrations (${type}, ${days} days):`, error);
+      return [];
+    }
+  }
+
+  /**
    * Get account creation statistics
    * Returns counts of new accounts created in last 60 and 90 days
    * Also includes idle account statistics
