@@ -1,6 +1,6 @@
 import express from 'express';
 import { analyticsService } from '../services/analyticsService';
-import { authenticateAdmin } from '../middleware/authenticateAdmin';
+import { authenticateAdmin, AuthenticatedRequest } from '../middleware/authenticateAdmin';
 
 const router = express.Router();
 
@@ -300,6 +300,61 @@ router.get('/idle-accounts', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to retrieve idle accounts list'
+    });
+  }
+});
+
+/**
+ * GET /api/tcc/analytics/active-users
+ * Get currently active users (one per facility/agency - most recently active)
+ * Query params:
+ *   - threshold: Minutes threshold (default: 15)
+ *   - excludeCurrent: Exclude current user (default: true)
+ */
+router.get('/active-users', async (req: AuthenticatedRequest, res) => {
+  try {
+    const threshold = req.query.threshold 
+      ? parseInt(req.query.threshold as string, 10) 
+      : 15; // Default 15 minutes
+    
+    const excludeCurrent = req.query.excludeCurrent !== 'false'; // Default true
+    const excludeUserId = excludeCurrent && req.user ? req.user.id : undefined;
+
+    const activeUsers = await analyticsService.getActiveUsers(threshold, excludeUserId);
+
+    res.json({
+      success: true,
+      data: activeUsers,
+      threshold,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error fetching active users:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch active users'
+    });
+  }
+});
+
+/**
+ * GET /api/tcc/analytics/facilities-online
+ * Get facilities/agencies online statistics (24h and 7 days)
+ */
+router.get('/facilities-online', async (req: AuthenticatedRequest, res) => {
+  try {
+    const stats = await analyticsService.getFacilitiesOnlineStats();
+
+    res.json({
+      success: true,
+      data: stats,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error fetching facilities online stats:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch facilities online statistics'
     });
   }
 });

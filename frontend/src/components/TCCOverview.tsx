@@ -89,6 +89,22 @@ interface IdleAccountsList {
   admin: IdleAccountListItem[];
 }
 
+interface ActiveUserListItem {
+  id: string;
+  name: string;
+  facilityName?: string;
+  agencyName?: string;
+  city: string;
+  state: string;
+  lastActivity: string;
+  minutesAgo: number;
+}
+
+interface ActiveUsersList {
+  healthcare: ActiveUserListItem[];
+  ems: ActiveUserListItem[];
+}
+
 const TCCOverview: React.FC<TCCOverviewProps> = ({ user, onClearSession }) => {
   const navigate = useNavigate();
   const [overview, setOverview] = useState<SystemOverview | null>(null);
@@ -145,6 +161,17 @@ const TCCOverview: React.FC<TCCOverviewProps> = ({ user, onClearSession }) => {
     idle60: false,
     idle90: false
   });
+  
+  // Current Activity state
+  const [activeUsers, setActiveUsers] = useState<ActiveUsersList | null>(null);
+  const [activeUsersLoading, setActiveUsersLoading] = useState(false);
+  const [showActiveUsers, setShowActiveUsers] = useState(false);
+  const [facilitiesOnline, setFacilitiesOnline] = useState<{
+    healthcare: { last24Hours: number; lastWeek: number };
+    ems: { last24Hours: number; lastWeek: number };
+    total: { last24Hours: number; lastWeek: number };
+  } | null>(null);
+  const [facilitiesOnlineLoading, setFacilitiesOnlineLoading] = useState(false);
 
   const fetchOverview = async (isManualRefresh = false) => {
     try {
@@ -234,6 +261,35 @@ const TCCOverview: React.FC<TCCOverviewProps> = ({ user, onClearSession }) => {
     }
   };
 
+  // Current Activity fetch functions
+  const fetchActiveUsers = async () => {
+    setActiveUsersLoading(true);
+    try {
+      const response = await analyticsAPI.getActiveUsers(15, true);
+      if (response.data.success) {
+        setActiveUsers(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching active users:', error);
+    } finally {
+      setActiveUsersLoading(false);
+    }
+  };
+
+  const fetchFacilitiesOnline = async () => {
+    setFacilitiesOnlineLoading(true);
+    try {
+      const response = await analyticsAPI.getFacilitiesOnline();
+      if (response.data.success) {
+        setFacilitiesOnline(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching facilities online stats:', error);
+    } finally {
+      setFacilitiesOnlineLoading(false);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { 
@@ -243,18 +299,33 @@ const TCCOverview: React.FC<TCCOverviewProps> = ({ user, onClearSession }) => {
     });
   };
 
-  // Initial load and auto-refresh every 30 seconds
+  // Initial load and auto-refresh
   useEffect(() => {
     fetchOverview();
+    fetchFacilitiesOnline(); // Load facilities online stats on mount
     
-    // Set up auto-refresh interval (30 seconds)
-    const interval = setInterval(() => {
+    // Set up auto-refresh intervals
+    const overviewInterval = setInterval(() => {
       fetchOverview();
-    }, 30000); // 30 seconds
+    }, 30000); // 30 seconds for overview
+    
+    const facilitiesOnlineInterval = setInterval(() => {
+      fetchFacilitiesOnline();
+    }, 60000); // 60 seconds for facilities online
+    
+    const activeUsersInterval = setInterval(() => {
+      if (showActiveUsers) {
+        fetchActiveUsers();
+      }
+    }, 60000); // 60 seconds for active users (only if list is shown)
 
-    // Cleanup interval on unmount
-    return () => clearInterval(interval);
-  }, []);
+    // Cleanup intervals on unmount
+    return () => {
+      clearInterval(overviewInterval);
+      clearInterval(facilitiesOnlineInterval);
+      clearInterval(activeUsersInterval);
+    };
+  }, [showActiveUsers]);
 
   const quickActions = [
     {
@@ -936,6 +1007,150 @@ const TCCOverview: React.FC<TCCOverviewProps> = ({ user, onClearSession }) => {
             <p className="text-sm">No activity data available</p>
           </div>
         )}
+      </div>
+
+      {/* Current Activity Section */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-gray-900">Current Activity</h2>
+          <div className="flex items-center space-x-2">
+            <Activity className="h-5 w-5 text-green-500" />
+            <button
+              onClick={() => {
+                setShowActiveUsers(!showActiveUsers);
+                if (!showActiveUsers && !activeUsers) {
+                  fetchActiveUsers();
+                }
+              }}
+              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+            >
+              {showActiveUsers ? 'Hide' : 'Show'} List
+            </button>
+          </div>
+        </div>
+        
+        {/* Facilities Online Stats */}
+        {facilitiesOnlineLoading ? (
+          <div className="text-center py-2 mb-4">
+            <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+          </div>
+        ) : facilitiesOnline ? (
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
+              <p className="font-semibold text-purple-800 text-lg">
+                {facilitiesOnline.total.last24Hours}
+              </p>
+              <p className="text-sm text-gray-600">Facilities Online (24h)</p>
+            </div>
+            <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+              <p className="font-semibold text-indigo-800 text-lg">
+                {facilitiesOnline.total.lastWeek}
+              </p>
+              <p className="text-sm text-gray-600">Facilities Online (Week)</p>
+            </div>
+          </div>
+        ) : null}
+        
+        {activeUsersLoading ? (
+          <div className="text-center py-4">
+            <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <p className="mt-2 text-sm text-gray-600">Loading active users...</p>
+          </div>
+        ) : activeUsers ? (
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="p-3 bg-green-50 rounded-lg">
+                <p className="font-semibold text-green-800">
+                  {activeUsers.healthcare.length + activeUsers.ems.length}
+                </p>
+                <p className="text-gray-600">Currently Active</p>
+              </div>
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <p className="font-semibold text-blue-800">{activeUsers.healthcare.length}</p>
+                <p className="text-gray-600">Healthcare</p>
+              </div>
+              <div className="p-3 bg-red-50 rounded-lg">
+                <p className="font-semibold text-red-800">{activeUsers.ems.length}</p>
+                <p className="text-gray-600">EMS</p>
+              </div>
+            </div>
+            
+            {showActiveUsers && (
+              <div className="mt-4 space-y-2 max-h-96 overflow-y-auto">
+                {/* Healthcare Users */}
+                {activeUsers.healthcare.map((user) => (
+                  <div key={user.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        {/* Display Order: 1. Facility Name, 2. Location, 3. Last Activity, 4. Name */}
+                        <p className="font-semibold text-gray-900">{user.facilityName}</p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {user.city}, {user.state}
+                        </p>
+                        <div className="flex items-center space-x-2 mt-2">
+                          <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                          <span className="text-xs text-gray-600">
+                            {user.minutesAgo === 0 
+                              ? 'Just now' 
+                              : `Active ${user.minutesAgo} min${user.minutesAgo > 1 ? 's' : ''} ago`}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">{user.name}</p>
+                      </div>
+                      <div className="ml-4">
+                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                          Healthcare
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {/* EMS Users */}
+                {activeUsers.ems.map((user) => (
+                  <div key={user.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        {/* Display Order: 1. Agency Name, 2. Location, 3. Last Activity, 4. Name */}
+                        <p className="font-semibold text-gray-900">{user.agencyName}</p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {user.city}, {user.state}
+                        </p>
+                        <div className="flex items-center space-x-2 mt-2">
+                          <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                          <span className="text-xs text-gray-600">
+                            {user.minutesAgo === 0 
+                              ? 'Just now' 
+                              : `Active ${user.minutesAgo} min${user.minutesAgo > 1 ? 's' : ''} ago`}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">{user.name}</p>
+                      </div>
+                      <div className="ml-4">
+                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
+                          EMS
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {/* Empty State */}
+                {activeUsers.healthcare.length === 0 && 
+                 activeUsers.ems.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    <Activity className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+                    <p className="text-sm">No active users in the last 15 minutes</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ) : showActiveUsers ? (
+          <div className="text-center py-4 text-gray-500">
+            <p className="text-sm">Click "Show List" to load active users</p>
+          </div>
+        ) : null}
       </div>
     </div>
   );

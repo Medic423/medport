@@ -638,6 +638,252 @@ export class AnalyticsService {
       };
     }
   }
+
+  /**
+   * Get currently active users (users with activity within threshold minutes)
+   * OPTION B: One user per facility/agency (most recently active)
+   * @param thresholdMinutes - Minutes threshold for "active" (default: 15)
+   * @param excludeUserId - User ID to exclude from results (current user)
+   * @returns List of active users by type (one per facility/agency)
+   */
+  async getActiveUsers(
+    thresholdMinutes: number = 15,
+    excludeUserId?: string
+  ): Promise<{
+    healthcare: Array<{
+      id: string;
+      name: string;
+      facilityName: string;
+      city: string;
+      state: string;
+      lastActivity: string;
+      minutesAgo: number;
+    }>;
+    ems: Array<{
+      id: string;
+      name: string;
+      agencyName: string;
+      city: string;
+      state: string;
+      lastActivity: string;
+      minutesAgo: number;
+    }>;
+  }> {
+    const db = databaseManager.getPrismaClient();
+    const threshold = new Date(Date.now() - thresholdMinutes * 60 * 1000);
+
+    // Build where clause to exclude user if provided
+    const excludeWhere = excludeUserId ? { id: { not: excludeUserId } } : {};
+
+    // Get active healthcare users with location data
+    // Order by lastActivity DESC to get most recent first
+    const activeHealthcare = await db.healthcareUser.findMany({
+      where: {
+        ...excludeWhere,
+        isActive: true,
+        isDeleted: false,
+        lastActivity: {
+          gte: threshold
+        }
+      },
+      select: {
+        id: true,
+        name: true,
+        facilityName: true,
+        lastActivity: true,
+        locations: {
+          where: {
+            isActive: true,
+            isPrimary: true  // Get primary location first
+          },
+          select: {
+            city: true,
+            state: true
+          },
+          take: 1
+        }
+      },
+      orderBy: {
+        lastActivity: 'desc'
+      }
+    });
+
+    // Get active EMS users with agency location data
+    const activeEMS = await db.eMSUser.findMany({
+      where: {
+        ...excludeWhere,
+        isActive: true,
+        isDeleted: false,
+        lastActivity: {
+          gte: threshold
+        }
+      },
+      select: {
+        id: true,
+        name: true,
+        agencyName: true,
+        lastActivity: true,
+        agency: {
+          select: {
+            city: true,
+            state: true
+          }
+        }
+      },
+      orderBy: {
+        lastActivity: 'desc'
+      }
+    });
+
+    // OPTION B: Group by facilityName/agencyName and keep only most recent user per facility/agency
+    const healthcareByFacility = new Map<string, any>();
+    activeHealthcare.forEach(user => {
+      const facilityName = user.facilityName;
+      const existing = healthcareByFacility.get(facilityName);
+      if (!existing || new Date(user.lastActivity || 0) > new Date(existing.lastActivity || 0)) {
+        healthcareByFacility.set(facilityName, user);
+      }
+    });
+
+    const emsByAgency = new Map<string, any>();
+    activeEMS.forEach(user => {
+      const agencyName = user.agencyName;
+      const existing = emsByAgency.get(agencyName);
+      if (!existing || new Date(user.lastActivity || 0) > new Date(existing.lastActivity || 0)) {
+        emsByAgency.set(agencyName, user);
+      }
+    });
+
+    // Calculate minutes ago for each user and format with location
+    const now = Date.now();
+    
+    const formatHealthcareUser = (user: any) => {
+      const lastActivityTime = user.lastActivity ? new Date(user.lastActivity).getTime() : 0;
+      const minutesAgo = Math.floor((now - lastActivityTime) / (60 * 1000));
+      const location = user.locations && user.locations.length > 0 
+        ? user.locations[0] 
+        : null;
+      
+      return {
+        id: user.id,
+        name: user.name,
+        facilityName: user.facilityName,
+        city: location?.city || 'N/A',
+        state: location?.state || 'N/A',
+        lastActivity: user.lastActivity?.toISOString() || '',
+        minutesAgo
+      };
+    };
+
+    const formatEMSUser = (user: any) => {
+      const lastActivityTime = user.lastActivity ? new Date(user.lastActivity).getTime() : 0;
+      const minutesAgo = Math.floor((now - lastActivityTime) / (60 * 1000));
+      
+      return {
+        id: user.id,
+        name: user.name,
+        agencyName: user.agencyName,
+        city: user.agency?.city || 'N/A',
+        state: user.agency?.state || 'N/A',
+        lastActivity: user.lastActivity?.toISOString() || '',
+        minutesAgo
+      };
+    };
+
+    return {
+      healthcare: Array.from(healthcareByFacility.values()).map(formatHealthcareUser),
+      ems: Array.from(emsByAgency.values()).map(formatEMSUser)
+    };
+  }
+
+  /**
+   * Get facilities/agencies online statistics (24h and 7 days)
+   * @returns Count of distinct facilities/agencies with at least one active user
+   */
+  async getFacilitiesOnlineStats(): Promise<{
+    healthcare: {
+      last24Hours: number;
+      lastWeek: number;
+    };
+    ems: {
+      last24Hours: number;
+      lastWeek: number;
+    };
+    total: {
+      last24Hours: number;
+      lastWeek: number;
+    };
+  }> {
+    const db = databaseManager.getPrismaClient();
+    const now = new Date();
+    const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    // Healthcare: Count distinct facilities with at least one active user
+    const healthcare24h = await db.healthcareUser.findMany({
+      where: {
+        isActive: true,
+        isDeleted: false,
+        lastActivity: { gte: last24Hours }
+      },
+      select: {
+        facilityName: true
+      },
+      distinct: ['facilityName']
+    });
+
+    const healthcareWeek = await db.healthcareUser.findMany({
+      where: {
+        isActive: true,
+        isDeleted: false,
+        lastActivity: { gte: lastWeek }
+      },
+      select: {
+        facilityName: true
+      },
+      distinct: ['facilityName']
+    });
+
+    // EMS: Count distinct agencies with at least one active user
+    const ems24h = await db.eMSUser.findMany({
+      where: {
+        isActive: true,
+        isDeleted: false,
+        lastActivity: { gte: last24Hours }
+      },
+      select: {
+        agencyName: true
+      },
+      distinct: ['agencyName']
+    });
+
+    const emsWeek = await db.eMSUser.findMany({
+      where: {
+        isActive: true,
+        isDeleted: false,
+        lastActivity: { gte: lastWeek }
+      },
+      select: {
+        agencyName: true
+      },
+      distinct: ['agencyName']
+    });
+
+    return {
+      healthcare: {
+        last24Hours: healthcare24h.length,
+        lastWeek: healthcareWeek.length
+      },
+      ems: {
+        last24Hours: ems24h.length,
+        lastWeek: emsWeek.length
+      },
+      total: {
+        last24Hours: healthcare24h.length + ems24h.length,
+        lastWeek: healthcareWeek.length + emsWeek.length
+      }
+    };
+  }
 }
 
 export const analyticsService = new AnalyticsService();

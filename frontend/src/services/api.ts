@@ -223,6 +223,17 @@ export const analyticsAPI = {
   
   getProfitability: (params?: any) =>
     api.get('/api/tcc/analytics/profitability', { params }),
+  
+  getActiveUsers: (threshold?: number, excludeCurrent?: boolean) =>
+    api.get('/api/tcc/analytics/active-users', { 
+      params: { 
+        threshold: threshold || 15,
+        excludeCurrent: excludeCurrent !== false 
+      } 
+    }),
+  
+  getFacilitiesOnline: () =>
+    api.get('/api/tcc/analytics/facilities-online'),
 };
 
 // Trips API (legacy export for compatibility)
