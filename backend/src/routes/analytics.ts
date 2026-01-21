@@ -320,7 +320,12 @@ router.get('/active-users', async (req: AuthenticatedRequest, res) => {
     const excludeCurrent = req.query.excludeCurrent !== 'false'; // Default true
     const excludeUserId = excludeCurrent && req.user ? req.user.id : undefined;
 
+    console.log('TCC_DEBUG: getActiveUsers called with:', { threshold, excludeUserId });
     const activeUsers = await analyticsService.getActiveUsers(threshold, excludeUserId);
+    console.log('TCC_DEBUG: getActiveUsers result:', { 
+      healthcare: activeUsers.healthcare.length, 
+      ems: activeUsers.ems.length 
+    });
 
     res.json({
       success: true,
@@ -328,11 +333,14 @@ router.get('/active-users', async (req: AuthenticatedRequest, res) => {
       threshold,
       timestamp: new Date().toISOString()
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching active users:', error);
+    console.error('Error stack:', error?.stack);
+    console.error('Error message:', error?.message);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch active users'
+      error: 'Failed to fetch active users',
+      details: process.env.NODE_ENV === 'development' ? error?.message : undefined
     });
   }
 });
