@@ -69,11 +69,23 @@ export class AuthService {
       let foundUser: any = null;
       try {
         foundUser = await db.centerUser?.findFirst({
-          where: { email }
+          where: { email },
+          select: {
+            id: true,
+            email: true,
+            password: true,
+            name: true,
+            userType: true,
+            isActive: true,
+            isDeleted: true,
+            lastLogin: true,
+            // lastActivity is optional, don't select it for login queries
+          }
         });
         console.log('TCC_DEBUG: centerUser lookup result:', foundUser ? `Found user: ${foundUser.email}` : 'Not found');
       } catch (dbError) {
         console.error('❌ Error querying centerUser table:', dbError);
+        console.error('❌ Error details:', JSON.stringify(dbError, null, 2));
         throw dbError;
       }
       if (foundUser) {
@@ -84,25 +96,66 @@ export class AuthService {
 
       // If not found, try HealthcareUser table
       if (!foundUser) {
-        foundUser = await db.healthcareUser?.findFirst({
-          where: { email }
-        });
-        if (foundUser) {
-          userType = 'HEALTHCARE';
-          mustChangePassword = !!(foundUser as any).mustChangePassword;
-          user = foundUser;
+        try {
+          foundUser = await db.healthcareUser?.findFirst({
+            where: { email },
+            select: {
+              id: true,
+              email: true,
+              password: true,
+              name: true,
+              facilityName: true,
+              facilityType: true,
+              isActive: true,
+              isDeleted: true,
+              lastLogin: true,
+              mustChangePassword: true,
+              manageMultipleLocations: true,
+              orgAdmin: true,
+              // lastActivity is optional, don't select it for login queries
+            }
+          });
+          if (foundUser) {
+            userType = 'HEALTHCARE';
+            mustChangePassword = !!(foundUser as any).mustChangePassword;
+            user = foundUser;
+          }
+        } catch (dbError) {
+          console.error('❌ Error querying healthcareUser table:', dbError);
+          console.error('❌ Error details:', JSON.stringify(dbError, null, 2));
+          throw dbError;
         }
       }
 
       // If still not found, try EMSUser table
       if (!foundUser) {
-        foundUser = await db.eMSUser?.findFirst({
-          where: { email }
-        });
-        if (foundUser) {
-          userType = 'EMS';
-          mustChangePassword = !!(foundUser as any).mustChangePassword;
-          user = foundUser;
+        try {
+          foundUser = await db.eMSUser?.findFirst({
+            where: { email },
+            select: {
+              id: true,
+              email: true,
+              password: true,
+              name: true,
+              agencyName: true,
+              agencyId: true,
+              isActive: true,
+              isDeleted: true,
+              lastLogin: true,
+              mustChangePassword: true,
+              orgAdmin: true,
+              // lastActivity is optional, don't select it for login queries
+            }
+          });
+          if (foundUser) {
+            userType = 'EMS';
+            mustChangePassword = !!(foundUser as any).mustChangePassword;
+            user = foundUser;
+          }
+        } catch (dbError) {
+          console.error('❌ Error querying eMSUser table:', dbError);
+          console.error('❌ Error details:', JSON.stringify(dbError, null, 2));
+          throw dbError;
         }
       }
 
