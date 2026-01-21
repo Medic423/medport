@@ -468,547 +468,6 @@ const TCCOverview: React.FC<TCCOverviewProps> = ({ user, onClearSession }) => {
         ))}
       </div>
 
-      {/* Recent Activity */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-gray-900">Recent Activity</h2>
-          <Activity className="h-5 w-5 text-gray-400" />
-        </div>
-        {loading ? (
-          <div className="text-center py-4">
-            <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-            <p className="mt-2 text-sm text-gray-600">Loading activity...</p>
-          </div>
-        ) : accountStats ? (
-          <div className="space-y-3">
-            <div className="p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <div className="h-2 w-2 bg-blue-600 rounded-full"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">New Healthcare Facilities Registered (Last 60 Days)</p>
-                  {accountStats.newFacilitiesLast60Days > 0 ? (
-                    <p className="text-sm text-gray-500">
-                      {accountStats.newFacilitiesLast60Days} Healthcare Facilities
-                    </p>
-                  ) : (
-                    <p className="text-sm text-gray-500 italic">No healthcare facilities registered in the last 60 days</p>
-                  )}
-                </div>
-                {accountStats.newFacilitiesLast60Days > 0 && (
-                  <button
-                    onClick={() => toggleList('facilities60')}
-                    className="flex items-center space-x-1 px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
-                  >
-                    <span>{expandedLists.facilities60 ? 'Hide List' : 'Show List'}</span>
-                    {expandedLists.facilities60 ? (
-                      <ChevronUp className="h-3 w-3" />
-                    ) : (
-                      <ChevronDown className="h-3 w-3" />
-                    )}
-                  </button>
-                )}
-              </div>
-              {expandedLists.facilities60 && (
-                <div className="mt-3 ml-5 border-l-2 border-blue-200 pl-3 space-y-2">
-                  {listLoading.facilities60 ? (
-                    <div className="flex items-center space-x-2 text-sm text-gray-500">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                      <span>Loading facilities...</span>
-                    </div>
-                  ) : listData.facilities60 && listData.facilities60.length > 0 ? (
-                    listData.facilities60.map((facility) => (
-                      <div key={facility.id} className="py-2 border-b border-gray-200 last:border-0">
-                        <p className="text-sm font-medium text-gray-900">{facility.name}</p>
-                        <p className="text-xs text-gray-500">
-                          {facility.city}, {facility.state} • Registered {formatDate(facility.createdAt)}
-                        </p>
-                        <span className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full ${
-                          facility.isActive 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {facility.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-gray-500 italic">No facilities found</p>
-                  )}
-                </div>
-              )}
-            </div>
-            <div className="p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <div className="h-2 w-2 bg-green-600 rounded-full"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">New EMS Agencies Registered (Last 60 Days)</p>
-                  {accountStats.newAgenciesLast60Days > 0 ? (
-                    <p className="text-sm text-gray-500">
-                      {accountStats.newAgenciesLast60Days} EMS Agencies
-                    </p>
-                  ) : (
-                    <p className="text-sm text-gray-500 italic">No EMS agencies registered in the last 60 days</p>
-                  )}
-                </div>
-                {accountStats.newAgenciesLast60Days > 0 && (
-                  <button
-                    onClick={() => toggleList('agencies60')}
-                    className="flex items-center space-x-1 px-3 py-1 text-xs font-medium text-green-600 hover:text-green-700 hover:bg-green-50 rounded-md transition-colors"
-                  >
-                    <span>{expandedLists.agencies60 ? 'Hide List' : 'Show List'}</span>
-                    {expandedLists.agencies60 ? (
-                      <ChevronUp className="h-3 w-3" />
-                    ) : (
-                      <ChevronDown className="h-3 w-3" />
-                    )}
-                  </button>
-                )}
-              </div>
-              {expandedLists.agencies60 && (
-                <div className="mt-3 ml-5 border-l-2 border-green-200 pl-3 space-y-2">
-                  {listLoading.agencies60 ? (
-                    <div className="flex items-center space-x-2 text-sm text-gray-500">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
-                      <span>Loading agencies...</span>
-                    </div>
-                  ) : listData.agencies60 && listData.agencies60.length > 0 ? (
-                    listData.agencies60.map((agency) => (
-                      <div key={agency.id} className="py-2 border-b border-gray-200 last:border-0">
-                        <p className="text-sm font-medium text-gray-900">{agency.name}</p>
-                        <p className="text-xs text-gray-500">
-                          {agency.city}, {agency.state} • Registered {formatDate(agency.createdAt)}
-                        </p>
-                        <span className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full ${
-                          agency.isActive 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {agency.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-gray-500 italic">No agencies found</p>
-                  )}
-                </div>
-              )}
-            </div>
-            <div className="p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <div className="h-2 w-2 bg-purple-600 rounded-full"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">New Registrations (Last 90 Days)</p>
-                  {accountStats.newFacilitiesLast90Days > 0 || accountStats.newAgenciesLast90Days > 0 ? (
-                    <p className="text-sm text-gray-500">
-                      {accountStats.newFacilitiesLast90Days} Healthcare Facilities, 
-                      {accountStats.newAgenciesLast90Days} EMS Agencies
-                    </p>
-                  ) : (
-                    <p className="text-sm text-gray-500 italic">No new registrations in the last 90 days</p>
-                  )}
-                </div>
-                {(accountStats.newFacilitiesLast90Days > 0 || accountStats.newAgenciesLast90Days > 0) && (
-                  <button
-                    onClick={() => toggleList('registrations90')}
-                    className="flex items-center space-x-1 px-3 py-1 text-xs font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-md transition-colors"
-                  >
-                    <span>{expandedLists.registrations90 ? 'Hide List' : 'Show List'}</span>
-                    {expandedLists.registrations90 ? (
-                      <ChevronUp className="h-3 w-3" />
-                    ) : (
-                      <ChevronDown className="h-3 w-3" />
-                    )}
-                  </button>
-                )}
-              </div>
-              {expandedLists.registrations90 && (
-                <div className="mt-3 ml-5 border-l-2 border-purple-200 pl-3 space-y-4">
-                  {listLoading.registrations90 ? (
-                    <div className="flex items-center space-x-2 text-sm text-gray-500">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
-                      <span>Loading registrations...</span>
-                    </div>
-                  ) : listData.registrations90 ? (
-                    <>
-                      {listData.registrations90.facilities.length > 0 && (
-                        <div>
-                          <p className="text-xs font-semibold text-gray-700 mb-2">Healthcare Facilities:</p>
-                          <div className="space-y-2">
-                            {listData.registrations90.facilities.map((facility) => (
-                              <div key={facility.id} className="py-2 border-b border-gray-200 last:border-0">
-                                <p className="text-sm font-medium text-gray-900">{facility.name}</p>
-                                <p className="text-xs text-gray-500">
-                                  {facility.city}, {facility.state} • Registered {formatDate(facility.createdAt)}
-                                </p>
-                                <span className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full ${
-                                  facility.isActive 
-                                    ? 'bg-green-100 text-green-800' 
-                                    : 'bg-gray-100 text-gray-800'
-                                }`}>
-                                  {facility.isActive ? 'Active' : 'Inactive'}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {listData.registrations90.agencies.length > 0 && (
-                        <div>
-                          <p className="text-xs font-semibold text-gray-700 mb-2">EMS Agencies:</p>
-                          <div className="space-y-2">
-                            {listData.registrations90.agencies.map((agency) => (
-                              <div key={agency.id} className="py-2 border-b border-gray-200 last:border-0">
-                                <p className="text-sm font-medium text-gray-900">{agency.name}</p>
-                                <p className="text-xs text-gray-500">
-                                  {agency.city}, {agency.state} • Registered {formatDate(agency.createdAt)}
-                                </p>
-                                <span className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full ${
-                                  agency.isActive 
-                                    ? 'bg-green-100 text-green-800' 
-                                    : 'bg-gray-100 text-gray-800'
-                                }`}>
-                                  {agency.isActive ? 'Active' : 'Inactive'}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {listData.registrations90.facilities.length === 0 && listData.registrations90.agencies.length === 0 && (
-                        <p className="text-sm text-gray-500 italic">No registrations found</p>
-                      )}
-                    </>
-                  ) : (
-                    <p className="text-sm text-gray-500 italic">No registrations found</p>
-                  )}
-                </div>
-              )}
-            </div>
-            {/* Idle Account Statistics */}
-            {accountStats.idleAccounts && (
-              <>
-                <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                  <div className="flex items-center space-x-3">
-                    <div className="h-2 w-2 bg-yellow-600 rounded-full"></div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">Idle Accounts (Last 30 Days)</p>
-                      {accountStats.idleAccounts.last30Days.total > 0 ? (
-                        <p className="text-sm text-gray-500">
-                          {accountStats.idleAccounts.last30Days.total} total ({accountStats.idleAccounts.last30Days.healthcare} Healthcare, {accountStats.idleAccounts.last30Days.ems} EMS, {accountStats.idleAccounts.last30Days.admin} Admin)
-                        </p>
-                      ) : (
-                        <p className="text-sm text-gray-500 italic">No idle accounts in the last 30 days</p>
-                      )}
-                    </div>
-                    {accountStats.idleAccounts.last30Days.total > 0 && (
-                      <button
-                        onClick={() => toggleList('idle30')}
-                        className="flex items-center space-x-1 px-3 py-1 text-xs font-medium text-yellow-700 hover:text-yellow-800 hover:bg-yellow-100 rounded-md transition-colors"
-                      >
-                        <span>{expandedLists.idle30 ? 'Hide List' : 'Show List'}</span>
-                        {expandedLists.idle30 ? (
-                          <ChevronUp className="h-3 w-3" />
-                        ) : (
-                          <ChevronDown className="h-3 w-3" />
-                        )}
-                      </button>
-                    )}
-                  </div>
-                  {expandedLists.idle30 && (
-                    <div className="mt-3 ml-5 border-l-2 border-yellow-300 pl-3 space-y-4">
-                      {listLoading.idle30 ? (
-                        <div className="flex items-center space-x-2 text-sm text-gray-500">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-600"></div>
-                          <span>Loading idle accounts...</span>
-                        </div>
-                      ) : listData.idle30 ? (
-                        <>
-                          {listData.idle30.healthcare.length > 0 && (
-                            <div>
-                              <p className="text-xs font-semibold text-gray-700 mb-2">Healthcare Users ({listData.idle30.healthcare.length}):</p>
-                              <div className="space-y-2">
-                                {listData.idle30.healthcare.map((user) => (
-                                  <div key={user.id} className="py-2 border-b border-gray-200 last:border-0">
-                                    <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                                    <p className="text-xs text-gray-500">
-                                      {user.email} {user.facilityName && `• ${user.facilityName}`}
-                                    </p>
-                                    <p className="text-xs text-gray-400 mt-1">
-                                      {user.lastLogin 
-                                        ? `Last login: ${formatDate(user.lastLogin)}` 
-                                        : 'Never logged in'}
-                                    </p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {listData.idle30.ems.length > 0 && (
-                            <div>
-                              <p className="text-xs font-semibold text-gray-700 mb-2">EMS Users ({listData.idle30.ems.length}):</p>
-                              <div className="space-y-2">
-                                {listData.idle30.ems.map((user) => (
-                                  <div key={user.id} className="py-2 border-b border-gray-200 last:border-0">
-                                    <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                                    <p className="text-xs text-gray-500">
-                                      {user.email} {user.agencyName && `• ${user.agencyName}`}
-                                    </p>
-                                    <p className="text-xs text-gray-400 mt-1">
-                                      {user.lastLogin 
-                                        ? `Last login: ${formatDate(user.lastLogin)}` 
-                                        : 'Never logged in'}
-                                    </p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {listData.idle30.admin.length > 0 && (
-                            <div>
-                              <p className="text-xs font-semibold text-gray-700 mb-2">Admin Users ({listData.idle30.admin.length}):</p>
-                              <div className="space-y-2">
-                                {listData.idle30.admin.map((user) => (
-                                  <div key={user.id} className="py-2 border-b border-gray-200 last:border-0">
-                                    <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                                    <p className="text-xs text-gray-500">{user.email}</p>
-                                    <p className="text-xs text-gray-400 mt-1">
-                                      {user.lastLogin 
-                                        ? `Last login: ${formatDate(user.lastLogin)}` 
-                                        : 'Never logged in'}
-                                    </p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {listData.idle30.healthcare.length === 0 && listData.idle30.ems.length === 0 && listData.idle30.admin.length === 0 && (
-                            <p className="text-sm text-gray-500 italic">No idle accounts found</p>
-                          )}
-                        </>
-                      ) : (
-                        <p className="text-sm text-gray-500 italic">No idle accounts found</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
-                  <div className="flex items-center space-x-3">
-                    <div className="h-2 w-2 bg-orange-600 rounded-full"></div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">Idle Accounts (Last 60 Days)</p>
-                      {accountStats.idleAccounts.last60Days.total > 0 ? (
-                        <p className="text-sm text-gray-500">
-                          {accountStats.idleAccounts.last60Days.total} total ({accountStats.idleAccounts.last60Days.healthcare} Healthcare, {accountStats.idleAccounts.last60Days.ems} EMS, {accountStats.idleAccounts.last60Days.admin} Admin)
-                        </p>
-                      ) : (
-                        <p className="text-sm text-gray-500 italic">No idle accounts in the last 60 days</p>
-                      )}
-                    </div>
-                    {accountStats.idleAccounts.last60Days.total > 0 && (
-                      <button
-                        onClick={() => toggleList('idle60')}
-                        className="flex items-center space-x-1 px-3 py-1 text-xs font-medium text-orange-700 hover:text-orange-800 hover:bg-orange-100 rounded-md transition-colors"
-                      >
-                        <span>{expandedLists.idle60 ? 'Hide List' : 'Show List'}</span>
-                        {expandedLists.idle60 ? (
-                          <ChevronUp className="h-3 w-3" />
-                        ) : (
-                          <ChevronDown className="h-3 w-3" />
-                        )}
-                      </button>
-                    )}
-                  </div>
-                  {expandedLists.idle60 && (
-                    <div className="mt-3 ml-5 border-l-2 border-orange-300 pl-3 space-y-4">
-                      {listLoading.idle60 ? (
-                        <div className="flex items-center space-x-2 text-sm text-gray-500">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-600"></div>
-                          <span>Loading idle accounts...</span>
-                        </div>
-                      ) : listData.idle60 ? (
-                        <>
-                          {listData.idle60.healthcare.length > 0 && (
-                            <div>
-                              <p className="text-xs font-semibold text-gray-700 mb-2">Healthcare Users ({listData.idle60.healthcare.length}):</p>
-                              <div className="space-y-2">
-                                {listData.idle60.healthcare.map((user) => (
-                                  <div key={user.id} className="py-2 border-b border-gray-200 last:border-0">
-                                    <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                                    <p className="text-xs text-gray-500">
-                                      {user.email} {user.facilityName && `• ${user.facilityName}`}
-                                    </p>
-                                    <p className="text-xs text-gray-400 mt-1">
-                                      {user.lastLogin 
-                                        ? `Last login: ${formatDate(user.lastLogin)}` 
-                                        : 'Never logged in'}
-                                    </p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {listData.idle60.ems.length > 0 && (
-                            <div>
-                              <p className="text-xs font-semibold text-gray-700 mb-2">EMS Users ({listData.idle60.ems.length}):</p>
-                              <div className="space-y-2">
-                                {listData.idle60.ems.map((user) => (
-                                  <div key={user.id} className="py-2 border-b border-gray-200 last:border-0">
-                                    <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                                    <p className="text-xs text-gray-500">
-                                      {user.email} {user.agencyName && `• ${user.agencyName}`}
-                                    </p>
-                                    <p className="text-xs text-gray-400 mt-1">
-                                      {user.lastLogin 
-                                        ? `Last login: ${formatDate(user.lastLogin)}` 
-                                        : 'Never logged in'}
-                                    </p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {listData.idle60.admin.length > 0 && (
-                            <div>
-                              <p className="text-xs font-semibold text-gray-700 mb-2">Admin Users ({listData.idle60.admin.length}):</p>
-                              <div className="space-y-2">
-                                {listData.idle60.admin.map((user) => (
-                                  <div key={user.id} className="py-2 border-b border-gray-200 last:border-0">
-                                    <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                                    <p className="text-xs text-gray-500">{user.email}</p>
-                                    <p className="text-xs text-gray-400 mt-1">
-                                      {user.lastLogin 
-                                        ? `Last login: ${formatDate(user.lastLogin)}` 
-                                        : 'Never logged in'}
-                                    </p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {listData.idle60.healthcare.length === 0 && listData.idle60.ems.length === 0 && listData.idle60.admin.length === 0 && (
-                            <p className="text-sm text-gray-500 italic">No idle accounts found</p>
-                          )}
-                        </>
-                      ) : (
-                        <p className="text-sm text-gray-500 italic">No idle accounts found</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <div className="p-3 bg-red-50 rounded-lg border border-red-200">
-                  <div className="flex items-center space-x-3">
-                    <div className="h-2 w-2 bg-red-600 rounded-full"></div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">Idle Accounts (Last 90 Days)</p>
-                      {accountStats.idleAccounts.last90Days.total > 0 ? (
-                        <p className="text-sm text-gray-500">
-                          {accountStats.idleAccounts.last90Days.total} total ({accountStats.idleAccounts.last90Days.healthcare} Healthcare, {accountStats.idleAccounts.last90Days.ems} EMS, {accountStats.idleAccounts.last90Days.admin} Admin)
-                        </p>
-                      ) : (
-                        <p className="text-sm text-gray-500 italic">No idle accounts in the last 90 days</p>
-                      )}
-                    </div>
-                    {accountStats.idleAccounts.last90Days.total > 0 && (
-                      <button
-                        onClick={() => toggleList('idle90')}
-                        className="flex items-center space-x-1 px-3 py-1 text-xs font-medium text-red-700 hover:text-red-800 hover:bg-red-100 rounded-md transition-colors"
-                      >
-                        <span>{expandedLists.idle90 ? 'Hide List' : 'Show List'}</span>
-                        {expandedLists.idle90 ? (
-                          <ChevronUp className="h-3 w-3" />
-                        ) : (
-                          <ChevronDown className="h-3 w-3" />
-                        )}
-                      </button>
-                    )}
-                  </div>
-                  {expandedLists.idle90 && (
-                    <div className="mt-3 ml-5 border-l-2 border-red-300 pl-3 space-y-4">
-                      {listLoading.idle90 ? (
-                        <div className="flex items-center space-x-2 text-sm text-gray-500">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
-                          <span>Loading idle accounts...</span>
-                        </div>
-                      ) : listData.idle90 ? (
-                        <>
-                          {listData.idle90.healthcare.length > 0 && (
-                            <div>
-                              <p className="text-xs font-semibold text-gray-700 mb-2">Healthcare Users ({listData.idle90.healthcare.length}):</p>
-                              <div className="space-y-2">
-                                {listData.idle90.healthcare.map((user) => (
-                                  <div key={user.id} className="py-2 border-b border-gray-200 last:border-0">
-                                    <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                                    <p className="text-xs text-gray-500">
-                                      {user.email} {user.facilityName && `• ${user.facilityName}`}
-                                    </p>
-                                    <p className="text-xs text-gray-400 mt-1">
-                                      {user.lastLogin 
-                                        ? `Last login: ${formatDate(user.lastLogin)}` 
-                                        : 'Never logged in'}
-                                    </p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {listData.idle90.ems.length > 0 && (
-                            <div>
-                              <p className="text-xs font-semibold text-gray-700 mb-2">EMS Users ({listData.idle90.ems.length}):</p>
-                              <div className="space-y-2">
-                                {listData.idle90.ems.map((user) => (
-                                  <div key={user.id} className="py-2 border-b border-gray-200 last:border-0">
-                                    <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                                    <p className="text-xs text-gray-500">
-                                      {user.email} {user.agencyName && `• ${user.agencyName}`}
-                                    </p>
-                                    <p className="text-xs text-gray-400 mt-1">
-                                      {user.lastLogin 
-                                        ? `Last login: ${formatDate(user.lastLogin)}` 
-                                        : 'Never logged in'}
-                                    </p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {listData.idle90.admin.length > 0 && (
-                            <div>
-                              <p className="text-xs font-semibold text-gray-700 mb-2">Admin Users ({listData.idle90.admin.length}):</p>
-                              <div className="space-y-2">
-                                {listData.idle90.admin.map((user) => (
-                                  <div key={user.id} className="py-2 border-b border-gray-200 last:border-0">
-                                    <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                                    <p className="text-xs text-gray-500">{user.email}</p>
-                                    <p className="text-xs text-gray-400 mt-1">
-                                      {user.lastLogin 
-                                        ? `Last login: ${formatDate(user.lastLogin)}` 
-                                        : 'Never logged in'}
-                                    </p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {listData.idle90.healthcare.length === 0 && listData.idle90.ems.length === 0 && listData.idle90.admin.length === 0 && (
-                            <p className="text-sm text-gray-500 italic">No idle accounts found</p>
-                          )}
-                        </>
-                      ) : (
-                        <p className="text-sm text-gray-500 italic">No idle accounts found</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        ) : (
-          <div className="text-center py-4 text-gray-500">
-            <p className="text-sm">No activity data available</p>
-          </div>
-        )}
-      </div>
-
       {/* Current Activity Section */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-6">
         <div className="flex items-center justify-between mb-4">
@@ -1016,6 +475,7 @@ const TCCOverview: React.FC<TCCOverviewProps> = ({ user, onClearSession }) => {
           <div className="flex items-center space-x-2">
             <Activity className="h-5 w-5 text-green-500" />
             <button
+              type="button"
               onClick={() => {
                 setShowActiveUsers(!showActiveUsers);
                 if (!showActiveUsers && !activeUsers) {
@@ -1151,6 +611,553 @@ const TCCOverview: React.FC<TCCOverviewProps> = ({ user, onClearSession }) => {
             <p className="text-sm">Click "Show List" to load active users</p>
           </div>
         ) : null}
+      </div>
+
+      {/* Recent Activity */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-gray-900">Recent Activity</h2>
+          <Activity className="h-5 w-5 text-gray-400" />
+        </div>
+        {loading ? (
+          <div className="text-center py-4">
+            <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <p className="mt-2 text-sm text-gray-600">Loading activity...</p>
+          </div>
+        ) : accountStats ? (
+          <div className="space-y-3">
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <div className="h-2 w-2 bg-blue-600 rounded-full"></div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">New Healthcare Facilities Registered (Last 60 Days)</p>
+                  {accountStats.newFacilitiesLast60Days > 0 ? (
+                    <p className="text-sm text-gray-500">
+                      {accountStats.newFacilitiesLast60Days} Healthcare Facilities
+                    </p>
+                  ) : (
+                    <p className="text-sm text-gray-500 italic">No healthcare facilities registered in the last 60 days</p>
+                  )}
+                </div>
+                {accountStats.newFacilitiesLast60Days > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => toggleList('facilities60')}
+                    className="flex items-center space-x-1 px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
+                  >
+                    <span>{expandedLists.facilities60 ? 'Hide List' : 'Show List'}</span>
+                    {expandedLists.facilities60 ? (
+                      <ChevronUp className="h-3 w-3" />
+                    ) : (
+                      <ChevronDown className="h-3 w-3" />
+                    )}
+                  </button>
+                )}
+              </div>
+              {expandedLists.facilities60 && (
+                <div className="mt-3 ml-5 border-l-2 border-blue-200 pl-3 space-y-2">
+                  {listLoading.facilities60 ? (
+                    <div className="flex items-center space-x-2 text-sm text-gray-500">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                      <span>Loading facilities...</span>
+                    </div>
+                  ) : listData.facilities60 && listData.facilities60.length > 0 ? (
+                    listData.facilities60.map((facility) => (
+                      <div key={facility.id} className="py-2 border-b border-gray-200 last:border-0">
+                        <p className="text-sm font-medium text-gray-900">{facility.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {facility.city}, {facility.state} • Registered {formatDate(facility.createdAt)}
+                        </p>
+                        <span className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full ${
+                          facility.isActive 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {facility.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500 italic">No facilities found</p>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <div className="h-2 w-2 bg-green-600 rounded-full"></div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">New EMS Agencies Registered (Last 60 Days)</p>
+                  {accountStats.newAgenciesLast60Days > 0 ? (
+                    <p className="text-sm text-gray-500">
+                      {accountStats.newAgenciesLast60Days} EMS Agencies
+                    </p>
+                  ) : (
+                    <p className="text-sm text-gray-500 italic">No EMS agencies registered in the last 60 days</p>
+                  )}
+                </div>
+                {accountStats.newAgenciesLast60Days > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => toggleList('agencies60')}
+                    className="flex items-center space-x-1 px-3 py-1 text-xs font-medium text-green-600 hover:text-green-700 hover:bg-green-50 rounded-md transition-colors"
+                  >
+                    <span>{expandedLists.agencies60 ? 'Hide List' : 'Show List'}</span>
+                    {expandedLists.agencies60 ? (
+                      <ChevronUp className="h-3 w-3" />
+                    ) : (
+                      <ChevronDown className="h-3 w-3" />
+                    )}
+                  </button>
+                )}
+              </div>
+              {expandedLists.agencies60 && (
+                <div className="mt-3 ml-5 border-l-2 border-green-200 pl-3 space-y-2">
+                  {listLoading.agencies60 ? (
+                    <div className="flex items-center space-x-2 text-sm text-gray-500">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+                      <span>Loading agencies...</span>
+                    </div>
+                  ) : listData.agencies60 && listData.agencies60.length > 0 ? (
+                    listData.agencies60.map((agency) => (
+                      <div key={agency.id} className="py-2 border-b border-gray-200 last:border-0">
+                        <p className="text-sm font-medium text-gray-900">{agency.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {agency.city}, {agency.state} • Registered {formatDate(agency.createdAt)}
+                        </p>
+                        <span className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full ${
+                          agency.isActive 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {agency.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500 italic">No agencies found</p>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <div className="h-2 w-2 bg-purple-600 rounded-full"></div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">New Registrations (Last 90 Days)</p>
+                  {accountStats.newFacilitiesLast90Days > 0 || accountStats.newAgenciesLast90Days > 0 ? (
+                    <p className="text-sm text-gray-500">
+                      {accountStats.newFacilitiesLast90Days} Healthcare Facilities, 
+                      {accountStats.newAgenciesLast90Days} EMS Agencies
+                    </p>
+                  ) : (
+                    <p className="text-sm text-gray-500 italic">No new registrations in the last 90 days</p>
+                  )}
+                </div>
+                {(accountStats.newFacilitiesLast90Days > 0 || accountStats.newAgenciesLast90Days > 0) && (
+                  <button
+                    type="button"
+                    onClick={() => toggleList('registrations90')}
+                    className="flex items-center space-x-1 px-3 py-1 text-xs font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-md transition-colors"
+                  >
+                    <span>{expandedLists.registrations90 ? 'Hide List' : 'Show List'}</span>
+                    {expandedLists.registrations90 ? (
+                      <ChevronUp className="h-3 w-3" />
+                    ) : (
+                      <ChevronDown className="h-3 w-3" />
+                    )}
+                  </button>
+                )}
+              </div>
+              {expandedLists.registrations90 && (
+                <div className="mt-3 ml-5 border-l-2 border-purple-200 pl-3 space-y-4">
+                  {listLoading.registrations90 ? (
+                    <div className="flex items-center space-x-2 text-sm text-gray-500">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
+                      <span>Loading registrations...</span>
+                    </div>
+                  ) : listData.registrations90 ? (
+                    <>
+                      {listData.registrations90.facilities.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-gray-700 mb-2">Healthcare Facilities:</p>
+                          <div className="space-y-2">
+                            {listData.registrations90.facilities.map((facility) => (
+                              <div key={facility.id} className="py-2 border-b border-gray-200 last:border-0">
+                                <p className="text-sm font-medium text-gray-900">{facility.name}</p>
+                                <p className="text-xs text-gray-500">
+                                  {facility.city}, {facility.state} • Registered {formatDate(facility.createdAt)}
+                                </p>
+                                <span className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full ${
+                                  facility.isActive 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {facility.isActive ? 'Active' : 'Inactive'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {listData.registrations90.agencies.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-gray-700 mb-2">EMS Agencies:</p>
+                          <div className="space-y-2">
+                            {listData.registrations90.agencies.map((agency) => (
+                              <div key={agency.id} className="py-2 border-b border-gray-200 last:border-0">
+                                <p className="text-sm font-medium text-gray-900">{agency.name}</p>
+                                <p className="text-xs text-gray-500">
+                                  {agency.city}, {agency.state} • Registered {formatDate(agency.createdAt)}
+                                </p>
+                                <span className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full ${
+                                  agency.isActive 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {agency.isActive ? 'Active' : 'Inactive'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {listData.registrations90.facilities.length === 0 && listData.registrations90.agencies.length === 0 && (
+                        <p className="text-sm text-gray-500 italic">No registrations found</p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-sm text-gray-500 italic">No registrations found</p>
+                  )}
+                </div>
+              )}
+            </div>
+            {/* Idle Account Statistics */}
+            {accountStats.idleAccounts && (
+              <>
+                <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <div className="flex items-center space-x-3">
+                    <div className="h-2 w-2 bg-yellow-600 rounded-full"></div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">Idle Accounts (Last 30 Days)</p>
+                      {accountStats.idleAccounts.last30Days.total > 0 ? (
+                        <p className="text-sm text-gray-500">
+                          {accountStats.idleAccounts.last30Days.total} total ({accountStats.idleAccounts.last30Days.healthcare} Healthcare, {accountStats.idleAccounts.last30Days.ems} EMS, {accountStats.idleAccounts.last30Days.admin} Admin)
+                        </p>
+                      ) : (
+                        <p className="text-sm text-gray-500 italic">No idle accounts in the last 30 days</p>
+                      )}
+                    </div>
+                    {accountStats.idleAccounts.last30Days.total > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => toggleList('idle30')}
+                        className="flex items-center space-x-1 px-3 py-1 text-xs font-medium text-yellow-700 hover:text-yellow-800 hover:bg-yellow-100 rounded-md transition-colors"
+                      >
+                        <span>{expandedLists.idle30 ? 'Hide List' : 'Show List'}</span>
+                        {expandedLists.idle30 ? (
+                          <ChevronUp className="h-3 w-3" />
+                        ) : (
+                          <ChevronDown className="h-3 w-3" />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                  {expandedLists.idle30 && (
+                    <div className="mt-3 ml-5 border-l-2 border-yellow-300 pl-3 space-y-4">
+                      {listLoading.idle30 ? (
+                        <div className="flex items-center space-x-2 text-sm text-gray-500">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-600"></div>
+                          <span>Loading idle accounts...</span>
+                        </div>
+                      ) : listData.idle30 ? (
+                        <>
+                          {listData.idle30.healthcare.length > 0 && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-700 mb-2">Healthcare Users ({listData.idle30.healthcare.length}):</p>
+                              <div className="space-y-2">
+                                {listData.idle30.healthcare.map((user) => (
+                                  <div key={user.id} className="py-2 border-b border-gray-200 last:border-0">
+                                    <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                                    <p className="text-xs text-gray-500">
+                                      {user.email} {user.facilityName && `• ${user.facilityName}`}
+                                    </p>
+                                    <p className="text-xs text-gray-400 mt-1">
+                                      {user.lastLogin 
+                                        ? `Last login: ${formatDate(user.lastLogin)}` 
+                                        : 'Never logged in'}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {listData.idle30.ems.length > 0 && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-700 mb-2">EMS Users ({listData.idle30.ems.length}):</p>
+                              <div className="space-y-2">
+                                {listData.idle30.ems.map((user) => (
+                                  <div key={user.id} className="py-2 border-b border-gray-200 last:border-0">
+                                    <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                                    <p className="text-xs text-gray-500">
+                                      {user.email} {user.agencyName && `• ${user.agencyName}`}
+                                    </p>
+                                    <p className="text-xs text-gray-400 mt-1">
+                                      {user.lastLogin 
+                                        ? `Last login: ${formatDate(user.lastLogin)}` 
+                                        : 'Never logged in'}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {listData.idle30.admin.length > 0 && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-700 mb-2">Admin Users ({listData.idle30.admin.length}):</p>
+                              <div className="space-y-2">
+                                {listData.idle30.admin.map((user) => (
+                                  <div key={user.id} className="py-2 border-b border-gray-200 last:border-0">
+                                    <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                                    <p className="text-xs text-gray-500">{user.email}</p>
+                                    <p className="text-xs text-gray-400 mt-1">
+                                      {user.lastLogin 
+                                        ? `Last login: ${formatDate(user.lastLogin)}` 
+                                        : 'Never logged in'}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {listData.idle30.healthcare.length === 0 && listData.idle30.ems.length === 0 && listData.idle30.admin.length === 0 && (
+                            <p className="text-sm text-gray-500 italic">No idle accounts found</p>
+                          )}
+                        </>
+                      ) : (
+                        <p className="text-sm text-gray-500 italic">No idle accounts found</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
+                  <div className="flex items-center space-x-3">
+                    <div className="h-2 w-2 bg-orange-600 rounded-full"></div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">Idle Accounts (Last 60 Days)</p>
+                      {accountStats.idleAccounts.last60Days.total > 0 ? (
+                        <p className="text-sm text-gray-500">
+                          {accountStats.idleAccounts.last60Days.total} total ({accountStats.idleAccounts.last60Days.healthcare} Healthcare, {accountStats.idleAccounts.last60Days.ems} EMS, {accountStats.idleAccounts.last60Days.admin} Admin)
+                        </p>
+                      ) : (
+                        <p className="text-sm text-gray-500 italic">No idle accounts in the last 60 days</p>
+                      )}
+                    </div>
+                    {accountStats.idleAccounts.last60Days.total > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => toggleList('idle60')}
+                        className="flex items-center space-x-1 px-3 py-1 text-xs font-medium text-orange-700 hover:text-orange-800 hover:bg-orange-100 rounded-md transition-colors"
+                      >
+                        <span>{expandedLists.idle60 ? 'Hide List' : 'Show List'}</span>
+                        {expandedLists.idle60 ? (
+                          <ChevronUp className="h-3 w-3" />
+                        ) : (
+                          <ChevronDown className="h-3 w-3" />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                  {expandedLists.idle60 && (
+                    <div className="mt-3 ml-5 border-l-2 border-orange-300 pl-3 space-y-4">
+                      {listLoading.idle60 ? (
+                        <div className="flex items-center space-x-2 text-sm text-gray-500">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-600"></div>
+                          <span>Loading idle accounts...</span>
+                        </div>
+                      ) : listData.idle60 ? (
+                        <>
+                          {listData.idle60.healthcare.length > 0 && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-700 mb-2">Healthcare Users ({listData.idle60.healthcare.length}):</p>
+                              <div className="space-y-2">
+                                {listData.idle60.healthcare.map((user) => (
+                                  <div key={user.id} className="py-2 border-b border-gray-200 last:border-0">
+                                    <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                                    <p className="text-xs text-gray-500">
+                                      {user.email} {user.facilityName && `• ${user.facilityName}`}
+                                    </p>
+                                    <p className="text-xs text-gray-400 mt-1">
+                                      {user.lastLogin 
+                                        ? `Last login: ${formatDate(user.lastLogin)}` 
+                                        : 'Never logged in'}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {listData.idle60.ems.length > 0 && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-700 mb-2">EMS Users ({listData.idle60.ems.length}):</p>
+                              <div className="space-y-2">
+                                {listData.idle60.ems.map((user) => (
+                                  <div key={user.id} className="py-2 border-b border-gray-200 last:border-0">
+                                    <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                                    <p className="text-xs text-gray-500">
+                                      {user.email} {user.agencyName && `• ${user.agencyName}`}
+                                    </p>
+                                    <p className="text-xs text-gray-400 mt-1">
+                                      {user.lastLogin 
+                                        ? `Last login: ${formatDate(user.lastLogin)}` 
+                                        : 'Never logged in'}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {listData.idle60.admin.length > 0 && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-700 mb-2">Admin Users ({listData.idle60.admin.length}):</p>
+                              <div className="space-y-2">
+                                {listData.idle60.admin.map((user) => (
+                                  <div key={user.id} className="py-2 border-b border-gray-200 last:border-0">
+                                    <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                                    <p className="text-xs text-gray-500">{user.email}</p>
+                                    <p className="text-xs text-gray-400 mt-1">
+                                      {user.lastLogin 
+                                        ? `Last login: ${formatDate(user.lastLogin)}` 
+                                        : 'Never logged in'}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {listData.idle60.healthcare.length === 0 && listData.idle60.ems.length === 0 && listData.idle60.admin.length === 0 && (
+                            <p className="text-sm text-gray-500 italic">No idle accounts found</p>
+                          )}
+                        </>
+                      ) : (
+                        <p className="text-sm text-gray-500 italic">No idle accounts found</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+                  <div className="flex items-center space-x-3">
+                    <div className="h-2 w-2 bg-red-600 rounded-full"></div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">Idle Accounts (Last 90 Days)</p>
+                      {accountStats.idleAccounts.last90Days.total > 0 ? (
+                        <p className="text-sm text-gray-500">
+                          {accountStats.idleAccounts.last90Days.total} total ({accountStats.idleAccounts.last90Days.healthcare} Healthcare, {accountStats.idleAccounts.last90Days.ems} EMS, {accountStats.idleAccounts.last90Days.admin} Admin)
+                        </p>
+                      ) : (
+                        <p className="text-sm text-gray-500 italic">No idle accounts in the last 90 days</p>
+                      )}
+                    </div>
+                    {accountStats.idleAccounts.last90Days.total > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => toggleList('idle90')}
+                        className="flex items-center space-x-1 px-3 py-1 text-xs font-medium text-red-700 hover:text-red-800 hover:bg-red-100 rounded-md transition-colors"
+                      >
+                        <span>{expandedLists.idle90 ? 'Hide List' : 'Show List'}</span>
+                        {expandedLists.idle90 ? (
+                          <ChevronUp className="h-3 w-3" />
+                        ) : (
+                          <ChevronDown className="h-3 w-3" />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                  {expandedLists.idle90 && (
+                    <div className="mt-3 ml-5 border-l-2 border-red-300 pl-3 space-y-4">
+                      {listLoading.idle90 ? (
+                        <div className="flex items-center space-x-2 text-sm text-gray-500">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                          <span>Loading idle accounts...</span>
+                        </div>
+                      ) : listData.idle90 ? (
+                        <>
+                          {listData.idle90.healthcare.length > 0 && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-700 mb-2">Healthcare Users ({listData.idle90.healthcare.length}):</p>
+                              <div className="space-y-2">
+                                {listData.idle90.healthcare.map((user) => (
+                                  <div key={user.id} className="py-2 border-b border-gray-200 last:border-0">
+                                    <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                                    <p className="text-xs text-gray-500">
+                                      {user.email} {user.facilityName && `• ${user.facilityName}`}
+                                    </p>
+                                    <p className="text-xs text-gray-400 mt-1">
+                                      {user.lastLogin 
+                                        ? `Last login: ${formatDate(user.lastLogin)}` 
+                                        : 'Never logged in'}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {listData.idle90.ems.length > 0 && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-700 mb-2">EMS Users ({listData.idle90.ems.length}):</p>
+                              <div className="space-y-2">
+                                {listData.idle90.ems.map((user) => (
+                                  <div key={user.id} className="py-2 border-b border-gray-200 last:border-0">
+                                    <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                                    <p className="text-xs text-gray-500">
+                                      {user.email} {user.agencyName && `• ${user.agencyName}`}
+                                    </p>
+                                    <p className="text-xs text-gray-400 mt-1">
+                                      {user.lastLogin 
+                                        ? `Last login: ${formatDate(user.lastLogin)}` 
+                                        : 'Never logged in'}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {listData.idle90.admin.length > 0 && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-700 mb-2">Admin Users ({listData.idle90.admin.length}):</p>
+                              <div className="space-y-2">
+                                {listData.idle90.admin.map((user) => (
+                                  <div key={user.id} className="py-2 border-b border-gray-200 last:border-0">
+                                    <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                                    <p className="text-xs text-gray-500">{user.email}</p>
+                                    <p className="text-xs text-gray-400 mt-1">
+                                      {user.lastLogin 
+                                        ? `Last login: ${formatDate(user.lastLogin)}` 
+                                        : 'Never logged in'}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {listData.idle90.healthcare.length === 0 && listData.idle90.ems.length === 0 && listData.idle90.admin.length === 0 && (
+                            <p className="text-sm text-gray-500 italic">No idle accounts found</p>
+                          )}
+                        </>
+                      ) : (
+                        <p className="text-sm text-gray-500 italic">No idle accounts found</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="text-center py-4 text-gray-500">
+            <p className="text-sm">No activity data available</p>
+          </div>
+        )}
       </div>
     </div>
   );
