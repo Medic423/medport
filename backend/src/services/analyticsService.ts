@@ -709,6 +709,7 @@ export class AnalyticsService {
     });
 
     // Get active EMS users with agency location data
+    console.log('TCC_DEBUG: Querying active EMS users with threshold:', threshold);
     const activeEMS = await db.eMSUser.findMany({
       where: {
         ...excludeWhere,
@@ -734,6 +735,7 @@ export class AnalyticsService {
         lastActivity: 'desc'
       }
     });
+    console.log('TCC_DEBUG: Found active EMS users:', activeEMS.length, activeEMS.map(u => ({ name: u.name, agencyName: u.agencyName, lastActivity: u.lastActivity, hasAgency: !!u.agency })));
 
     // OPTION B: Group by facilityName/agencyName and keep only most recent user per facility/agency
     const healthcareByFacility = new Map<string, any>();

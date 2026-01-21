@@ -1631,17 +1631,21 @@ router.post('/ems/login', async (req, res) => {
       });
     }
 
-    // Update lastLogin timestamp
-    console.log('TCC_DEBUG: Updating lastLogin for EMSUser:', { email, userId: user.id });
+    // Update lastLogin and lastActivity timestamps
+    console.log('TCC_DEBUG: Updating lastLogin and lastActivity for EMSUser:', { email, userId: user.id });
+    const now = new Date();
     try {
       const updateResult = await db.eMSUser.update({
         where: { id: user.id },
-        data: { lastLogin: new Date() }
+        data: { 
+          lastLogin: now,
+          lastActivity: now  // Also update lastActivity on login
+        }
       });
-      console.log('TCC_DEBUG: Successfully updated lastLogin for EMSUser:', { email, lastLogin: updateResult.lastLogin });
+      console.log('TCC_DEBUG: Successfully updated lastLogin and lastActivity for EMSUser:', { email, lastLogin: updateResult.lastLogin, lastActivity: updateResult.lastActivity });
     } catch (err) {
-      console.error('TCC_DEBUG: Error updating lastLogin for EMSUser:', err);
-      // Don't fail login if lastLogin update fails
+      console.error('TCC_DEBUG: Error updating lastLogin/lastActivity for EMSUser:', err);
+      // Don't fail login if update fails
     }
 
     // For EMS users, use the user ID directly (agency lookup optional)
@@ -1731,13 +1735,17 @@ router.post('/healthcare/login', async (req, res) => {
       });
     }
 
-    // Update lastLogin timestamp
+    // Update lastLogin and lastActivity timestamps
+    const now = new Date();
     await db.healthcareUser.update({
       where: { id: user.id },
-      data: { lastLogin: new Date() }
+      data: { 
+        lastLogin: now,
+        lastActivity: now  // Also update lastActivity on login
+      }
     }).catch(err => {
-      console.error('Error updating lastLogin for HealthcareUser:', err);
-      // Don't fail login if lastLogin update fails
+      console.error('Error updating lastLogin/lastActivity for HealthcareUser:', err);
+      // Don't fail login if update fails
     });
 
     const token = jwt.sign(

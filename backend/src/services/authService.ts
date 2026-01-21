@@ -197,31 +197,41 @@ export class AuthService {
         };
       }
 
-      // Update lastLogin timestamp based on user type
+      // Update lastLogin and lastActivity timestamps based on user type
       try {
-        console.log('TCC_DEBUG: Updating lastLogin in authService:', { email, userType, userId: user.id });
+        const now = new Date();
+        console.log('TCC_DEBUG: Updating lastLogin and lastActivity in authService:', { email, userType, userId: user.id });
         if (userType === 'ADMIN' || userType === 'USER') {
           const updateResult = await db.centerUser.update({
             where: { id: user.id },
-            data: { lastLogin: new Date() }
+            data: { 
+              lastLogin: now,
+              lastActivity: now  // Also update lastActivity on login
+            }
           });
-          console.log('TCC_DEBUG: Successfully updated lastLogin in authService (CenterUser):', { email, lastLogin: updateResult.lastLogin });
+          console.log('TCC_DEBUG: Successfully updated lastLogin and lastActivity in authService (CenterUser):', { email, lastLogin: updateResult.lastLogin, lastActivity: updateResult.lastActivity });
         } else if (userType === 'HEALTHCARE') {
           const updateResult = await db.healthcareUser.update({
             where: { id: user.id },
-            data: { lastLogin: new Date() }
+            data: { 
+              lastLogin: now,
+              lastActivity: now  // Also update lastActivity on login
+            }
           });
-          console.log('TCC_DEBUG: Successfully updated lastLogin in authService (HealthcareUser):', { email, lastLogin: updateResult.lastLogin });
+          console.log('TCC_DEBUG: Successfully updated lastLogin and lastActivity in authService (HealthcareUser):', { email, lastLogin: updateResult.lastLogin, lastActivity: updateResult.lastActivity });
         } else if (userType === 'EMS') {
           const updateResult = await db.eMSUser.update({
             where: { id: user.id },
-            data: { lastLogin: new Date() }
+            data: { 
+              lastLogin: now,
+              lastActivity: now  // Also update lastActivity on login
+            }
           });
-          console.log('TCC_DEBUG: Successfully updated lastLogin in authService (EMSUser):', { email, lastLogin: updateResult.lastLogin });
+          console.log('TCC_DEBUG: Successfully updated lastLogin and lastActivity in authService (EMSUser):', { email, lastLogin: updateResult.lastLogin, lastActivity: updateResult.lastActivity });
         }
       } catch (err) {
-        console.error('TCC_DEBUG: Error updating lastLogin in authService:', err);
-        // Don't fail login if lastLogin update fails
+        console.error('TCC_DEBUG: Error updating lastLogin/lastActivity in authService:', err);
+        // Don't fail login if update fails
       }
 
       // For EMS users, use the agency ID from the relationship
