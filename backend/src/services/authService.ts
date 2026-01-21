@@ -306,11 +306,32 @@ export class AuthService {
 
       if (decoded.userType === 'ADMIN' || decoded.userType === 'USER') {
         user = await db.centerUser.findUnique({
-          where: { id: decoded.id }
+          where: { id: decoded.id },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            userType: true,
+            isActive: true,
+            isDeleted: true,
+            // lastActivity is optional, don't select it for verify queries
+          }
         });
       } else if (decoded.userType === 'HEALTHCARE') {
         user = await db.healthcareUser.findUnique({
-          where: { id: decoded.id }
+          where: { id: decoded.id },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            facilityName: true,
+            facilityType: true,
+            isActive: true,
+            isDeleted: true,
+            manageMultipleLocations: true,
+            orgAdmin: true,
+            // lastActivity is optional, don't select it for verify queries
+          }
         });
       } else if (decoded.userType === 'EMS') {
         // For EMS users, decoded.id contains the agency ID, not the user ID
@@ -329,6 +350,17 @@ export class AuthService {
           where: { 
             email: decoded.email,
             isDeleted: false
+          },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            agencyName: true,
+            agencyId: true,
+            isActive: true,
+            isDeleted: true,
+            orgAdmin: true,
+            // lastActivity is optional, don't select it for verify queries
           }
         });
 
