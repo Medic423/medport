@@ -1,7 +1,7 @@
 # Help System Workflow Guide
 
-**Last Updated:** January 14, 2026  
-**Status:** ✅ **ACTIVE** - Help system is scaffolded and ready for content
+**Last Updated:** January 22, 2026  
+**Status:** ✅ **ACTIVE** - Help system is automated and ready for content
 
 ---
 
@@ -9,38 +9,104 @@
 
 The Help System provides in-app documentation and help content for users. It renders markdown files with full support for images, code blocks, tables, and more.
 
-### Where to Put Help Markdown Files
+**✨ NEW: Automated Sync System**  
+All help files are now automatically synced from an external location. No manual copying required!
 
-**Two locations (both are needed):**
+---
 
-1. **Source files (for editing):**
+## 📋 Quick Checklist: After Editing a Help File
+
+**Simple 3-Step Process:**
+
+1. ✅ **Edit** the file in `/Users/scooper/Documents/TraccEMS/Users Guide/{Healthcare|EMS}/`
+   - Edit markdown files directly
+   - Add images to `Screen shots/` folder
+   - Reference images as: `![Description](./Screen shots/image-name.png)`
+
+2. ✅ **Sync** files (choose one method):
+   - **Manual:** `cd frontend && npm run sync-help`
+   - **Auto-watch:** `cd frontend && npm run watch:help` (keeps running, auto-syncs on save)
+   - **Auto-commit:** Just commit - pre-commit hook syncs automatically
+
+3. ✅ **Test** your changes in the application
+   - Refresh the browser
+   - Open the Help modal
+   - Verify changes appear correctly
+
+**That's it!** The sync system automatically:
+- ✅ Copies files to application
+- ✅ Removes `healthcare_` and `ems_` prefixes from filenames
+- ✅ Copies images to correct location
+- ✅ Updates image paths in markdown files
+
+---
+
+## Where to Edit Help Files
+
+### Source of Truth (Edit Here)
+
+**Edit all help files in the external location:**
+
+```
+/Users/scooper/Documents/TraccEMS/Users Guide/
+├── Healthcare/
+│   ├── healthcare_helpfile01_create-request.md  ← Edit here
+│   ├── healthcare_helpfile02_transport_requests.md
+│   └── Screen shots/
+│       └── *.png  ← Images here
+└── EMS/
+    ├── ems_helpfile01_available_trips.md  ← Edit here
+    └── Screen shots/
+        └── *.png  ← Images here
+```
+
+**This is your source of truth** - all editing happens here, and files are automatically synced to the application.
+
+### Application Locations (Auto-Synced)
+
+Files are automatically synced to:
+
+1. **Intermediate location (synced from external):**
    ```
    frontend/src/help/{userType}/{filename}.md
    ```
+   - Files are automatically synced here (with prefixes removed)
    - `frontend/src/help/healthcare/` - Healthcare Dashboard help
    - `frontend/src/help/ems/` - EMS Dashboard help
-   - `frontend/src/help/tcc-admin/` - TCC Admin Dashboard help
 
-2. **Public files (served at runtime):**
+2. **Public location (served at runtime):**
    ```
    frontend/public/help/{userType}/{filename}.md
    ```
-   - Same structure as above
+   - Files are automatically copied here during build
    - Files are loaded from `/help/{userType}/{filename}.md` at runtime
+   - Images are in `frontend/public/help/images/{userType}/`
 
 ---
 
 ## File Naming Conventions
 
-- ✅ Use lowercase letters
-- ✅ Separate words with hyphens (`-`)
-- ✅ Be descriptive but concise
-- ✅ Match the feature/tab name when possible
+### External Location (Source of Truth)
+
+Files in the external location use prefixes:
+- **Healthcare files:** `healthcare_helpfile##_topic-name.md`
+- **EMS files:** `ems_helpfile##_topic-name.md`
 
 **Examples:**
-- ✅ `create-request.md` (correct)
-- ❌ `CreateRequest.md` (wrong - uppercase)
-- ❌ `create_request.md` (wrong - underscores)
+- ✅ `healthcare_helpfile01_create-request.md`
+- ✅ `ems_helpfile01_available-trips.md`
+
+### Application Location (Auto-Renamed)
+
+Files are automatically renamed when synced (prefixes removed):
+- `healthcare_helpfile01_create-request.md` → `helpfile01_create-request.md`
+- `ems_helpfile01_available-trips.md` → `helpfile01_available-trips.md`
+
+**Naming rules:**
+- ✅ Use lowercase letters
+- ✅ Separate words with hyphens (`-`)
+- ✅ Keep `helpfile##_` prefix for ordering
+- ✅ Be descriptive but concise
 
 ---
 
@@ -67,110 +133,102 @@ The `HelpModal` component automatically maps topics to file names:
 
 ### Step-by-Step Process
 
-1. **Create the markdown file:**
+1. **Create the markdown file in external location:**
    ```bash
-   # Create in source directory
-   frontend/src/help/healthcare/my-new-topic.md
+   # Create in external location
+   /Users/scooper/Documents/TraccEMS/Users Guide/Healthcare/healthcare_helpfile09_new-topic.md
    ```
 
-2. **Copy to public directory:**
-   ```bash
-   # Copy to public directory (or add build step)
-   frontend/public/help/healthcare/my-new-topic.md
+2. **Add images (if needed):**
    ```
+   /Users/scooper/Documents/TraccEMS/Users Guide/Healthcare/Screen shots/image-name.png
+   ```
+   Reference in markdown: `![Description](./Screen shots/image-name.png)`
+   (Image paths are automatically updated during sync)
 
-3. **Add topic mapping (if needed):**
+3. **Sync files (automatic options):**
+   - **Option A:** Run sync manually: `cd frontend && npm run sync-help`
+   - **Option B:** Use file watcher: `cd frontend && npm run watch:help` (auto-syncs on save)
+   - **Option C:** Just commit - pre-commit hook will sync automatically
+
+4. **Add topic mapping (if needed):**
    - If your file name matches the topic exactly, no mapping needed
    - If you want a different topic name, add it to the `topicMap` in `HelpModal.tsx`:
    ```typescript
    const topicMap: Record<string, string> = {
-     'my-topic': 'my-new-topic',  // Add your mapping here
+     'my-topic': 'helpfile09_new-topic',  // Add your mapping here
      // ... existing mappings
    };
    ```
 
-4. **Add images (if needed):**
-   ```
-   frontend/public/help/images/{userType}/image-name.png
-   ```
-   Reference in markdown: `![Description](/help/images/healthcare/image-name.png)`
-
 5. **Add link to index.md:**
-   Update the `index.md` file in that directory to include a link to your new help file.
+   Update the `index.md` file in `frontend/src/help/{userType}/` to include a link to your new help file.
 
 ---
 
 ## Updating Existing Help Files
 
-### ⚠️ Important: Copy Changes to Public Directory
+### ✅ Automated Workflow - No Manual Copying Required!
 
-**When you edit files in the source location, you MUST copy them to the public directory for changes to appear in the application.**
+**The sync system handles everything automatically. Just edit and sync!**
 
 ### Workflow for Editing Help Files
 
-1. **Edit the source file:**
+1. **Edit the file in external location:**
    ```
-   frontend/src/help/healthcare/helpfile01_create-request.md
+   /Users/scooper/Documents/TraccEMS/Users Guide/Healthcare/healthcare_helpfile01_create-request.md
    ```
-   - This is your editing/source location
+   - This is your source of truth
    - Make all changes here
+   - Add images to `Screen shots/` folder
 
-2. **Copy to public directory:**
-   ```bash
-   # Copy single file
-   cp frontend/src/help/healthcare/helpfile01_create-request.md frontend/public/help/healthcare/helpfile01_create-request.md
+2. **Sync files (choose one method):**
    
-   # Or copy all healthcare help files at once
-   cp frontend/src/help/healthcare/*.md frontend/public/help/healthcare/
+   **Method A: Manual Sync (Recommended for immediate testing)**
+   ```bash
+   cd frontend
+   npm run sync-help
    ```
+   
+   **Method B: File Watcher (Auto-sync on save)**
+   ```bash
+   cd frontend
+   npm run watch:help
+   # Keep this running - it will auto-sync whenever you save a file
+   ```
+   
+   **Method C: Automatic on Commit (No action needed)**
+   - Just commit your code changes
+   - Pre-commit hook automatically syncs help files before commit
 
-3. **Test your changes:**
+3. **Build (if needed for production):**
+   ```bash
+   cd frontend
+   npm run build
+   ```
+   Build automatically syncs and copies files to `public/help/`
+
+4. **Test your changes:**
    - Refresh the application
    - Open the Help modal
    - Verify your changes appear
 
-### Why Two Locations?
+### What Happens During Sync
 
-- **`frontend/src/help/`** - Source/editing location (version controlled, easy to edit)
-- **`frontend/public/help/`** - Runtime location (files served by the application)
+The sync script automatically:
+- ✅ Copies markdown files from external → `frontend/src/help/`
+- ✅ Removes `healthcare_` and `ems_` prefixes from filenames
+- ✅ Copies images from `Screen shots/` → `frontend/public/help/images/{userType}/`
+- ✅ Updates image paths in markdown (from `./Screen shots/` to `/help/images/{userType}/`)
+- ✅ Preserves `index.md` files (doesn't overwrite manual ones)
 
-The help system loads files from `/help/{userType}/{filename}.md` at runtime, which maps to the `public/help/` directory. Files in `src/help/` are not served directly - they're your source files.
+### File Locations Explained
 
-### Quick Copy Commands
+- **External Location** (`/Users/scooper/Documents/TraccEMS/Users Guide/`) - Source of truth, edit here
+- **`frontend/src/help/`** - Intermediate location, auto-synced from external
+- **`frontend/public/help/`** - Runtime location, auto-copied during build
 
-**Copy single file:**
-```bash
-cd /Users/scooper/Code/tcc-new-project
-cp frontend/src/help/healthcare/helpfile01_create-request.md frontend/public/help/healthcare/helpfile01_create-request.md
-```
-
-**Copy all files for a user type:**
-```bash
-cp frontend/src/help/healthcare/*.md frontend/public/help/healthcare/
-cp frontend/src/help/ems/*.md frontend/public/help/ems/
-cp frontend/src/help/tcc-admin/*.md frontend/public/help/tcc-admin/
-```
-
-**Copy all help files (all user types):**
-```bash
-cp -r frontend/src/help/* frontend/public/help/
-```
-
-### Remember to Commit Both Locations
-
-When committing changes:
-- Commit the source file (`src/help/`)
-- Commit the public file (`public/help/`)
-- Both should be in sync
-
-### Future Enhancement (Optional)
-
-You could automate this process with:
-- A build script that copies help files during the build process
-- A file watcher that auto-copies on save
-- A pre-commit hook that ensures files are synced
-
-For now, manual copying is required after each edit.
+The help system loads files from `/help/{userType}/{filename}.md` at runtime, which maps to the `public/help/` directory.
 
 ---
 
@@ -231,20 +289,39 @@ const handleHelpClick = () => {
 
 ## Directory Structure
 
-### Current Structure
+### External Location (Source of Truth - Edit Here)
+
+```
+/Users/scooper/Documents/TraccEMS/Users Guide/
+├── Healthcare/
+│   ├── healthcare_helpfile01_create-request.md  ← Edit here
+│   ├── healthcare_helpfile02_transport_requests.md
+│   ├── healthcare_helpfile03_in_progress.md
+│   └── Screen shots/
+│       ├── 01a-create_request_patient_info.png
+│       └── *.png  ← Images here
+└── EMS/
+    ├── ems_helpfile01_available_trips.md  ← Edit here
+    └── Screen shots/
+        └── *.png  ← Images here
+```
+
+### Application Structure (Auto-Synced)
 
 ```
 frontend/
+├── scripts/
+│   ├── sync-help-files.sh          ← Syncs external → src/help
+│   └── copy-help-to-public.sh      ← Copies src/help → public/help
+│
 ├── src/
-│   ├── help/
+│   ├── help/                       ← Auto-synced from external (renamed)
 │   │   ├── healthcare/
 │   │   │   ├── index.md
-│   │   │   ├── create-request.md
-│   │   │   └── helpfile01_create-request.md
-│   │   ├── ems/
-│   │   ├── tcc-admin/
-│   │   ├── IMAGE_SIZING_GUIDE.md
-│   │   └── README.md
+│   │   │   ├── helpfile01_create-request.md  ← Renamed (prefix removed)
+│   │   │   └── helpfile02_transport-requests.md
+│   │   └── ems/
+│   │       └── helpfile01_available-trips.md
 │   └── components/
 │       └── HelpSystem/
 │           ├── HelpModal.tsx
@@ -252,18 +329,16 @@ frontend/
 │           └── index.ts
 │
 └── public/
-    └── help/
+    └── help/                       ← Auto-copied during build
         ├── healthcare/
         │   ├── index.md
-        │   ├── create-request.md
         │   └── helpfile01_create-request.md
         ├── ems/
-        ├── tcc-admin/
         └── images/
             ├── healthcare/
-            │   └── 01d-create_request_dispatch_trip_to_agencies.png
-            ├── ems/
-            └── tcc-admin/
+            │   └── *.png  ← Auto-copied from external
+            └── ems/
+                └── *.png
 ```
 
 ### Recommended Structure (from README)
@@ -364,8 +439,14 @@ All files in the same directory, all using `./filename.md` relative paths.
 
 ### Images
 
-- **Storage:** `public/help/images/{userType}/image-name.png`
-- **Reference:** `![Description](/help/images/healthcare/image-name.png)`
+**In External Location:**
+- **Storage:** `/Users/scooper/Documents/TraccEMS/Users Guide/{Healthcare|EMS}/Screen shots/image-name.png`
+- **Reference in markdown:** `![Description](./Screen shots/image-name.png)`
+- Image paths are automatically updated during sync
+
+**In Application (After Sync):**
+- **Storage:** `frontend/public/help/images/{userType}/image-name.png`
+- **Reference:** `![Description](/help/images/healthcare/image-name.png)` (auto-updated)
 - **Sizing:** See `frontend/src/help/IMAGE_SIZING_GUIDE.md` for guidelines
 
 ---
@@ -391,15 +472,29 @@ const userTypeDir: Record<string, string> = {
 
 ## Quick Checklist
 
-When adding a new help file:
+### After Editing a Help File
 
-- [ ] Create `.md` file in `frontend/src/help/{userType}/`
-- [ ] Copy to `frontend/public/help/{userType}/`
-- [ ] Use lowercase-hyphenated naming
+**Simple 3-Step Process:**
+
+- [ ] **Edit** the file in `/Users/scooper/Documents/TraccEMS/Users Guide/{Healthcare|EMS}/`
+- [ ] **Sync** files: `cd frontend && npm run sync-help` (or use file watcher, or just commit)
+- [ ] **Test** your changes in the application
+
+**That's it!** The sync system handles:
+- ✅ Copying files to application
+- ✅ Renaming files (removing prefixes)
+- ✅ Copying images
+- ✅ Updating image paths in markdown
+
+### When Adding a New Help File
+
+- [ ] Create `.md` file in external location: `/Users/scooper/Documents/TraccEMS/Users Guide/{Healthcare|EMS}/`
+- [ ] Use naming convention: `{userType}_helpfile##_topic-name.md`
+- [ ] Add images to `Screen shots/` folder if needed
+- [ ] Reference images as: `![Description](./Screen shots/image-name.png)` (auto-updated during sync)
+- [ ] Run sync: `cd frontend && npm run sync-help`
 - [ ] Add topic mapping in `HelpModal.tsx` if needed
-- [ ] Add images to `public/help/images/{userType}/` if needed
-- [ ] Reference images with `/help/images/{userType}/filename.png`
-- [ ] Add link to `index.md` in that directory
+- [ ] Add link to `index.md` in `frontend/src/help/{userType}/`
 - [ ] Test the help modal loads correctly
 
 ---
@@ -432,38 +527,108 @@ Renders markdown content with styling and support for:
 
 ---
 
+## Automation Scripts
+
+### Available Commands
+
+**Manual Sync:**
+```bash
+cd frontend
+npm run sync-help
+```
+Syncs files from external location to `frontend/src/help/` and copies images.
+
+**File Watcher (Development):**
+```bash
+cd frontend
+npm run watch:help
+```
+Watches external location and auto-syncs whenever you save a file. Keep this running during development.
+
+**Copy to Public (Build):**
+```bash
+cd frontend
+npm run copy-help
+```
+Copies files from `src/help/` to `public/help/`. Usually run automatically during build.
+
+**Build (Includes Sync):**
+```bash
+cd frontend
+npm run build
+```
+Automatically runs sync-help and copy-help before building.
+
+### Pre-Commit Hook
+
+A git pre-commit hook automatically syncs help files before each commit. No action needed - it just works!
+
+---
+
 ## Troubleshooting
 
 ### Help File Not Loading
 
-1. **Check file exists in both locations:**
-   - `frontend/src/help/{userType}/filename.md`
-   - `frontend/public/help/{userType}/filename.md`
+1. **Check file exists in external location:**
+   - `/Users/scooper/Documents/TraccEMS/Users Guide/{Healthcare|EMS}/filename.md`
 
-2. **Verify topic mapping:**
+2. **Run sync manually:**
+   ```bash
+   cd frontend
+   npm run sync-help
+   ```
+
+3. **Check file exists in application:**
+   - `frontend/src/help/{userType}/filename.md` (after sync)
+   - `frontend/public/help/{userType}/filename.md` (after build)
+
+4. **Verify topic mapping:**
    - Check if topic needs mapping in `HelpModal.tsx`
    - Try using the exact file name as the topic
 
-3. **Check file path:**
-   - Files are loaded from `/help/{userType}/{filename}.md`
-   - Ensure the path matches exactly
-
-4. **Check browser console:**
+5. **Check browser console:**
    - Look for 404 errors
    - Check network tab for failed requests
 
 ### Images Not Displaying
 
-1. **Verify image path:**
-   - Images must be in `public/help/images/{userType}/`
-   - Reference with `/help/images/{userType}/filename.png`
+1. **Verify image exists in external location:**
+   - `/Users/scooper/Documents/TraccEMS/Users Guide/{Healthcare|EMS}/Screen shots/image-name.png`
 
-2. **Check file extension:**
+2. **Run sync to copy images:**
+   ```bash
+   cd frontend
+   npm run sync-help
+   ```
+
+3. **Check image path in markdown:**
+   - In external location: `![Description](./Screen shots/image-name.png)`
+   - After sync: `![Description](/help/images/{userType}/image-name.png)` (auto-updated)
+
+4. **Verify image copied to application:**
+   - `frontend/public/help/images/{userType}/image-name.png`
+
+5. **Check file extension:**
    - Use lowercase extensions (`.png`, not `.PNG`)
 
-3. **Verify image exists:**
-   - Check file exists in the correct directory
-   - Ensure file name matches exactly (case-sensitive)
+### Sync Not Working
+
+1. **Check external location path:**
+   - Verify `/Users/scooper/Documents/TraccEMS/Users Guide/` exists
+   - Check file permissions
+
+2. **Check script permissions:**
+   ```bash
+   ls -la frontend/scripts/*.sh
+   # Should show executable permissions (-rwxr-xr-x)
+   ```
+
+3. **Run sync with verbose output:**
+   ```bash
+   cd frontend
+   bash scripts/sync-help-files.sh
+   ```
+   Check for error messages.
 
 ---
 
@@ -477,15 +642,27 @@ Renders markdown content with styling and support for:
 
 ---
 
-## Next Steps
+## Summary
 
-1. ✅ Components created
-2. ✅ Help files structure in place
-3. ⏳ Integrate Help button into dashboards
-4. ⏳ Test with actual help content
-5. ⏳ Add build step to copy help files automatically (optional)
+### What's Automated
+
+✅ **File Sync** - External files automatically synced to application  
+✅ **File Renaming** - Prefixes automatically removed (`healthcare_` → removed)  
+✅ **Image Copying** - Images automatically copied to correct location  
+✅ **Image Path Updates** - Image paths automatically updated in markdown  
+✅ **Build Integration** - Files automatically synced and copied during build  
+✅ **Pre-Commit Hook** - Files automatically synced before git commit  
+✅ **File Watcher** - Optional auto-sync on save during development  
+
+### What You Need to Do
+
+1. **Edit files** in `/Users/scooper/Documents/TraccEMS/Users Guide/`
+2. **Sync files** (manual, watcher, or automatic on commit)
+3. **Test** your changes
+
+That's it! The automation handles everything else.
 
 ---
 
-**Last Updated:** January 14, 2026  
+**Last Updated:** January 22, 2026  
 **Location:** `docs/reference/help_system_workflow.md`

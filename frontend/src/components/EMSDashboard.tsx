@@ -768,17 +768,9 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
               <Notifications user={user} />
               <button
                 onClick={() => {
-                  // Map current tab to help topic
-                  const topicMap: Record<string, string> = {
-                    'available': 'available-trips',
-                    'accepted': 'my-trips',
-                    'completed': 'completed-trips',
-                    // 'units': 'units', // Units Management disabled
-                    'users': 'users',
-                    'agency-info': 'agency-info',
-                    'trip-calculator': 'trip-calculator',
-                  };
-                  setHelpTopic(topicMap[activeTab] || 'index');
+                  // Always show index when clicking main Help button
+                  // Context-specific help can be accessed from within help files
+                  setHelpTopic('index');
                   setShowHelp(true);
                 }}
                 className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-gray-50 rounded-md transition-colors"

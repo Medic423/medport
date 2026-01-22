@@ -139,18 +139,41 @@ else
 fi
 echo ""
 
-# Step 6: Copy full backup to iCloud Drive
+# Step 6: Copy full backup to iCloud Drive (optimized - excludes .git, uses git bundle)
 echo "☁️  Step 6: Copying full backup to iCloud Drive..."
 mkdir -p "${ICLOUD_DRIVE}"
 
 # Check available space
 BACKUP_SIZE=$(du -sh "${BACKUP_PATH}" 2>/dev/null | cut -f1 || echo "Unknown")
 echo "   Backup size: ${BACKUP_SIZE}"
-echo "   Copying to iCloud Drive..."
+echo "   Copying to iCloud Drive (excluding .git for speed, will create git bundle)..."
 
-# Copy the backup to iCloud (with progress)
-if rsync -av --progress "${BACKUP_PATH}/" "${ICLOUD_DRIVE}/${LATEST_BACKUP}/" 2>/dev/null || \
-   cp -r "${BACKUP_PATH}" "${ICLOUD_DRIVE}/" 2>/dev/null; then
+# Create iCloud backup directory
+ICLOUD_BACKUP_PATH="${ICLOUD_DRIVE}/${LATEST_BACKUP}"
+mkdir -p "${ICLOUD_BACKUP_PATH}"
+
+# Copy everything except .git directory (much faster)
+echo "   Copying project files (excluding .git)..."
+if rsync -av --progress --exclude='.git' "${BACKUP_PATH}/" "${ICLOUD_BACKUP_PATH}/" 2>/dev/null || \
+   find "${BACKUP_PATH}" -mindepth 1 -maxdepth 1 ! -name '.git' -exec cp -r {} "${ICLOUD_BACKUP_PATH}/" \; 2>/dev/null; then
+    
+    # Create git bundle instead of copying .git directory (single file, much faster)
+    echo "   Creating git bundle for iCloud backup..."
+    cd "${PROJECT_ROOT}"
+    if git bundle create "${ICLOUD_BACKUP_PATH}/project/.git.bundle" --all 2>/dev/null; then
+        echo "✅ Git bundle created (single file instead of thousands of objects)"
+        # Create a note about how to restore git from bundle
+        cat > "${ICLOUD_BACKUP_PATH}/project/RESTORE_GIT_FROM_BUNDLE.txt" << 'EOF'
+To restore git repository from bundle:
+1. cd /path/to/restored/project
+2. git clone .git.bundle .git
+3. git fetch --all
+4. git checkout develop (or your branch)
+EOF
+    else
+        echo "⚠️  Git bundle creation failed, but project files copied successfully"
+    fi
+    
     echo "✅ Full backup copied to iCloud Drive"
     
     # Create/update current symlink in iCloud

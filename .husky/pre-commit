@@ -1,0 +1,11 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "🔄 Syncing help files before commit..."
+cd frontend
+npm run sync-help
+
+# Stage synced files
+git add src/help/ public/help/images/
+
+echo "✅ Help files synced and staged"
