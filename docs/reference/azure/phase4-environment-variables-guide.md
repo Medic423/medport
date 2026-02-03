@@ -82,9 +82,9 @@ Click **"+ New application setting"** for each variable below:
 #### 6. AZURE_COMMUNICATION_PHONE_NUMBER
 
 - **Name:** `AZURE_COMMUNICATION_PHONE_NUMBER`
-- **Value:** `+18339675959`
+- **Value:** `+18663667374`
 - **Purpose:** Sender phone number for SMS
-- **Note:** Same phone number as dev
+- **Updated:** February 3, 2026 (new toll-free verification application)
 
 #### 7. FRONTEND_URL (Optional - For CORS)
 
@@ -207,7 +207,7 @@ Click **"+ New application setting"** for each variable:
 - [ ] `PORT` - Port number (optional, Azure usually sets)
 - [ ] `AZURE_SMS_ENABLED` - Set to `true`
 - [ ] `AZURE_COMMUNICATION_CONNECTION_STRING` - Communication Services connection string
-- [ ] `AZURE_COMMUNICATION_PHONE_NUMBER` - Set to `+18339675959`
+- [ ] `AZURE_COMMUNICATION_PHONE_NUMBER` - Set to `+18663667374`
 - [ ] `FRONTEND_URL` - Frontend URL for CORS (optional)
 - [ ] `CORS_ORIGIN` - CORS origin (optional)
 
