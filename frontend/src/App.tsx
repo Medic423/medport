@@ -4,6 +4,7 @@ import TCCDashboard from './components/TCCDashboard';
 import HealthcareDashboard from './components/HealthcareDashboard';
 import EMSDashboard from './components/EMSDashboard';
 import UniversalLogin from './components/UniversalLogin';
+import LandingPage from './components/LandingPage';
 import RegistrationChoiceModal from './components/RegistrationChoiceModal';
 import HealthcareRegistration from './components/HealthcareRegistration';
 import EMSRegistration from './components/EMSRegistration';
@@ -189,6 +190,11 @@ function AppContent() {
 
       <Routes>
         <Route path="/" element={
+          <LandingPage
+            onShowRegistration={handleShowRegistrationModal}
+          />
+        } />
+        <Route path="/login" element={
           <UniversalLogin
             onLogin={handleLogin}
             onShowRegistration={handleShowRegistrationModal}
