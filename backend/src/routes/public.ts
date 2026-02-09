@@ -137,5 +137,59 @@ router.get('/hospitals', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/public/subscription-plans
+ * Get subscription plans (Public - no auth required)
+ * Query params: userType (optional) - filter by 'HEALTHCARE' or 'EMS'
+ */
+router.get('/subscription-plans', async (req, res) => {
+  try {
+    const { userType } = req.query;
+    const prisma = databaseManager.getPrismaClient();
+    
+    // Build where clause
+    const where: any = {
+      isActive: true
+    };
+    
+    // Filter by userType if provided
+    if (userType && (userType === 'HEALTHCARE' || userType === 'EMS')) {
+      where.userType = userType;
+    }
+    
+    const plans = await prisma.subscriptionPlan.findMany({
+      where,
+      orderBy: [
+        { userType: 'asc' }
+      ]
+    });
+    
+    // Manual sorting: FREE first, then REGULAR, then PREMIUM (within each userType)
+    const sortedPlans = plans.sort((a, b) => {
+      // First sort by userType
+      if (a.userType !== b.userType) {
+        return a.userType.localeCompare(b.userType);
+      }
+      // Then sort by plan name: FREE (0), REGULAR (1), PREMIUM (2)
+      const order: { [key: string]: number } = { 'FREE': 0, 'REGULAR': 1, 'PREMIUM': 2 };
+      const orderA = order[a.name] ?? 99;
+      const orderB = order[b.name] ?? 99;
+      return orderA - orderB;
+    });
+
+    res.json({
+      success: true,
+      data: sortedPlans,
+      message: 'Subscription plans retrieved successfully'
+    });
+  } catch (error) {
+    console.error('TCC_DEBUG: Get subscription plans error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get subscription plans'
+    });
+  }
+});
+
 export default router;
 

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import ChangePasswordModal from './ChangePasswordModal';
 import { HelpModal } from './HelpSystem';
+import TrialStatusBadge from './TrialStatusBadge';
 
 interface TopMenuBarProps {
   user: {
@@ -261,6 +262,8 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
 
           {/* User Menu */}
             <div className="hidden md:flex items-center space-x-4">
+            {/* Trial Status Badge */}
+            <TrialStatusBadge userId={user.id} userType={user.userType} />
             <div className="flex items-center space-x-3">
               <div className="h-8 w-8 bg-gray-300 rounded-full flex items-center justify-center">
                 <User className="h-4 w-4 text-gray-600" />

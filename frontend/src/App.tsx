@@ -5,6 +5,7 @@ import HealthcareDashboard from './components/HealthcareDashboard';
 import EMSDashboard from './components/EMSDashboard';
 import UniversalLogin from './components/UniversalLogin';
 import LandingPage from './components/LandingPage';
+import PricingPage from './components/PricingPage';
 import RegistrationChoiceModal from './components/RegistrationChoiceModal';
 import HealthcareRegistration from './components/HealthcareRegistration';
 import EMSRegistration from './components/EMSRegistration';
@@ -26,11 +27,11 @@ interface User {
 }
 
 function AppContent() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -42,10 +43,15 @@ function AppContent() {
         try {
           const response = await authAPI.verify();
           setUser(response.data.user);
+          // Store subscription info if available
+          if (response.data.subscription) {
+            localStorage.setItem('subscription', JSON.stringify(response.data.subscription));
+          }
         } catch (error) {
           // Clear both localStorage and user state when token verification fails
           localStorage.removeItem('token');
           localStorage.removeItem('user');
+          localStorage.removeItem('subscription');
           setUser(null);
         }
       }
@@ -68,13 +74,19 @@ function AppContent() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [user, location.pathname, navigate]);
 
-  const handleLogin = (userData: User, token: string) => {
+  const handleLogin = (userData: User, token: string, subscription?: any) => {
     console.log('TCC_DEBUG: handleLogin called with userData:', userData);
     console.log('TCC_DEBUG: handleLogin called with token:', token ? 'present' : 'missing');
+    console.log('TCC_DEBUG: handleLogin subscription info:', subscription);
     
     setUser(userData);
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(userData));
+    
+    // Store subscription info if provided
+    if (subscription) {
+      localStorage.setItem('subscription', JSON.stringify(subscription));
+    }
     
     console.log('TCC_DEBUG: User state set, localStorage updated');
     
@@ -99,6 +111,7 @@ function AppContent() {
     setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('subscription');
     navigate('/', { replace: true });
   };
 
@@ -133,6 +146,7 @@ function AppContent() {
     setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('subscription');
     navigate('/');
   };
 
@@ -142,6 +156,21 @@ function AppContent() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  // Allow access to pricing page regardless of login status
+  if (location.pathname === '/pricing') {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Routes>
+          <Route path="/pricing" element={
+            <PricingPage
+              onShowRegistration={handleShowRegistrationModal}
+            />
+          } />
+        </Routes>
       </div>
     );
   }
@@ -191,6 +220,11 @@ function AppContent() {
       <Routes>
         <Route path="/" element={
           <LandingPage
+            onShowRegistration={handleShowRegistrationModal}
+          />
+        } />
+        <Route path="/pricing" element={
+          <PricingPage
             onShowRegistration={handleShowRegistrationModal}
           />
         } />

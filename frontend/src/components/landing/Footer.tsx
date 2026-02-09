@@ -8,7 +8,7 @@ const Footer: React.FC = () => {
     product: [
       { name: 'Features', href: '#features' },
       { name: 'Benefits', href: '#benefits' },
-      { name: 'Pricing', href: '#' },
+      { name: 'Pricing', href: '/pricing' },
     ],
     company: [
       { name: 'About', href: '#about' },

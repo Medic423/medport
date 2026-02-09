@@ -28,6 +28,7 @@ import EMSTripCalculator from './EMSTripCalculator';
 import EMSAgencyAvailabilityStatus from './EMSAgencyAvailabilityStatus';
 import { categorizeTripByDate, formatSectionHeader, DateCategory } from '../utils/dateUtils';
 import { HelpModal } from './HelpSystem';
+import TrialStatusBadge from './TrialStatusBadge';
 // import RevenueSettings from './RevenueSettings'; // Replaced by AgencySettings
 // import EMSAnalytics from './EMSAnalytics'; // Moved to backup - will move to Admin later
 
@@ -765,6 +766,7 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
             </div>
             
             <div className="flex items-center space-x-4">
+              <TrialStatusBadge userId={user.id} userType={user.userType} />
               <Notifications user={user} />
               <button
                 onClick={() => {

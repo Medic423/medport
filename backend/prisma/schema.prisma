@@ -7,6 +7,31 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model SubscriptionPlan {
+  id            String         @id @default(cuid())
+  name          String
+  displayName   String
+  description   String
+  userType      String         // "HEALTHCARE" | "EMS" | "ALL"
+  monthlyPrice  Decimal        @db.Decimal(10, 2) @default(0)
+  annualPrice   Decimal?       @db.Decimal(10, 2)
+  features      Json           @default("[]")
+  trialDays     Int            @default(0)
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  // Relations
+  centerUsers      CenterUser[]
+  healthcareUsers  HealthcareUser[]
+  emsUsers         EMSUser[]
+  
+  @@unique([name, userType])
+  @@index([userType])
+  @@index([isActive])
+  @@map("subscription_plans")
+}
+
 model CenterUser {
   id                      String                   @id @default(cuid())
   email                   String                   @unique
@@ -23,12 +48,26 @@ model CenterUser {
   lastActivity            DateTime?
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
+  
+  // Subscription fields
+  subscriptionPlanId      String?
+  subscriptionStatus      String?                  @default("TRIAL") // "TRIAL" | "ACTIVE" | "EXPIRED" | "CANCELLED"
+  trialStartDate          DateTime?
+  trialEndDate            DateTime?
+  subscriptionStartDate   DateTime?
+  subscriptionEndDate     DateTime?
+  billingCycle            String?                  // "MONTHLY" | "ANNUAL"
+  
+  subscriptionPlan        SubscriptionPlan?        @relation(fields: [subscriptionPlanId], references: [id], onDelete: SetNull)
   notificationLogs        NotificationLog[]
   notificationPreferences NotificationPreference[]
 
   @@index([isDeleted])
   @@index([lastLogin])
   @@index([lastActivity])
+  @@index([subscriptionPlanId])
+  @@index([subscriptionStatus])
+  @@index([trialEndDate])
   @@map("center_users")
 }
 
@@ -52,6 +91,17 @@ model HealthcareUser {
   lastActivity            DateTime?
   createdAt               DateTime                     @default(now())
   updatedAt               DateTime                     @updatedAt
+  
+  // Subscription fields
+  subscriptionPlanId      String?
+  subscriptionStatus      String?                      @default("TRIAL") // "TRIAL" | "ACTIVE" | "EXPIRED" | "CANCELLED"
+  trialStartDate          DateTime?
+  trialEndDate            DateTime?
+  subscriptionStartDate   DateTime?
+  subscriptionEndDate     DateTime?
+  billingCycle            String?                      // "MONTHLY" | "ANNUAL"
+  
+  subscriptionPlan        SubscriptionPlan?            @relation(fields: [subscriptionPlanId], references: [id], onDelete: SetNull)
   locations               HealthcareLocation[]
   agencyPreferences       HealthcareAgencyPreference[]
   destinations            HealthcareDestination[]
@@ -61,6 +111,9 @@ model HealthcareUser {
   @@index([isDeleted])
   @@index([lastLogin])
   @@index([lastActivity])
+  @@index([subscriptionPlanId])
+  @@index([subscriptionStatus])
+  @@index([trialEndDate])
   @@map("healthcare_users")
 }
 
@@ -174,6 +227,17 @@ model EMSUser {
   lastActivity       DateTime?
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
+  
+  // Subscription fields
+  subscriptionPlanId      String?
+  subscriptionStatus      String?                  @default("TRIAL") // "TRIAL" | "ACTIVE" | "EXPIRED" | "CANCELLED"
+  trialStartDate          DateTime?
+  trialEndDate            DateTime?
+  subscriptionStartDate   DateTime?
+  subscriptionEndDate     DateTime?
+  billingCycle            String?                  // "MONTHLY" | "ANNUAL"
+  
+  subscriptionPlan        SubscriptionPlan?        @relation(fields: [subscriptionPlanId], references: [id], onDelete: SetNull)
   agency             EMSAgency? @relation(fields: [agencyId], references: [id])
   parentUser         EMSUser?   @relation("EMSUserParent", fields: [parentUserId], references: [id])
   subUsers           EMSUser[]  @relation("EMSUserParent")
@@ -181,6 +245,9 @@ model EMSUser {
   @@index([isDeleted])
   @@index([lastLogin])
   @@index([lastActivity])
+  @@index([subscriptionPlanId])
+  @@index([subscriptionStatus])
+  @@index([trialEndDate])
   @@map("ems_users")
 }
 

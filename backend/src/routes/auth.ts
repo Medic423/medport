@@ -1,6 +1,7 @@
 import express from 'express';
 import { authService } from '../services/authService';
 import { authenticateAdmin, authenticateToken, AuthenticatedRequest } from '../middleware/authenticateAdmin';
+import { getSubscriptionStatus } from '../middleware/checkSubscriptionStatus';
 import { databaseManager } from '../services/databaseManager';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -44,6 +45,18 @@ router.post('/login', async (req, res) => {
     // No need to update again here
 
     console.log('TCC_DEBUG: Login successful, user ID in token:', result.user?.id);
+    
+    // Get subscription status for the user
+    let subscriptionInfo = null;
+    if (result.user) {
+      try {
+        subscriptionInfo = await getSubscriptionStatus(result.user.id, result.user.userType);
+      } catch (err) {
+        console.error('Error fetching subscription status on login:', err);
+        // Don't fail login if subscription check fails
+      }
+    }
+    
     // Set HttpOnly cookie for SSE/cookie-based auth
     res.cookie('tcc_token', result.token, {
       httpOnly: true,
@@ -57,7 +70,13 @@ router.post('/login', async (req, res) => {
       message: 'Login successful',
       user: result.user,
       token: result.token,
-      mustChangePassword: (result as any).mustChangePassword === true
+      mustChangePassword: (result as any).mustChangePassword === true,
+      subscription: subscriptionInfo ? {
+        status: subscriptionInfo.status,
+        daysRemaining: subscriptionInfo.daysRemaining,
+        trialEndDate: subscriptionInfo.trialEndDate?.toISOString(),
+        planName: subscriptionInfo.subscriptionPlanName
+      } : null
     });
 
   } catch (error) {
@@ -119,11 +138,61 @@ router.post('/logout', (req, res) => {
  * GET /api/auth/verify
  * Verify token and get user info
  */
-router.get('/verify', authenticateAdmin, (req: AuthenticatedRequest, res) => {
+router.get('/verify', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
+  // Get subscription status
+  let subscriptionInfo = null;
+  if (req.user) {
+    try {
+      subscriptionInfo = await getSubscriptionStatus(req.user.id, req.user.userType);
+    } catch (err) {
+      console.error('Error fetching subscription status on verify:', err);
+    }
+  }
+
   res.json({
     success: true,
-    user: req.user
+    user: req.user,
+    subscription: subscriptionInfo ? {
+      status: subscriptionInfo.status,
+      daysRemaining: subscriptionInfo.daysRemaining,
+      trialEndDate: subscriptionInfo.trialEndDate?.toISOString(),
+      planName: subscriptionInfo.subscriptionPlanName
+    } : null
   });
+});
+
+/**
+ * GET /api/auth/subscription/status
+ * Get current user's subscription status
+ */
+router.get('/subscription/status', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+    }
+
+    const subscriptionInfo = await getSubscriptionStatus(req.user.id, req.user.userType);
+
+    res.json({
+      success: true,
+      subscription: {
+        status: subscriptionInfo.status,
+        daysRemaining: subscriptionInfo.daysRemaining,
+        trialEndDate: subscriptionInfo.trialEndDate?.toISOString(),
+        planName: subscriptionInfo.subscriptionPlanName,
+        planId: subscriptionInfo.subscriptionPlanId
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching subscription status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch subscription status'
+    });
+  }
 });
 
 /**
@@ -199,6 +268,28 @@ router.post('/healthcare/register', async (req, res) => {
     const existingForFacility = await db.healthcareUser.count({ where: { facilityName } });
     const isFirst = existingForFacility === 0;
 
+    // Get FREE plan for healthcare users
+    const freePlan = await db.subscriptionPlan.findFirst({
+      where: {
+        name: 'FREE',
+        userType: 'HEALTHCARE',
+        isActive: true
+      }
+    });
+
+    if (!freePlan) {
+      console.error('ERROR: FREE healthcare plan not found in database');
+      return res.status(500).json({
+        success: false,
+        error: 'System configuration error. Please contact support.'
+      });
+    }
+
+    // Calculate trial dates
+    const trialStartDate = new Date();
+    const trialEndDate = new Date();
+    trialEndDate.setDate(trialEndDate.getDate() + freePlan.trialDays);
+
     // Use transaction to ensure all records are created atomically
     // This prevents partial registrations if any step fails
     const result = await db.$transaction(async (tx) => {
@@ -213,8 +304,13 @@ router.post('/healthcare/register', async (req, res) => {
           facilityType,
           manageMultipleLocations: manageMultipleLocations || false, // ✅ NEW: Multi-location flag
           userType: 'HEALTHCARE',
-          isActive: false, // Requires admin approval
-          orgAdmin: isFirst
+          isActive: true, // Account is active immediately - free trial period applies
+          orgAdmin: isFirst,
+          // Subscription fields
+          subscriptionPlanId: freePlan.id,
+          subscriptionStatus: 'TRIAL',
+          trialStartDate: trialStartDate,
+          trialEndDate: trialEndDate
         }
       });
 
@@ -230,17 +326,16 @@ router.post('/healthcare/register', async (req, res) => {
           phone: phone || null,
           email: email,
           type: facilityType,
-          capabilities: [], // Will be updated when approved
+          capabilities: [], // Can be updated later by facility admin
           region: 'Region to be determined',
           latitude: latitude ? parseFloat(latitude) : null,
           longitude: longitude ? parseFloat(longitude) : null,
-          isActive: false, // Requires admin approval
-          requiresReview: true // Flag for admin review
+          isActive: true, // Account is active immediately - free trial period applies
+          requiresReview: false // No admin review required - accounts are active immediately
         }
       });
 
-      // Create a healthcareLocation record so it appears in Facilities List (even if inactive)
-      // This allows admins to see and approve pending facilities
+      // Create a healthcareLocation record for the facility
       const location = await tx.healthcareLocation.create({
         data: {
           healthcareUserId: user.id,
@@ -251,7 +346,7 @@ router.post('/healthcare/register', async (req, res) => {
           zipCode: zipCode || '00000',
           phone: phone || null,
           facilityType: facilityType,
-          isActive: false, // Requires admin approval - will be set to true when approved
+          isActive: true, // Account is active immediately - free trial period applies
           isPrimary: true, // First location is always primary
           latitude: latitude ? parseFloat(latitude) : null,
           longitude: longitude ? parseFloat(longitude) : null,
@@ -266,7 +361,7 @@ router.post('/healthcare/register', async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Healthcare facility registration submitted for approval',
+      message: 'Healthcare facility account created successfully. Your free trial is active for 7 days.',
       user: {
         id: user.id,
         email: user.email,
@@ -1080,6 +1175,28 @@ router.post('/ems/register', async (req, res) => {
     const isFirst = existingForAgency === 0;
     console.log('TCC_DEBUG: Is first account:', isFirst);
 
+    // Get FREE plan for EMS users
+    const freePlan = await db.subscriptionPlan.findFirst({
+      where: {
+        name: 'FREE',
+        userType: 'EMS',
+        isActive: true
+      }
+    });
+
+    if (!freePlan) {
+      console.error('ERROR: FREE EMS plan not found in database');
+      return res.status(500).json({
+        success: false,
+        error: 'System configuration error. Please contact support.'
+      });
+    }
+
+    // Calculate trial dates
+    const trialStartDate = new Date();
+    const trialEndDate = new Date();
+    trialEndDate.setDate(trialEndDate.getDate() + freePlan.trialDays);
+
     // Use transaction to ensure agency and user are created atomically
     // This prevents partial registrations if any step fails
     console.log('TCC_DEBUG: Starting transaction for EMS registration');
@@ -1259,7 +1376,12 @@ router.post('/ems/register', async (req, res) => {
         agencyId: agency.id, // Link user to agency
         userType: 'EMS',
         isActive: true, // Auto-approve new EMS registrations
-        orgAdmin: isFirst
+        orgAdmin: isFirst,
+        // Subscription fields
+        subscriptionPlanId: freePlan.id,
+        subscriptionStatus: 'TRIAL',
+        trialStartDate: trialStartDate,
+        trialEndDate: trialEndDate
       };
       
       console.log('TCC_DEBUG: User data to create (password hidden):', {
@@ -1668,6 +1790,14 @@ router.post('/ems/login', async (req, res) => {
       maxAge: 24 * 60 * 60 * 1000
     });
 
+    // Get subscription status
+    let subscriptionInfo = null;
+    try {
+      subscriptionInfo = await getSubscriptionStatus(user.id, 'EMS');
+    } catch (err) {
+      console.error('Error fetching subscription status on EMS login:', err);
+    }
+
     res.json({
       success: true,
       message: 'Login successful',
@@ -1680,7 +1810,13 @@ router.post('/ems/login', async (req, res) => {
         agencyId: user.agencyId || user.id // Use agencyId if available, fallback to user id for legacy
       },
       token,
-      mustChangePassword: !!(user as any).mustChangePassword
+      mustChangePassword: !!(user as any).mustChangePassword,
+      subscription: subscriptionInfo ? {
+        status: subscriptionInfo.status,
+        daysRemaining: subscriptionInfo.daysRemaining,
+        trialEndDate: subscriptionInfo.trialEndDate?.toISOString(),
+        planName: subscriptionInfo.subscriptionPlanName
+      } : null
     });
   } catch (error) {
     console.error('EMS Login error:', error);
@@ -1766,6 +1902,14 @@ router.post('/healthcare/login', async (req, res) => {
       maxAge: 24 * 60 * 60 * 1000
     });
 
+    // Get subscription status
+    let subscriptionInfo = null;
+    try {
+      subscriptionInfo = await getSubscriptionStatus(user.id, 'HEALTHCARE');
+    } catch (err) {
+      console.error('Error fetching subscription status on healthcare login:', err);
+    }
+
     console.log('MULTI_LOC: Healthcare login - manageMultipleLocations:', user.manageMultipleLocations);
     res.json({
       success: true,
@@ -1781,7 +1925,13 @@ router.post('/healthcare/login', async (req, res) => {
         orgAdmin: (user as any).orgAdmin === true
       },
       token,
-      mustChangePassword: !!(user as any).mustChangePassword
+      mustChangePassword: !!(user as any).mustChangePassword,
+      subscription: subscriptionInfo ? {
+        status: subscriptionInfo.status,
+        daysRemaining: subscriptionInfo.daysRemaining,
+        trialEndDate: subscriptionInfo.trialEndDate?.toISOString(),
+        planName: subscriptionInfo.subscriptionPlanName
+      } : null
     });
 
   } catch (error) {

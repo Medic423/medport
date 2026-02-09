@@ -10,7 +10,7 @@ interface User {
 }
 
 interface UniversalLoginProps {
-  onLogin: (user: User, token: string) => void;
+  onLogin: (user: User, token: string, subscription?: any) => void;
   onShowRegistration: () => void;
 }
 
@@ -58,7 +58,8 @@ const UniversalLogin: React.FC<UniversalLoginProps> = ({ onLogin, onShowRegistra
         if (response.data.mustChangePassword === true) {
           try { localStorage.setItem('mustChangePassword', 'true'); } catch {}
         }
-        onLogin(response.data.user, response.data.token);
+        // Pass subscription info if available
+        onLogin(response.data.user, response.data.token, response.data.subscription);
       } else {
         console.log('Universal Login: Login failed:', response.data.error);
         const errorMsg = response.data.error || 'Login failed';

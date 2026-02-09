@@ -31,6 +31,7 @@ import AvailableAgencies from './AvailableAgencies';
 import { tripsAPI, unitsAPI } from '../services/api';
 import { categorizeTripByDate, formatSectionHeader, DateCategory } from '../utils/dateUtils';
 import { HelpModal } from './HelpSystem';
+import TrialStatusBadge from './TrialStatusBadge';
 
 interface HealthcareDashboardProps {
   user: {
@@ -845,6 +846,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
             </div>
             
             <div className="flex items-center space-x-4">
+              <TrialStatusBadge userId={user.id} userType={user.userType} />
               <Notifications user={user} />
               <button
                 onClick={() => {
