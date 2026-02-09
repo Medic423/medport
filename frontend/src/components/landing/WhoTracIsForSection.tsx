@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, Ambulance, Network } from 'lucide-react';
+import { Building2, Truck, Network } from 'lucide-react';
 
 const WhoTracIsForSection: React.FC = () => {
   const audiences = [
@@ -9,7 +9,7 @@ const WhoTracIsForSection: React.FC = () => {
       description: 'We help optimize ER facilities and spaces for a better workflow.',
     },
     {
-      icon: Ambulance,
+      icon: Truck,
       title: 'EMS & Transport Providers',
       description: 'There are no roundabouts here, just straightforward routes for your team.',
     },
