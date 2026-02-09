@@ -6,6 +6,7 @@ import ProcessSection from './landing/ProcessSection';
 import FeaturesSection from './landing/FeaturesSection';
 import BenefitsSection from './landing/BenefitsSection';
 import CTASection from './landing/CTASection';
+import ReadyToGetStartedSection from './landing/ReadyToGetStartedSection';
 import Footer from './landing/Footer';
 
 interface LandingPageProps {
@@ -23,6 +24,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onShowRegistration }) => {
         <FeaturesSection />
         <BenefitsSection />
         <CTASection onShowRegistration={onShowRegistration} />
+        <ReadyToGetStartedSection onShowRegistration={onShowRegistration} />
       </main>
       <Footer />
     </div>
