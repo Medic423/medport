@@ -52,7 +52,11 @@
 
 ---
 
-### Phase 2: Design Integration (Awaiting Figma Resources)
+### Phase 2: Design Integration (In Progress)
+
+**Status:** Figma file link received - need public share link or exported resources  
+**Figma Link:** https://www.figma.com/design/Jh0PzMgeTJdNx8zAUgyITM/Tracc?node-id=0-1&p=f  
+**Next Steps:** See `next_steps_figma_access.md` for detailed plan
 
 **Prerequisites:** Need Figma design resources (see "Design Access" section above)
 
