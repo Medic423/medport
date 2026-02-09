@@ -24,9 +24,13 @@ Please take 3 full-page screenshots:
    - File name: `landing-mobile.png`
    - How: Switch to mobile frame in Figma, then screenshot
 
-3. **Process Section Close-up** - The 3-step process section (Request, Match, Transport)
+3. **Process Section Close-up** - The "How TRACC works" 3-step process section (Request, Match, Transport)
    - File name: `process-section.png`
    - How: Zoom in on that section, screenshot
+
+4. **"Who TRACC is for" Section** - The 3-column section (Hospitals, EMS, Coordinators)
+   - File name: `who-trac-is-for.png`
+   - How: Screenshot of that section
 
 **Why:** These help us verify the final implementation matches your design exactly.
 
@@ -91,12 +95,18 @@ Please note:
 - Right-click → Export → PNG or SVG → Export
 - File name: `logo.png` or `logo.svg`
 
-### Process Section Icons (if custom icons)
+### Process Section Icons ("How TRACC works" - if custom icons)
 - If you used custom icons (not standard icon library), export each:
   - Request icon → `icon-request.svg` (or PNG)
   - Match icon → `icon-match.svg`
   - Transport icon → `icon-transport.svg`
 - If you used standard icons (Font Awesome, Material, etc.), just tell us which library and icon names
+
+### "Who TRACC is for" Section Icons (if custom icons)
+- Hospital/building icon → `icon-hospital.svg` (or PNG)
+- Ambulance icon → `icon-ambulance.svg` (or PNG)
+- Coordination/dispatch icon (three circles with arrows) → `icon-coordinator.svg` (or PNG)
+- If you used standard icons, just tell us which library and icon names
 
 ### Any Background Images/Patterns
 - If there are background images or patterns, export those too
@@ -108,43 +118,80 @@ Please note:
 
 Please copy all text exactly as it appears in the design:
 
-### Hero Section
-- Headline: [exact text]
-- Subheadline: [exact text]
-- Primary button text: [exact text]
-- Secondary button text (if any): [exact text]
+### Hero Section (Top section with dark blue background)
+- Headline: 
+  ```
+  Smarter Planning,
+  Optimized Routes,
+  Better Outcomes.
+  ```
+  (Note: Line breaks are helpful - I'll use them to create proper HTML structure)
+  
+- Subheadline: 
+  ```
+  TRACC connects healthcare and transport
+  providers to streamline patient transfers
+  and improve outcomes.
+  ```
+  (Note: Line breaks help with responsive text wrapping)
+  
+- Primary button text: `Download Quick Start Guide`
+- Primary button description/subtitle: `Step-by-step guide to create your TRACC account`
+  (Note: This appears to be helper text below the button)
 
-### Process Section (3 Steps)
-- Step 1 title: "Request"
-- Step 1 description: [exact text]
-- Step 2 title: "Match"
-- Step 2 description: [exact text]
-- Step 3 title: "Transport"
-- Step 3 description: [exact text]
+**Login Form (Right side of hero section):**
+- Form title: `Login to TRACC`
+- Email field label: `Email`
+- Password field label: `Password`
+- Remember me checkbox: `Remember me`
+- Forgot password link: `Forgot password?`
+- Login button text: `Login`
 
-### Features Section
-- Section heading: [exact text]
-- For each of the 6 features:
-  - Feature title: [exact text]
-  - Feature description: [exact text]
+### "Who TRACC is for" Section (White background with blue grid)
+- Section title: `Who TRACC is for`
+- **Column 1 (Left):**
+  - Icon: Building/hospital icon
+  - Title: `Hospitals & Health Systems`
+  - Description: `We help optimize ER facilities and spaces for a better workflow.`
+- **Column 2 (Middle):**
+  - Icon: Ambulance icon
+  - Title: `EMS & Transport Providers`
+  - Description: `There are no roundabouts here, just straightforward routes for your team.`
+- **Column 3 (Right):**
+  - Icon: Coordination/dispatch icon (three circles with arrows converging)
+  - Title: `Coordinators & Dispatch`
+  - Description: `We reduce transfer delays and coordinate transports in real time.`
 
-### Benefits Section
-- Section heading: [exact text]
-- Section subheading: [exact text]
-- For each benefit:
-  - Benefit title: [exact text]
-  - Benefit description: [exact text]
-- Statistics: Numbers and labels (e.g., "40% Faster Response")
+### "How TRACC works" Section (Process Section - White background with blue grid)
+**Note:** This is the 3-step process section, NOT the login section. The login form is separate in the hero section.
 
-### CTA Section
-- Heading: [exact text]
-- Description: [exact text]
-- Button text: [exact text]
+- Section title: `How TRACC works`
+- **Step 1:**
+  - Title: `1. Request`
+  - Description: `Clinicians or coordinators submit a transport request within the TRACC portal.`
+- **Step 2:**
+  - Title: `2. Match`
+  - Description: `TRACC identifies the best available transport provider based on location and needs.`
+- **Step 3:**
+  - Title: `3. Transport`
+  - Description: `Your teams receive clear instructions and updates for the patient move.`
 
-### Footer
-- Column headings: [exact text]
-- All link labels: [exact text]
-- Copyright text: [exact text]
+### "Ready to Get Started?" Section (CTA Section - Middle-blue background)
+- Heading: `Ready to Get Started?`
+- Subtext/Description: `Create your account or explore the Quick Start guide.`
+- Primary button text: `Create Account`
+- Secondary button text: `Download Quick Start Guide`
+
+### Footer (Bottom section with light blue/grey background)
+- **Left side:**
+  - Logo: TRACC logo (stylized "tracc" text)
+  - Tagline: `Connecting healthcare and transport providers.`
+- **Right side - Navigation Links:**
+  - `About`
+  - `Contact`
+  - `Privacy Policy`
+  - `Terms`
+- Copyright text: [exact text if visible]
 
 ---
 
