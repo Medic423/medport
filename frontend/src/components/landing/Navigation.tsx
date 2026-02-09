@@ -42,22 +42,28 @@ const Navigation: React.FC<NavigationProps> = ({ onShowRegistration }) => {
           {/* Desktop Navigation Links */}
           <div className="hidden md:flex md:items-center md:space-x-8">
             <button
-              onClick={() => scrollToSection('features')}
-              className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors"
-            >
-              Features
-            </button>
-            <button
-              onClick={() => scrollToSection('benefits')}
-              className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors"
-            >
-              Benefits
-            </button>
-            <button
               onClick={() => scrollToSection('about')}
               className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors"
             >
               About
+            </button>
+            <button
+              onClick={() => scrollToSection('solutions')}
+              className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors"
+            >
+              Solutions
+            </button>
+            <button
+              onClick={() => scrollToSection('quick-start')}
+              className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors"
+            >
+              Quick Start
+            </button>
+            <button
+              onClick={() => scrollToSection('contact')}
+              className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors"
+            >
+              Contact
             </button>
           </div>
 

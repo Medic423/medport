@@ -1,6 +1,7 @@
 import React from 'react';
 import Navigation from './landing/Navigation';
 import HeroSection from './landing/HeroSection';
+import ProcessSection from './landing/ProcessSection';
 import FeaturesSection from './landing/FeaturesSection';
 import BenefitsSection from './landing/BenefitsSection';
 import CTASection from './landing/CTASection';
@@ -16,6 +17,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onShowRegistration }) => {
       <Navigation onShowRegistration={onShowRegistration} />
       <main>
         <HeroSection onShowRegistration={onShowRegistration} />
+        <ProcessSection />
         <FeaturesSection />
         <BenefitsSection />
         <CTASection onShowRegistration={onShowRegistration} />
