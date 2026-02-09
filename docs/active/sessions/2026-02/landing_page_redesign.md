@@ -70,6 +70,8 @@
 
 **Prerequisites:** Still need exported assets (images, colors, typography specs) for complete integration
 
+**Designer Instructions:** See `email_for_designer.md` for copy-paste ready email with exact requirements
+
 - [ ] **2.1: Design Specifications**
   - [ ] Extract color palette from Figma (hex codes)
   - [ ] Extract typography specifications (fonts, sizes, weights, line heights)
