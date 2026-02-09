@@ -1,7 +1,8 @@
 # Next Steps: Figma Design Access & Implementation Plan
 
 **Date:** February 3, 2026  
-**Status:** Figma file link received, need alternative access method
+**Status:** Figma file link received (updated), still need alternative access method  
+**Latest Figma Link:** https://www.figma.com/design/Jh0PzMgeTJdNx8zAUgyITM/Tracc?node-id=0-1&t=RTJIVoP7IsGTzMUt-1
 
 ---
 
