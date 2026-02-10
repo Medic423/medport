@@ -45,6 +45,7 @@ import healthcareDestinationsRoutes from './routes/healthcareDestinations';
 import healthcareSubUsersRoutes from './routes/healthcareSubUsers';
 import emsSubUsersRoutes from './routes/emsSubUsers';
 import publicRoutes from './routes/public';
+import paymentRoutes from './routes/payments';
 
 // Load environment variables
 // Load .env first, then .env.local (which will override .env values)
@@ -202,6 +203,9 @@ app.use('/api/healthcare/destinations', healthcareDestinationsRoutes);
 app.use('/api/healthcare/sub-users', healthcareSubUsersRoutes);
 app.use('/api/ems/sub-users', emsSubUsersRoutes);
 app.use('/api/agency', agencyTransportRoutes);
+
+// Payment endpoints
+app.use('/api/payments', paymentRoutes);
 
 // Public endpoints (no auth required)
 app.use('/api/public', publicRoutes);

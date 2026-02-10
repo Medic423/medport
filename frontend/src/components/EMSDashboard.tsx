@@ -29,6 +29,7 @@ import EMSAgencyAvailabilityStatus from './EMSAgencyAvailabilityStatus';
 import { categorizeTripByDate, formatSectionHeader, DateCategory } from '../utils/dateUtils';
 import { HelpModal } from './HelpSystem';
 import TrialStatusBadge from './TrialStatusBadge';
+import UpgradePrompt from './UpgradePrompt';
 // import RevenueSettings from './RevenueSettings'; // Replaced by AgencySettings
 // import EMSAnalytics from './EMSAnalytics'; // Moved to backup - will move to Admin later
 
@@ -803,6 +804,11 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
           </div>
         </div>
       </header>
+
+      {/* Upgrade Prompt Banner */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+        <UpgradePrompt userId={user.id} userType={user.userType} />
+      </div>
 
       {/* Navigation Tabs */}
       <div className="bg-white border-b">

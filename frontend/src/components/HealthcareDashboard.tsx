@@ -32,6 +32,7 @@ import { tripsAPI, unitsAPI } from '../services/api';
 import { categorizeTripByDate, formatSectionHeader, DateCategory } from '../utils/dateUtils';
 import { HelpModal } from './HelpSystem';
 import TrialStatusBadge from './TrialStatusBadge';
+import UpgradePrompt from './UpgradePrompt';
 
 interface HealthcareDashboardProps {
   user: {
@@ -883,6 +884,11 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
           </div>
         </div>
       </header>
+
+      {/* Upgrade Prompt Banner */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+        <UpgradePrompt userId={user.id} userType={user.userType} />
+      </div>
 
       {/* Navigation Tabs */}
       <div className="bg-white border-b">

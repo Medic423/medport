@@ -51,12 +51,20 @@ model CenterUser {
   
   // Subscription fields
   subscriptionPlanId      String?
-  subscriptionStatus      String?                  @default("TRIAL") // "TRIAL" | "ACTIVE" | "EXPIRED" | "CANCELLED"
+  subscriptionStatus      String?                  @default("TRIAL") // "TRIAL" | "ACTIVE" | "EXPIRED" | "CANCELLED" | "PAST_DUE"
   trialStartDate          DateTime?
   trialEndDate            DateTime?
   subscriptionStartDate   DateTime?
   subscriptionEndDate     DateTime?
   billingCycle            String?                  // "MONTHLY" | "ANNUAL"
+  
+  // Payment fields (Stripe)
+  stripeCustomerId        String?
+  stripeSubscriptionId    String?
+  paymentMethodId         String?
+  lastPaymentDate         DateTime?
+  gracePeriodEndDate      DateTime?
+  paymentStatus           String?                  // "active" | "past_due" | "cancelled" | "unpaid"
   
   subscriptionPlan        SubscriptionPlan?        @relation(fields: [subscriptionPlanId], references: [id], onDelete: SetNull)
   notificationLogs        NotificationLog[]
@@ -94,12 +102,20 @@ model HealthcareUser {
   
   // Subscription fields
   subscriptionPlanId      String?
-  subscriptionStatus      String?                      @default("TRIAL") // "TRIAL" | "ACTIVE" | "EXPIRED" | "CANCELLED"
+  subscriptionStatus      String?                      @default("TRIAL") // "TRIAL" | "ACTIVE" | "EXPIRED" | "CANCELLED" | "PAST_DUE"
   trialStartDate          DateTime?
   trialEndDate            DateTime?
   subscriptionStartDate   DateTime?
   subscriptionEndDate     DateTime?
   billingCycle            String?                      // "MONTHLY" | "ANNUAL"
+  
+  // Payment fields (Stripe)
+  stripeCustomerId        String?
+  stripeSubscriptionId   String?
+  paymentMethodId         String?
+  lastPaymentDate         DateTime?
+  gracePeriodEndDate      DateTime?
+  paymentStatus           String?                      // "active" | "past_due" | "cancelled" | "unpaid"
   
   subscriptionPlan        SubscriptionPlan?            @relation(fields: [subscriptionPlanId], references: [id], onDelete: SetNull)
   locations               HealthcareLocation[]
@@ -230,12 +246,20 @@ model EMSUser {
   
   // Subscription fields
   subscriptionPlanId      String?
-  subscriptionStatus      String?                  @default("TRIAL") // "TRIAL" | "ACTIVE" | "EXPIRED" | "CANCELLED"
+  subscriptionStatus      String?                  @default("TRIAL") // "TRIAL" | "ACTIVE" | "EXPIRED" | "CANCELLED" | "PAST_DUE"
   trialStartDate          DateTime?
   trialEndDate            DateTime?
   subscriptionStartDate   DateTime?
   subscriptionEndDate     DateTime?
   billingCycle            String?                  // "MONTHLY" | "ANNUAL"
+  
+  // Payment fields (Stripe)
+  stripeCustomerId        String?
+  stripeSubscriptionId    String?
+  paymentMethodId         String?
+  lastPaymentDate         DateTime?
+  gracePeriodEndDate      DateTime?
+  paymentStatus           String?                  // "active" | "past_due" | "cancelled" | "unpaid"
   
   subscriptionPlan        SubscriptionPlan?        @relation(fields: [subscriptionPlanId], references: [id], onDelete: SetNull)
   agency             EMSAgency? @relation(fields: [agencyId], references: [id])

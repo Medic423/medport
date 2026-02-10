@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Settings, MapPin, Building2 } from 'lucide-react';
 import HospitalSettings from './HospitalSettings';
 import HealthcareLocationSettings from './HealthcareLocationSettings';
+import SubscriptionInfoCard from './SubscriptionInfoCard';
 
 interface User {
   id: string;
@@ -57,7 +58,10 @@ const HealthcareSettingsPanel: React.FC<HealthcareSettingsPanelProps> = ({ user 
 
       {/* System Settings Tab */}
       {activeSettingsTab === 'system' && (
-        <HospitalSettings user={user} />
+        <div className="space-y-6">
+          <SubscriptionInfoCard userId={user.id} userType={user.userType || 'HEALTHCARE'} />
+          <HospitalSettings user={user} />
+        </div>
       )}
 
       {/* Locations Tab */}

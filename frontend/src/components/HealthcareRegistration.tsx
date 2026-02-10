@@ -291,7 +291,7 @@ const HealthcareRegistration: React.FC<HealthcareRegistrationProps> = ({ onBack,
       setSuccess(true);
       setTimeout(() => {
         onSuccess();
-      }, 2000);
+      }, 5000); // Show success message for 5 seconds
     } catch (err: any) {
       console.error('Healthcare registration error:', err);
       // Show the specific error message
@@ -325,9 +325,18 @@ const HealthcareRegistration: React.FC<HealthcareRegistrationProps> = ({ onBack,
               Email: <strong>{formData.email}</strong>
             </p>
             <div className="mt-4 bg-blue-50 border border-blue-200 rounded-md p-4">
-              <p className="text-sm font-medium text-blue-800">
-                🎉 Your free trial is active! You have 7 days to explore TRACC before upgrading to a paid account.
+              <p className="text-sm font-medium text-blue-800 mb-2">
+                🎉 Your free trial is active!
               </p>
+              <p className="text-sm text-blue-700">
+                You have <strong>7 days</strong> to explore all TRACC features at no cost. After your trial ends, you can upgrade to a paid subscription to continue using the platform.
+              </p>
+              <a 
+                href="/pricing" 
+                className="mt-2 inline-block text-sm font-medium text-blue-600 hover:text-blue-800 underline"
+              >
+                View pricing plans →
+              </a>
             </div>
             {!formData.latitude || !formData.longitude ? (
               <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-md p-4">

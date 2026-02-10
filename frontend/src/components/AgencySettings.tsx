@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle, AlertCircle, MapPin, RefreshCw } from 'lucide-react';
 import api from '../services/api';
+import SubscriptionInfoCard from './SubscriptionInfoCard';
 
 interface AgencySettingsUser {
   id: string;
@@ -363,6 +364,7 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
 
   return (
     <div className="space-y-6">
+      <SubscriptionInfoCard userId={user.id} userType={user.userType || 'EMS'} />
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200">
           <h3 className="text-lg font-medium text-gray-900">Agency Information</h3>

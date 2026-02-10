@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navigation from './landing/Navigation';
 import Footer from './landing/Footer';
+import UpgradeModal from './UpgradeModal';
 import { Check, ArrowRight } from 'lucide-react';
 import axios from 'axios';
 
@@ -28,9 +29,24 @@ const PricingPage: React.FC<PricingPageProps> = ({ onShowRegistration }) => {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     fetchPlans();
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          setUser(JSON.parse(userStr));
+        }
+      } catch (e) {
+        console.error('Error parsing user data:', e);
+      }
+    }
   }, [selectedUserType]);
 
   const fetchPlans = async () => {
@@ -57,13 +73,56 @@ const PricingPage: React.FC<PricingPageProps> = ({ onShowRegistration }) => {
     }
   };
 
-  const handleSelectPlan = (plan: SubscriptionPlan) => {
+  const handleSelectPlan = async (plan: SubscriptionPlan) => {
     if (plan.name === 'FREE') {
       // Redirect to registration
       onShowRegistration();
     } else {
-      // TODO: Implement payment flow for paid plans
-      alert(`Upgrade to ${plan.displayName} - Payment integration coming soon!`);
+      // Check if user is logged in
+      const token = localStorage.getItem('token');
+      if (!token || !user) {
+        // Not logged in - redirect to login with return URL
+        navigate('/login?returnUrl=/pricing&plan=' + plan.id);
+        return;
+      }
+
+      // User is logged in - initiate checkout
+      try {
+        setLoading(true);
+        setError(null);
+
+        const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '' : 'https://api.traccems.com');
+        
+        // Create checkout session (default to MONTHLY, user can change in modal)
+        const response = await axios.post(
+          `${API_BASE_URL}/api/payments/create-checkout-session`,
+          {
+            planId: plan.id,
+            billingCycle: 'MONTHLY', // Default, user can change in UpgradeModal
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        if (response.data.success && response.data.url) {
+          // Redirect to Stripe Checkout
+          window.location.href = response.data.url;
+        } else {
+          setError('Failed to create checkout session. Please try again.');
+        }
+      } catch (err: any) {
+        console.error('Error creating checkout session:', err);
+        setError(
+          err.response?.data?.error || 
+          'Failed to start checkout process. Please try again.'
+        );
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -254,6 +313,19 @@ const PricingPage: React.FC<PricingPageProps> = ({ onShowRegistration }) => {
       </main>
 
       <Footer />
+
+      {/* Upgrade Modal for logged-in users */}
+      {showUpgradeModal && selectedPlan && user && (
+        <UpgradeModal
+          isOpen={showUpgradeModal}
+          onClose={() => {
+            setShowUpgradeModal(false);
+            setSelectedPlan(null);
+          }}
+          userType={user.userType || selectedUserType}
+          currentPlanId={user.subscriptionPlanId}
+        />
+      )}
     </div>
   );
 };

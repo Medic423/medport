@@ -14,6 +14,8 @@ import ErrorBoundary from './components/ErrorBoundary';
 import TripAcceptance from './components/TripAcceptance';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsAndConditions from './components/TermsAndConditions';
+import PaymentSuccess from './components/PaymentSuccess';
+import PaymentFailure from './components/PaymentFailure';
 
 interface User {
   id: string;
@@ -261,6 +263,8 @@ function AppContent() {
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsAndConditions />} />
         <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+        <Route path="/payment/success" element={<PaymentSuccess />} />
+        <Route path="/payment/failure" element={<PaymentFailure />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>

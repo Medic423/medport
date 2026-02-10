@@ -1,7 +1,7 @@
 # Account Approval Removal & Free-to-Paid Conversion Task
 
 **Created:** February 9, 2026  
-**Status:** 🚧 IN PROGRESS (Phases 1-4 Complete, Payment Integration Pending)  
+**Status:** 🚧 IN PROGRESS (Phases 1-4 Complete, Phase 2.4 Complete, Phase 5.1 Complete - Payment Integration In Progress)  
 **Priority:** Medium
 
 ---
@@ -92,9 +92,11 @@ Remove the account approval requirement and implement a free trial period with a
 - [x] Both endpoints now calculate `trialStartDate` and `trialEndDate` automatically
 
 #### 2.1a Update Registration Success Messages
-- [ ] Remove "account will be reviewed" messaging
-- [ ] Add "free trial active for 7 days" messaging
-- [ ] Update success screens for both Healthcare and EMS registration
+- [x] Remove "account will be reviewed" messaging (no such messaging existed)
+- [x] Add "free trial active for 7 days" messaging
+- [x] Update success screens for both Healthcare and EMS registration
+- [x] Enhanced success messages with clearer trial information and pricing page link
+- [x] Increased success message display time from 2 seconds to 5 seconds for better readability
 
 #### 2.2 Add Trial Status Display
 - [x] Show trial days remaining in dashboard header (`TrialStatusBadge` component)
@@ -143,11 +145,13 @@ Remove the account approval requirement and implement a free trial period with a
   - Add "View Pricing" link/button (optional enhancement - can be done later)
 
 #### 2.4 Add Upgrade/Conversion UI
-- [ ] Create "Upgrade to Paid" button/component
-- [ ] Add pricing information display in dashboard
-- [ ] Create conversion flow (payment integration)
-- [ ] Show upgrade prompts as trial expiration approaches
-- [ ] Add trial countdown/timer in dashboard header
+- [x] Create "Upgrade to Paid" button/component (`UpgradeButton` component)
+- [x] Add pricing information display in dashboard (`SubscriptionInfoCard` component)
+- [x] Create conversion flow (payment integration) - `UpgradeModal` component created as placeholder
+- [x] Show upgrade prompts as trial expiration approaches (`UpgradePrompt` banner component)
+- [x] Add trial countdown/timer in dashboard header (already completed in Phase 4 - `TrialStatusBadge`)
+- [x] Integrated `UpgradePrompt` into HealthcareDashboard and EMSDashboard
+- [x] Added `SubscriptionInfoCard` to Healthcare Settings and EMS Agency Info sections
 
 ### 3. Database Migration
 
@@ -178,12 +182,29 @@ Remove the account approval requirement and implement a free trial period with a
     - Backfill `trialStartDate` from `createdAt` for existing accounts
     - Calculate `trialEndDate` = createdAt + 7 days for existing accounts
 
-### 4. Payment Integration (Future)
+### 4. Payment Integration
 
-- [ ] Research payment provider (Stripe, PayPal, etc.)
-- [ ] Set up payment processing
-- [ ] Create subscription management
-- [ ] Handle payment webhooks
+- [x] **Phase 5.1: Payment Provider Setup** - COMPLETE (USER VERIFIED WORKING)
+  - [x] Installed Stripe SDK (`stripe` and `@types/stripe`)
+  - [x] Created `paymentService.ts` - Stripe client initialization and checkout session creation
+  - [x] Created `subscriptionService.ts` - Subscription lifecycle management
+  - [x] Created payment routes (`payments.ts`) - API endpoints for checkout and subscription management
+  - [x] Updated `UpgradeModal` component - Real Stripe Checkout integration (replaced placeholder)
+  - [x] Created `PaymentSuccess` and `PaymentFailure` pages
+  - [x] Updated `PricingPage` - Real payment flow integration
+  - [x] Database migrations - Added payment fields to user tables (migrations 05 and 06)
+  - [x] Fixed EMS user lookup issue (lookup by email instead of agencyId)
+  - [x] Tested end-to-end: Stripe Checkout page loads successfully
+  - **Status:** ✅ Complete and tested - Stripe checkout redirects working correctly
+- [ ] **Phase 5.2: Webhook Handling** - PENDING
+  - [ ] Set up Stripe webhook endpoint (requires ngrok or production URL)
+  - [ ] Configure webhook secret in environment variables
+  - [ ] Test webhook events (checkout.session.completed, invoice.payment_succeeded, etc.)
+- [ ] **Phase 5.3: Subscription Management** - PENDING
+  - [ ] Test subscription activation after payment
+  - [ ] Test subscription renewal
+  - [ ] Test payment failure handling (grace period)
+  - [ ] Test subscription cancellation
 - [ ] Update account status on successful payment
 
 ### 5. Documentation Updates
