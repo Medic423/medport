@@ -7,6 +7,7 @@ export default {
   theme: {
     extend: {
       colors: {
+        /* Existing app palette */
         primary: {
           50: '#eff6ff',
           100: '#dbeafe',
@@ -30,8 +31,24 @@ export default {
           700: '#334155',
           800: '#1e293b',
           900: '#0f172a',
-        }
-      }
+        },
+        /* TRACC landing – design-specs.txt */
+        tracc: {
+          primary: '#001872',
+          'primary-light': '#006ac6',
+          accent: '#ff5700',
+          neutral: '#f0f3ff',
+          gray: '#5d5d5d',
+          tertiary: '#f4cec6',
+          /* light blue section bg from screenshots */
+          'section-bg': '#e6f0f8',
+        },
+      },
+      fontFamily: {
+        serifa: ['Serifa', 'Georgia', 'serif'],
+        novatica: ['BC Novatica CYR', 'Georgia', 'serif'],
+        'inter-tight': ['Inter Tight', 'Inter', 'system-ui', 'sans-serif'],
+      },
     },
   },
   plugins: [],

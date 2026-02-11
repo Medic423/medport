@@ -43,34 +43,36 @@ const FeaturesSection: React.FC = () => {
   ];
 
   return (
-    <section id="features" className="py-20 bg-white">
+    <section
+      id="features"
+      className="py-16 md:py-20"
+      style={{ backgroundColor: '#e6f0f8' }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
-        <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+        <div className="text-center mb-12 md:mb-16">
+          <h2 className="font-serifa text-3xl sm:text-4xl font-medium text-tracc-primary mb-4">
             Powerful Features for Modern Healthcare Transport
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="font-inter-tight text-xl text-tracc-gray max-w-3xl mx-auto">
             Everything you need to streamline medical transport coordination and improve patient care.
           </p>
         </div>
 
-        {/* Features Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature, index) => {
             const IconComponent = feature.icon;
             return (
               <div
                 key={index}
-                className="bg-gray-50 rounded-lg p-6 hover:shadow-lg transition-shadow border border-gray-200"
+                className="bg-white rounded-lg p-6 hover:shadow-lg transition-shadow border border-tracc-primary/10"
               >
-                <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg mb-4">
-                  <IconComponent className="h-6 w-6 text-blue-600" />
+                <div className="flex items-center justify-center w-12 h-12 bg-tracc-neutral rounded-lg mb-4">
+                  <IconComponent className="h-6 w-6 text-tracc-primary" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                <h3 className="font-inter-tight text-xl font-semibold text-tracc-primary mb-2">
                   {feature.title}
                 </h3>
-                <p className="text-gray-600">
+                <p className="font-inter-tight text-tracc-gray">
                   {feature.description}
                 </p>
               </div>

@@ -191,6 +191,7 @@ function AppContent() {
       <Routes>
         <Route path="/" element={
           <LandingPage
+            onLogin={handleLogin}
             onShowRegistration={handleShowRegistrationModal}
           />
         } />

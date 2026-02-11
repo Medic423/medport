@@ -1,0 +1,19 @@
+COLOR SCHEME
+--
+PRIMARY COLORS: #001872 and #006ac6
+NEUTRAL WHITE: #f0f3ff
+NEUTRAL GRAY: #5d5d5d
+ACCENT COLOR: #ff5700
+TERTIARY COLOR: #f4cec6
+**refer to screenshots and previous digital collateral for color usage**
+
+TYPOGRAPHY
+--
+Hero headline: Serifa, 80 (px), Medium, 94
+Hero subheadline: BC Novatica CYR, 32 (px), Medium, 38
+Section headings (h2): Serifa, 80 (px), Medium, 131
+Section subheadings: BC Novatica CYR, 32 (px), Medium, 38 
+Body text: Inter Tight, 24 (px), Regular, 32
+Button text: Inter Tight, 20 (px), Medium
+Navigation links: Inter Tight, 30 (px), Medium
+**refer to screenshots to align baseline of text with grid pattern**
