@@ -213,7 +213,7 @@ router.post('/healthcare/register', async (req, res) => {
           facilityType,
           manageMultipleLocations: manageMultipleLocations || false, // ✅ NEW: Multi-location flag
           userType: 'HEALTHCARE',
-          isActive: false, // Requires admin approval
+          isActive: true, // Active by default; trial/payment can auto-deactivate at end of free trial
           orgAdmin: isFirst
         }
       });
@@ -234,8 +234,8 @@ router.post('/healthcare/register', async (req, res) => {
           region: 'Region to be determined',
           latitude: latitude ? parseFloat(latitude) : null,
           longitude: longitude ? parseFloat(longitude) : null,
-          isActive: false, // Requires admin approval
-          requiresReview: true // Flag for admin review
+          isActive: true, // Active by default; trial/payment can auto-deactivate at end of free trial
+          requiresReview: false
         }
       });
 
@@ -251,7 +251,7 @@ router.post('/healthcare/register', async (req, res) => {
           zipCode: zipCode || '00000',
           phone: phone || null,
           facilityType: facilityType,
-          isActive: false, // Requires admin approval - will be set to true when approved
+          isActive: true, // Active by default; trial/payment can auto-deactivate at end of free trial
           isPrimary: true, // First location is always primary
           latitude: latitude ? parseFloat(latitude) : null,
           longitude: longitude ? parseFloat(longitude) : null,
@@ -266,7 +266,7 @@ router.post('/healthcare/register', async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Healthcare facility registration submitted for approval',
+      message: 'Healthcare facility registration successful. You can log in now.',
       user: {
         id: user.id,
         email: user.email,
