@@ -183,6 +183,12 @@ router.put('/:id/admin', async (req, res) => {
     if ('isActive' in locationUpdateData) {
       locationUpdateData.isActive = Boolean(locationUpdateData.isActive);
       console.log('TCC_COMMAND: Setting isActive to:', locationUpdateData.isActive);
+      // Sync to healthcareUser so login works – login checks healthcareUser.isActive, not healthcareLocation
+      await db.healthcareUser.update({
+        where: { id: location.healthcareUserId },
+        data: { isActive: locationUpdateData.isActive, updatedAt: new Date() }
+      });
+      console.log('TCC_COMMAND: Synced isActive to healthcareUser for login:', location.healthcareUserId);
     }
     
     const updatedLocation = await db.healthcareLocation.update({

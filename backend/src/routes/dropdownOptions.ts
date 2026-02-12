@@ -61,8 +61,8 @@ router.get('/:category', authenticateAdmin, async (req: AuthenticatedRequest, re
     }
     
     const hospitalPrisma = databaseManager.getPrismaClient();
-    // Ensure baseline defaults exist for urgency
-    if (category === 'urgency') {
+    // Ensure baseline defaults exist for urgency (dropdown-2)
+    if (category === 'dropdown-2') {
       const baseline = ['Routine', 'Urgent', 'Emergent'];
       for (const value of baseline) {
         const existing = await hospitalPrisma.dropdownOption.findFirst({ where: { category, value } });
@@ -111,8 +111,8 @@ router.get('/:category/default', authenticateAdmin, async (req: AuthenticatedReq
       include: { option: true }
     });
 
-    // Special handling for urgency: filter out "Critical" since backend only accepts Routine/Urgent/Emergent
-    if (category === 'urgency' && existing?.option?.value === 'Critical') {
+    // Special handling for urgency (dropdown-2): filter out "Critical" since backend only accepts Routine/Urgent/Emergent
+    if (category === 'dropdown-2' && existing?.option?.value === 'Critical') {
       console.log('TCC_DEBUG: Filtering out invalid "Critical" urgency default');
       return res.json({ success: true, data: null });
     }
@@ -146,8 +146,8 @@ router.post('/:category/default', authenticateAdmin, async (req: AuthenticatedRe
       return res.status(400).json({ success: false, error: 'Invalid option for this category' });
     }
 
-    // Special validation for urgency: prevent setting "Critical" as default (backend only accepts Routine/Urgent/Emergent)
-    if (category === 'urgency' && option.value === 'Critical') {
+    // Special validation for urgency (dropdown-2): prevent setting "Critical" as default (backend only accepts Routine/Urgent/Emergent)
+    if (category === 'dropdown-2' && option.value === 'Critical') {
       return res.status(400).json({ 
         success: false, 
         error: 'Cannot set "Critical" as urgency default. Only Routine, Urgent, and Emergent are valid.' 
@@ -187,8 +187,8 @@ router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
       return res.status(400).json({ success: false, error: 'Invalid category' });
     }
 
-    // Special validation for urgency: prevent adding "Critical" (backend only accepts Routine/Urgent/Emergent)
-    if (category === 'urgency' && value === 'Critical') {
+    // Special validation for urgency (dropdown-2): prevent adding "Critical" (backend only accepts Routine/Urgent/Emergent)
+    if (category === 'dropdown-2' && value === 'Critical') {
       return res.status(400).json({ 
         success: false, 
         error: 'Cannot add "Critical" as urgency option. Only Routine, Urgent, and Emergent are valid urgency levels.' 

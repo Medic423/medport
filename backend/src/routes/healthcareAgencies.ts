@@ -306,6 +306,92 @@ router.get('/search/:query', async (req: AuthenticatedRequest, res) => {
 });
 
 /**
+ * GET /api/healthcare/agencies/registered/search?q=...
+ * Search registered EMS agencies (TCC Admin list) for Add Provider flow
+ */
+router.get('/registered/search', async (req: AuthenticatedRequest, res) => {
+  try {
+    if (req.user?.userType !== 'HEALTHCARE') {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: Healthcare users only',
+      });
+    }
+
+    const q = (req.query.q as string) || '';
+    const query = q.trim();
+    if (!query) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const agencies = await healthcareAgencyService.searchRegisteredAgenciesForHealthcareUser(
+      req.user!.id,
+      query
+    );
+
+    res.json({
+      success: true,
+      data: agencies,
+    });
+  } catch (error: any) {
+    console.error('Search registered agencies error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to search registered agencies',
+    });
+  }
+});
+
+/**
+ * POST /api/healthcare/agencies/add-existing
+ * Add an existing registered agency to healthcare user's list (create preference only)
+ * Body: { agencyId: string, isPreferred?: boolean }
+ */
+router.post('/add-existing', async (req: AuthenticatedRequest, res) => {
+  try {
+    if (req.user?.userType !== 'HEALTHCARE') {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: Healthcare users only',
+      });
+    }
+
+    const { agencyId, isPreferred = false } = req.body;
+
+    if (!agencyId) {
+      return res.status(400).json({
+        success: false,
+        error: 'agencyId is required',
+      });
+    }
+
+    const agency = await healthcareAgencyService.addExistingAgencyToHealthcareUser(
+      req.user!.id,
+      agencyId,
+      isPreferred
+    );
+
+    res.status(201).json({
+      success: true,
+      message: 'Agency added to your list',
+      data: agency,
+    });
+  } catch (error: any) {
+    console.error('Add existing agency error:', error);
+    if (error.message?.includes('not found') || error.message?.includes('access denied')) {
+      return res.status(404).json({
+        success: false,
+        error: error.message,
+      });
+    }
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to add agency',
+    });
+  }
+});
+
+/**
  * GET /api/healthcare/agencies/:id
  * Get agency by ID (only if owned by the logged-in healthcare user)
  */

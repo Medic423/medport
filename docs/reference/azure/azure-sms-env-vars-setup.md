@@ -16,8 +16,9 @@ For SMS notifications to work on https://dev-swa.traccems.com/, these must be se
    - Purpose: Azure Communication Services connection string
 
 3. **`AZURE_COMMUNICATION_PHONE_NUMBER`** (Optional)
-   - Value: `+18339675959`
+   - Value: `+18663667374`
    - Purpose: Sender phone number (may use Azure default if not set)
+   - **Updated:** February 3, 2026 (new toll-free verification application)
 
 ## How to Add to Azure App Service
 
@@ -40,7 +41,7 @@ For SMS notifications to work on https://dev-swa.traccems.com/, these must be se
    - Click **OK**
 
    - **Name:** `AZURE_COMMUNICATION_PHONE_NUMBER` (optional)
-   - **Value:** `+18339675959`
+   - **Value:** `+18663667374`
    - Click **OK**
 
 4. **Save Configuration:**
@@ -60,7 +61,8 @@ Format: `endpoint=https://[resource-name].unitedstates.communication.azure.com/;
 
 ## Phone Number
 
-Sender phone number: `+18339675959`
+Sender phone number: `+18663667374`  
+**Updated:** February 3, 2026 (new toll-free verification application)
 
 ## Verification
 

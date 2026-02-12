@@ -40,6 +40,9 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    // Note: lastLogin is already updated by authService.login() for all user types
+    // No need to update again here
+
     console.log('TCC_DEBUG: Login successful, user ID in token:', result.user?.id);
     // Set HttpOnly cookie for SSE/cookie-based auth
     res.cookie('tcc_token', result.token, {
@@ -210,7 +213,7 @@ router.post('/healthcare/register', async (req, res) => {
           facilityType,
           manageMultipleLocations: manageMultipleLocations || false, // ✅ NEW: Multi-location flag
           userType: 'HEALTHCARE',
-          isActive: false, // Requires admin approval
+          isActive: true, // Active by default; trial/payment can auto-deactivate at end of free trial
           orgAdmin: isFirst
         }
       });
@@ -231,8 +234,8 @@ router.post('/healthcare/register', async (req, res) => {
           region: 'Region to be determined',
           latitude: latitude ? parseFloat(latitude) : null,
           longitude: longitude ? parseFloat(longitude) : null,
-          isActive: false, // Requires admin approval
-          requiresReview: true // Flag for admin review
+          isActive: true, // Active by default; trial/payment can auto-deactivate at end of free trial
+          requiresReview: false
         }
       });
 
@@ -248,7 +251,7 @@ router.post('/healthcare/register', async (req, res) => {
           zipCode: zipCode || '00000',
           phone: phone || null,
           facilityType: facilityType,
-          isActive: false, // Requires admin approval - will be set to true when approved
+          isActive: true, // Active by default; trial/payment can auto-deactivate at end of free trial
           isPrimary: true, // First location is always primary
           latitude: latitude ? parseFloat(latitude) : null,
           longitude: longitude ? parseFloat(longitude) : null,
@@ -263,7 +266,7 @@ router.post('/healthcare/register', async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Healthcare facility registration submitted for approval',
+      message: 'Healthcare facility registration successful. You can log in now.',
       user: {
         id: user.id,
         email: user.email,
@@ -1628,6 +1631,23 @@ router.post('/ems/login', async (req, res) => {
       });
     }
 
+    // Update lastLogin and lastActivity timestamps
+    console.log('TCC_DEBUG: Updating lastLogin and lastActivity for EMSUser:', { email, userId: user.id });
+    const now = new Date();
+    try {
+      const updateResult = await db.eMSUser.update({
+        where: { id: user.id },
+        data: { 
+          lastLogin: now,
+          lastActivity: now  // Also update lastActivity on login
+        }
+      });
+      console.log('TCC_DEBUG: Successfully updated lastLogin and lastActivity for EMSUser:', { email, lastLogin: updateResult.lastLogin, lastActivity: updateResult.lastActivity });
+    } catch (err) {
+      console.error('TCC_DEBUG: Error updating lastLogin/lastActivity for EMSUser:', err);
+      // Don't fail login if update fails
+    }
+
     // For EMS users, use the user ID directly (agency lookup optional)
     const token = jwt.sign(
       { 
@@ -1714,6 +1734,19 @@ router.post('/healthcare/login', async (req, res) => {
         error: 'Invalid credentials'
       });
     }
+
+    // Update lastLogin and lastActivity timestamps
+    const now = new Date();
+    await db.healthcareUser.update({
+      where: { id: user.id },
+      data: { 
+        lastLogin: now,
+        lastActivity: now  // Also update lastActivity on login
+      }
+    }).catch(err => {
+      console.error('Error updating lastLogin/lastActivity for HealthcareUser:', err);
+      // Don't fail login if update fails
+    });
 
     const token = jwt.sign(
       { 

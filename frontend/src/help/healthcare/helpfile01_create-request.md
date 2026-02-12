@@ -15,7 +15,7 @@ The **Create Request** tab allows you to create new transport requests for patie
 3. In Trip Details select the "From, Pickup and To" locations and schedule a time for patient pick-up. 
 4. Choose the appropriate Transport and Urgency Levels 
 5. Select a Primary Diagnosis and patient Mobility Level
-6. Select all applicable special needs from the checkboxes (e.g., Oxygen Required, Monitoring Required).
+6. Check the boxes for any additional needs such as oxygen.
 7. Click the "Create Request" button. 
 8. The trip will be created and the "Dispatch Trip to Agencies" screen will be displayed.
 9. Choose the "Dispatch Mode."
@@ -41,7 +41,7 @@ The **Create Request** tab allows you to create new transport requests for patie
 
 #### Patient Details
 - **Weight:** Enter patient's weight in kilograms. 
--**Pediatrics:** Select if the patient is a newborn, infant or toddler.
+- **Pediatrics:** Select if the patient is a newborn, infant or toddler.
 - **Age:** Enter patient's age.
 
 #### Insurance Information 
@@ -95,76 +95,57 @@ Select the patient's mobility status:
 
 ### Step 3: Special Requirements
 
-#### Special Needs
-Select all special needs that apply to this patient from the available checkboxes. Options are configured by your hospital administrator in Hospital Settings -> Category Options -> special-needs.
+Select all special requirements that apply to this patient from the available checkboxes. 
 
-Common special needs may include:
+Common special requirements may include:
 - **Oxygen Required:** Patient requires oxygen during transport
 - **Monitoring Required:** Continuous monitoring needed during transport
 - **Ventilator Required:** Patient requires ventilator support
 - **Bariatric Stretcher:** Patient requires bariatric-capable transport
-- Other needs as configured by your hospital
+- **Other requirements** As configured by your hospital
 
-**Note:** You can select multiple special needs by checking multiple boxes. Selected items will be displayed below the checkboxes for confirmation.
+**Tip:** Options are configured by your hospital administrator in Hospital Settings -> Category Options -> special-needs.
+
+**Note:** Selected items will be displayed below the checkboxes for confirmation.
 
 ---
 
-### Step 4: Review and Submit
+### Step 4: Submit
 
-#### Review Checklist
-Before submitting, verify:
-
-- ✅ Patient information is complete and accurate
-- ✅ Transport level matches patient needs
-- ✅ Urgency level is appropriate
-- ✅ Special requirements are clearly indicated
-- ✅ Locations are correct and geocoded
-- ✅ Ready window is realistic
-
-#### Submit Request
 - Click **"Create Request"** button
-- System validates all required fields and waits three seconds before saving and  moving to trip dispatch
-- Request is assigned a Trip Number
+- System validates all required fields, saves the request and waits three seconds before displaying the **Trip Dispatch** sequence. 
+- Request is assigned a Trip Number.
 
 ---
 
-### Step 4: Dispatch to Agencies
+### Step 4: Dispatch to EMS or other Transport Service
 
 #### Trip Summary
 - **Current Facility:** Automatically set to your facility
 - **Location Name:** Your facility name is pre-filled
 - **Address:** Facility address is automatically included
 
+
 ![Dispatch_Mode](/help/images/healthcare/01d-create_request_dispatch_trip_to_agencies.png)
+
 
 #### Dispatch Mode
 You have three options for displaying the agencies to dispatch trips to:
 - **Preferred Providers:** Limits the providers shown to only those designated as Preferred Providers.  
-- **Geographic:** Displays all transport providers within a set radius, in miles, of your facility
-- **Radius Hybrid:**Displays Preferred Providers and providers who are registered with Tracc or listed in My EMS Providers.
-- **Notification Radius (miles)** Adjust this number to either increase or decrease the number of EMS agencies for dispatch. 
+- **Geographic:** Displays all transport providers within a set radius, in miles, of your facility.
+- **Radius Hybrid:** Displays Preferred Providers and providers who are registered with Tracc or listed in **My EMS Providers.**
+- **Notification Radius:** Adjust the number of miles from your facility to either increase or decrease the number of EMS agencies for dispatch. 
 
 #### Available Agencies
-- **Preferred:** EMS or other transport providers that have been added in the "My EMS Providers" list. These providers are only show to the healthcare facility that is logged-in. 
-- **Registered:**  These agencies have registered with Tracc and are displayed for all healthcare facilities.
+- **Preferred:** EMS or other transport providers that have been added in the **My EMS Providers** list. These providers are only show to the healthcare facility that is currently logged-in. 
+- **Registered:**  These agencies have a registered Tracc account and are displayed for all healthcare facilities.
 
 #### After Agency Selection 
-- You can now dispatch the trip to the selected EMS agencies by clicking the Dispatch to Selected Agencies
+- You can now dispatch the trip to the selected EMS or transport agencies by clicking the **Dispatch to Selected Agencies** button.
 
 #### After Submission
-- Request appears in **Transport Requests** tab
+- Request appears in the **Transport Requests** tab
 - Status is set to **PENDING**
-
----
-
-
-## Form Features
-
-### Validation
-- **Required Fields:** Marked with asterisk (*)
-- **Date Validation:** Ensures valid dates and times
-- **Address Validation:** Geocoding verifies address accuracy
-- **Error Messages:** Clear error messages guide corrections
 
 ---
 
@@ -192,10 +173,10 @@ You have three options for displaying the agencies to dispatch trips to:
 
 ## Related Topics
 
-- [Transport Requests](./transport-requests.md) - View and manage submitted requests
-- [Destinations](./destinations.md) - Manage saved destination locations
-- [EMS Providers](./ems-providers.md) - View available EMS agencies
-- [Hospital Settings](./hospital-settings.md) - Configure default values and preferences
+- [Transport Requests](./healthcare_helpfile01_create-request.md) - View and manage submitted requests
+- [Destinations](./healthcare_helpfile07_destinations.md) - Manage saved destination locations
+- [EMS Providers](./healthcare_helpfile06_ems_providers.md) - View available EMS agencies
+- [Hospital Settings](./healthcare_helpfile05_hospital_settings.md) - Configure default values and preferences
 
 ---
 
@@ -215,5 +196,4 @@ If you need additional assistance:
 
 ---
 
-**Last Updated:** December 2025
-
+**Last Updated:** January 2026

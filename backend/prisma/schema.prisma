@@ -19,12 +19,16 @@ model CenterUser {
   isActive                Boolean                  @default(true)
   deletedAt               DateTime?
   isDeleted               Boolean                  @default(false)
+  lastLogin               DateTime?
+  lastActivity            DateTime?
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
   notificationLogs        NotificationLog[]
   notificationPreferences NotificationPreference[]
 
   @@index([isDeleted])
+  @@index([lastLogin])
+  @@index([lastActivity])
   @@map("center_users")
 }
 
@@ -44,6 +48,8 @@ model HealthcareUser {
   orgAdmin                Boolean                      @default(false)
   deletedAt               DateTime?
   isDeleted               Boolean                      @default(false)
+  lastLogin               DateTime?
+  lastActivity            DateTime?
   createdAt               DateTime                     @default(now())
   updatedAt               DateTime                     @updatedAt
   locations               HealthcareLocation[]
@@ -53,6 +59,8 @@ model HealthcareUser {
   subUsers                HealthcareUser[]             @relation("HealthcareUserParent")
 
   @@index([isDeleted])
+  @@index([lastLogin])
+  @@index([lastActivity])
   @@map("healthcare_users")
 }
 
@@ -162,6 +170,8 @@ model EMSUser {
   orgAdmin           Boolean    @default(false)
   deletedAt          DateTime?
   isDeleted          Boolean    @default(false)
+  lastLogin          DateTime?
+  lastActivity       DateTime?
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
   agency             EMSAgency? @relation(fields: [agencyId], references: [id])
@@ -169,6 +179,8 @@ model EMSUser {
   subUsers           EMSUser[]  @relation("EMSUserParent")
 
   @@index([isDeleted])
+  @@index([lastLogin])
+  @@index([lastActivity])
   @@map("ems_users")
 }
 

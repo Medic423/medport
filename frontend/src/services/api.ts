@@ -209,11 +209,31 @@ export const analyticsAPI = {
   getTrips: () =>
     api.get('/api/tcc/analytics/trips'),
   
+  getAccountStatistics: () =>
+    api.get('/api/tcc/analytics/accounts'),
+  
+  getRecentRegistrations: (type: 'facilities' | 'agencies', days: 60 | 90) =>
+    api.get('/api/tcc/analytics/registrations', { params: { type, days } }),
+  
+  getIdleAccountsList: (days: 30 | 60 | 90) =>
+    api.get('/api/tcc/analytics/idle-accounts', { params: { days } }),
+  
   getCostAnalysis: (params?: any) =>
     api.get('/api/tcc/analytics/cost-analysis', { params }),
   
   getProfitability: (params?: any) =>
     api.get('/api/tcc/analytics/profitability', { params }),
+  
+  getActiveUsers: (threshold?: number, excludeCurrent?: boolean) =>
+    api.get('/api/tcc/analytics/active-users', { 
+      params: { 
+        threshold: threshold || 15,
+        excludeCurrent: excludeCurrent !== false 
+      } 
+    }),
+  
+  getFacilitiesOnline: () =>
+    api.get('/api/tcc/analytics/facilities-online'),
 };
 
 // Trips API (legacy export for compatibility)
@@ -293,6 +313,14 @@ export const healthcareAgenciesAPI = {
   
   togglePreferred: (id: string, isPreferred: boolean) =>
     api.patch(`/api/healthcare/agencies/${id}/preferred`, { isPreferred }),
+
+  /** Search registered EMS agencies (TCC Admin list) for Add Provider flow */
+  searchRegistered: (query: string) =>
+    api.get('/api/healthcare/agencies/registered/search', { params: { q: query } }),
+
+  /** Add an existing registered agency to user's list (preference only) */
+  addExisting: (agencyId: string, isPreferred?: boolean) =>
+    api.post('/api/healthcare/agencies/add-existing', { agencyId, isPreferred }),
   
   // Phase 3: Trip agencies for dispatch screen
   getForTrip: (tripId: string, params?: { mode?: string; radius?: number }) => {
@@ -395,11 +423,14 @@ export const dropdownCategoriesAPI = {
   getById: (id: string) =>
     api.get(`/api/dropdown-categories/${id}`),
 
-  // Create new category
+  // Create new category - DISABLED
+  // Categories are locked to exactly 7 fixed slugs (dropdown-1 through dropdown-7)
+  // This will return 403 Forbidden from the backend
   create: (data: { slug: string; displayName: string; displayOrder?: number }) =>
     api.post('/api/dropdown-categories', data),
 
   // Update category
+  // Only displayName, displayOrder, and isActive can be updated (slug cannot be changed)
   update: (id: string, data: Partial<{ displayName: string; displayOrder: number; isActive: boolean }>) =>
     api.put(`/api/dropdown-categories/${id}`, data),
 

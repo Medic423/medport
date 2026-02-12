@@ -25,7 +25,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, userType, topic 
 
   // Map topics to file names (default to index if not provided)
   const getHelpFileName = (topic?: string): string => {
-    if (!topic) return 'index';
+    if (!topic || topic === 'index') return 'index';
     
     // Handle different naming conventions
     // If topic starts with 'helpfile', use it as-is, otherwise map it
@@ -36,6 +36,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, userType, topic 
     // Map common topic names to file names
     // Supports both 'helpfile01_' prefix and standard names
     const topicMap: Record<string, string> = {
+      // Healthcare topics
       'create': 'helpfile01_create-request',
       'create-request': 'helpfile01_create-request',
       'helpfile01_create-request': 'helpfile01_create-request',
@@ -49,11 +50,24 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, userType, topic 
       'destinations': 'destinations',
       'users': 'team-members',
       'team-members': 'team-members',
+      // EMS topics
+      'available-trips': 'helpfile01_available_trips',
+      'my-trips': 'helpfile02_my_trips',
+      'completed-trips': 'helpfile03_completed_trips copy',
+      'units': 'helpfile04_units',
+      'agency-info': 'helpfile06_agency',
+      'trip-calculator': 'helpfile07_trip_calculator',
     };
     
     // If topic already starts with 'helpfile', use it as-is
     if (topic.startsWith('helpfile')) {
       return topic;
+    }
+    
+    // Handle userType-specific mappings
+    // For EMS, 'users' maps to helpfile05_users, for Healthcare it maps to team-members
+    if (topic === 'users' && userType === 'EMS') {
+      return 'helpfile05_users';
     }
     
     return topicMap[topic] || topic;
@@ -192,7 +206,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, userType, topic 
                 <p className="text-red-600 text-sm mt-1">{error}</p>
               </div>
             ) : (
-              <HelpViewer content={filteredContent} onTopicChange={handleTopicChange} />
+              <HelpViewer content={filteredContent} onTopicChange={handleTopicChange} userType={userType} />
             )}
           </div>
 

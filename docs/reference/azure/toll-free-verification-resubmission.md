@@ -24,16 +24,27 @@
 
 ## Resubmission Process
 
-### Step 1: Access the Application
+### Step 1: Check Application Status
 
 1. **Go to Azure Portal:**
    - Navigate to: **Communication Services** → **TraccComms**
-   - Go to: **Phone numbers** → **Toll-free verification**
-   - Find the rejected application (Application ID: `513670f8-6b42-4ead-8973-ae2a58ba7096`)
+   - Go to: **Regulatory Documents** (in left menu)
+   - Find the application (Application ID: `513670f8-6b42-4ead-8973-ae2a58ba7096`)
 
-2. **Click "Update" or "Edit"** to modify the application
+2. **Check Current Status:**
+   - **"Update Requested"** → See [Scenario: Update Requested](#scenario-update-requested-status) below
+   - **"Rejected"** → Continue with Step 2 below
+   - **"Draft"** → Continue with Step 2 below
+   - **"Pending" or "Under Review"** → See [Troubleshooting Guide](toll-free-verification-troubleshooting-guide.md)
 
-### Step 2: Review and Update Each Screen
+### Step 2: Access the Application
+
+**If status is "Rejected" or "Draft":**
+
+1. **Click "Update" or "Edit"** button to modify the application
+2. If no Edit button is available, see [Scenario: Update Requested](#scenario-update-requested-status) below
+
+### Step 3: Review and Update Each Screen
 
 **Important:** Go through each screen/section and verify/update the following:
 
@@ -124,6 +135,63 @@ Before submitting, verify:
 - [ ] All required fields are filled
 
 **Note:** Both Privacy Policy and Terms pages already exist on traccems.com and are accessible. No need to create placeholder documents.
+
+**Before submitting, verify URLs are accessible:**
+```bash
+./scripts/verify-toll-free-urls.sh
+```
+
+---
+
+## Scenario: "Update Requested" Status
+
+**If application status shows "Update Requested":**
+
+⚠️ **CRITICAL:** According to Azure documentation, you **cannot edit directly in the portal** when status is "Update Requested". You must contact Azure Support.
+
+### Step 1: Raise Azure Support Ticket
+
+1. Go to Azure Portal → **Help + Support** → **New support request**
+2. **Issue type:** Technical
+3. **Service:** Communication Services
+4. **Problem type:** SMS / Toll-free verification
+5. **Problem subtype:** Application update/status
+
+### Step 2: Provide Support Ticket Details
+
+Copy and paste this information:
+
+```
+Application ID: 513670f8-6b42-4ead-8973-ae2a58ba7096
+Subscription ID: fb5dde6b-779f-4ef5-b457-4b4d087a48ee
+Resource Group: DefaultResourceGroup-EUS2
+Resource Name: TraccComms
+Phone Number: +18339675959
+
+Issue Description:
+Our toll-free verification application (ID: 513670f8-6b42-4ead-8973-ae2a58ba7096) 
+shows "Update Requested" status but we cannot edit it directly in the portal.
+
+Requested Changes:
+- Update website URL from dev-swa.traccems.com to https://traccems.com
+- Update privacy policy URL to https://traccems.com/privacy-policy
+- Update terms URL to https://traccems.com/terms
+
+The production domain (traccems.com) is now live and accessible. We need to 
+update the application with the correct production URLs.
+
+Request:
+1. Please update the application with the production URLs listed above, OR
+2. Enable editing capability in the portal so we can update it ourselves, OR
+3. Provide guidance on how to proceed with resubmission
+```
+
+### Step 3: Wait for Support Response
+
+- **Expected Response Time:** 24-48 hours
+- **Follow-up:** If no response in 48 hours, escalate the ticket
+
+For more detailed troubleshooting, see: [`toll-free-verification-troubleshooting-guide.md`](toll-free-verification-troubleshooting-guide.md)
 
 ---
 
@@ -247,6 +315,7 @@ Before submitting, verify:
 
 ---
 
-**Last Updated:** December 29, 2025  
-**Status:** Ready to Resubmit
+**Last Updated:** February 3, 2026  
+**Status:** Ready to Resubmit  
+**Related:** See [`toll-free-verification-troubleshooting-guide.md`](toll-free-verification-troubleshooting-guide.md) for comprehensive troubleshooting
 

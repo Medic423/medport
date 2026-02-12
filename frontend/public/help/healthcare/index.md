@@ -19,7 +19,7 @@ Learn how to create new transport requests for patients. This is your primary to
 
 ---
 
-### 📋 [Transport Requests](./healthcare_helpfile02_transport_requests.md)
+### 📋 [Transport Requests](./helpfile02_transport_requests.md)
 View and manage all transport requests you've created. Monitor status, edit requests, and dispatch to EMS agencies.
 
 **Key Topics:**
@@ -31,7 +31,7 @@ View and manage all transport requests you've created. Monitor status, edit requ
 
 ---
 
-### 🚑 [In-Progress Trips](./in-progress.md)
+### 🚑 [In-Progress Trips](./helpfile03_in_progress.md)
 Monitor trips that are currently in progress. Track active transports and receive real-time updates.
 
 **Key Topics:**
@@ -42,7 +42,7 @@ Monitor trips that are currently in progress. Track active transports and receiv
 
 ---
 
-### ✅ [Completed Trips](./completed-trips.md)
+### ✅ [Completed Trips](./helpfile04_completed_trips.md)
 Access historical records of completed transports. View trip details, export data, and analyze performance.
 
 **Key Topics:**
@@ -53,7 +53,7 @@ Access historical records of completed transports. View trip details, export dat
 
 ---
 
-### 🏥 [Hospital Settings](./hospital-settings.md)
+### 🏥 [Hospital Settings](./helpfile05_hospital_settings.md)
 Configure your facility settings, manage locations, and customize notification preferences.
 
 **Key Topics:**
@@ -65,7 +65,7 @@ Configure your facility settings, manage locations, and customize notification p
 
 ---
 
-### 🚨 [EMS Providers](./ems-providers.md)
+### 🚨 [EMS Providers](./helpfile06_ems_providers.md)
 Manage your preferred EMS providers and view available agencies in your area.
 
 **Key Topics:**
@@ -76,7 +76,7 @@ Manage your preferred EMS providers and view available agencies in your area.
 
 ---
 
-### 📍 [Destinations](./destinations.md)
+### 📍 [Destinations](./helpfile07_destinations.md)
 Manage frequently used destination locations for faster trip creation.
 
 **Key Topics:**
@@ -87,7 +87,7 @@ Manage frequently used destination locations for faster trip creation.
 
 ---
 
-### 👥 [Team Members](./team-members.md)
+### 👥 [Team Members](./helpfile08_team_members.md)
 Manage users for your healthcare facility. Add team members, assign roles, and manage permissions.
 
 **Key Topics:**
@@ -101,9 +101,9 @@ Manage users for your healthcare facility. Add team members, assign roles, and m
 ## Quick Navigation
 
 - **New to the system?** Start with [Create Request](./helpfile01_create-request.md)
-- **Need to manage requests?** See [Transport Requests](./healthcare_helpfile02_transport_requests.md)
-- **Setting up your facility?** Check [Hospital Settings](./hospital-settings.md)
-- **Adding team members?** Review [Team Members](./team-members.md)
+- **Need to manage requests?** See [Transport Requests](./helpfile02_transport_requests.md)
+- **Setting up your facility?** Check [Hospital Settings](./helpfile05_hospital_settings.md)
+- **Adding team members?** Review [Team Members](./helpfile08_team_members.md)
 
 ---
 

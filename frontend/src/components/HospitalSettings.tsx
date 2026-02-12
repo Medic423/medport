@@ -363,6 +363,7 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
       setCategoryError(null);
       setCategorySuccess(null);
 
+      // Only allow editing existing categories (categories are fixed to 7 slugs)
       if (editingCategory) {
         // Update existing category
         const response = await dropdownCategoriesAPI.update(editingCategory.id, {
@@ -380,20 +381,8 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
           setTimeout(() => setCategorySuccess(null), 3000);
         }
       } else {
-        // Create new category
-        const response = await dropdownCategoriesAPI.create({
-          slug: categoryFormData.slug,
-          displayName: categoryFormData.displayName,
-          displayOrder: categoryFormData.displayOrder || undefined
-        });
-        if (response.data.success) {
-          setCategorySuccess('Category created successfully');
-          setShowCategoryForm(false);
-          setCategoryFormData({ slug: '', displayName: '', displayOrder: 0, isActive: true });
-          loadCategoryList();
-          loadCategories(); // Reload categories for dropdown options tab
-          setTimeout(() => setCategorySuccess(null), 3000);
-        }
+        // Category creation is disabled - categories are fixed to 7 slugs
+        setCategoryError('Category creation is disabled. Categories are locked to exactly 7 fixed slugs.');
       }
     } catch (error: any) {
       console.error('Error saving category:', error);
@@ -633,12 +622,33 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
   };
 
   // Contact form handlers
+  const formatPhoneNumber = (value: string): string => {
+    // Remove all non-digit characters
+    const phoneNumber = value.replace(/\D/g, '');
+    
+    // Format as (XXX) XXX-XXXX
+    if (phoneNumber.length === 0) return '';
+    if (phoneNumber.length <= 3) return `(${phoneNumber}`;
+    if (phoneNumber.length <= 6) return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3)}`;
+    return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3, 6)}-${phoneNumber.slice(6, 10)}`;
+  };
+
   const handleContactInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setContactFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    // Format phone number if it's the contactPhone field
+    if (name === 'contactPhone') {
+      const formatted = formatPhoneNumber(value);
+      setContactFormData(prev => ({
+        ...prev,
+        [name]: formatted
+      }));
+    } else {
+      setContactFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleSaveContact = async (e: React.FormEvent) => {
@@ -668,17 +678,13 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
   };
 
   const getCategoryDisplayName = (category: string) => {
-    const displayNames: { [key: string]: string } = {
-      'insurance': 'Insurance Companies',
-      'secondary-insurance': 'Secondary Insurance',
-      'diagnosis': 'Primary Diagnosis',
-      'mobility': 'Mobility Levels',
-      'transport-level': 'Transport Levels',
-      'urgency': 'Urgency Levels',
-      'special-needs': 'Special Needs',
-      'secondary-insurance': 'Secondary Insurance'
-    };
-    return displayNames[category] || category;
+    // Look up display name from categoryList (loaded from database)
+    const categoryObj = categoryList.find(cat => cat.slug === category);
+    if (categoryObj) {
+      return categoryObj.displayName;
+    }
+    // Fallback to category slug if not found
+    return category;
   };
 
   return (
@@ -788,20 +794,10 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
         <>
           <div className="mb-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Manage Categories</h3>
-              <button
-                onClick={() => {
-                  setEditingCategory(null);
-                  setCategoryFormData({ slug: '', displayName: '', displayOrder: 0, isActive: true });
-                  setCategorySuccess(null);
-                  setCategoryError(null);
-                  setShowCategoryForm(true);
-                }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                Add Category
-              </button>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Manage Categories</h3>
+                <p className="text-sm text-gray-500 mt-1">Categories are fixed to 7 predefined slugs. You can only edit display names and order.</p>
+              </div>
             </div>
 
             {categoryLoading ? (
@@ -885,30 +881,26 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
             )}
           </div>
 
-          {/* Add/Edit Category Form */}
-          {(editingCategory || showCategoryForm) && (
+          {/* Edit Category Form - Only show when editing, not for adding */}
+          {editingCategory && (
             <div className="mt-6 bg-gray-50 p-6 rounded-lg border border-gray-200">
               <h4 className="text-lg font-semibold text-gray-900 mb-4">
-                {editingCategory ? 'Edit Category' : 'Add New Category'}
+                Edit Category
               </h4>
               <form onSubmit={handleCategorySubmit} className="space-y-4">
                 <div>
-                  <label htmlFor="category-slug" className="block text-sm font-medium text-gray-700 mb-1">
-                    Slug <span className="text-red-500">*</span>
+                  <label htmlFor="category-slug-display" className="block text-sm font-medium text-gray-700 mb-1">
+                    Slug (Read-only)
                   </label>
                   <input
                     type="text"
-                    id="category-slug"
+                    id="category-slug-display"
                     value={categoryFormData.slug}
-                    onChange={(e) => setCategoryFormData({ ...categoryFormData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
-                    placeholder="e.g., transport-level"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                    disabled={!!editingCategory}
-                    pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$"
-                    title="Lowercase letters, numbers, and hyphens only"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 text-gray-600 cursor-not-allowed"
+                    disabled
+                    readOnly
                   />
-                  <p className="mt-1 text-xs text-gray-500">Lowercase letters, numbers, and hyphens only. Cannot be changed after creation.</p>
+                  <p className="mt-1 text-xs text-gray-500">Category slugs are fixed and cannot be changed.</p>
                 </div>
                 <div>
                   <label htmlFor="category-display-name" className="block text-sm font-medium text-gray-700 mb-1">
@@ -958,10 +950,10 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
                 <div className="flex gap-2">
                   <button
                     type="submit"
-                    disabled={categoryLoading || !categoryFormData.slug || !categoryFormData.displayName}
+                    disabled={categoryLoading || !categoryFormData.displayName}
                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {categoryLoading ? 'Saving...' : (editingCategory ? 'Update Category' : 'Create Category')}
+                    {categoryLoading ? 'Saving...' : 'Update Category'}
                   </button>
                   <button
                     type="button"
@@ -989,10 +981,11 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
                 <h3 className="text-sm font-medium text-blue-800">About Category Options</h3>
                 <div className="mt-2 text-sm text-blue-700">
                   <ul className="list-disc list-inside space-y-1">
-                    <li>Categories organize dropdown options used throughout the application</li>
+                    <li>Categories are fixed to exactly 7 predefined slugs (dropdown-1 through dropdown-7)</li>
+                    <li>You cannot add new categories or change category slugs</li>
+                    <li>You can edit display names and display order for existing categories</li>
                     <li>Each category can have multiple dropdown options that appear in trip creation forms</li>
                     <li>Categories cannot be deleted if they have active options - remove or deactivate all options first</li>
-                    <li>The slug is a unique identifier that cannot be changed after creation</li>
                     <li>Display order determines the order categories appear in dropdowns (lower numbers appear first)</li>
                     <li>Changes to categories and options are reflected immediately in trip creation forms</li>
                   </ul>

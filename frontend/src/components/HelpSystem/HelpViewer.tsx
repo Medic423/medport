@@ -8,9 +8,10 @@ interface HelpViewerProps {
   content: string;
   className?: string;
   onTopicChange?: (topic: string) => void; // Callback when user clicks an internal help link
+  userType?: 'HEALTHCARE' | 'EMS' | 'ADMIN'; // User type to validate cross-directory links
 }
 
-const HelpViewer: React.FC<HelpViewerProps> = ({ content, className = '', onTopicChange }) => {
+const HelpViewer: React.FC<HelpViewerProps> = ({ content, className = '', onTopicChange, userType }) => {
   return (
     <div className={`help-viewer prose prose-lg max-w-none ${className}`}>
       <ReactMarkdown
@@ -91,16 +92,59 @@ const HelpViewer: React.FC<HelpViewerProps> = ({ content, className = '', onTopi
             // Check if this is an internal help file link (starts with ./ and ends with .md)
             const isInternalHelpLink = href.startsWith('./') && href.endsWith('.md');
             
-            const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+            // Check if link points to a file in a different directory (e.g., healthcare_ files from EMS)
+            const isCrossDirectoryLink = userType === 'EMS' && href.includes('healthcare_');
+            
+            const handleClick = (e: React.MouseEvent<HTMLElement>) => {
+              // Disable cross-directory links (e.g., EMS users can't access healthcare files)
+              if (isCrossDirectoryLink) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Cross-directory link disabled:', href);
+                return false;
+              }
+              
               if (isInternalHelpLink && onTopicChange) {
                 e.preventDefault();
+                e.stopPropagation();
                 // Extract filename from path (e.g., ./helpfile01_create-request.md -> helpfile01_create-request)
                 const filename = href.replace('./', '').replace('.md', '');
                 console.log('Internal help link clicked:', href, '-> topic:', filename);
                 onTopicChange(filename);
+                return false;
               }
               // External links and non-help links work normally
             };
+            
+            // For cross-directory links, render as disabled text (not clickable)
+            if (isCrossDirectoryLink) {
+              return (
+                <span className="text-gray-500 no-underline cursor-not-allowed" title="This topic is not available for your user type">
+                  {props.children}
+                </span>
+              );
+            }
+            
+            // For internal help links, use a button styled as a link to completely prevent navigation
+            if (isInternalHelpLink && onTopicChange) {
+              return (
+                <button
+                  type="button"
+                  onClick={handleClick}
+                  className="text-blue-600 hover:text-blue-800 underline cursor-pointer bg-transparent border-none p-0 font-inherit text-left inline"
+                  style={{ textDecoration: 'underline' }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleClick(e as any);
+                    }
+                  }}
+                >
+                  {props.children}
+                </button>
+              );
+            }
             
             return (
               <a

@@ -1,9 +1,23 @@
+// DIAGNOSTIC: Log startup attempt
+console.log('🔍 [STARTUP] Starting backend application...');
+console.log('🔍 [STARTUP] Node version:', process.version);
+console.log('🔍 [STARTUP] Working directory:', process.cwd());
+console.log('🔍 [STARTUP] Environment:', process.env.NODE_ENV || 'not set');
+
+try {
+  console.log('🔍 [STARTUP] Loading dependencies...');
+} catch (error) {
+  console.error('❌ [STARTUP] Failed to log initial message:', error);
+}
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { databaseManager } from './services/databaseManager';
 import cookieParser from 'cookie-parser';
+
+console.log('🔍 [STARTUP] Dependencies imported successfully');
 
 // Import routes
 import authRoutes from './routes/auth';
@@ -334,10 +348,28 @@ async function startServer() {
 
 // Start the server (skip in Vercel serverless environment)
 if (!process.env.VERCEL) {
-  startServer();
+  console.log('🔍 [STARTUP] Calling startServer()...');
+  startServer().catch((error) => {
+    console.error('❌ [STARTUP] Unhandled error in startServer():', error);
+    console.error('❌ [STARTUP] Error stack:', error instanceof Error ? error.stack : String(error));
+    process.exit(1);
+  });
 } else {
   console.log('🔧 Running in Vercel serverless mode - server startup handled by Vercel');
 }
+
+// Catch any unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ [STARTUP] Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
+
+// Catch any uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('❌ [STARTUP] Uncaught Exception:', error);
+  console.error('❌ [STARTUP] Error stack:', error.stack);
+  process.exit(1);
+});
 
 // Graceful shutdown
 process.on('SIGINT', async () => {

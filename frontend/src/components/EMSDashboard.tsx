@@ -505,6 +505,20 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
     }
   };
 
+  const formatStatus = (status: string) => {
+    switch (status) {
+      case 'PENDING': return 'Pending';
+      case 'PENDING_DISPATCH': return 'Pending Dispatch';
+      case 'ACCEPTED': return 'Accepted';
+      case 'DECLINED': return 'Declined';
+      case 'CANCELLED': return 'Cancelled';
+      case 'IN_PROGRESS': return 'In Progress';
+      case 'COMPLETED': return 'Completed';
+      case 'HEALTHCARE_COMPLETED': return 'Completed';
+      default: return status;
+    }
+  };
+
   const getUrgencyLevelStyle = (urgencyLevel: string) => {
     switch (urgencyLevel) {
       case 'Routine':
@@ -754,17 +768,9 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
               <Notifications user={user} />
               <button
                 onClick={() => {
-                  // Map current tab to help topic
-                  const topicMap: Record<string, string> = {
-                    'available': 'available-trips',
-                    'accepted': 'my-trips',
-                    'completed': 'completed-trips',
-                    // 'units': 'units', // Units Management disabled
-                    'users': 'users',
-                    'agency-info': 'agency-info',
-                    'trip-calculator': 'trip-calculator',
-                  };
-                  setHelpTopic(topicMap[activeTab] || 'index');
+                  // Always show index when clicking main Help button
+                  // Context-specific help can be accessed from within help files
+                  setHelpTopic('index');
                   setShowHelp(true);
                 }}
                 className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-gray-50 rounded-md transition-colors"
@@ -1085,7 +1091,7 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
                       <div className="flex items-center space-x-4">
                         <h4 className="text-lg font-medium text-gray-900">Patient {trip.patientId}</h4>
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(trip.status)}`}>
-                          {trip.status}
+                          {formatStatus(trip.status)}
                         </span>
                       </div>
                       <p className="text-sm text-gray-500 mt-1">
@@ -1172,14 +1178,6 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
                                 <span className="font-medium">Completion Time:</span> {trip.completionTime || 'N/A'}
                               </div>
                             </div>
-                          </div>
-                          <div className="ml-4 flex items-center space-x-2">
-                            <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getStatusColor(trip.status)}`}>
-                              {trip.status}
-                            </span>
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getUrgencyLevelStyle(trip.urgencyLevel || 'Routine')}`}>
-                              {trip.urgencyLevel || 'Routine'}
-                            </span>
                           </div>
                         </div>
                       </div>

@@ -69,11 +69,23 @@ export class AuthService {
       let foundUser: any = null;
       try {
         foundUser = await db.centerUser?.findFirst({
-          where: { email }
+          where: { email },
+          select: {
+            id: true,
+            email: true,
+            password: true,
+            name: true,
+            userType: true,
+            isActive: true,
+            isDeleted: true,
+            lastLogin: true,
+            // lastActivity is optional, don't select it for login queries
+          }
         });
         console.log('TCC_DEBUG: centerUser lookup result:', foundUser ? `Found user: ${foundUser.email}` : 'Not found');
       } catch (dbError) {
         console.error('❌ Error querying centerUser table:', dbError);
+        console.error('❌ Error details:', JSON.stringify(dbError, null, 2));
         throw dbError;
       }
       if (foundUser) {
@@ -84,25 +96,66 @@ export class AuthService {
 
       // If not found, try HealthcareUser table
       if (!foundUser) {
-        foundUser = await db.healthcareUser?.findFirst({
-          where: { email }
-        });
-        if (foundUser) {
-          userType = 'HEALTHCARE';
-          mustChangePassword = !!(foundUser as any).mustChangePassword;
-          user = foundUser;
+        try {
+          foundUser = await db.healthcareUser?.findFirst({
+            where: { email },
+            select: {
+              id: true,
+              email: true,
+              password: true,
+              name: true,
+              facilityName: true,
+              facilityType: true,
+              isActive: true,
+              isDeleted: true,
+              lastLogin: true,
+              mustChangePassword: true,
+              manageMultipleLocations: true,
+              orgAdmin: true,
+              // lastActivity is optional, don't select it for login queries
+            }
+          });
+          if (foundUser) {
+            userType = 'HEALTHCARE';
+            mustChangePassword = !!(foundUser as any).mustChangePassword;
+            user = foundUser;
+          }
+        } catch (dbError) {
+          console.error('❌ Error querying healthcareUser table:', dbError);
+          console.error('❌ Error details:', JSON.stringify(dbError, null, 2));
+          throw dbError;
         }
       }
 
       // If still not found, try EMSUser table
       if (!foundUser) {
-        foundUser = await db.eMSUser?.findFirst({
-          where: { email }
-        });
-        if (foundUser) {
-          userType = 'EMS';
-          mustChangePassword = !!(foundUser as any).mustChangePassword;
-          user = foundUser;
+        try {
+          foundUser = await db.eMSUser?.findFirst({
+            where: { email },
+            select: {
+              id: true,
+              email: true,
+              password: true,
+              name: true,
+              agencyName: true,
+              agencyId: true,
+              isActive: true,
+              isDeleted: true,
+              lastLogin: true,
+              mustChangePassword: true,
+              orgAdmin: true,
+              // lastActivity is optional, don't select it for login queries
+            }
+          });
+          if (foundUser) {
+            userType = 'EMS';
+            mustChangePassword = !!(foundUser as any).mustChangePassword;
+            user = foundUser;
+          }
+        } catch (dbError) {
+          console.error('❌ Error querying eMSUser table:', dbError);
+          console.error('❌ Error details:', JSON.stringify(dbError, null, 2));
+          throw dbError;
         }
       }
 
@@ -142,6 +195,43 @@ export class AuthService {
           success: false,
           error: 'Incorrect password. Please check your password and try again.'
         };
+      }
+
+      // Update lastLogin and lastActivity timestamps based on user type
+      try {
+        const now = new Date();
+        console.log('TCC_DEBUG: Updating lastLogin and lastActivity in authService:', { email, userType, userId: user.id });
+        if (userType === 'ADMIN' || userType === 'USER') {
+          const updateResult = await db.centerUser.update({
+            where: { id: user.id },
+            data: { 
+              lastLogin: now,
+              lastActivity: now  // Also update lastActivity on login
+            }
+          });
+          console.log('TCC_DEBUG: Successfully updated lastLogin and lastActivity in authService (CenterUser):', { email, lastLogin: updateResult.lastLogin, lastActivity: updateResult.lastActivity });
+        } else if (userType === 'HEALTHCARE') {
+          const updateResult = await db.healthcareUser.update({
+            where: { id: user.id },
+            data: { 
+              lastLogin: now,
+              lastActivity: now  // Also update lastActivity on login
+            }
+          });
+          console.log('TCC_DEBUG: Successfully updated lastLogin and lastActivity in authService (HealthcareUser):', { email, lastLogin: updateResult.lastLogin, lastActivity: updateResult.lastActivity });
+        } else if (userType === 'EMS') {
+          const updateResult = await db.eMSUser.update({
+            where: { id: user.id },
+            data: { 
+              lastLogin: now,
+              lastActivity: now  // Also update lastActivity on login
+            }
+          });
+          console.log('TCC_DEBUG: Successfully updated lastLogin and lastActivity in authService (EMSUser):', { email, lastLogin: updateResult.lastLogin, lastActivity: updateResult.lastActivity });
+        }
+      } catch (err) {
+        console.error('TCC_DEBUG: Error updating lastLogin/lastActivity in authService:', err);
+        // Don't fail login if update fails
       }
 
       // For EMS users, use the agency ID from the relationship
@@ -226,11 +316,32 @@ export class AuthService {
 
       if (decoded.userType === 'ADMIN' || decoded.userType === 'USER') {
         user = await db.centerUser.findUnique({
-          where: { id: decoded.id }
+          where: { id: decoded.id },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            userType: true,
+            isActive: true,
+            isDeleted: true,
+            // lastActivity is optional, don't select it for verify queries
+          }
         });
       } else if (decoded.userType === 'HEALTHCARE') {
         user = await db.healthcareUser.findUnique({
-          where: { id: decoded.id }
+          where: { id: decoded.id },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            facilityName: true,
+            facilityType: true,
+            isActive: true,
+            isDeleted: true,
+            manageMultipleLocations: true,
+            orgAdmin: true,
+            // lastActivity is optional, don't select it for verify queries
+          }
         });
       } else if (decoded.userType === 'EMS') {
         // For EMS users, decoded.id contains the agency ID, not the user ID
@@ -249,6 +360,17 @@ export class AuthService {
           where: { 
             email: decoded.email,
             isDeleted: false
+          },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            agencyName: true,
+            agencyId: true,
+            isActive: true,
+            isDeleted: true,
+            orgAdmin: true,
+            // lastActivity is optional, don't select it for verify queries
           }
         });
 

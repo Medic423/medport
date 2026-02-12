@@ -297,7 +297,7 @@ const TripCard: React.FC<TripCardProps> = ({ trip, user, onRefresh, onEdit, onDi
         {trip.agencyResponses && trip.agencyResponses.length > 0 && (
           <div className="mt-2 flex items-center space-x-2">
             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-              {acceptedAgenciesCount} {acceptedAgenciesCount === 1 ? 'agency' : 'agencies'} accepted
+              {acceptedAgenciesCount} {acceptedAgenciesCount === 1 ? 'Agency' : 'Agencies'} Accepted
             </span>
             {hasSelectedAgency && (
               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">

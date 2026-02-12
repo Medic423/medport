@@ -94,88 +94,23 @@ router.get('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => 
   }
 });
 
-// Create new category
+// Create new category - DISABLED
+// Categories are locked to exactly 7 fixed slugs (dropdown-1 through dropdown-7)
+// Users cannot add new categories, only edit display names and order
 router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
-  try {
-    const { slug, displayName, displayOrder } = req.body;
-
-    // Validation
-    if (!slug || !displayName) {
-      return res.status(400).json({
-        success: false,
-        error: 'Slug and displayName are required'
-      });
-    }
-
-    // Validate slug format
-    if (!isValidSlug(slug)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid slug format. Slug must be lowercase, contain only letters, numbers, and hyphens, and start/end with alphanumeric characters.'
-      });
-    }
-
-    const prisma = databaseManager.getPrismaClient();
-
-    // Check if slug already exists
-    const existingCategory = await prisma.dropdownCategory.findUnique({
-      where: { slug }
-    });
-
-    if (existingCategory) {
-      return res.status(400).json({
-        success: false,
-        error: 'Category with this slug already exists'
-      });
-    }
-
-    // Get max displayOrder if not provided
-    let order = displayOrder;
-    if (order === undefined || order === null) {
-      const maxOrder = await prisma.dropdownCategory.findFirst({
-        orderBy: { displayOrder: 'desc' },
-        select: { displayOrder: true }
-      });
-      order = (maxOrder?.displayOrder || 0) + 1;
-    }
-
-    const newCategory = await prisma.dropdownCategory.create({
-      data: {
-        slug,
-        displayName,
-        displayOrder: order,
-        isActive: true
-      }
-    });
-
-    res.json({
-      success: true,
-      data: newCategory,
-      message: 'Category created successfully'
-    });
-  } catch (error: any) {
-    console.error('TCC_DEBUG: Create category error:', error);
-    
-    // Handle unique constraint violation
-    if (error.code === 'P2002') {
-      return res.status(400).json({
-        success: false,
-        error: 'Category with this slug already exists'
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      error: 'Failed to create category'
-    });
-  }
+  return res.status(403).json({
+    success: false,
+    error: 'Category creation is disabled. Categories are locked to exactly 7 fixed slugs (dropdown-1 through dropdown-7). You can only edit display names and display order.'
+  });
 });
 
 // Update category
+// Categories are locked - only displayName, displayOrder, and isActive can be updated
+// Slug cannot be changed (categories are fixed to dropdown-1 through dropdown-7)
 router.put('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params;
-    const { displayName, displayOrder, isActive } = req.body;
+    const { displayName, displayOrder, isActive, slug } = req.body;
 
     const prisma = databaseManager.getPrismaClient();
 
@@ -196,6 +131,14 @@ router.put('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => 
       });
     }
 
+    // Prevent slug changes - slugs are locked to dropdown-1 through dropdown-7
+    if (slug !== undefined && slug !== existingCategory.slug) {
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot change category slug. Categories are locked to fixed slugs (dropdown-1 through dropdown-7). Only display name and order can be modified.'
+      });
+    }
+
     // Prevent deactivating category with active options
     if (isActive === false && existingCategory._count.options > 0) {
       return res.status(400).json({
@@ -204,11 +147,12 @@ router.put('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => 
       });
     }
 
-    // Build update data
+    // Build update data - only allow displayName, displayOrder, and isActive
     const updateData: any = {};
     if (displayName !== undefined) updateData.displayName = displayName;
     if (displayOrder !== undefined) updateData.displayOrder = displayOrder;
     if (isActive !== undefined) updateData.isActive = isActive;
+    // Explicitly ignore slug if provided
 
     const updatedCategory = await prisma.dropdownCategory.update({
       where: { id },

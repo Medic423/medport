@@ -333,15 +333,16 @@ async function main() {
     }
 
     // Ensure dropdown categories exist (idempotent)
+    // Categories are locked to fixed slugs: dropdown-1 through dropdown-7
     console.log('🌱 Seeding dropdown categories...');
     const categories = [
-      { slug: 'transport-level', displayName: 'Transport Levels', displayOrder: 1 },
-      { slug: 'urgency', displayName: 'Urgency Levels', displayOrder: 2 },
-      { slug: 'diagnosis', displayName: 'Primary Diagnosis', displayOrder: 3 },
-      { slug: 'mobility', displayName: 'Mobility Levels', displayOrder: 4 },
-      { slug: 'insurance', displayName: 'Insurance Companies', displayOrder: 5 },
-      { slug: 'special-needs', displayName: 'Special Needs', displayOrder: 6 },
-      { slug: 'secondary-insurance', displayName: 'Secondary Insurance', displayOrder: 7 },
+      { slug: 'dropdown-1', displayName: 'Transport Levels', displayOrder: 1 },
+      { slug: 'dropdown-2', displayName: 'Urgency Levels', displayOrder: 2 },
+      { slug: 'dropdown-3', displayName: 'Primary Diagnosis', displayOrder: 3 },
+      { slug: 'dropdown-4', displayName: 'Mobility Levels', displayOrder: 4 },
+      { slug: 'dropdown-5', displayName: 'Insurance Companies', displayOrder: 5 },
+      { slug: 'dropdown-6', displayName: 'Secondary Insurance', displayOrder: 6 },
+      { slug: 'dropdown-7', displayName: 'Special Needs', displayOrder: 7 },
     ];
 
     for (const cat of categories) {
@@ -357,73 +358,73 @@ async function main() {
     console.log('🌱 Seeding dropdown options...');
     
     const dropdownOptions = [
-      // Insurance
-      { category: 'insurance', value: 'Medicare' },
-      { category: 'insurance', value: 'Medicaid' },
-      { category: 'insurance', value: 'Aetna' },
-      { category: 'insurance', value: 'Anthem Blue Cross Blue Shield' },
-      { category: 'insurance', value: 'Blue Cross Blue Shield' },
-      { category: 'insurance', value: 'Cigna' },
-      { category: 'insurance', value: 'Humana' },
-      { category: 'insurance', value: 'UnitedHealthcare' },
-      { category: 'insurance', value: 'Private' },
-      { category: 'insurance', value: 'Self-pay' },
-      { category: 'insurance', value: 'Other' },
+      // Insurance (dropdown-5)
+      { category: 'dropdown-5', value: 'Medicare' },
+      { category: 'dropdown-5', value: 'Medicaid' },
+      { category: 'dropdown-5', value: 'Aetna' },
+      { category: 'dropdown-5', value: 'Anthem Blue Cross Blue Shield' },
+      { category: 'dropdown-5', value: 'Blue Cross Blue Shield' },
+      { category: 'dropdown-5', value: 'Cigna' },
+      { category: 'dropdown-5', value: 'Humana' },
+      { category: 'dropdown-5', value: 'UnitedHealthcare' },
+      { category: 'dropdown-5', value: 'Private' },
+      { category: 'dropdown-5', value: 'Self-pay' },
+      { category: 'dropdown-5', value: 'Other' },
       
-      // Diagnosis
-      { category: 'diagnosis', value: 'Cardiac' },
-      { category: 'diagnosis', value: 'Respiratory' },
-      { category: 'diagnosis', value: 'Neurological' },
-      { category: 'diagnosis', value: 'Trauma' },
-      { category: 'diagnosis', value: 'Acute Myocardial Infarction' },
-      { category: 'diagnosis', value: 'Stroke/CVA' },
-      { category: 'diagnosis', value: 'Pneumonia' },
-      { category: 'diagnosis', value: 'Congestive Heart Failure' },
-      { category: 'diagnosis', value: 'COPD Exacerbation' },
-      { category: 'diagnosis', value: 'Sepsis' },
-      { category: 'diagnosis', value: 'Surgical Recovery' },
-      { category: 'diagnosis', value: 'Dialysis' },
-      { category: 'diagnosis', value: 'Oncology' },
-      { category: 'diagnosis', value: 'Psychiatric Emergency' },
-      { category: 'diagnosis', value: 'Other' },
+      // Diagnosis (dropdown-3)
+      { category: 'dropdown-3', value: 'Cardiac' },
+      { category: 'dropdown-3', value: 'Respiratory' },
+      { category: 'dropdown-3', value: 'Neurological' },
+      { category: 'dropdown-3', value: 'Trauma' },
+      { category: 'dropdown-3', value: 'Acute Myocardial Infarction' },
+      { category: 'dropdown-3', value: 'Stroke/CVA' },
+      { category: 'dropdown-3', value: 'Pneumonia' },
+      { category: 'dropdown-3', value: 'Congestive Heart Failure' },
+      { category: 'dropdown-3', value: 'COPD Exacerbation' },
+      { category: 'dropdown-3', value: 'Sepsis' },
+      { category: 'dropdown-3', value: 'Surgical Recovery' },
+      { category: 'dropdown-3', value: 'Dialysis' },
+      { category: 'dropdown-3', value: 'Oncology' },
+      { category: 'dropdown-3', value: 'Psychiatric Emergency' },
+      { category: 'dropdown-3', value: 'Other' },
       
-      // Mobility
-      { category: 'mobility', value: 'Ambulatory' },
-      { category: 'mobility', value: 'Wheelchair' },
-      { category: 'mobility', value: 'Stretcher' },
-      { category: 'mobility', value: 'Bed-bound' },
-      { category: 'mobility', value: 'Independent' },
-      { category: 'mobility', value: 'Assistive Device Required' },
-      { category: 'mobility', value: 'Wheelchair Bound' },
-      { category: 'mobility', value: 'Bed Bound' },
-      { category: 'mobility', value: 'Stretcher Required' },
-      { category: 'mobility', value: 'Bariatric Equipment Required' },
+      // Mobility (dropdown-4)
+      { category: 'dropdown-4', value: 'Ambulatory' },
+      { category: 'dropdown-4', value: 'Wheelchair' },
+      { category: 'dropdown-4', value: 'Stretcher' },
+      { category: 'dropdown-4', value: 'Bed-bound' },
+      { category: 'dropdown-4', value: 'Independent' },
+      { category: 'dropdown-4', value: 'Assistive Device Required' },
+      { category: 'dropdown-4', value: 'Wheelchair Bound' },
+      { category: 'dropdown-4', value: 'Bed Bound' },
+      { category: 'dropdown-4', value: 'Stretcher Required' },
+      { category: 'dropdown-4', value: 'Bariatric Equipment Required' },
       
-      // Transport Level
-      { category: 'transport-level', value: 'BLS' },
-      { category: 'transport-level', value: 'ALS' },
-      { category: 'transport-level', value: 'CCT' },
-      { category: 'transport-level', value: 'BLS - Basic Life Support' },
-      { category: 'transport-level', value: 'ALS - Advanced Life Support' },
-      { category: 'transport-level', value: 'Critical Care' },
-      { category: 'transport-level', value: 'Neonatal' },
-      { category: 'transport-level', value: 'Bariatric' },
-      { category: 'transport-level', value: 'Non-Emergency' },
-      { category: 'transport-level', value: 'Other' },
+      // Transport Level (dropdown-1)
+      { category: 'dropdown-1', value: 'BLS' },
+      { category: 'dropdown-1', value: 'ALS' },
+      { category: 'dropdown-1', value: 'CCT' },
+      { category: 'dropdown-1', value: 'BLS - Basic Life Support' },
+      { category: 'dropdown-1', value: 'ALS - Advanced Life Support' },
+      { category: 'dropdown-1', value: 'Critical Care' },
+      { category: 'dropdown-1', value: 'Neonatal' },
+      { category: 'dropdown-1', value: 'Bariatric' },
+      { category: 'dropdown-1', value: 'Non-Emergency' },
+      { category: 'dropdown-1', value: 'Other' },
       
-      // Urgency
-      { category: 'urgency', value: 'Routine' },
-      { category: 'urgency', value: 'Urgent' },
-      { category: 'urgency', value: 'Emergent' },
-      { category: 'urgency', value: 'Emergency' },
-      { category: 'urgency', value: 'Scheduled' },
-      { category: 'urgency', value: 'Discharge' },
+      // Urgency (dropdown-2)
+      { category: 'dropdown-2', value: 'Routine' },
+      { category: 'dropdown-2', value: 'Urgent' },
+      { category: 'dropdown-2', value: 'Emergent' },
+      { category: 'dropdown-2', value: 'Emergency' },
+      { category: 'dropdown-2', value: 'Scheduled' },
+      { category: 'dropdown-2', value: 'Discharge' },
       
-      // Special Needs
-      { category: 'special-needs', value: 'Bariatric Stretcher' },
-      { category: 'special-needs', value: 'Oxygen Required' },
-      { category: 'special-needs', value: 'Monitoring Required' },
-      { category: 'special-needs', value: 'Ventilator Required' },
+      // Special Needs (dropdown-7)
+      { category: 'dropdown-7', value: 'Bariatric Stretcher' },
+      { category: 'dropdown-7', value: 'Oxygen Required' },
+      { category: 'dropdown-7', value: 'Monitoring Required' },
+      { category: 'dropdown-7', value: 'Ventilator Required' },
     ];
 
     let dropdownCount = 0;

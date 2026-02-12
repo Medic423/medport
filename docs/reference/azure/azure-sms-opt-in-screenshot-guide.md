@@ -16,7 +16,8 @@ Azure requires a screenshot showing where subscribers can opt-in to SMS messagin
 
 ### Step 1: Access the Opt-In Page
 
-1. **Log in to dev site:** https://dev-swa.traccems.com/
+1. **Log in to production site:** https://traccems.com/
+   - ⚠️ **IMPORTANT:** Use production site (`traccems.com`), NOT dev site
 2. **Log in as EMS user** (e.g., `test@ems.com`)
 3. **Navigate to:** EMS Dashboard → **Settings** tab
 4. **Scroll to:** "SMS Notifications" section
@@ -111,7 +112,7 @@ If Azure needs a more explicit opt-in page, we can create a dedicated opt-in pag
 
 ## Quick Steps for Screenshot
 
-1. ✅ Go to https://dev-swa.traccems.com/
+1. ✅ Go to https://traccems.com/ (⚠️ Use PRODUCTION site, not dev)
 2. ✅ Log in as EMS user
 3. ✅ Go to Settings tab
 4. ✅ Scroll to "SMS Notifications" section
@@ -119,6 +120,8 @@ If Azure needs a more explicit opt-in page, we can create a dedicated opt-in pag
 6. ✅ Upload to OneDrive/Google Drive/Dropbox
 7. ✅ Get public shareable link
 8. ✅ Paste link in Azure form
+
+**⚠️ CRITICAL:** Screenshot must be from production site (`traccems.com`), NOT dev site (`dev-swa.traccems.com`)
 
 ## What Azure Needs
 
