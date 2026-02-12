@@ -118,6 +118,7 @@ export class AgencyService {
             status: true,
             contactName: true,
             operatingHours: true,
+            availabilityStatus: true,
             createdAt: true,
             updatedAt: true
           }
@@ -151,28 +152,44 @@ export class AgencyService {
     });
   }
 
-  async updateAgency(id: string, data: Partial<AgencyData>): Promise<any> {
+  async updateAgency(id: string, data: Partial<AgencyData> & { availabilityStatus?: { isAvailable: boolean; availableLevels: string[] }; isAvailable?: boolean; capabilities?: string[] }): Promise<any> {
     const prisma = getDatabaseClient();
-    
+
+    const updateData: any = {
+      name: data.name,
+      contactName: data.contactName,
+      phone: data.phone,
+      email: data.email,
+      address: data.address,
+      city: data.city,
+      state: data.state,
+      zipCode: data.zipCode,
+      serviceArea: data.serviceArea || [],
+      operatingHours: data.operatingHours,
+      capabilities: data.capabilities,
+      pricingStructure: data.pricingStructure,
+      status: data.status ?? 'ACTIVE',
+      isActive: data.isActive,
+      updatedAt: new Date()
+    };
+
+    // TCC Admin override: force availability for dispatch
+    if (data.availabilityStatus !== undefined) {
+      updateData.availabilityStatus = data.availabilityStatus;
+    } else if (data.isAvailable !== undefined) {
+      const validLevels = ['BLS', 'ALS', 'CCT'];
+      const levels = data.isAvailable && data.capabilities?.length
+        ? data.capabilities.filter((c: string) => validLevels.includes(c))
+        : [];
+      updateData.availabilityStatus = {
+        isAvailable: data.isAvailable,
+        availableLevels: levels.length ? levels : (data.isAvailable ? ['BLS', 'ALS'] : [])
+      };
+    }
+
     return await prisma.eMSAgency.update({
       where: { id },
-      data: {
-        name: data.name,
-        contactName: data.contactName,
-        phone: data.phone,
-        email: data.email,
-        address: data.address,
-        city: data.city,
-        state: data.state,
-        zipCode: data.zipCode,
-        serviceArea: data.serviceArea || [],
-        operatingHours: data.operatingHours,
-        capabilities: data.capabilities,
-        pricingStructure: data.pricingStructure,
-        status: data.status ?? 'ACTIVE',
-        isActive: data.isActive,
-        updatedAt: new Date()
-      },
+      data: updateData,
     });
   }
 

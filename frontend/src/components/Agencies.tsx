@@ -30,6 +30,7 @@ interface Agency {
   pricingStructure: any;
   isActive: boolean;
   status: string;
+  availabilityStatus?: { isAvailable: boolean; availableLevels: string[] };
   addedBy: string;
   addedAt: string;
   createdAt: string;
@@ -57,7 +58,8 @@ const Agencies: React.FC = () => {
     state: '',
     zipCode: '',
     serviceType: 'BLS/ALS',
-    isActive: true
+    isActive: true,
+    isAvailable: false  // TCC Admin override: force agency to appear in Available Agencies
   });
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
@@ -122,6 +124,13 @@ const Agencies: React.FC = () => {
 
   const handleEdit = (agency: Agency) => {
     setEditingAgency(agency);
+    let isAvailable = false;
+    if (agency.availabilityStatus) {
+      const status = typeof agency.availabilityStatus === 'string'
+        ? JSON.parse(agency.availabilityStatus as any)
+        : agency.availabilityStatus;
+      isAvailable = status?.isAvailable === true;
+    }
     setEditFormData({
       name: agency.name,
       contactName: agency.contactName,
@@ -132,7 +141,8 @@ const Agencies: React.FC = () => {
       state: agency.state,
       zipCode: agency.zipCode,
       serviceType: 'BLS/ALS', // Default value, could be enhanced to store this
-      isActive: agency.isActive ?? true
+      isActive: agency.isActive ?? true,
+      isAvailable
     });
     setEditError(null);
   };
@@ -154,7 +164,11 @@ const Agencies: React.FC = () => {
     setEditError(null);
 
     try {
-      const response = await agenciesAPI.update(editingAgency.id, editFormData);
+      const updatePayload = {
+        ...editFormData,
+        capabilities: editingAgency.capabilities || []
+      };
+      const response = await agenciesAPI.update(editingAgency.id, updatePayload);
       if (response.data.success) {
         // Update the agencies list
         setAgencies(agencies.map(agency => 
@@ -185,7 +199,9 @@ const Agencies: React.FC = () => {
       city: '',
       state: '',
       zipCode: '',
-      serviceType: 'BLS/ALS'
+      serviceType: 'BLS/ALS',
+      isActive: true,
+      isAvailable: false
     });
     setEditError(null);
   };
@@ -362,17 +378,34 @@ const Agencies: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        {agency.isActive ? (
-                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                        ) : (
-                          <XCircle className="h-4 w-4 text-red-500 mr-2" />
-                        )}
-                        <span className={`text-sm font-medium ${
-                          agency.isActive ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {agency.isActive ? 'Active' : 'Inactive'}
-                        </span>
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center">
+                          {agency.isActive ? (
+                            <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                          ) : (
+                            <XCircle className="h-4 w-4 text-red-500 mr-2" />
+                          )}
+                          <span className={`text-sm font-medium ${
+                            agency.isActive ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            {agency.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+                        {(() => {
+                          try {
+                            const status = agency.availabilityStatus
+                              ? (typeof agency.availabilityStatus === 'string'
+                                ? JSON.parse(agency.availabilityStatus)
+                                : agency.availabilityStatus)
+                              : null;
+                            const isAvailable = status?.isAvailable === true;
+                            return isAvailable ? (
+                              <span className="text-xs text-amber-600 font-medium">Available for dispatch</span>
+                            ) : null;
+                          } catch {
+                            return null;
+                          }
+                        })()}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -552,6 +585,26 @@ const Agencies: React.FC = () => {
                   </div>
                   <p className="mt-1 text-xs text-gray-500">
                     Uncheck to deactivate this agency. Inactive agencies won't appear in trip requests.
+                  </p>
+                </div>
+
+                {/* TCC Admin: Force Available for Dispatch */}
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="isAvailable"
+                      name="isAvailable"
+                      checked={editFormData.isAvailable ?? false}
+                      onChange={handleEditInputChange}
+                      className="h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="isAvailable" className="ml-3 block text-sm font-medium text-gray-700">
+                      Force Available for Dispatch
+                    </label>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    When checked, this agency will appear in healthcare facilities&apos; &quot;Available Agencies&quot; list even if they haven&apos;t marked themselves available in their EMS dashboard.
                   </p>
                 </div>
 

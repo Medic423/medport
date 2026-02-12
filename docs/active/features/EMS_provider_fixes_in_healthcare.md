@@ -183,6 +183,7 @@ When a healthcare user (e.g., Mount Nittany Medical Center) goes to **EMS Provid
 
 - **Dispatch flow:** Uses `healthcareTripDispatchService.getTripAgencies()` which considers both user agencies and geographic/availability. Adding registered agencies via preference should automatically include them in dispatch.
 - **Available agencies:** `getAvailableAgenciesForHealthcareUser` already includes both `addedBy: null` and `addedBy: healthcareUserId` – verify it also includes agencies linked only via preference.
+- **TCC Admin availability override:** Admins can force an agency to appear in Available Agencies via the Edit Agency modal: "Force Available for Dispatch" checkbox. Updates `availabilityStatus.isAvailable` and `availableLevels` (from agency capabilities or default BLS/ALS).
 
 ---
 
@@ -192,3 +193,9 @@ When a healthcare user (e.g., Mount Nittany Medical Center) goes to **EMS Provid
 |------|--------|
 | 2026-02-12 | Document created. Design decisions confirmed. Plan finalized. |
 | 2026-02-12 | **Implementation complete.** Phases 1–5 implemented. Backend: searchRegistered, add-existing, getAgenciesForHealthcareUser now includes preference-linked agencies; delete handles both owned and preference-only; togglePreferred works for both. Frontend: Add Provider modal shows search first, then "Add new provider" fallback. Edit button hidden for registered agencies (addedBy !== user.id). **UI testing recommended.** |
+| 2026-02-12 | **TCC Admin availability override added.** In TCC Admin → EMS Agencies → Edit: new "Force Available for Dispatch" checkbox. When checked, agency appears in healthcare facilities' Available Agencies tab even if EMS hasn't set availability. Backend: `agencyService.updateAgency` handles `isAvailable` and `availabilityStatus`. Status column shows "Available for dispatch" badge when set. |
+| 2026-02-12 | **Hospital Settings "facility not found" fix.** Single-location users (e.g. Mount Nittany) were getting "Your facility X is not found" in Category Options because HospitalSettings used `/api/public/hospitals` (Hospital table) which may not be in sync. Changed to use `/api/healthcare/locations/active` (HealthcareLocation) for both single- and multi-location users. Pickup locations API already supports HealthcareLocation IDs. |
+| 2026-02-12 | **Dropdown options slug fallbacks.** Trip form dropdowns (Secondary Insurance, Special Needs, etc.) were empty when DB used legacy slugs (secondary-insurance, special-needs) vs dropdown-N. Added fallbacks for all 7 categories: try dropdown-N first, then legacy slug. |
+| 2026-02-12 | **Dropdown add option error handling.** Backend returns actual error details; frontend displays API error message instead of generic "Failed to add option". |
+| 2026-02-12 | **Available Agencies default.** Default distance filter changed from 50 miles to "Show All". |
+| 2026-02-12 | **EMS Available Trips status pill.** When healthcare rejects an agency after they accepted, the "Pending" pill in EMS Available Trips now correctly updates to "Declined" (shows agency's response status). |

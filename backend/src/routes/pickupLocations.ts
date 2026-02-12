@@ -185,17 +185,17 @@ router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
       const healthcareUser = await databaseManager.getPrismaClient().healthcareUser.findUnique({
         where: { id: req.user.id }
       });
-      
+
       if (healthcareUser && !healthcareUser.manageMultipleLocations) {
-        // Single-location user - force them to use their own facility
+        // Single-location user - use their HealthcareLocation (same source as HospitalSettings)
         console.log('TCC_DEBUG: Single-location user detected, using their facility:', healthcareUser.facilityName);
-        const userHospital = await databaseManager.getPrismaClient().hospital.findFirst({
-          where: { name: healthcareUser.facilityName }
+        const userLocation = await databaseManager.getPrismaClient().healthcareLocation.findFirst({
+          where: { healthcareUserId: healthcareUser.id }
         });
-        
-        if (userHospital) {
-          console.log('TCC_DEBUG: Found user\'s hospital:', userHospital.name, '- Overriding provided hospitalId');
-          hospitalId = userHospital.id;
+
+        if (userLocation) {
+          console.log('TCC_DEBUG: Found user\'s healthcare location:', userLocation.locationName, '- Overriding provided hospitalId');
+          hospitalId = userLocation.id;
         } else {
           return res.status(404).json({
             success: false,

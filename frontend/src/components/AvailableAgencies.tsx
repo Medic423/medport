@@ -26,8 +26,8 @@ const AvailableAgencies: React.FC<AvailableAgenciesProps> = ({ user }) => {
   const [agencies, setAgencies] = useState<Agency[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [radiusMiles, setRadiusMiles] = useState<number | null>(50); // Default 50 miles
-  const [currentRadius, setCurrentRadius] = useState<number | null>(50);
+  const [radiusMiles, setRadiusMiles] = useState<number | null>(null); // Default: Show All
+  const [currentRadius, setCurrentRadius] = useState<number | null>(null);
 
   const loadAvailableAgencies = async (radius?: number | null) => {
     try {
@@ -129,10 +129,10 @@ const AvailableAgencies: React.FC<AvailableAgenciesProps> = ({ user }) => {
                 disabled={loading}
               >
                 <option value="25">25 miles</option>
-                <option value="50">50 miles (default)</option>
+                <option value="50">50 miles</option>
                 <option value="100">100 miles</option>
                 <option value="200">200 miles</option>
-                <option value="all">Show All</option>
+                <option value="all">Show All (default)</option>
               </select>
               {currentRadius !== null && (
                 <span className="text-sm text-gray-500">

@@ -280,10 +280,13 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
         setSuccess('Option added successfully');
         loadOptions(selectedCategory);
         setTimeout(() => setSuccess(null), 3000);
+      } else {
+        setError(response.data.error || 'Failed to add option');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding option:', error);
-      setError('Failed to add option');
+      const errMsg = error?.response?.data?.error || error?.response?.data?.details || 'Failed to add option';
+      setError(errMsg);
     } finally {
       setLoading(false);
     }
@@ -439,72 +442,46 @@ const HospitalSettings: React.FC<HospitalSettingsProps> = ({ user }) => {
       console.log('TCC_DEBUG: loadHospitals function called');
       setPickupLoading(true);
       
-      // For multi-location users, load their healthcare locations
-      if (user.manageMultipleLocations) {
-        console.log('TCC_DEBUG: MULTI_LOC: Loading healthcare locations for pickup location management');
-        const response = await api.get('/api/healthcare/locations/active');
-        
-        if (response.data?.success && Array.isArray(response.data.data)) {
-          const healthcareLocations = response.data.data;
-          console.log('MULTI_LOC: Loaded', healthcareLocations.length, 'healthcare locations');
-          
-          // Transform healthcare locations to hospital format for the dropdown
-          const transformedLocations = healthcareLocations.map((loc: HealthcareLocation) => ({
-            id: loc.id,
-            name: loc.locationName,
-            address: loc.address,
-            city: loc.city,
-            state: loc.state,
-            zipCode: loc.zipCode,
-            phone: loc.phone || '',
-            email: '',
-            type: loc.facilityType,
-            capabilities: [],
-            region: loc.state,
-            isActive: loc.isActive
-          }));
-          
-          setHospitals(transformedLocations);
-          
-          // Set default to primary location
+      // Use HealthcareLocation for both single- and multi-location users.
+      // This avoids dependency on the Hospital table, which may not be in sync for facilities
+      // created via registration or other paths.
+      console.log('TCC_DEBUG: Loading healthcare locations for pickup location management');
+      const response = await api.get('/api/healthcare/locations/active');
+
+      if (response.data?.success && Array.isArray(response.data.data)) {
+        const healthcareLocations = response.data.data;
+        console.log('TCC_DEBUG: Loaded', healthcareLocations.length, 'healthcare locations');
+
+        const transformedLocations = healthcareLocations.map((loc: HealthcareLocation) => ({
+          id: loc.id,
+          name: loc.locationName,
+          address: loc.address,
+          city: loc.city,
+          state: loc.state,
+          zipCode: loc.zipCode,
+          phone: loc.phone || '',
+          email: '',
+          type: loc.facilityType,
+          capabilities: [],
+          region: loc.state,
+          isActive: loc.isActive
+        }));
+
+        setHospitals(transformedLocations);
+
+        if (healthcareLocations.length === 0) {
+          setPickupError(`No facility locations found for your account. Please contact support.`);
+        } else {
+          setPickupError(null);
           const primaryLocation = healthcareLocations.find(loc => loc.isPrimary);
           if (primaryLocation) {
             setSelectedHospital(primaryLocation.id);
-          } else if (transformedLocations.length > 0) {
+          } else {
             setSelectedHospital(transformedLocations[0].id);
           }
         }
       } else {
-        // For single-location users, find THEIR facility only
-        console.log('TCC_DEBUG: SINGLE_LOC: Loading user\'s own facility for pickup location management');
-        const response = await api.get('/api/public/hospitals');
-        if (response.data.success) {
-          const allHospitals = response.data.data;
-          console.log('TCC_DEBUG: Loaded hospitals from API:', allHospitals.length);
-          console.log('TCC_DEBUG: Looking for facility name:', user.facilityName);
-          // Find the hospital matching this user's facilityName
-          const userFacility = allHospitals.find((h: any) => h.name === user.facilityName);
-          console.log('TCC_DEBUG: Found user facility:', userFacility);
-          
-          if (userFacility) {
-            console.log('SINGLE_LOC: Found user facility:', userFacility.name);
-            
-            // Special case: If "Test Hospital" is found with hosp_test_001, map to fac_test_hospital_001 for pickup locations
-            if (userFacility.id === 'hosp_test_001') {
-              console.log('TCC_DEBUG: Found hosp_test_001, mapping to fac_test_hospital_001');
-              userFacility.id = 'fac_test_hospital_001';
-              console.log('TCC_DEBUG: SINGLE_LOC: Mapped Test Hospital ID to fac_test_hospital_001 for pickup locations');
-            }
-            
-            setHospitals([userFacility]); // Only show THEIR facility
-            setSelectedHospital(userFacility.id);
-            console.log('TCC_DEBUG: Set selectedHospital to:', userFacility.id);
-          } else {
-            console.warn('SINGLE_LOC: User facility not found in hospitals:', user.facilityName);
-            setPickupError(`Your facility "${user.facilityName}" is not found. Please contact support.`);
-            setHospitals([]);
-          }
-        }
+        setPickupError('Failed to load facility locations');
       }
     } catch (error) {
       console.error('Error loading hospitals:', error);
