@@ -41,7 +41,8 @@ export interface HealthcareAgencyListResult {
 
 export class HealthcareAgencyService {
   /**
-   * Get all agencies for a healthcare user with their preference status
+   * Get all agencies for a healthcare user with their preference status.
+   * Includes: agencies added by user (addedBy) OR agencies linked via HealthcareAgencyPreference.
    */
   async getAgenciesForHealthcareUser(
     healthcareUserId: string,
@@ -52,8 +53,17 @@ export class HealthcareAgencyService {
     const skip = (page - 1) * limit;
 
     const where: any = {
-      addedBy: healthcareUserId, // Only get agencies added by this user
-      isActive: true, // Only get active agencies by default
+      isActive: true,
+      OR: [
+        { addedBy: healthcareUserId }, // Manually created by this user
+        {
+          healthcarePreferences: {
+            some: {
+              healthcareUserId,
+            },
+          },
+        }, // Linked via preference (incl. registered agencies)
+      ],
     };
 
     if (whereFilters.name) {
@@ -78,7 +88,7 @@ export class HealthcareAgencyService {
         include: {
           healthcarePreferences: {
             where: {
-              healthcareUserId: healthcareUserId,
+              healthcareUserId,
             },
             select: {
               isPreferred: true,
@@ -121,7 +131,7 @@ export class HealthcareAgencyService {
   }
 
   /**
-   * Get a single agency by ID (only if owned by the healthcare user)
+   * Get a single agency by ID (owned by user or linked via preference)
    */
   async getAgencyByIdForHealthcareUser(
     id: string,
@@ -131,7 +141,14 @@ export class HealthcareAgencyService {
     return await prisma.eMSAgency.findFirst({
       where: {
         id,
-        addedBy: healthcareUserId, // Verify ownership
+        OR: [
+          { addedBy: healthcareUserId },
+          {
+            healthcarePreferences: {
+              some: { healthcareUserId },
+            },
+          },
+        ],
       },
       include: {
         healthcarePreferences: {
@@ -259,16 +276,24 @@ export class HealthcareAgencyService {
   }
 
   /**
-   * Soft delete an agency (only if owned by the healthcare user)
+   * Remove agency from healthcare user's list.
+   * - If user created it (addedBy): soft-delete the agency.
+   * - If registered agency (addedBy: null): remove the preference only.
    */
   async deleteAgencyForHealthcareUser(id: string, healthcareUserId: string): Promise<void> {
     const prisma = databaseManager.getPrismaClient();
 
-    // First verify ownership
     const existingAgency = await prisma.eMSAgency.findFirst({
       where: {
         id,
-        addedBy: healthcareUserId,
+        OR: [
+          { addedBy: healthcareUserId },
+          {
+            healthcarePreferences: {
+              some: { healthcareUserId },
+            },
+          },
+        ],
       },
     });
 
@@ -276,14 +301,24 @@ export class HealthcareAgencyService {
       throw new Error('Agency not found or access denied');
     }
 
-    // Soft delete by setting isActive = false
-    await prisma.eMSAgency.update({
-      where: { id },
-      data: {
-        isActive: false,
-        updatedAt: new Date(),
-      },
-    });
+    if (existingAgency.addedBy === healthcareUserId) {
+      // User created it: soft-delete the agency
+      await prisma.eMSAgency.update({
+        where: { id },
+        data: {
+          isActive: false,
+          updatedAt: new Date(),
+        },
+      });
+    } else {
+      // Registered agency: remove the preference only
+      await prisma.healthcareAgencyPreference.deleteMany({
+        where: {
+          healthcareUserId,
+          agencyId: id,
+        },
+      });
+    }
   }
 
   /**
@@ -296,11 +331,18 @@ export class HealthcareAgencyService {
   ): Promise<any> {
     const prisma = databaseManager.getPrismaClient();
 
-    // Verify the agency exists and is owned by this user
+    // Verify the agency exists and is accessible (owned or linked via preference)
     const agency = await prisma.eMSAgency.findFirst({
       where: {
         id: agencyId,
-        addedBy: healthcareUserId,
+        OR: [
+          { addedBy: healthcareUserId },
+          {
+            healthcarePreferences: {
+              some: { healthcareUserId },
+            },
+          },
+        ],
       },
     });
 
@@ -351,6 +393,95 @@ export class HealthcareAgencyService {
       take: 10,
       orderBy: { name: 'asc' },
     });
+  }
+
+  /**
+   * Search registered EMS agencies (addedBy = null) for healthcare to add to their list.
+   * Marks agencies already in user's list via HealthcareAgencyPreference as alreadyAdded.
+   */
+  async searchRegisteredAgenciesForHealthcareUser(
+    healthcareUserId: string,
+    query: string
+  ): Promise<any[]> {
+    const prisma = databaseManager.getPrismaClient();
+    return await prisma.eMSAgency.findMany({
+      where: {
+        addedBy: null, // Registered agencies only (TCC Admin list)
+        isActive: true,
+        OR: [
+          { name: { contains: query, mode: 'insensitive' } },
+          { city: { contains: query, mode: 'insensitive' } },
+          { state: { contains: query, mode: 'insensitive' } },
+        ],
+      },
+      include: {
+        healthcarePreferences: {
+          where: {
+            healthcareUserId,
+          },
+          select: { id: true },
+        },
+      },
+      take: 15,
+      orderBy: { name: 'asc' },
+    }).then((agencies) =>
+      agencies.map((a: any) => ({
+        id: a.id,
+        name: a.name,
+        contactName: a.contactName,
+        phone: a.phone,
+        email: a.email,
+        address: a.address,
+        city: a.city,
+        state: a.state,
+        zipCode: a.zipCode,
+        capabilities: a.capabilities || [],
+        alreadyAdded: (a.healthcarePreferences?.length ?? 0) > 0,
+      }))
+    );
+  }
+
+  /**
+   * Add an existing registered agency to a healthcare user's list (create preference only).
+   */
+  async addExistingAgencyToHealthcareUser(
+    healthcareUserId: string,
+    agencyId: string,
+    isPreferred: boolean = false
+  ): Promise<any> {
+    const prisma = databaseManager.getPrismaClient();
+
+    const agency = await prisma.eMSAgency.findFirst({
+      where: {
+        id: agencyId,
+        addedBy: null, // Must be registered agency
+        isActive: true,
+      },
+    });
+
+    if (!agency) {
+      throw new Error('Agency not found or access denied. Only registered EMS agencies can be added.');
+    }
+
+    const preference = await prisma.healthcareAgencyPreference.upsert({
+      where: {
+        healthcareUserId_agencyId: {
+          healthcareUserId,
+          agencyId,
+        },
+      },
+      update: {
+        isPreferred,
+        updatedAt: new Date(),
+      },
+      create: {
+        healthcareUserId,
+        agencyId,
+        isPreferred,
+      },
+    });
+
+    return { ...agency, isPreferred: preference.isPreferred };
   }
 
   /**

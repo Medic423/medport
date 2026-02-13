@@ -675,20 +675,57 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
 
       const toValues = (resp: any, fallback: string[]) => (resp?.data?.success && Array.isArray(resp.data.data) ? resp.data.data.map((o: any) => o.value) : fallback);
 
-      // Ensure urgency always has baseline defaults merged with hospital settings
-      // Filter out "Critical" since backend only accepts Routine/Urgent/Emergent
+      // Helper: try primary slug, fallback to legacy slug if empty
+      const getOptionsWithFallback = async (primaryResp: any, primarySlug: string, legacySlug: string, defaultFallback: string[]) => {
+        let values = toValues(primaryResp, []);
+        if (values.length === 0) {
+          try {
+            const fallbackResp = await dropdownOptionsAPI.getByCategory(legacySlug);
+            values = toValues(fallbackResp, []);
+          } catch {
+            // Keep empty if both fail
+          }
+        }
+        return values.length > 0 ? values : defaultFallback;
+      };
+
+      const [
+        diagnosisValues,
+        mobilityValues,
+        transportLevelValues,
+        insuranceValues,
+        secondaryInsuranceValues,
+        specialNeedsValues
+      ] = await Promise.all([
+        getOptionsWithFallback(diagRes, 'dropdown-3', 'diagnosis', ['Cardiac', 'Respiratory', 'Neurological', 'Trauma']),
+        getOptionsWithFallback(mobRes, 'dropdown-4', 'mobility', ['Ambulatory', 'Wheelchair', 'Stretcher', 'Bed-bound']),
+        getOptionsWithFallback(tlRes, 'dropdown-1', 'transport-level', ['BLS', 'ALS', 'CCT', 'Other']),
+        getOptionsWithFallback(insRes, 'dropdown-5', 'insurance', ['Medicare', 'Medicaid', 'Private', 'Self-pay']),
+        getOptionsWithFallback(secInsRes, 'dropdown-6', 'secondary-insurance', []),
+        getOptionsWithFallback(snRes, 'dropdown-7', 'special-needs', ['Bariatric Stretcher'])
+      ]);
+
+      // Urgency: try dropdown-2 fallback to urgency, merge with baseline defaults, filter out "Critical"
       const urgencyDefaults = ['Routine', 'Urgent', 'Emergent'];
-      const urgencyFromAPI = toValues(urgRes, []);
+      let urgencyFromAPI = toValues(urgRes, []);
+      if (urgencyFromAPI.length === 0) {
+        try {
+          const urgFallback = await dropdownOptionsAPI.getByCategory('urgency');
+          urgencyFromAPI = toValues(urgFallback, []);
+        } catch {
+          // Keep empty if both fail
+        }
+      }
       const urgencyOptions = [...urgencyDefaults, ...urgencyFromAPI.filter(val => !urgencyDefaults.includes(val) && val !== 'Critical')];
 
       const options: FormOptions = {
-        diagnosis: toValues(diagRes, ['Cardiac', 'Respiratory', 'Neurological', 'Trauma']),
-        mobility: toValues(mobRes, ['Ambulatory', 'Wheelchair', 'Stretcher', 'Bed-bound']),
-        transportLevel: toValues(tlRes, ['BLS', 'ALS', 'CCT', 'Other']),
+        diagnosis: diagnosisValues,
+        mobility: mobilityValues,
+        transportLevel: transportLevelValues,
         urgency: urgencyOptions,
-        insurance: toValues(insRes, ['Medicare', 'Medicaid', 'Private', 'Self-pay']),
-        secondaryInsurance: toValues(secInsRes, []),
-        specialNeeds: toValues(snRes, ['Bariatric Stretcher']),
+        insurance: insuranceValues,
+        secondaryInsurance: secondaryInsuranceValues,
+        specialNeeds: specialNeedsValues,
         facilities: facilities,
         agencies: [],
         pickupLocations: [],

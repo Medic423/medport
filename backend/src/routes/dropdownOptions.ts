@@ -241,11 +241,15 @@ router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
       data: newOption,
       message: 'Dropdown option added successfully'
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('TCC_DEBUG: Add dropdown option error:', error);
+    const errorMessage = error?.message || 'Unknown error';
+    const errorCode = error?.code;
     res.status(500).json({
       success: false,
-      error: 'Failed to add dropdown option'
+      error: 'Failed to add dropdown option',
+      details: process.env.NODE_ENV !== 'production' ? errorMessage : undefined,
+      code: errorCode
     });
   }
 });

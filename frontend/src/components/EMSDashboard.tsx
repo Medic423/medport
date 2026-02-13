@@ -225,6 +225,12 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
           )
           .map((r: any) => r.tripId)
       );
+      // Map trip ID to this agency's response status (for showing Rejected/Accepted pill when hasResponded)
+      const agencyResponseByTrip = new Map(
+        agencyResponses
+          .filter((r: any) => r.agencyId === currentAgencyId && (r.response === 'ACCEPTED' || r.response === 'DECLINED'))
+          .map((r: any) => [r.tripId, r.response])
+      );
       
       // Create a set of trip IDs that THIS agency has ACCEPTED AND been SELECTED for (for filtering "My Trips")
       // Only trips where healthcare selected this agency should appear in "My Trips"
@@ -294,6 +300,7 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
               assignedUnitId: trip.assignedUnitId, // Track if this agency already assigned a unit
               assignedUnit: trip.assignedUnit, // Include unit info if assigned
               hasResponded: respondedTrips.has(trip.id), // Check if this agency has already responded
+              agencyResponseStatus: agencyResponseByTrip.get(trip.id), // ACCEPTED or DECLINED when this agency responded
               status: trip.status || 'PENDING' // Include status to check if trip is authorized (PENDING_DISPATCH)
             };
           }));
@@ -1000,8 +1007,8 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
                                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getUrgencyLevelStyle(trip.urgencyLevel || 'Routine')}`}>
                                     {trip.urgencyLevel || 'Routine'}
                                   </span>
-                                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor('PENDING')}`}>
-                                    PENDING
+                                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(trip.hasResponded && trip.agencyResponseStatus ? trip.agencyResponseStatus : 'PENDING')}`}>
+                                    {trip.hasResponded && trip.agencyResponseStatus ? formatStatus(trip.agencyResponseStatus) : 'Pending'}
                                   </span>
                                   <div className="flex space-x-2 ml-4">
                                     {/* Hide Accept/Decline buttons for future trips (not authorized), show "Awaiting Authorization" */}

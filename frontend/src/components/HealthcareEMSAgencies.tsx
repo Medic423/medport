@@ -96,6 +96,13 @@ const HealthcareEMSAgencies: React.FC<HealthcareEMSAgenciesProps> = ({ user }) =
   const [addError, setAddError] = useState<string | null>(null);
   const [geocoding, setGeocoding] = useState(false);
   
+  // Add modal: search step vs create step
+  const [addModalStep, setAddModalStep] = useState<'search' | 'create'>('search');
+  const [addSearchQuery, setAddSearchQuery] = useState('');
+  const [addSearchResults, setAddSearchResults] = useState<any[]>([]);
+  const [addSearchLoading, setAddSearchLoading] = useState(false);
+  const [addExistingLoading, setAddExistingLoading] = useState<string | null>(null);
+  
   // Edit modal state
   const [editingAgency, setEditingAgency] = useState<Agency | null>(null);
   const [editFormData, setEditFormData] = useState({
@@ -173,7 +180,46 @@ const HealthcareEMSAgencies: React.FC<HealthcareEMSAgenciesProps> = ({ user }) =
       isPreferred: false,
     });
     setAddError(null);
+    setAddModalStep('search');
+    setAddSearchQuery('');
+    setAddSearchResults([]);
     setShowAddModal(true);
+  };
+
+  // Debounced search for registered agencies
+  useEffect(() => {
+    if (addModalStep !== 'search' || !showAddModal) return;
+    const trimmed = addSearchQuery.trim();
+    if (!trimmed) {
+      setAddSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setAddSearchLoading(true);
+      try {
+        const res = await healthcareAgenciesAPI.searchRegistered(trimmed);
+        if (res.data?.success) setAddSearchResults(res.data.data || []);
+      } catch (err) {
+        console.error('Search registered agencies error:', err);
+        setAddSearchResults([]);
+      } finally {
+        setAddSearchLoading(false);
+      }
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [addSearchQuery, addModalStep, showAddModal]);
+
+  const handleAddExisting = async (agencyId: string) => {
+    setAddExistingLoading(agencyId);
+    try {
+      await healthcareAgenciesAPI.addExisting(agencyId, false);
+      await loadAgencies();
+      setAddSearchResults(prev => prev.map(a => a.id === agencyId ? { ...a, alreadyAdded: true } : a));
+    } catch (err: any) {
+      setAddError(err.response?.data?.error || 'Failed to add agency');
+    } finally {
+      setAddExistingLoading(null);
+    }
   };
 
   const handleAddInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -352,6 +398,9 @@ const HealthcareEMSAgencies: React.FC<HealthcareEMSAgenciesProps> = ({ user }) =
 
   const handleAddCancel = () => {
     setShowAddModal(false);
+    setAddModalStep('search');
+    setAddSearchQuery('');
+    setAddSearchResults([]);
     setAddFormData({
       name: '',
       contactName: '',
@@ -657,12 +706,14 @@ const HealthcareEMSAgencies: React.FC<HealthcareEMSAgenciesProps> = ({ user }) =
                             <StarOff className="h-4 w-4" />
                           )}
                         </button>
-                        <button
-                          onClick={() => handleEdit(agency)}
-                          className="text-green-600 hover:text-green-900"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </button>
+                        {(agency as any).addedBy === user.id && (
+                          <button
+                            onClick={() => handleEdit(agency)}
+                            className="text-green-600 hover:text-green-900"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                        )}
                         <button
                           onClick={() => handleDelete(agency.id)}
                           className="text-red-600 hover:text-red-900"
@@ -689,7 +740,9 @@ const HealthcareEMSAgencies: React.FC<HealthcareEMSAgenciesProps> = ({ user }) =
                 <div>
                   <h3 className="text-lg font-medium text-gray-900">Add Provider</h3>
                   <p className="mt-1 text-sm text-gray-500">
-                    Add a new EMS provider to your preferred list
+                    {addModalStep === 'search'
+                      ? 'Search for a registered EMS agency or add a new one'
+                      : 'Add a new EMS provider to your preferred list'}
                   </p>
                 </div>
                 <button
@@ -702,6 +755,93 @@ const HealthcareEMSAgencies: React.FC<HealthcareEMSAgenciesProps> = ({ user }) =
             </div>
 
             <div className="px-6 py-6">
+              {addModalStep === 'search' ? (
+                <>
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Search registered agencies
+                    </label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <input
+                        type="text"
+                        value={addSearchQuery}
+                        onChange={(e) => setAddSearchQuery(e.target.value)}
+                        placeholder="Enter agency name (e.g. Pleasant Gap)"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+
+                  {addSearchLoading && (
+                    <div className="flex justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" />
+                    </div>
+                  )}
+
+                  {!addSearchLoading && addSearchQuery.trim() && (
+                    <div className="space-y-4">
+                      {addSearchResults.length === 0 ? (
+                        <p className="text-sm text-gray-500 py-4">
+                          No agencies found. Try a different search or add a new provider.
+                        </p>
+                      ) : (
+                        <div className="border border-gray-200 rounded-lg divide-y divide-gray-200 max-h-64 overflow-y-auto">
+                          {addSearchResults.map((agency) => (
+                            <div
+                              key={agency.id}
+                              className="flex items-center justify-between p-4 hover:bg-gray-50"
+                            >
+                              <div>
+                                <div className="font-medium text-gray-900">{agency.name}</div>
+                                <div className="text-sm text-gray-500">
+                                  {agency.city}, {agency.state}
+                                  {agency.contactName && ` • ${agency.contactName}`}
+                                </div>
+                              </div>
+                              <div>
+                                {agency.alreadyAdded ? (
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                    Already added
+                                  </span>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAddExisting(agency.id)}
+                                    disabled={addExistingLoading === agency.id}
+                                    className="px-3 py-1.5 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50"
+                                  >
+                                    {addExistingLoading === agency.id ? 'Adding...' : 'Add'}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <button
+                      type="button"
+                      onClick={() => { setAddSearchQuery(''); setAddModalStep('create'); setAddError(null); }}
+                      className="text-sm text-green-600 hover:text-green-800 font-medium"
+                    >
+                      Can&apos;t find your agency? Add new provider →
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+              <button
+                type="button"
+                onClick={() => { setAddModalStep('search'); setAddError(null); }}
+                className="mb-4 text-sm text-gray-600 hover:text-gray-800"
+              >
+                ← Back to search
+              </button>
               {addError && (
                 <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
                   <div className="flex">
@@ -983,6 +1123,8 @@ const HealthcareEMSAgencies: React.FC<HealthcareEMSAgenciesProps> = ({ user }) =
                   </button>
                 </div>
               </form>
+                </>
+              )}
             </div>
           </div>
         </div>

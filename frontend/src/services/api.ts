@@ -313,6 +313,14 @@ export const healthcareAgenciesAPI = {
   
   togglePreferred: (id: string, isPreferred: boolean) =>
     api.patch(`/api/healthcare/agencies/${id}/preferred`, { isPreferred }),
+
+  /** Search registered EMS agencies (TCC Admin list) for Add Provider flow */
+  searchRegistered: (query: string) =>
+    api.get('/api/healthcare/agencies/registered/search', { params: { q: query } }),
+
+  /** Add an existing registered agency to user's list (preference only) */
+  addExisting: (agencyId: string, isPreferred?: boolean) =>
+    api.post('/api/healthcare/agencies/add-existing', { agencyId, isPreferred }),
   
   // Phase 3: Trip agencies for dispatch screen
   getForTrip: (tripId: string, params?: { mode?: string; radius?: number }) => {
