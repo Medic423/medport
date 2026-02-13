@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <style>
+      .cell { fill: none; stroke: #006ac6; stroke-width: 1.5; }
+    </style>
+  </defs>
+  <!-- Single tileable cell - square grid, both axes visible -->
+  <rect class="cell" x="0.5" y="0.5" width="99" height="99"/>
+</svg>
