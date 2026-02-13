@@ -5,10 +5,11 @@ const Footer: React.FC = () => {
   const navigate = useNavigate();
 
   const footerLinks = [
-    { name: 'About', href: '#about' },
-    { name: 'Contact', href: '#contact' },
+    { name: 'About', href: '/about' },
+    { name: 'Contact', href: '/contact' },
     { name: 'Privacy Policy', href: '/privacy-policy' },
     { name: 'Terms', href: '/terms' },
+    { name: 'Pricing', href: '/pricing' },
   ];
 
   const handleLinkClick = (href: string) => {
@@ -38,13 +39,13 @@ const Footer: React.FC = () => {
                 className="h-8 w-auto"
               />
             </div>
-            <p className="font-inter-tight font-semibold text-tracc-primary text-sm max-w-xs">
+            <p className="font-inter-tight font-semibold text-tracc-primary text-xl max-w-xs">
               Connecting healthcare and transport providers.
             </p>
           </div>
 
-          {/* Links – design: About, Contact, Privacy Policy, Terms */}
-          <nav className="flex flex-wrap gap-6" aria-label="Footer navigation">
+          {/* Links – stacked on right: About, Contact, Privacy Policy, Terms, Pricing */}
+          <nav className="flex flex-col items-end gap-2" aria-label="Footer navigation">
             {footerLinks.map((link) => (
               <button
                 key={link.name}

@@ -28,7 +28,7 @@ const ProcessSection: React.FC = () => {
   return (
     <section
       id="quick-start"
-      className="relative py-16 md:py-24 overflow-hidden"
+      className="relative pt-10 pb-16 md:pt-10 md:pb-24 overflow-hidden"
       style={{ backgroundColor: SECTION_BG }}
     >
       {/* Grid pattern – square tileable grid for uniform vertical + horizontal lines */}

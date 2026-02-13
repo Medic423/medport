@@ -13,6 +13,9 @@ import ErrorBoundary from './components/ErrorBoundary';
 import TripAcceptance from './components/TripAcceptance';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsAndConditions from './components/TermsAndConditions';
+import PricingPage from './components/PricingPage';
+import AboutPage from './components/AboutPage';
+import ContactPage from './components/ContactPage';
 
 interface User {
   id: string;
@@ -142,6 +145,28 @@ function AppContent() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  // Allow access to public pages regardless of login status
+  if (['/pricing', '/about', '/contact'].includes(location.pathname)) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {showRegistrationModal && (
+          <RegistrationChoiceModal
+            onClose={handleCloseRegistrationModal}
+            onSelectHealthcare={handleSelectHealthcareRegistration}
+            onSelectEMS={handleSelectEMSRegistration}
+          />
+        )}
+        <Routes>
+          <Route path="/pricing" element={
+            <PricingPage onShowRegistration={handleShowRegistrationModal} />
+          } />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+        </Routes>
       </div>
     );
   }

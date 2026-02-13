@@ -69,7 +69,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
   return (
     <section
       id="about"
-      className="relative pt-16 pb-20 sm:pt-24 sm:pb-32 overflow-hidden"
+      className="relative pt-16 pb-8 sm:pt-24 sm:pb-10 overflow-hidden"
       style={{ backgroundColor: '#001872' }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

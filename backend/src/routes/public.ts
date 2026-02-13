@@ -137,5 +137,30 @@ router.get('/hospitals', async (req, res) => {
   }
 });
 
+// Static subscription plans (used when subscription_plans table is not yet migrated)
+const STATIC_PLANS: Record<string, any[]> = {
+  HEALTHCARE: [
+    { id: 'healthcare-free-plan', name: 'FREE', displayName: 'Free Trial', description: '7-day free trial to explore TRACC features', userType: 'HEALTHCARE', monthlyPrice: '0', annualPrice: '0', features: ['Create transport requests', 'View available EMS providers', 'Track transport status', 'Basic analytics', 'Email notifications'], trialDays: 7, isActive: true },
+    { id: 'healthcare-regular-plan', name: 'REGULAR', displayName: 'Regular Plan', description: 'Full access to TRACC for small to medium healthcare facilities', userType: 'HEALTHCARE', monthlyPrice: '99', annualPrice: '990', features: ['All Free Trial features', 'Unlimited transport requests', 'Advanced analytics and reporting', 'Priority support', 'SMS notifications', 'Multi-location management', 'Custom integrations'], trialDays: 0, isActive: true },
+    { id: 'healthcare-premium-plan', name: 'PREMIUM', displayName: 'Premium Plan', description: 'Enterprise features for large healthcare systems', userType: 'HEALTHCARE', monthlyPrice: '299', annualPrice: '2990', features: ['All Regular Plan features', 'Dedicated account manager', 'Custom API access', 'Advanced route optimization', 'White-label options', '24/7 phone support', 'Custom training sessions'], trialDays: 0, isActive: true },
+  ],
+  EMS: [
+    { id: 'ems-free-plan', name: 'FREE', displayName: 'Free Trial', description: '7-day free trial to explore TRACC features', userType: 'EMS', monthlyPrice: '0', annualPrice: '0', features: ['Receive trip notifications', 'View available trips', 'Accept/decline requests', 'Track completed transports', 'Basic analytics'], trialDays: 7, isActive: true },
+    { id: 'ems-regular-plan', name: 'REGULAR', displayName: 'Regular Plan', description: 'Full access to TRACC for small to medium EMS agencies', userType: 'EMS', monthlyPrice: '79', annualPrice: '790', features: ['All Free Trial features', 'Unlimited trip responses', 'Advanced analytics and reporting', 'Priority trip notifications', 'SMS notifications', 'Multi-unit management', 'Route optimization'], trialDays: 0, isActive: true },
+    { id: 'ems-premium-plan', name: 'PREMIUM', displayName: 'Premium Plan', description: 'Enterprise features for large EMS operations', userType: 'EMS', monthlyPrice: '199', annualPrice: '1990', features: ['All Regular Plan features', 'Dedicated account manager', 'Custom API access', 'Advanced route optimization', 'Revenue analytics', '24/7 phone support', 'Custom training sessions'], trialDays: 0, isActive: true },
+  ],
+};
+
+router.get('/subscription-plans', async (req, res) => {
+  try {
+    const userType = (req.query.userType as string) || 'HEALTHCARE';
+    const plans = STATIC_PLANS[userType] || STATIC_PLANS.HEALTHCARE;
+    res.json({ success: true, data: plans });
+  } catch (error) {
+    console.error('TCC_DEBUG: Get subscription plans error:', error);
+    res.status(500).json({ success: false, error: 'Failed to load subscription plans' });
+  }
+});
+
 export default router;
 

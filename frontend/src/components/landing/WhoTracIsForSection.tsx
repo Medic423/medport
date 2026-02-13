@@ -26,7 +26,7 @@ const WhoTracIsForSection: React.FC = () => {
   return (
     <section
       id="about"
-      className="relative py-16 md:py-24 overflow-hidden"
+      className="relative pt-16 pb-10 md:pt-24 md:pb-10 overflow-hidden"
       style={{ backgroundColor: SECTION_BG }}
     >
       {/* Grid pattern – square tileable grid for uniform vertical + horizontal lines */}
@@ -49,43 +49,16 @@ const WhoTracIsForSection: React.FC = () => {
           </h2>
         </div>
 
-        {/* Connector: L-shaped brackets with horizontal line and 3 nodes – design uses lighter blue #006ac6 */}
-        <div className="relative w-full max-w-4xl mx-auto mb-10" aria-hidden>
-          <svg
-            viewBox="0 0 400 70"
-            className="w-full h-auto"
-            preserveAspectRatio="xMidYMid meet"
-            style={{ display: 'block' }}
-          >
-            {/* Left L: vertical down, then horizontal right to first node */}
-            <path
-              d="M 24 0 L 24 28 L 67 28"
-              stroke="#006ac6"
-              strokeWidth="5"
-              fill="none"
-              strokeLinecap="round"
+        {/* Connector: horizontal line with three dots above (matches How TRACC works) */}
+        <div className="relative h-2 flex justify-between items-center max-w-4xl mx-auto mb-10 px-4" aria-hidden>
+          <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 h-1.5 rounded-full" style={{ backgroundColor: '#001872' }} />
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="relative z-10 w-10 h-10 rounded-full flex-shrink-0"
+              style={{ backgroundColor: '#001872' }}
             />
-            {/* Horizontal through three nodes */}
-            <path
-              d="M 67 28 L 200 28 L 333 28"
-              stroke="#006ac6"
-              strokeWidth="5"
-              fill="none"
-              strokeLinecap="round"
-            />
-            {/* Right L: from third node down, then left (inverted bracket) */}
-            <path
-              d="M 333 28 L 333 56 L 290 56"
-              stroke="#006ac6"
-              strokeWidth="5"
-              fill="none"
-              strokeLinecap="round"
-            />
-            {/* Three circular nodes */}
-            <circle cx="67" cy="28" r="6" fill="#006ac6" />
-            <circle cx="200" cy="28" r="6" fill="#006ac6" />
-            <circle cx="333" cy="28" r="6" fill="#006ac6" />
-          </svg>
+          ))}
         </div>
 
         {/* Three columns */}

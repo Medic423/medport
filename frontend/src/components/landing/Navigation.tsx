@@ -1,9 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogIn, UserPlus } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 
 interface NavigationProps {
-  onShowRegistration: () => void;
+  onShowRegistration?: () => void;
 }
 
 const Navigation: React.FC<NavigationProps> = ({ onShowRegistration }) => {
@@ -14,10 +14,6 @@ const Navigation: React.FC<NavigationProps> = ({ onShowRegistration }) => {
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
-  };
-
-  const handleLoginClick = () => {
-    navigate('/login');
   };
 
   return (
@@ -45,7 +41,13 @@ const Navigation: React.FC<NavigationProps> = ({ onShowRegistration }) => {
           {/* Desktop Navigation Links – white */}
           <div className="hidden md:flex md:items-center md:space-x-8">
             <button
-              onClick={() => scrollToSection('about')}
+              onClick={() => navigate('/')}
+              className="font-inter-tight font-medium text-white hover:text-tracc-tertiary px-3 py-2 text-sm transition-colors"
+            >
+              Home
+            </button>
+            <button
+              onClick={() => navigate('/about')}
               className="font-inter-tight font-medium text-white hover:text-tracc-tertiary px-3 py-2 text-sm transition-colors"
             >
               About
@@ -63,31 +65,24 @@ const Navigation: React.FC<NavigationProps> = ({ onShowRegistration }) => {
               Quick Start
             </button>
             <button
-              onClick={() => scrollToSection('contact')}
+              onClick={() => navigate('/contact')}
               className="font-inter-tight font-medium text-white hover:text-tracc-tertiary px-3 py-2 text-sm transition-colors"
             >
               Contact
             </button>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={handleLoginClick}
-              className="hidden sm:flex items-center px-4 py-2 text-sm font-inter-tight font-medium text-white hover:text-tracc-tertiary transition-colors"
-            >
-              <LogIn className="h-4 w-4 mr-2" />
-              Login
-            </button>
-            <button
-              onClick={onShowRegistration}
-              className="flex items-center px-4 py-2 text-sm font-inter-tight font-medium text-white bg-tracc-accent hover:opacity-90 rounded-md transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-tracc-primary focus:ring-tracc-accent"
-            >
-              <UserPlus className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Get Started</span>
-              <span className="sm:hidden">Sign Up</span>
-            </button>
-          </div>
+          {onShowRegistration && (
+            <div className="flex items-center">
+              <button
+                onClick={onShowRegistration}
+                className="flex items-center px-4 py-2 text-sm font-inter-tight font-medium text-white bg-tracc-accent hover:opacity-90 rounded-md transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-tracc-primary focus:ring-tracc-accent"
+              >
+                <UserPlus className="h-4 w-4 mr-2" />
+                Get Started
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </nav>

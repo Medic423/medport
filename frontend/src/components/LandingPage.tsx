@@ -24,7 +24,7 @@ interface LandingPageProps {
 const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onShowRegistration }) => {
   return (
     <div className="min-h-screen bg-white">
-      <Navigation onShowRegistration={onShowRegistration} />
+      <Navigation />
       <main>
         <HeroSection onLogin={onLogin} onShowRegistration={onShowRegistration} />
         <WhoTracIsForSection />
