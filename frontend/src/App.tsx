@@ -16,6 +16,7 @@ import TermsAndConditions from './components/TermsAndConditions';
 import PricingPage from './components/PricingPage';
 import AboutPage from './components/AboutPage';
 import ContactPage from './components/ContactPage';
+import ConnectorDemo from './components/landing/ConnectorDemo';
 
 interface User {
   id: string;
@@ -239,6 +240,7 @@ function AppContent() {
             onSuccess={handleRegistrationSuccess}
           />
         } />
+        <Route path="/connector-demo" element={<ConnectorDemo />} />
         <Route path="/test-trip-acceptance" element={
           <div className="min-h-screen bg-gray-50">
             <div className="container mx-auto py-8">

@@ -38,35 +38,35 @@ const Navigation: React.FC<NavigationProps> = ({ onShowRegistration }) => {
             </button>
           </div>
 
-          {/* Desktop Navigation Links – white */}
+          {/* Desktop Navigation Links – white; Inter Tight 24px Medium per Phase 1 */}
           <div className="hidden md:flex md:items-center md:space-x-8">
             <button
               onClick={() => navigate('/')}
-              className="font-inter-tight font-medium text-white hover:text-tracc-tertiary px-3 py-2 text-sm transition-colors"
+              className="font-inter-tight font-medium text-white hover:text-tracc-tertiary px-3 py-2 text-2xl leading-none transition-colors"
             >
               Home
             </button>
             <button
               onClick={() => navigate('/about')}
-              className="font-inter-tight font-medium text-white hover:text-tracc-tertiary px-3 py-2 text-sm transition-colors"
+              className="font-inter-tight font-medium text-white hover:text-tracc-tertiary px-3 py-2 text-2xl leading-none transition-colors"
             >
               About
             </button>
             <button
               onClick={() => scrollToSection('quick-start')}
-              className="font-inter-tight font-medium text-white hover:text-tracc-tertiary px-3 py-2 text-sm transition-colors"
+              className="font-inter-tight font-medium text-white hover:text-tracc-tertiary px-3 py-2 text-2xl leading-none transition-colors"
             >
               Solutions
             </button>
             <button
               onClick={() => scrollToSection('quick-start')}
-              className="font-inter-tight font-medium text-white hover:text-tracc-tertiary px-3 py-2 text-sm transition-colors"
+              className="font-inter-tight font-medium text-white hover:text-tracc-tertiary px-3 py-2 text-2xl leading-none transition-colors"
             >
               Quick Start
             </button>
             <button
               onClick={() => navigate('/contact')}
-              className="font-inter-tight font-medium text-white hover:text-tracc-tertiary px-3 py-2 text-sm transition-colors"
+              className="font-inter-tight font-medium text-white hover:text-tracc-tertiary px-3 py-2 text-2xl leading-none transition-colors"
             >
               Contact
             </button>
@@ -76,7 +76,7 @@ const Navigation: React.FC<NavigationProps> = ({ onShowRegistration }) => {
             <div className="flex items-center">
               <button
                 onClick={onShowRegistration}
-                className="flex items-center px-4 py-2 text-sm font-inter-tight font-medium text-white bg-tracc-accent hover:opacity-90 rounded-md transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-tracc-primary focus:ring-tracc-accent"
+                className="flex items-center px-4 py-2 text-[20px] font-inter-tight font-medium text-white bg-tracc-accent hover:opacity-90 rounded-md transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-tracc-primary focus:ring-tracc-accent"
               >
                 <UserPlus className="h-4 w-4 mr-2" />
                 Get Started
