@@ -42,6 +42,7 @@ model HealthcareUser {
   userType                String                       @default("HEALTHCARE")
   isActive                Boolean                      @default(true)
   manageMultipleLocations Boolean                      @default(false)
+  smsNotifications       Boolean                      @default(false)
   isSubUser               Boolean                      @default(false)
   parentUserId            String?
   mustChangePassword      Boolean                      @default(false)

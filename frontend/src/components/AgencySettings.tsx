@@ -715,34 +715,31 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
               </p>
             </div>
 
-            {/* Notification Preferences */}
-            <div>
+            {/* Notification Preferences - Opt-in with consent and opt-out instructions */}
+            <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Notification Preferences
+                SMS Notification Preferences
               </label>
-              <div className="space-y-2">
-                {/* Email notifications removed - only SMS is used */}
-                {/* <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="emailNotifications"
-                    checked={agencyInfo.emailNotifications}
-                    onChange={handleInputChange}
-                    className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-                  />
-                  <span className="text-sm text-gray-700">Email Notifications</span>
-                </label> */}
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="smsNotifications"
-                    checked={agencyInfo.smsNotifications}
-                    onChange={handleInputChange}
-                    className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-                  />
-                  <span className="text-sm text-gray-700">SMS Notifications</span>
-                </label>
-              </div>
+              <label className="flex items-start space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="smsNotifications"
+                  checked={agencyInfo.smsNotifications}
+                  onChange={handleInputChange}
+                  className="mt-1 h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                />
+                <div>
+                  <span className="text-sm font-medium text-gray-700">
+                    Opt in to receive SMS notifications for new trip requests
+                  </span>
+                  <p className="mt-1 text-sm text-gray-600">
+                    By enabling, you consent to receive SMS notifications when healthcare facilities create trips within your service area. Message and data rates may apply.
+                  </p>
+                  <p className="mt-2 text-xs text-gray-500">
+                    <strong>Opt out:</strong> Uncheck this box and save, or reply STOP to any SMS message.
+                  </p>
+                </div>
+              </label>
             </div>
 
             {/* Action Buttons */}

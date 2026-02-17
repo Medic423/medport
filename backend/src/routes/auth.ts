@@ -145,8 +145,12 @@ router.post('/healthcare/register', async (req, res) => {
       zipCode, 
       phone, 
       latitude, 
-      longitude 
+      longitude,
+      smsOptIn
     } = req.body;
+
+    // smsNotifications: true only when user explicitly opts in at registration
+    const smsNotifications = smsOptIn === true;
 
     if (!email || !password || !name || !facilityName || !facilityType) {
       return res.status(400).json({
@@ -214,7 +218,8 @@ router.post('/healthcare/register', async (req, res) => {
           manageMultipleLocations: manageMultipleLocations || false, // ✅ NEW: Multi-location flag
           userType: 'HEALTHCARE',
           isActive: true, // Active by default; trial/payment can auto-deactivate at end of free trial
-          orgAdmin: isFirst
+          orgAdmin: isFirst,
+          smsNotifications // From registration opt-in (smsOptIn === true)
         }
       });
 
@@ -993,8 +998,12 @@ router.post('/ems/register', async (req, res) => {
       latitude, 
       longitude, 
       capabilities, 
-      operatingHours 
+      operatingHours,
+      smsOptIn
     } = req.body;
+
+    // AcceptsNotifications: true only when user explicitly opts in at registration
+    const acceptsNotifications = smsOptIn === true;
 
     console.log('TCC_DEBUG: Extracted fields:', {
       email: email ? 'present' : 'missing',
@@ -1105,7 +1114,8 @@ router.post('/ems/register', async (req, res) => {
         longitude: longitude ? parseFloat(longitude) : null,
         isActive: true, // Auto-approve new EMS registrations
         status: 'ACTIVE', // Set status explicitly
-        requiresReview: false // No review needed for auto-approved agencies
+        requiresReview: false, // No review needed for auto-approved agencies
+        acceptsNotifications // From registration opt-in (smsOptIn === true)
         // Note: Not setting addedAt or addedBy as they may not exist in production database
       };
       
@@ -1130,7 +1140,7 @@ router.post('/ems/register', async (req, res) => {
               INSERT INTO ems_agencies (
                 id, name, "contactName", phone, email, address, city, state, "zipCode",
                 "serviceArea", capabilities, "isActive", status, "createdAt", "updatedAt",
-                latitude, longitude, "operatingHours", "requiresReview"
+                latitude, longitude, "operatingHours", "requiresReview", "acceptsNotifications"
               )
               VALUES (
                 ${agencyId},
@@ -1151,7 +1161,8 @@ router.post('/ems/register', async (req, res) => {
                 ${agencyData.latitude || null},
                 ${agencyData.longitude || null},
                 ${agencyData.operatingHours ? JSON.stringify(agencyData.operatingHours) : null}::jsonb,
-                ${agencyData.requiresReview || false}
+                ${agencyData.requiresReview || false},
+                ${agencyData.acceptsNotifications}
               )
             `;
             
@@ -1218,7 +1229,7 @@ router.post('/ems/register', async (req, res) => {
               // Add required fields with defaults for Prisma model compatibility
               addedBy: null,
               addedAt: rawAgency.createdAt, // Use createdAt as fallback
-              acceptsNotifications: true,
+              acceptsNotifications: agencyData.acceptsNotifications,
               availableUnits: 0,
               lastUpdated: rawAgency.updatedAt,
               notificationMethods: [],
