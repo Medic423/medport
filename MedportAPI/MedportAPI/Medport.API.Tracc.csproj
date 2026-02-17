@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.13" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Medport.Application.Common\Medport.Application.Common.csproj" />
+    <ProjectReference Include="..\Medport.Application\Medport.Application.Tracc.csproj" />
+    <ProjectReference Include="..\Medport.Common\Medport.Common.csproj" />
+    <ProjectReference Include="..\Medport.Domain\Medport.Domain.csproj" />
+    <ProjectReference Include="..\Medport.Infrastructure.Azure\Medport.Infrastructure.Azure.csproj" />
+    <ProjectReference Include="..\Medport.Infrastructure\Medport.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
