@@ -24,18 +24,18 @@ const steps = [
   },
 ];
 
-/** Connector 1: Bracket – left of "How TRACC works"; top bar extended toward 'H', viewBox expanded so vertical/bottom/ellipse stay fixed */
+/** Connector 1: Bracket – left of "How TRACC works"; top bar ends at Y-axis of Connector 2 ellipse (right edge at x=221 in Connector 2) */
 const BracketConnector: React.FC = () => (
   <svg
-    viewBox="0 0 1164 420"
+    viewBox="0 0 1004 420"
     preserveAspectRatio="xMinYMin meet"
     className="flex-shrink-0 w-[411px] md:w-[576px] h-auto min-w-[411px] md:min-w-[576px] mt-[65px]"
     aria-hidden
   >
-    <path d="M 20 0 L 1144 0 L 1144 20 L 0 20 Q 0 0 20 0 Z" fill="#006AC6" />
+    <path d="M 20 0 L 820 0 L 820 20 L 0 20 Q 0 0 20 0 Z" fill="#006AC6" />
     <rect x="0" y="20" width="20" height="333" fill="#006AC6" />
-    <rect x="0" y="353" width="182" height="20" fill="#006AC6" />
-    <ellipse cx="198" cy="363" rx="23" ry="24" fill="#006AC6" />
+    <rect x="0" y="353" width="91" height="20" fill="#006AC6" />
+    <ellipse cx="68" cy="363" rx="23" ry="24" fill="#006AC6" />
   </svg>
 );
 
