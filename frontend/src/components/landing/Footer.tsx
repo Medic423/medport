@@ -36,12 +36,13 @@ const Footer: React.FC = () => {
               <img
                 src="/landing/logos/TRACC_Logo_FullColor.svg"
                 alt="TRACC – Medical transport coordination"
-                className="h-8 w-auto"
+                className="w-auto"
+                style={{ height: '58px' }}
               />
             </div>
             <p
-              className="font-serifa font-medium text-tracc-primary max-w-xs"
-              style={{ fontSize: '48px', lineHeight: '58px' }}
+              className="font-inter-tight font-semibold text-tracc-primary max-w-[320px] line-clamp-2"
+              style={{ fontSize: '28px', lineHeight: 1.35 }}
             >
               Connecting healthcare and transport providers.
             </p>
@@ -53,8 +54,7 @@ const Footer: React.FC = () => {
               <button
                 key={link.name}
                 onClick={() => handleLinkClick(link.href)}
-                className="font-inter-tight font-medium text-tracc-primary hover:underline focus:outline-none focus:ring-2 focus:ring-tracc-primary rounded"
-                style={{ fontSize: 24, lineHeight: '19px', letterSpacing: '0.02em' }}
+                className="font-inter-tight font-medium text-tracc-primary hover:underline focus:outline-none focus:ring-2 focus:ring-tracc-primary rounded text-sm"
               >
                 {link.name}
               </button>

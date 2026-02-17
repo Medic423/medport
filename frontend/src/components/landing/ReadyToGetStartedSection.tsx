@@ -27,14 +27,14 @@ const ReadyToGetStartedSection: React.FC<ReadyToGetStartedSectionProps> = ({
     >
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-left">
         <h2
-          className="font-serifa font-medium text-white mb-4"
-          style={{ fontSize: 'clamp(2rem, 5vw, 78px)', lineHeight: '131px' }}
+          className="font-serifa font-medium text-white mb-0"
+          style={{ fontSize: 'clamp(2rem, 5vw, 78px)', lineHeight: 1.2 }}
         >
           Ready to Get Started?
         </h2>
         <p
-          className="font-novatica font-medium text-white/90 mb-8 max-w-2xl"
-          style={{ fontSize: '30px', lineHeight: '100%' }}
+          className="font-novatica font-medium text-white/90 mb-8 max-w-2xl mt-1"
+          style={{ fontSize: 'clamp(1rem, 2vw, 22px)', lineHeight: '100%' }}
         >
           Create your account or explore the Quick Start guide.
         </p>
