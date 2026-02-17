@@ -22,6 +22,8 @@ const audiences = [
   },
 ];
 
+const CONNECTOR_BRACKET_MIRROR = '/landing/connectors/TRACC_Connector_Bracket_Mirror_Image.svg';
+
 /** Bracket connector – lengthened vertical to reach icons; ellipse aligns with column titles */
 const BracketConnector: React.FC = () => (
   <svg
@@ -37,11 +39,33 @@ const BracketConnector: React.FC = () => (
   </svg>
 );
 
+/** Mirror bracket – vertical on right, ellipse at bottom left; top of bar aligns with left ellipse X */
+const BracketConnectorMirror: React.FC = () => (
+  <img
+    src={CONNECTOR_BRACKET_MIRROR}
+    alt=""
+    className="flex-shrink-0 w-16 md:w-24 h-auto mt-[65px]"
+    aria-hidden
+  />
+);
+
+/** Connector 2: Horizontal bar + dot (lollipop) – between columns */
+const LollipopConnector: React.FC = () => (
+  <svg
+    viewBox="0 0 250 80"
+    className="flex-shrink-0 w-20 md:w-28 h-auto"
+    aria-hidden
+  >
+    <rect x="0" y="30" width="182" height="20" rx="10" fill="#006AC6" />
+    <ellipse cx="198" cy="40" rx="23" ry="24" fill="#006AC6" />
+  </svg>
+);
+
 const WhoTracIsForSection: React.FC = () => {
   return (
     <section
       id="who-tracc-is-for"
-      className="relative pt-1 pb-10 md:pt-9 md:pb-10 overflow-hidden"
+      className="relative pt-1 pb-10 md:pt-9 md:pb-10 overflow-visible"
       style={{ backgroundColor: SECTION_BG }}
     >
       {/* Grid pattern – opacity 0.38 per figma */}
@@ -55,12 +79,12 @@ const WhoTracIsForSection: React.FC = () => {
         }}
       />
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section title with bracket on left – bracket top aligned to center of "W" */}
+      {/* Section title with brackets – Connector 3 absolutely positioned on right so it's always visible */}
+      <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8">
         <div className="mb-0 flex items-start gap-4">
           <BracketConnector />
           <h2
-            className="font-serifa font-medium flex-1"
+            className="font-serifa font-medium flex-1 min-w-0 pr-20 md:pr-24"
             style={{
               fontSize: 'clamp(2rem, 5vw, 80px)',
               lineHeight: '131px',
@@ -69,37 +93,50 @@ const WhoTracIsForSection: React.FC = () => {
             <span style={{ color: '#FF5700' }}>Who</span>{' '}
             <span style={{ color: '#001872' }}>TRACC is for</span>
           </h2>
+          {/* Connector 3: absolute right so it's always visible regardless of title width */}
+          <div className="absolute right-4 sm:right-6 lg:right-8 top-0">
+            <BracketConnectorMirror />
+          </div>
         </div>
+      </div>
 
-        {/* Three columns – icons at top of each text block; shifted right and up ~1 grid square */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 -mt-28 md:-mt-32 ml-[100px]">
+      <div className="relative w-full max-w-7xl mx-auto pl-4 sm:pl-6 lg:pl-8 pr-16 md:pr-24 lg:pr-28">
+        {/* Three columns with Connector 2 (lollipop) between them – reduced gap to leave room for Connector 3 on right */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-start gap-4 lg:gap-5 -mt-28 md:-mt-32 md:ml-8">
           {audiences.map((audience, index) => (
-            <div key={index} className="text-center">
-              <div className="flex justify-center mb-3">
-                <img
-                  src={audience.icon}
-                  alt=""
-                  className="w-14 h-14 md:w-16 md:h-16 object-contain"
-                  aria-hidden
-                />
+            <React.Fragment key={index}>
+              <div className="text-center flex-1 min-w-0">
+                <div className="flex justify-center mb-2">
+                  <img
+                    src={audience.icon}
+                    alt=""
+                    className="w-14 h-14 md:w-16 md:h-16 object-contain"
+                    aria-hidden
+                  />
+                </div>
+                <h3
+                  className="font-novatica font-medium mb-1"
+                  style={{ fontSize: '24px', color: '#001872' }}
+                >
+                  {audience.title}
+                </h3>
+                <p
+                  className="font-inter-tight max-w-sm mx-auto"
+                  style={{
+                    fontSize: '18px',
+                    lineHeight: '26px',
+                    color: 'rgba(0, 24, 114, 0.95)',
+                  }}
+                >
+                  {audience.description}
+                </p>
               </div>
-              <h3
-                className="font-novatica font-medium mb-2"
-                style={{ fontSize: '24px', color: '#001872' }}
-              >
-                {audience.title}
-              </h3>
-              <p
-                className="font-inter-tight max-w-sm mx-auto"
-                style={{
-                  fontSize: '18px',
-                  lineHeight: '26px',
-                  color: 'rgba(0, 24, 114, 0.95)',
-                }}
-              >
-                {audience.description}
-              </p>
-            </div>
+              {index < audiences.length - 1 && (
+                <div className="flex justify-center items-center min-w-[80px] md:min-w-[112px] shrink-0">
+                  <LollipopConnector />
+                </div>
+              )}
+            </React.Fragment>
           ))}
         </div>
       </div>

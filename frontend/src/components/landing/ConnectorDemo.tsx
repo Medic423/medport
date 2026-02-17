@@ -34,6 +34,23 @@ const Connector1Bracket: React.FC = () => (
   </svg>
 );
 
+/** Connector 3: Mirror image of Connector 1 – "]" shape (vertical on right, ellipse at bottom left) */
+const Connector3BracketMirror: React.FC = () => (
+  <svg
+    viewBox="0 0 230 420"
+    className="w-[230px] h-[420px]"
+    aria-hidden
+  >
+    <g transform="translate(230, 0) scale(-1, 1)">
+      {/* Same as Connector 1, flipped horizontally */}
+      <path d="M 20 0 L 102 0 L 102 20 L 0 20 Q 0 0 20 0 Z" fill={CONNECTOR_COLOR} />
+      <rect x="0" y="20" width="20" height="333" fill={CONNECTOR_COLOR} />
+      <rect x="0" y="353" width="182" height="20" fill={CONNECTOR_COLOR} />
+      <ellipse cx="198" cy="363" rx="23" ry="24" fill={CONNECTOR_COLOR} />
+    </g>
+  </svg>
+);
+
 /** Connector 2: Horizontal bar with rounded left end + dot at right (lollipop shape) */
 const Connector2HorizontalWithDot: React.FC = () => (
   <svg
@@ -61,6 +78,16 @@ const Connector2HorizontalWithDot: React.FC = () => (
   </svg>
 );
 
+/** Connector 4: Mirror of Connector 2 – bar + dot at left */
+const Connector4LollipopMirror: React.FC = () => (
+  <svg viewBox="0 0 250 80" className="w-[250px] h-[80px]" aria-hidden>
+    <g transform="translate(250, 0) scale(-1, 1)">
+      <rect x="0" y="30" width="182" height="20" rx="10" fill={CONNECTOR_COLOR} />
+      <ellipse cx="198" cy="40" rx="23" ry="24" fill={CONNECTOR_COLOR} />
+    </g>
+  </svg>
+);
+
 const ConnectorDemo: React.FC = () => {
   return (
     <div
@@ -81,7 +108,7 @@ const ConnectorDemo: React.FC = () => {
           Connector Demo – Figma Shapes
         </h1>
         <p className="mb-12 text-gray-600">
-          Two connector elements from landing_page_figma_settings.md (Vector 3 + Ellipse 1, Vector 5 + Ellipse 2)
+          Connector elements: Connector 1 (bracket), Connector 2 (lollipop), Connector 3 (bracket mirror), Connector 4 (lollipop mirror)
         </p>
 
         <div className="flex flex-col md:flex-row gap-16 items-start">
@@ -102,6 +129,26 @@ const ConnectorDemo: React.FC = () => {
             </p>
             <div className="p-8 rounded-lg bg-white/60">
               <Connector2HorizontalWithDot />
+            </div>
+          </div>
+
+          {/* Connector 3 */}
+          <div className="flex flex-col items-center">
+            <p className="text-sm font-medium mb-4" style={{ color: '#001872' }}>
+              Connector 3: Mirror of Connector 1 (vertical on right, ellipse at bottom left)
+            </p>
+            <div className="p-8 rounded-lg bg-white/60">
+              <Connector3BracketMirror />
+            </div>
+          </div>
+
+          {/* Connector 4 */}
+          <div className="flex flex-col items-center">
+            <p className="text-sm font-medium mb-4" style={{ color: '#001872' }}>
+              Connector 4: Mirror of Connector 2 (bar + dot at left)
+            </p>
+            <div className="p-8 rounded-lg bg-white/60">
+              <Connector4LollipopMirror />
             </div>
           </div>
         </div>

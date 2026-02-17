@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 80" aria-hidden="true">
+  <!-- Connector 4: Mirror of Connector 2  bar + dot at left (lollipop mirrored) -->
+  <g transform="translate(250, 0) scale(-1, 1)">
+    <rect x="0" y="30" width="182" height="20" rx="10" fill="#006AC6"/>
+    <ellipse cx="198" cy="40" rx="23" ry="24" fill="#006AC6"/>
+  </g>
+</svg>
