@@ -39,7 +39,10 @@ const Footer: React.FC = () => {
                 className="h-8 w-auto"
               />
             </div>
-            <p className="font-inter-tight font-semibold text-tracc-primary text-xl max-w-xs">
+            <p
+              className="font-serifa font-medium text-tracc-primary max-w-xs"
+              style={{ fontSize: '48px', lineHeight: '58px' }}
+            >
               Connecting healthcare and transport providers.
             </p>
           </div>
@@ -50,7 +53,8 @@ const Footer: React.FC = () => {
               <button
                 key={link.name}
                 onClick={() => handleLinkClick(link.href)}
-                className="font-inter-tight text-sm font-medium text-tracc-primary hover:underline focus:outline-none focus:ring-2 focus:ring-tracc-primary rounded"
+                className="font-inter-tight font-medium text-tracc-primary hover:underline focus:outline-none focus:ring-2 focus:ring-tracc-primary rounded"
+                style={{ fontSize: 24, lineHeight: '19px', letterSpacing: '0.02em' }}
               >
                 {link.name}
               </button>
