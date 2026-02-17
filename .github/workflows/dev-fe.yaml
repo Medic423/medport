@@ -4,6 +4,7 @@
 name: develop - Deploy Dev Frontend
 
 on:
+  workflow_dispatch: # Manual trigger from GitHub Actions
   push:
     branches:
       - develop
