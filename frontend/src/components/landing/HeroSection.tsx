@@ -81,7 +81,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
             <h1
               className="font-serifa font-medium text-white mb-6"
               style={{
-                fontSize: 'clamp(2rem, 5vw, 80px)',
+                fontSize: 'clamp(1.5rem, 3.5vw, 56px)',
                 lineHeight: '1.15',
               }}
             >

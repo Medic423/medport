@@ -22,8 +22,6 @@ const audiences = [
   },
 ];
 
-const CONNECTOR_BRACKET_MIRROR = '/landing/connectors/TRACC_Connector_Bracket_Mirror_Image.svg';
-
 /** Bracket connector – lengthened vertical to reach icons; ellipse aligns with column titles */
 const BracketConnector: React.FC = () => (
   <svg
@@ -40,13 +38,20 @@ const BracketConnector: React.FC = () => (
 );
 
 /** Mirror bracket – vertical on right, ellipse at bottom left; top of bar aligns with left ellipse X */
-const BracketConnectorMirror: React.FC = () => (
-  <img
-    src={CONNECTOR_BRACKET_MIRROR}
-    alt=""
-    className="flex-shrink-0 w-16 md:w-24 h-auto mt-[65px]"
+export const BracketConnectorMirror: React.FC<{ className?: string }> = ({ className = '' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 230 670"
+    className={`flex-shrink-0 w-16 md:w-24 h-auto ${className}`}
     aria-hidden
-  />
+  >
+    <g transform="translate(230, 0) scale(-1, 1)">
+      <path d="M 20 0 L 182 0 L 182 20 L 0 20 Q 0 0 20 0 Z" fill="#006AC6" />
+      <rect x="0" y="20" width="20" height="583" fill="#006AC6" />
+      <rect x="0" y="603" width="182" height="20" fill="#006AC6" />
+      <ellipse cx="198" cy="613" rx="23" ry="24" fill="#006AC6" />
+    </g>
+  </svg>
 );
 
 /** Connector 2: Horizontal bar + dot (lollipop) – between columns */
@@ -79,7 +84,7 @@ const WhoTracIsForSection: React.FC = () => {
         }}
       />
 
-      {/* Section title with brackets – Connector 3 absolutely positioned on right so it's always visible */}
+      {/* Section title with brackets */}
       <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8">
         <div className="mb-0 flex items-start gap-4">
           <BracketConnector />
@@ -93,16 +98,12 @@ const WhoTracIsForSection: React.FC = () => {
             <span style={{ color: '#FF5700' }}>Who</span>{' '}
             <span style={{ color: '#001872' }}>TRACC is for</span>
           </h2>
-          {/* Connector 3: absolute right so it's always visible regardless of title width */}
-          <div className="absolute right-4 sm:right-6 lg:right-8 top-0">
-            <BracketConnectorMirror />
-          </div>
         </div>
       </div>
 
-      <div className="relative w-full max-w-7xl mx-auto pl-4 sm:pl-6 lg:pl-8 pr-16 md:pr-24 lg:pr-28">
-        {/* Three columns with Connector 2 (lollipop) between them – reduced gap to leave room for Connector 3 on right */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-start gap-4 lg:gap-5 -mt-28 md:-mt-32 md:ml-8">
+      <div className="relative w-full max-w-7xl mx-auto pl-4 sm:pl-6 lg:pl-8 pr-4 sm:pr-6 lg:pr-8">
+        {/* Three columns with Connector 2 (lollipop) between them; Connector 3 on right, top bar aligned with lollipops */}
+        <div className="relative flex flex-col md:flex-row md:items-center md:justify-start gap-4 lg:gap-5 -mt-28 md:-mt-32 md:ml-8">
           {audiences.map((audience, index) => (
             <React.Fragment key={index}>
               <div className="text-center flex-1 min-w-0">
@@ -138,6 +139,13 @@ const WhoTracIsForSection: React.FC = () => {
               )}
             </React.Fragment>
           ))}
+          {/* Connector 3: right side, same padding as Connector 1; top bar aligned with Connector 2 (lollipop) row */}
+          <div
+            className="absolute right-4 sm:right-6 lg:right-8 top-[calc(50%-10px)] z-10 hidden md:block translate-x-[120px]"
+            aria-hidden
+          >
+            <BracketConnectorMirror />
+          </div>
         </div>
       </div>
     </section>

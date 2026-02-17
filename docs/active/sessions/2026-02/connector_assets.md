@@ -8,7 +8,7 @@ Connector SVGs exported for use in the landing page design.
 |-------|------|-----|
 | **Connector 1 (Bracket)** | `/landing/connectors/TRACC_Connector_Bracket.svg` | Left bracket for "Who TRACC is for" and "How TRACC works" sections |
 | **Connector 2 (Lollipop)** | `/landing/connectors/TRACC_Connector_Lollipop.svg` | Horizontal bar + dot; used as building block and at bottom of bracket |
-| **Connector 3 (Bracket Mirror)** | `/landing/connectors/TRACC_Connector_Bracket_Mirror_Image.svg` | Right bracket for "Who TRACC is for"; mirror of Connector 1, top of bar aligns with left ellipse X |
+| **Connector 3 (Bracket Mirror)** | `/landing/connectors/TRACC_Connector_Bracket_Mirror_Image.svg` | Right bracket for "Who TRACC is for"; mirror of Connector 1; top bar aligned with Connector 2 (lollipop) Y axis; 160px padding from right edge |
 | **Connector 4 (Lollipop Mirror)** | `/landing/connectors/TRACC_Connector_Lollipop_Mirror.svg` | Mirror of Connector 2 – bar + dot at left; used in "Who TRACC is for" section |
 
 ## Usage
