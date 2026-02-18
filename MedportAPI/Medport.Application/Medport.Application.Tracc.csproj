@@ -42,7 +42,6 @@
     <Folder Include="Features\HealthcareSubUsers\Commands\Requests\" />
     <Folder Include="Features\HealthcareSubUsers\Queries\Requests\" />
     <Folder Include="Features\Hospitals\Commands\Requests\" />
-    <Folder Include="Features\Hospitals\Queries\Requests\" />
     <Folder Include="Features\Maintenances\Commands\Requests\" />
     <Folder Include="Features\Maintenances\Queries\Requests\" />
     <Folder Include="Features\Notifications\Commands\Requests\" />

@@ -1,5 +1,7 @@
 ﻿using Medport.API.Tracc.Controllers.BaseController;
 using Medport.API.Tracc.CustomAttributes;
+using Medport.Application.Tracc.Features.Hospitals.Queries.Dtos;
+using Medport.Application.Tracc.Features.Hospitals.Queries.Requests;
 using Medport.Common.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,21 +17,11 @@ namespace Medport.API.Tracc.Controllers;
 public class HospitalController : ApiControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<PaginatedList<ShedDto>>> GetAllPaginated(
-            [FromQuery] GetAllShedWithPaginationQuery query,
+    public async Task<ActionResult<PaginatedList<HospitalDto>>> GetAllPaginated(
+            [FromQuery] GetAllHospitalsWithPaginationQuery query,
             CancellationToken cancellationToken)
     {
         return Ok(await Mediator.Send(query, cancellationToken));
-    }
-
-    [HttpGet("AutoComplete/InternationalCustomerLoadStop")]
-    public async Task<ActionResult<List<ShedWithAddressAutocompleteDto>>> GetInternationalCustomerLoadStopShedAutocomplete(
-       [FromQuery] GetLoadStopShedAutocompleteQuery query,
-       CancellationToken cancellationToken
-)
-    {
-        query.IsInternationalCustomer = true;
-        return await Mediator.Send(query, cancellationToken);
     }
 
     [HttpGet("{shedGuid}")]
