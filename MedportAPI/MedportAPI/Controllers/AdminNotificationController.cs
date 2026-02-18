@@ -1,5 +1,8 @@
 ﻿using Medport.API.Tracc.Controllers.BaseController;
 using Medport.API.Tracc.CustomAttributes;
+using Medport.Application.Tracc.Common.DTOs;
+using Medport.Application.Tracc.Features.AdminNotifications.Queries.Dtos;
+using Medport.Application.Tracc.Features.AdminNotifications.Queries.Requests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics.CodeAnalysis;
@@ -14,9 +17,12 @@ namespace Medport.API.Tracc.Controllers;
 public class AdminNotificationController : ApiControllerBase
 {
     [HttpGet("stats")]
-    public async Task<ActionResult<ShedDto>> GetByIdQuery(Guid shedGuid, CancellationToken cancellationToken)
+    public async Task<ActionResult<MessageStatsDto>> GetStatsQuery(int days, CancellationToken cancellationToken)
     {
-        return Ok(await Mediator.Send(new GetShedByIdQuery(shedGuid), cancellationToken));
+        var data = await Mediator.Send(new GetStatsQuery(days), cancellationToken);
+        var response = ApiResponse<MessageStatsDto>.Ok(data);
+
+        return Ok(response);
     }
 
     [HttpGet("broadcast")]
