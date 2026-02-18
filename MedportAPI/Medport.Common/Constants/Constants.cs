@@ -12,4 +12,9 @@ public class Constants
     {
         public static string AzureFunctionsAuthKeyName = "x-functions-key";
     }
+
+    public static class Error
+    {
+        public const string ModelValidationAttributeInvalid = "ModelValidationAttribute.ActionFilter.Invalid";
+    }
 }
