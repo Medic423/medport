@@ -7,16 +7,62 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Common\DTOs\" />
     <Folder Include="Common\Extensions\" />
     <Folder Include="Common\Factories\" />
     <Folder Include="Common\Helpers\" />
     <Folder Include="Common\Interfaces\" />
     <Folder Include="Common\Mappings\" />
-    <Folder Include="Features\" />
+    <Folder Include="Features\AdminNotifications\Commands\Requests\" />
+    <Folder Include="Features\Agencies\Commands\Requests\" />
+    <Folder Include="Features\Agencies\Queries\Requests\" />
+    <Folder Include="Features\AgencyResponses\Commands\Requests\" />
+    <Folder Include="Features\AgencyResponses\Queries\Requests\" />
+    <Folder Include="Features\Analytics\Commands\Requests\" />
+    <Folder Include="Features\Analytics\Queries\Requests\" />
+    <Folder Include="Features\Auths\Commands\Requests\" />
+    <Folder Include="Features\Auths\Queries\Requests\" />
+    <Folder Include="Features\Backups\Commands\Requests\" />
+    <Folder Include="Features\Backups\Queries\Requests\" />
+    <Folder Include="Features\DropdownCategories\Commands\Requests\" />
+    <Folder Include="Features\DropdownCategories\Queries\Requests\" />
+    <Folder Include="Features\DropdownOptions\Commands\Requests\" />
+    <Folder Include="Features\DropdownOptions\Queries\Requests\" />
+    <Folder Include="Features\EMSAnalytics\Commands\Requests\" />
+    <Folder Include="Features\EMSAnalytics\Queries\Requests\" />
+    <Folder Include="Features\EMSSubUsers\Commands\Requests\" />
+    <Folder Include="Features\EMSSubUsers\Queries\Requests\" />
+    <Folder Include="Features\Facilities\Commands\Requests\" />
+    <Folder Include="Features\Facilities\Queries\Requests\" />
+    <Folder Include="Features\HealthcareAgencies\Commands\Requests\" />
+    <Folder Include="Features\HealthcareAgencies\Queries\Requests\" />
+    <Folder Include="Features\HealthcareDestinations\Commands\Requests\" />
+    <Folder Include="Features\HealthcareDestinations\Queries\Requests\" />
+    <Folder Include="Features\HealthcareLocations\Commands\Requests\" />
+    <Folder Include="Features\HealthcareLocations\Queries\Requests\" />
+    <Folder Include="Features\HealthcareSubUsers\Commands\Requests\" />
+    <Folder Include="Features\HealthcareSubUsers\Queries\Requests\" />
+    <Folder Include="Features\Maintenances\Commands\Requests\" />
+    <Folder Include="Features\Maintenances\Queries\Requests\" />
+    <Folder Include="Features\Notifications\Commands\Requests\" />
+    <Folder Include="Features\Notifications\Queries\Requests\" />
+    <Folder Include="Features\Optimizations\Commands\Requests\" />
+    <Folder Include="Features\Optimizations\Queries\Requests\" />
+    <Folder Include="Features\PickupLocations\Commands\Requests\" />
+    <Folder Include="Features\PickupLocations\Queries\Requests\" />
+    <Folder Include="Features\ProductionUnits\Commands\Requests\" />
+    <Folder Include="Features\ProductionUnits\Queries\Requests\" />
+    <Folder Include="Features\Publics\Commands\Requests\" />
+    <Folder Include="Features\Publics\Queries\Requests\" />
+    <Folder Include="Features\TCCUnits\Commands\Requests\" />
+    <Folder Include="Features\TCCUnits\Queries\Requests\" />
+    <Folder Include="Features\Trips\Commands\Requests\" />
+    <Folder Include="Features\Trips\Queries\Requests\" />
+    <Folder Include="Features\Units\Commands\Requests\" />
+    <Folder Include="Features\Units\Queries\Requests\" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="16.0.0" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageReference Include="MediatR" Version="14.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.3" />
