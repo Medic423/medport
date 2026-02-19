@@ -3,11 +3,13 @@ using System.Collections.Generic;
 
 namespace Medport.Domain.Entities
 {
-    public class Hospital
+    public class HealthcareLocation
     {
         public Guid Id { get; set; } = Guid.NewGuid();
 
-        public string Name { get; set; }
+        public Guid HealthcareUserId { get; set; }
+
+        public string LocationName { get; set; }
 
         public string Address { get; set; }
 
@@ -19,30 +21,21 @@ namespace Medport.Domain.Entities
 
         public string Phone { get; set; }
 
-        public string Email { get; set; }
+        public string FacilityType { get; set; } // HOSPITAL, CLINIC, URGENT_CARE, etc.
 
-        public string Type { get; set; } // HOSPITAL, CLINIC, etc.
+        public bool IsPrimary { get; set; }
 
-        public List<string> Capabilities { get; set; } = new List<string>();
-
-        public string Region { get; set; }
+        public bool IsActive { get; set; } = true;
 
         public double? Latitude { get; set; }
 
         public double? Longitude { get; set; }
 
-        public string OperatingHours { get; set; }
-
-        public bool IsActive { get; set; } = true;
-
-        public bool RequiresReview { get; set; }
-
-        public DateTime? ApprovedAt { get; set; }
-
-        public Guid? ApprovedBy { get; set; }
-
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        // Navigation properties
+        public virtual ICollection<PickupLocation> PickupLocations { get; set; } = new List<PickupLocation>();
     }
 }
