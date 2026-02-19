@@ -1,9 +1,12 @@
-﻿namespace Medport.Domain.Common;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace Medport.Domain.Common;
 
 public class BaseAuditableDto : BaseDto
 {
-    public DateTime CreateDate { get; set; }
-    public int CreateUserID { get; set; }
-    public DateTime? UpdateDate { get; set; }
-    public int? UpdateUserID { get; set; }
+    [Column("createdAt")]
+    public DateTime CreatedAt { get; set; }
+
+    [Column("updatedAt")]
+    public DateTime? UpdatedAt { get; set; }
 }

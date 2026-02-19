@@ -17,7 +17,7 @@ namespace Medport.API.Tracc.Controllers;
 public class AdminNotificationController : ApiControllerBase
 {
     [HttpGet("stats")]
-    public async Task<ActionResult<MessageStatsDto>> GetStatsQuery(int days, CancellationToken cancellationToken)
+    public async Task<ActionResult<ApiResponse<MessageStatsDto>>> GetStatsQuery(int days, CancellationToken cancellationToken)
     {
         var data = await Mediator.Send(new GetStatsQuery(days), cancellationToken);
         var response = ApiResponse<MessageStatsDto>.Ok(data);

@@ -5,6 +5,10 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Medport.Application.Tracc.Features.Hospitals.Queries.Requests;
 
+/// <summary>
+/// See <see cref="GetAllHospitalsWithPaginationQueryHandler"/>
+/// </summary>
+
 [ExcludeFromCodeCoverage]
 public class GetAllHospitalsWithPaginationQuery : IRequest<PaginatedList<HospitalDto>>
 {

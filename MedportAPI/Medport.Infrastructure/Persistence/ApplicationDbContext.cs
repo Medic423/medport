@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Medport.Domain.Common;
+using Medport.Domain.Entities;
 using Medport.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics.CodeAnalysis;
@@ -21,6 +22,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         _mediator = mediator;
     }
 
+    public DbSet<Hospital> Hospitals { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
