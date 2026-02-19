@@ -203,18 +203,18 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             .Property(ea => ea.Email)
             .HasMaxLength(254);
 
-        // Configure JSON properties for EMS Agency
+        // Configure JSON properties for EMS Agency (now stored as strings)
         modelBuilder.Entity<EmsAgency>()
             .Property(ea => ea.OperatingHours)
-            .HasColumnType("jsonb");
+            .HasColumnType("nvarchar(max)");
 
         modelBuilder.Entity<EmsAgency>()
             .Property(ea => ea.PricingStructure)
-            .HasColumnType("jsonb");
+            .HasColumnType("nvarchar(max)");
 
         modelBuilder.Entity<EmsAgency>()
             .Property(ea => ea.AvailabilityStatus)
-            .HasColumnType("jsonb");
+            .HasColumnType("nvarchar(max)");
 
         modelBuilder.Entity<EmsAgency>()
             .Property(ea => ea.Capabilities)
@@ -253,10 +253,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
                 v => v.Split(",", StringSplitOptions.RemoveEmptyEntries).ToList())
             .HasMaxLength(1000);
 
-        // Configure JSON property for Unit
+        // Configure JSON property for Unit (now stored as string)
         modelBuilder.Entity<Unit>()
             .Property(u => u.CurrentLocation)
-            .HasColumnType("jsonb");
+            .HasColumnType("nvarchar(max)");
 
         modelBuilder.Entity<Unit>()
             .HasIndex(u => u.AgencyId);
