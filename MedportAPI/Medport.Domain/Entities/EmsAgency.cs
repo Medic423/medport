@@ -26,11 +26,11 @@ namespace Medport.Domain.Entities
 
         public List<string> ServiceArea { get; set; } = new List<string>();
 
-        public object OperatingHours { get; set; } // Can store JSON object
+        public string OperatingHours { get; set; } // Stores JSON string
 
         public List<string> Capabilities { get; set; } = new List<string>();
 
-        public object PricingStructure { get; set; } // Can store JSON object
+        public string PricingStructure { get; set; } // Stores JSON string
 
         public bool IsActive { get; set; } = true;
 
@@ -46,7 +46,7 @@ namespace Medport.Domain.Entities
 
         public bool AcceptsNotifications { get; set; } = true;
 
-        public object AvailabilityStatus { get; set; } // JSON: { "isAvailable": bool, "availableLevels": string[] }
+        public string AvailabilityStatus { get; set; } // JSON string: { "isAvailable": bool, "availableLevels": string[] }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

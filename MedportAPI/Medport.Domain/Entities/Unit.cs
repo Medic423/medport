@@ -1,4 +1,4 @@
-    using System;
+using System;
 using System.Collections.Generic;
 
 namespace Medport.Domain.Entities
@@ -19,7 +19,7 @@ namespace Medport.Domain.Entities
 
         public string CurrentStatus { get; set; } = "AVAILABLE";
 
-        public object CurrentLocation { get; set; } // JSON: { "lat": number, "lng": number }
+        public string CurrentLocation { get; set; } // Stores JSON string: { "lat": number, "lng": number }
 
         public int CrewSize { get; set; } = 2;
 
