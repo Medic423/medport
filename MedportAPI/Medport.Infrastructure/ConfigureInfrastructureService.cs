@@ -1,9 +1,9 @@
 ﻿using Medport.Domain.Interfaces;
-using Medport.Infrastructure.Persistence;
 using Medport.Infrastructure.Persistence.Dapper;
 using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
+using Medport.Infrastructure.Persistence.EntityFramework;
 
 namespace Medport.Infrastructure;
 

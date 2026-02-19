@@ -1,25 +1,20 @@
-﻿using MediatR;
-using Medport.Domain.Common;
+﻿using Medport.Domain.Common;
 using Medport.Domain.Entities;
 using Medport.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
-namespace Medport.Infrastructure.Persistence;
+namespace Medport.Infrastructure.Persistence.EntityFramework;
 
 [ExcludeFromCodeCoverage]
 public class ApplicationDbContext : DbContext, IApplicationDbContext
 {
-    private readonly IMediator _mediator;
-
     public ApplicationDbContext(
-        DbContextOptions<ApplicationDbContext> options,
-        IMediator mediator
+        DbContextOptions<ApplicationDbContext> options
     )
         : base(options)
     {
-        _mediator = mediator;
     }
 
     #region User DbSets
@@ -121,10 +116,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
         modelBuilder.Entity<CenterUser>()
             .Property(cu => cu.Email)
-            .IsRequired()
-            .HasMaxLength(254)
-            .HasIndex()
-            .IsUnique();
+            .IsRequired();
 
         modelBuilder.Entity<CenterUser>()
             .Property(cu => cu.UserType)
@@ -209,9 +201,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
         modelBuilder.Entity<EmsAgency>()
             .Property(ea => ea.Email)
-            .HasMaxLength(254)
-            .HasIndex()
-            .IsUnique();
+            .HasMaxLength(254);
 
         // Configure JSON properties for EMS Agency
         modelBuilder.Entity<EmsAgency>()
@@ -355,9 +345,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<DropdownCategory>()
             .Property(dc => dc.Slug)
             .IsRequired()
-            .HasMaxLength(50)
-            .HasIndex()
-            .IsUnique();
+            .HasMaxLength(50);
 
         modelBuilder.Entity<DropdownCategory>()
             .Property(dc => dc.DisplayName)
@@ -436,9 +424,4 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             }
         }
     }
-
-    //public DbConnection GetDbConnection()
-    //{
-    //    return this.Database.GetDbConnection();
-    //}
 }
