@@ -13,8 +13,6 @@
     <Folder Include="Common\Interfaces\" />
     <Folder Include="Common\Mappings\" />
     <Folder Include="Features\AdminNotifications\Commands\Requests\" />
-    <Folder Include="Features\Agencies\Commands\Requests\" />
-    <Folder Include="Features\Agencies\Queries\Requests\" />
     <Folder Include="Features\AgencyResponses\Commands\Requests\" />
     <Folder Include="Features\AgencyResponses\Queries\Requests\" />
     <Folder Include="Features\Analytics\Commands\Requests\" />

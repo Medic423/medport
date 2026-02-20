@@ -6,7 +6,6 @@ using Medport.Application.Tracc.Features.Hospitals.Commands.Requests;
 using Medport.Application.Tracc.Features.Hospitals.Constants;
 using Medport.Application.Tracc.Features.Hospitals.Errors;
 using Medport.Application.Tracc.Features.Hospitals.Queries.Dtos;
-using Medport.Common.Constants;
 using Medport.Domain.Entities;
 using Medport.Domain.Interfaces;
 

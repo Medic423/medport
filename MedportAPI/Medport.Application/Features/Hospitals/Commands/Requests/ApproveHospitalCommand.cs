@@ -8,8 +8,8 @@ namespace Medport.Application.Tracc.Features.Hospitals.Commands.Requests;
 [ExcludeFromCodeCoverage]
 public record ApproveHospitalCommand : IRequest<HospitalDto>
 {
-    public required string Id { get; set; }
-    public required string ApprovedBy { get; set; }
+    public required Guid Id { get; set; }
+    public required Guid ApprovedBy { get; set; }
     public bool IsActive { get; set; } = true;
     public bool RequiresReview { get; set; } = false;
     public DateTime ApprovedAt { get; set; } = DateTime.UtcNow;

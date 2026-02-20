@@ -413,14 +413,14 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         {
             if (entity.State == EntityState.Added)
             {
-                ((BaseAuditableDto)entity.Entity).CreateDate = DateTime.UtcNow;
-                ((BaseAuditableDto)entity.Entity).CreateUserID = createUpdateUserId;
+                ((BaseAuditableDto)entity.Entity).CreatedAt = DateTime.UtcNow;
+                //((BaseAuditableDto)entity.Entity).create = createUpdateUserId;
             }
 
             if (entity.State == EntityState.Modified)
             {
-                ((BaseAuditableDto)entity.Entity).UpdateDate = DateTime.UtcNow;
-                ((BaseAuditableDto)entity.Entity).UpdateUserID = createUpdateUserId;
+                ((BaseAuditableDto)entity.Entity).UpdatedAt = DateTime.UtcNow;
+                //((BaseAuditableDto)entity.Entity).UpdateUserID = createUpdateUserId;
             }
         }
     }

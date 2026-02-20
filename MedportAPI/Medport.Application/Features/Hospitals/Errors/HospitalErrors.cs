@@ -4,8 +4,8 @@ namespace Medport.Application.Tracc.Features.Hospitals.Errors;
 
 public static class HospitalErrors
 {
-    public static Error NotFound(string code, string id) => Error.NotFound(
+    public static Error NotFound(string code, Guid id) => Error.NotFound(
         code,
-        $"A Hospital with the id {id} was not found."
+        $"A Hospital with the guid {id} was not found."
     );
 }

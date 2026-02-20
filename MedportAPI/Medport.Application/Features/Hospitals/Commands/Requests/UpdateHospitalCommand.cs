@@ -8,7 +8,7 @@ namespace Medport.Application.Tracc.Features.Hospitals.Commands.Requests;
 [ExcludeFromCodeCoverage]
 public record UpdateHospitalCommand : IRequest<HospitalDto>
 {
-    public required string Id { get; set; }
+    public required Guid Id { get; set; }
     public required string Name { get; set; }
 
     public required string Address { get; set; }

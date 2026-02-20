@@ -91,7 +91,7 @@ public class HospitalController : ApiControllerBase
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesDefaultResponseType]
-    public async Task<ActionResult> Delete(string Id)
+    public async Task<ActionResult> Delete(Guid Id)
     {
         await Mediator.Send(new DeleteHospitalCommand(Id));
 
@@ -105,7 +105,7 @@ public class HospitalController : ApiControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesDefaultResponseType]
-    public async Task<ActionResult> ApproveHospital(string Id, [FromBody] ApproveHospitalCommand command)
+    public async Task<ActionResult> ApproveHospital(Guid Id, [FromBody] ApproveHospitalCommand command)
     {
         var data = await Mediator.Send(command);
 
@@ -118,7 +118,7 @@ public class HospitalController : ApiControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesDefaultResponseType]
-    public async Task<ActionResult> RejectHospital(string Id, [FromBody] RejectHospitalCommand command)
+    public async Task<ActionResult> RejectHospital(Guid Id, [FromBody] RejectHospitalCommand command)
     {
         var data = await Mediator.Send(command);
 

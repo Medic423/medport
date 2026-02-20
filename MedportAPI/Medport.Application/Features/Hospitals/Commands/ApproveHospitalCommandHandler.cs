@@ -27,9 +27,7 @@ public class ApproveHospitalCommandHandler(IApplicationDbContext context, IMappe
                 request.Id)]));
         }
 
-        // can move this to applicationdbcontext
         updatedHospital.ApprovedBy = request.ApprovedBy;
-        updatedHospital.UpdatedAt = DateTime.UtcNow;
 
         _mapper.Map(request, updatedHospital);
 
