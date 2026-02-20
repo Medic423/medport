@@ -7,7 +7,7 @@ using System.Text.Json;
 namespace Medport.Application.Tracc.Features.Hospitals.Commands.Requests;
 
 [ExcludeFromCodeCoverage]
-public record CreateHospitalCommand : IRequest<HospitalDto>
+public record CreateHospitalCommand : IRequest<AgencyDto>
 {
     public required string Name { get; set; }
 
