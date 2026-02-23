@@ -360,5 +360,22 @@ namespace Medport.Domain
             /// </summary>
             public const int EmailVerificationTokenExpirationMinutes = 1440; // 24 hours
         }
+
+        /// <summary>
+        /// Unit Management Constants
+        /// </summary>
+        public static class UnitManagement
+        {
+            public static class Messages
+            {
+                public const string SavedSuccesfully = "Unit created successfully";
+                public const string UpdatedSuccesfully = "Unit updated successfully";
+                public const string DeletedSuccesfully = "Unit deleted successfully";
+                public const string StatusUpdatedSuccesfully = "Unit status updated successfully";
+                public const string UnitNotFound = "Unit not found";
+                public const string AgencyNotFound = "Agency not found";
+                public const string InvalidUnitData = "Invalid unit data provided";
+            }
+        }
     }
 }
