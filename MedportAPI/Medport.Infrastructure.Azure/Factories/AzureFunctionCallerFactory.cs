@@ -1,5 +1,4 @@
-﻿using MCL.DomainTwo.Interfaces;
-using Medport.Domain.Interfaces;
+﻿using Medport.Domain.Interfaces;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Medport.Infrastructure.Azure.Factories;

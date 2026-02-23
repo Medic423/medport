@@ -411,17 +411,17 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
         foreach (var entity in entities)
         {
-            if (entity.State == EntityState.Added)
-            {
-                ((BaseAuditableDto)entity.Entity).CreateDate = DateTime.UtcNow;
-                ((BaseAuditableDto)entity.Entity).CreateUserID = createUpdateUserId;
-            }
+            //if (entity.State == EntityState.Added)
+            //{
+            //    ((BaseAuditableDto)entity.Entity).CreateDate = DateTime.UtcNow;
+            //    ((BaseAuditableDto)entity.Entity).CreateUserID = createUpdateUserId;
+            //}
 
-            if (entity.State == EntityState.Modified)
-            {
-                ((BaseAuditableDto)entity.Entity).UpdateDate = DateTime.UtcNow;
-                ((BaseAuditableDto)entity.Entity).UpdateUserID = createUpdateUserId;
-            }
+            //if (entity.State == EntityState.Modified)
+            //{
+            //    ((BaseAuditableDto)entity.Entity).UpdateDate = DateTime.UtcNow;
+            //    ((BaseAuditableDto)entity.Entity).UpdateUserID = createUpdateUserId;
+            //}
         }
     }
 }

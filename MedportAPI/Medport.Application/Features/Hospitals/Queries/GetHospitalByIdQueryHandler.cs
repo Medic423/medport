@@ -24,7 +24,7 @@ public class GetHospitalByIdQueryHandler(IApplicationDbContext context, IMapper 
         IQueryable<Hospital> query = _context.Hospitals;
 
         // Build ID Where
-        query = query.Where(x => x.Id == request.HospitalId);
+        query = query;
 
         // Execute 
         HospitalDto? hospital = await _mapper.ProjectTo<HospitalDto>(query)

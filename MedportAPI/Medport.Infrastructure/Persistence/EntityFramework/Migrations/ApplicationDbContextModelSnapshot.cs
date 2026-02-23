@@ -71,7 +71,7 @@ namespace Medport.Infrastructure.Persistence.EntityFramework.Migrations
 
                     b.HasIndex("TransportRequestId", "AgencyId");
 
-                    b.ToTable("AgencyResponses");
+                    b.ToTable("AgencyResponses", (string)null);
                 });
 
             modelBuilder.Entity("Medport.Domain.Entities.CenterUser", b =>
@@ -123,7 +123,7 @@ namespace Medport.Infrastructure.Persistence.EntityFramework.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("CenterUsers");
+                    b.ToTable("CenterUsers", (string)null);
                 });
 
             modelBuilder.Entity("Medport.Domain.Entities.DropdownCategory", b =>
@@ -156,7 +156,7 @@ namespace Medport.Infrastructure.Persistence.EntityFramework.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("DropdownCategories");
+                    b.ToTable("DropdownCategories", (string)null);
                 });
 
             modelBuilder.Entity("Medport.Domain.Entities.DropdownOption", b =>
@@ -199,7 +199,7 @@ namespace Medport.Infrastructure.Persistence.EntityFramework.Migrations
                     b.HasIndex("Category", "Value")
                         .IsUnique();
 
-                    b.ToTable("DropdownOptions");
+                    b.ToTable("DropdownOptions", (string)null);
                 });
 
             modelBuilder.Entity("Medport.Domain.Entities.EmsAgency", b =>
@@ -294,7 +294,7 @@ namespace Medport.Infrastructure.Persistence.EntityFramework.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("EmsAgencies");
+                    b.ToTable("EmsAgencies", (string)null);
                 });
 
             modelBuilder.Entity("Medport.Domain.Entities.EmsUser", b =>
@@ -364,7 +364,7 @@ namespace Medport.Infrastructure.Persistence.EntityFramework.Migrations
 
                     b.HasIndex("AgencyId");
 
-                    b.ToTable("EmsUsers");
+                    b.ToTable("EmsUsers", (string)null);
                 });
 
             modelBuilder.Entity("Medport.Domain.Entities.HealthcareAgencyPreference", b =>
@@ -399,7 +399,7 @@ namespace Medport.Infrastructure.Persistence.EntityFramework.Migrations
 
                     b.HasIndex("HealthcareUserId", "PreferenceOrder");
 
-                    b.ToTable("HealthcareAgencyPreferences");
+                    b.ToTable("HealthcareAgencyPreferences", (string)null);
                 });
 
             modelBuilder.Entity("Medport.Domain.Entities.HealthcareDestination", b =>
@@ -459,7 +459,7 @@ namespace Medport.Infrastructure.Persistence.EntityFramework.Migrations
 
                     b.HasIndex("HealthcareUserId");
 
-                    b.ToTable("HealthcareDestinations");
+                    b.ToTable("HealthcareDestinations", (string)null);
                 });
 
             modelBuilder.Entity("Medport.Domain.Entities.HealthcareLocation", b =>
@@ -522,7 +522,7 @@ namespace Medport.Infrastructure.Persistence.EntityFramework.Migrations
 
                     b.HasIndex("HealthcareUserId");
 
-                    b.ToTable("HealthcareLocations");
+                    b.ToTable("HealthcareLocations", (string)null);
                 });
 
             modelBuilder.Entity("Medport.Domain.Entities.HealthcareUser", b =>
@@ -594,7 +594,7 @@ namespace Medport.Infrastructure.Persistence.EntityFramework.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("HealthcareUsers");
+                    b.ToTable("HealthcareUsers", (string)null);
                 });
 
             modelBuilder.Entity("Medport.Domain.Entities.Hospital", b =>
@@ -673,7 +673,7 @@ namespace Medport.Infrastructure.Persistence.EntityFramework.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Hospitals");
+                    b.ToTable("Hospitals", (string)null);
                 });
 
             modelBuilder.Entity("Medport.Domain.Entities.PickupLocation", b =>
@@ -723,7 +723,7 @@ namespace Medport.Infrastructure.Persistence.EntityFramework.Migrations
 
                     b.HasIndex("HospitalId");
 
-                    b.ToTable("PickupLocations");
+                    b.ToTable("PickupLocations", (string)null);
                 });
 
             modelBuilder.Entity("Medport.Domain.Entities.TransportRequest", b =>
@@ -826,7 +826,7 @@ namespace Medport.Infrastructure.Persistence.EntityFramework.Migrations
 
                     b.HasIndex("Status");
 
-                    b.ToTable("TransportRequests");
+                    b.ToTable("TransportRequests", (string)null);
                 });
 
             modelBuilder.Entity("Medport.Domain.Entities.Unit", b =>
@@ -902,7 +902,7 @@ namespace Medport.Infrastructure.Persistence.EntityFramework.Migrations
 
                     b.HasIndex("Status");
 
-                    b.ToTable("Units");
+                    b.ToTable("Units", (string)null);
                 });
 
             modelBuilder.Entity("Medport.Domain.Entities.AgencyResponse", b =>
