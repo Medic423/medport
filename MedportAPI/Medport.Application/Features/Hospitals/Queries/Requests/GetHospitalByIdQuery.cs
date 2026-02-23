@@ -9,5 +9,5 @@ namespace Medport.Application.Tracc.Features.Hospitals.Queries.Requests;
 /// </summary>
 
 [ExcludeFromCodeCoverage]
-public record GetHospitalByIdQuery(string HospitalId) : IRequest<HospitalDto>;
+public record GetHospitalByIdQuery(Guid HospitalId) : IRequest<HospitalDto>;
 

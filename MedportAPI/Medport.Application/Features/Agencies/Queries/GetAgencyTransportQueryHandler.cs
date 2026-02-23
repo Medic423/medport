@@ -1,23 +1,25 @@
 ﻿using AutoMapper;
+using Azure.Core;
 using MediatR;
 using Medport.Application.Common.Common.Dtos;
 using Medport.Application.Tracc.Features.Agencies.Helpers;
 using Medport.Application.Tracc.Features.Agencies.Queries.DTOs;
+using Medport.Application.Tracc.Features.Agencies.Queries.Requests;
 using Medport.Application.Tracc.Features.Hospitals.Commands.Requests;
 using Medport.Domain.Interfaces;
 using System.Data;
 
 namespace Medport.Application.Tracc.Features.Agencies.Queries;
 public class GetAgencyTransportQueryHandler(IApplicationDbContext context, IMapper mapper) : 
-    IRequestHandler<CreateHospitalCommand, List<TransportRequestDto>>
+    IRequestHandler<GetAgencyTransportQuery, List<TransportRequestDto>>
 {
     private readonly IApplicationDbContext _context = context;
     private readonly IMapper _mapper = mapper;
 
-    public async Task<List<TransportRequestDto>> Handle(CreateHospitalCommand request, CancellationToken cancellationToken)
+    public async Task<List<TransportRequestDto>> Handle(GetAgencyTransportQuery request, CancellationToken cancellationToken)
     {
         // ADMIN without agencyId → return demo admin data
-        if (string.IsNullOrEmpty(agencyId))
+        if (request.AgencyId == Guid.Empty)
         {
             if (role == "ADMIN")
             {

@@ -5,6 +5,9 @@ using System.Text.Json;
 
 namespace Medport.Application.Tracc.Features.Hospitals.Commands.Requests;
 
+/// <summary>
+/// See <see cref="RejectHospitalCommandHandler"/>
+/// </summary>
 [ExcludeFromCodeCoverage]
 public record RejectHospitalCommand : IRequest<HospitalDto>
 {

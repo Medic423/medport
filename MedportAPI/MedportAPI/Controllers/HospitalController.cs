@@ -20,9 +20,10 @@ public class HospitalController : ApiControllerBase
 {
     // need error handling fix global exception to return api response of fail instead
     [HttpGet]
-    public async Task<ActionResult<ApiResponse<List<HospitalDto>>>> GetAllPaginated(
+    public async Task<ActionResult> GetAllPaginated(
             [FromQuery] GetAllHospitalsWithPaginationQuery query,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken
+    )
     {
         var data = await Mediator.Send(query, cancellationToken);
 
@@ -40,13 +41,13 @@ public class HospitalController : ApiControllerBase
     }
 
     [HttpGet("{hospitalId}")]
-    public async Task<ActionResult<HospitalDto>> GetByIdQuery(string hospitalId, CancellationToken cancellationToken)
+    public async Task<ActionResult> GetByIdQuery(Guid hospitalId, CancellationToken cancellationToken)
     {
         return Ok(await Mediator.Send(new GetHospitalByIdQuery(hospitalId), cancellationToken));
     }
 
     [HttpGet("search")]
-    public async Task<ActionResult<ApiResponse<List<HospitalDto>>>> GetSearchQuery(
+    public async Task<ActionResult> GetSearchQuery(
             [FromQuery] GetHospitalSearchQuery query,
             CancellationToken cancellationToken)
     {
@@ -66,9 +67,9 @@ public class HospitalController : ApiControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<Guid>> Create(CreateHospitalCommand command)
+    public async Task<ActionResult> Create([FromBody] CreateHospitalCommand command, CancellationToken cancellationToken)
     {
-        var data = await Mediator.Send(command);
+        var data = await Mediator.Send(command, cancellationToken);
 
         var response = ApiResponse<HospitalDto>.Ok(data, HospitalConstants.GenericMessages.SavedSuccesfully);
 
@@ -79,9 +80,9 @@ public class HospitalController : ApiControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesDefaultResponseType]
-    public async Task<ActionResult> Update(string Id, [FromBody] UpdateHospitalCommand command)
+    public async Task<ActionResult> Update(string Id, [FromBody] UpdateHospitalCommand command, CancellationToken cancellationToken)
     {
-        var data = await Mediator.Send(command);
+        var data = await Mediator.Send(command, cancellationToken);
 
         var response = ApiResponse<HospitalDto>.Ok(data, HospitalConstants.GenericMessages.UpdatedSuccesfully);
 
@@ -91,9 +92,9 @@ public class HospitalController : ApiControllerBase
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesDefaultResponseType]
-    public async Task<ActionResult> Delete(Guid Id)
+    public async Task<ActionResult> Delete(Guid Id, CancellationToken cancellationToken)
     {
-        await Mediator.Send(new DeleteHospitalCommand(Id));
+        await Mediator.Send(new DeleteHospitalCommand(Id),cancellationToken);
 
         // Fix allow no data response
         var response = ApiResponse<HospitalDto>.Ok(null, HospitalConstants.GenericMessages.DeletedSuccesfully);
@@ -105,9 +106,13 @@ public class HospitalController : ApiControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesDefaultResponseType]
-    public async Task<ActionResult> ApproveHospital(Guid Id, [FromBody] ApproveHospitalCommand command)
+    public async Task<ActionResult> ApproveHospital(
+        Guid Id, 
+        [FromBody] ApproveHospitalCommand command, 
+        CancellationToken cancellationToken
+    )
     {
-        var data = await Mediator.Send(command);
+        var data = await Mediator.Send(command, cancellationToken);
 
         var response = ApiResponse<HospitalDto>.Ok(data, HospitalConstants.GenericMessages.ApprovedSuccesfully);
 
@@ -118,9 +123,13 @@ public class HospitalController : ApiControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesDefaultResponseType]
-    public async Task<ActionResult> RejectHospital(Guid Id, [FromBody] RejectHospitalCommand command)
+    public async Task<ActionResult> RejectHospital(
+        Guid Id, 
+        [FromBody] RejectHospitalCommand command, 
+        CancellationToken cancellationToken
+    )
     {
-        var data = await Mediator.Send(command);
+        var data = await Mediator.Send(command, cancellationToken);
 
         var response = ApiResponse<HospitalDto>.Ok(data, HospitalConstants.GenericMessages.RejectedSuccesfully);
 
