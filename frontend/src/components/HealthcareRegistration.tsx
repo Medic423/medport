@@ -581,22 +581,6 @@ const HealthcareRegistration: React.FC<HealthcareRegistrationProps> = ({ onBack,
                 </label>
               </div>
 
-              {/* SMS Opt-In - Consent at time of phone number collection (Azure toll-free verification) */}
-              <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
-                <label className="flex items-start space-x-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="smsOptIn"
-                    checked={formData.smsOptIn}
-                    onChange={(e) => setFormData(prev => ({ ...prev, smsOptIn: e.target.checked }))}
-                    className="mt-1 h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
-                  />
-                  <span className="text-sm text-gray-700">
-                    I consent to receive SMS notifications for new trip requests. Message and data rates may apply. Reply STOP to opt out.
-                  </span>
-                </label>
-              </div>
-
               <div>
                 <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
                   Street Address *
