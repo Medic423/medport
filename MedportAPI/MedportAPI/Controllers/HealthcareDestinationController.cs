@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Medport.API.Tracc.Controllers;
 
-[Route("api/[controller]")]
+[Route("api/healthcare/destinations")]
 [ApiController]
 [Authorize]
 [ServiceFilter(typeof(ModelValidationAttribute))]
@@ -15,51 +15,49 @@ namespace Medport.API.Tracc.Controllers;
 public class HealthcareDestinationController : ApiControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<PaginatedList<ShedDto>>> GetAllPaginated(
-            [FromQuery] GetAllShedWithPaginationQuery query,
-            CancellationToken cancellationToken)
+    public async Task<ActionResult> GetAllForHealthcareUser([FromQuery] Medport.Application.Tracc.Features.HealthcareDestinations.Queries.Requests.GetAllDestinationsForHealthcareUserQuery query, CancellationToken cancellationToken)
     {
-        return Ok(await Mediator.Send(query, cancellationToken));
+        var data = await Mediator.Send(query, cancellationToken);
+
+        var pagination = new PaginationDto
+        {
+            Limit = query.Limit,
+            Page = query.Page,
+            TotalPages = data.TotalPages,
+            Total = data.TotalCount
+        };
+
+        var response = ApiResponse<List<Medport.Application.Tracc.Features.HealthcareDestinations.Queries.Dtos.HealthcareDestinationDto>>.Ok([.. data.Items], null, pagination);
+
+        return Ok(response);
     }
 
-    [HttpGet("AutoComplete/InternationalCustomerLoadStop")]
-    public async Task<ActionResult<List<ShedWithAddressAutocompleteDto>>> GetInternationalCustomerLoadStopShedAutocomplete(
-       [FromQuery] GetLoadStopShedAutocompleteQuery query,
-       CancellationToken cancellationToken
-)
+    [HttpGet("{id}")]
+    public async Task<ActionResult> GetById(Guid id, [FromQuery] Guid healthcareUserId, CancellationToken cancellationToken)
     {
-        query.IsInternationalCustomer = true;
-        return await Mediator.Send(query, cancellationToken);
-    }
-
-    [HttpGet("{shedGuid}")]
-    public async Task<ActionResult<ShedDto>> GetByIdQuery(Guid shedGuid, CancellationToken cancellationToken)
-    {
-        return Ok(await Mediator.Send(new GetShedByIdQuery(shedGuid), cancellationToken));
+        var data = await Mediator.Send(new Medport.Application.Tracc.Features.HealthcareDestinations.Queries.Requests.GetDestinationByIdForHealthcareUserQuery(id, healthcareUserId), cancellationToken);
+        return Ok(ApiResponse<Medport.Application.Tracc.Features.HealthcareDestinations.Queries.Dtos.HealthcareDestinationDto>.Ok(data));
     }
 
     [HttpPost]
-    public async Task<ActionResult<Guid>> Create(CreateShedCommand command)
+    public async Task<ActionResult> Create([FromBody] Medport.Application.Tracc.Features.HealthcareDestinations.Commands.Requests.CreateDestinationForHealthcareUserCommand command, CancellationToken cancellationToken)
     {
-        return Ok(await Mediator.Send(command));
+        var data = await Mediator.Send(command, cancellationToken);
+        return Ok(ApiResponse<Medport.Application.Tracc.Features.HealthcareDestinations.Queries.Dtos.HealthcareDestinationDto>.Ok(data, "Destination created successfully"));
     }
 
     [HttpPut("{id}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesDefaultResponseType]
-    public async Task<ActionResult> Update(Guid id, [FromBody] UpdateShedCommand command)
+    public async Task<ActionResult> Update(Guid id, [FromBody] Medport.Application.Tracc.Features.HealthcareDestinations.Commands.Requests.UpdateDestinationForHealthcareUserCommand command, CancellationToken cancellationToken)
     {
-        await Mediator.Send(command);
-        return NoContent();
+        command.Id = id;
+        var data = await Mediator.Send(command, cancellationToken);
+        return Ok(ApiResponse<Medport.Application.Tracc.Features.HealthcareDestinations.Queries.Dtos.HealthcareDestinationDto>.Ok(data, "Destination updated successfully"));
     }
 
     [HttpDelete("{id}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesDefaultResponseType]
-    public async Task<ActionResult> Delete(Guid id)
+    public async Task<ActionResult> Delete(Guid id, [FromQuery] Guid healthcareUserId, CancellationToken cancellationToken)
     {
-        await Mediator.Send(new DeleteShedCommand(id));
-        return NoContent();
+        await Mediator.Send(new Medport.Application.Tracc.Features.HealthcareDestinations.Commands.Requests.DeleteDestinationForHealthcareUserCommand(id, healthcareUserId), cancellationToken);
+        return Ok(ApiResponse<object>.Ok(null, "Destination deleted successfully"));
     }
 }
