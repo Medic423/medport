@@ -34,16 +34,6 @@ public class FacilityController : ApiControllerBase
         return Ok(response);
     }
 
-    [HttpGet("AutoComplete/InternationalCustomerLoadStop")]
-    public async Task<ActionResult<List<ShedWithAddressAutocompleteDto>>> GetInternationalCustomerLoadStopShedAutocomplete(
-       [FromQuery] GetLoadStopShedAutocompleteQuery query,
-       CancellationToken cancellationToken
-)
-    {
-        query.IsInternationalCustomer = true;
-        return await Mediator.Send(query, cancellationToken);
-    }
-
     [HttpGet("{id}")]
     public async Task<ActionResult> GetByIdQuery(Guid id, CancellationToken cancellationToken)
     {

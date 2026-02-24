@@ -34,16 +34,6 @@ public class HealthcareAgencyController : ApiControllerBase
         return Ok(response);
     }
 
-    [HttpGet("AutoComplete/InternationalCustomerLoadStop")]
-    public async Task<ActionResult> GetInternationalCustomerLoadStopShedAutocomplete(
-       [FromQuery] GetLoadStopShedAutocompleteQuery query,
-       CancellationToken cancellationToken
-)
-    {
-        query.IsInternationalCustomer = true;
-        return Ok(await Mediator.Send(query, cancellationToken));
-    }
-
     [HttpGet("{id}")]
     public async Task<ActionResult> GetByIdQuery(Guid id, CancellationToken cancellationToken)
     {
