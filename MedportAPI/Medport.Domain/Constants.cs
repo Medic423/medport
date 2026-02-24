@@ -243,6 +243,28 @@ namespace Medport.Domain
         }
 
         /// <summary>
+        /// Dropdown option related constants (messages and error codes)
+        /// </summary>
+        public static class DropdownOptionConstants
+        {
+            public static class GenericMessages
+            {
+                public const string SavedSuccesfully = "Dropdown option created successfully";
+                public const string UpdatedSuccesfully = "Dropdown option updated successfully";
+                public const string DeletedSuccesfully = "Dropdown option deleted successfully";
+                public const string OptionsRetrievedSuccesfully = "Dropdown options retrieved successfully";
+                public const string OptionRetrievedSuccesfully = "Dropdown option retrieved successfully";
+            }
+
+            public static class Error
+            {
+                public const string GetNotFound = "DropdownOption.Get.NotFound";
+                public const string UpdateNotFound = "DropdownOption.Update.NotFound";
+                public const string DeleteNotFound = "DropdownOption.Delete.NotFound";
+            }
+        }
+
+        /// <summary>
         /// Backhaul detection constants
         /// </summary>
         public static class BackhaulDetection
