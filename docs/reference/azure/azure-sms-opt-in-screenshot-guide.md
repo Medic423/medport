@@ -5,22 +5,39 @@
 
 Azure requires a screenshot showing where subscribers can opt-in to SMS messaging campaigns.
 
-## Current Opt-In Location
+## Current Opt-In Locations
 
-**Location:** EMS Agency Settings Page
-- **URL Path:** `/ems-dashboard` → Settings tab
+**Location 1: EMS Registration (recommended for screenshots — publicly visible)**
+- **URL Path:** `/ems-register` (or `https://traccems.com/ems-register`)
+- **Component:** `EMSRegistration.tsx`
+- **Field:** `smsOptIn` checkbox with consent disclaimer
+- **Note:** This page is publicly accessible (no login required), ideal for Azure verification screenshots
+
+**Location 2: Healthcare Registration**
+- **URL Path:** `/healthcare-register` (or `https://traccems.com/healthcare-register`)
+- **Component:** `HealthcareRegistration.tsx`
+- **Field:** `smsOptIn` checkbox with consent disclaimer
+- **Note:** Publicly accessible (no login required)
+
+**Location 3: EMS Agency Settings Page**
+- **URL Path:** `/ems-dashboard` → Settings tab (requires login)
 - **Component:** `AgencySettings.tsx`
-- **Field:** `acceptsNotifications` checkbox
+- **Field:** `smsNotifications` checkbox with consent disclaimer
 
 ## How to Create Screenshot
 
 ### Step 1: Access the Opt-In Page
 
-1. **Log in to production site:** https://traccems.com/
-   - ⚠️ **IMPORTANT:** Use production site (`traccems.com`), NOT dev site
-2. **Log in as EMS user** (e.g., `test@ems.com`)
-3. **Navigate to:** EMS Dashboard → **Settings** tab
-4. **Scroll to:** "SMS Notifications" section
+**Option A: EMS Registration (recommended — no login required)**
+1. Go to: https://traccems.com/ems-register (or http://localhost:3000/ems-register for local)
+2. Scroll down to the **SMS Opt-In** section (below Phone Number and Email fields)
+3. The consent disclaimer is visible without logging in — ideal for Azure verification
+
+**Option B: EMS Dashboard Settings**
+1. Log in to production site: https://traccems.com/
+2. Log in as EMS user (e.g., `test@ems.com`)
+3. Navigate to: EMS Dashboard → **Settings** tab
+4. Scroll to: "SMS Notifications" section
 
 ### Step 2: Take Screenshot
 
@@ -33,20 +50,24 @@ Azure requires a screenshot showing where subscribers can opt-in to SMS messagin
 
 **Screenshot should show:**
 ```
-┌─────────────────────────────────────┐
-│ SMS Notifications                    │
-│                                      │
-│ ☑ Receive SMS notifications for     │
-│   new trip requests                  │
-│                                      │
-│ When enabled, you will receive SMS  │
-│ notifications when healthcare       │
-│ facilities create trips within      │
-│ your service area.                   │
-│                                      │
-│ [Save Settings] [Cancel]            │
-└─────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│ SMS Notifications                                                │
+│                                                                  │
+│ ☑ Receive SMS notifications for new trip requests               │
+│                                                                  │
+│ When enabled, you will receive SMS notifications when           │
+│ healthcare facilities create trips within your service area.     │
+│                                                                  │
+│ By checking this box and providing your agency phone number,     │
+│ you agree to receive SMS notifications from TraccEMS.           │
+│ Message and data rates may apply. Reply STOP to unsubscribe      │
+│ at any time.                                                     │
+│                                                                  │
+│ [Save All Settings]                                              │
+└─────────────────────────────────────────────────────────────────┘
 ```
+
+**Critical for Code 1413 compliance:** The consent disclaimer (the paragraph starting with "By checking this box...") must be visible in the screenshot. This satisfies Azure's requirement for "explicitly stated consent disclaimer language at the time of collection."
 
 ### Step 3: Upload Screenshot
 
@@ -73,33 +94,14 @@ If Azure needs a more explicit opt-in page, we can create a dedicated opt-in pag
 ## Current Implementation Details
 
 **File:** `frontend/src/components/AgencySettings.tsx`
-**Lines:** 691-713
+**Section:** SMS Notifications (Code 1413 compliant — explicit consent at point of collection)
 
-```tsx
-{/* SMS Notification Preference */}
-<div>
-  <label className="block text-sm font-medium text-gray-700 mb-2">
-    SMS Notifications
-  </label>
-  <div className="flex items-center space-x-2">
-    <label className="flex items-center space-x-2 cursor-pointer">
-      <input
-        type="checkbox"
-        name="acceptsNotifications"
-        checked={agencyInfo.acceptsNotifications}
-        onChange={handleInputChange}
-        className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-      />
-      <span className="text-sm text-gray-700">
-        Receive SMS notifications for new trip requests
-      </span>
-    </label>
-  </div>
-  <p className="mt-1 text-xs text-gray-500">
-    When enabled, you will receive SMS notifications when healthcare facilities create trips within your service area.
-  </p>
-</div>
-```
+The opt-in section includes:
+- Checkbox: "Receive SMS notifications for new trip requests"
+- Description of what SMS notifications are for
+- **Consent disclaimer:** "By checking this box and providing your agency phone number, you agree to receive SMS notifications from TraccEMS. Message and data rates may apply. Reply STOP to unsubscribe at any time."
+
+The consent disclaimer satisfies Azure's requirement for explicitly stated consent language at the time of collection.
 
 ## Opt-Out Instructions
 

@@ -146,11 +146,10 @@ router.post('/healthcare/register', async (req, res) => {
       phone, 
       latitude, 
       longitude,
-      smsOptIn
+      smsOptIn 
     } = req.body;
 
-    // smsNotifications: true only when user explicitly opts in at registration
-    const smsNotifications = smsOptIn === true;
+    const smsNotifications = smsOptIn !== undefined ? (smsOptIn === true || smsOptIn === 'true') : false;
 
     if (!email || !password || !name || !facilityName || !facilityType) {
       return res.status(400).json({
@@ -219,7 +218,7 @@ router.post('/healthcare/register', async (req, res) => {
           userType: 'HEALTHCARE',
           isActive: true, // Active by default; trial/payment can auto-deactivate at end of free trial
           orgAdmin: isFirst,
-          smsNotifications // From registration opt-in (smsOptIn === true)
+          smsNotifications
         }
       });
 
@@ -999,11 +998,10 @@ router.post('/ems/register', async (req, res) => {
       longitude, 
       capabilities, 
       operatingHours,
-      smsOptIn
+      smsOptIn 
     } = req.body;
 
-    // AcceptsNotifications: true only when user explicitly opts in at registration
-    const acceptsNotifications = smsOptIn === true;
+    const acceptsNotifications = smsOptIn !== undefined ? (smsOptIn === true || smsOptIn === 'true') : true;
 
     console.log('TCC_DEBUG: Extracted fields:', {
       email: email ? 'present' : 'missing',
@@ -1114,8 +1112,8 @@ router.post('/ems/register', async (req, res) => {
         longitude: longitude ? parseFloat(longitude) : null,
         isActive: true, // Auto-approve new EMS registrations
         status: 'ACTIVE', // Set status explicitly
-        requiresReview: false, // No review needed for auto-approved agencies
-        acceptsNotifications // From registration opt-in (smsOptIn === true)
+        requiresReview: false,
+        acceptsNotifications
         // Note: Not setting addedAt or addedBy as they may not exist in production database
       };
       
@@ -1162,7 +1160,7 @@ router.post('/ems/register', async (req, res) => {
                 ${agencyData.longitude || null},
                 ${agencyData.operatingHours ? JSON.stringify(agencyData.operatingHours) : null}::jsonb,
                 ${agencyData.requiresReview || false},
-                ${agencyData.acceptsNotifications}
+                ${agencyData.acceptsNotifications ?? true}
               )
             `;
             

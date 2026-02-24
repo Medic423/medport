@@ -715,10 +715,10 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
               </p>
             </div>
 
-            {/* Notification Preferences - Opt-in with consent and opt-out instructions */}
-            <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
+            {/* SMS Notifications - Opt-in (Azure TFV compliance: explicit consent at point of collection) */}
+            <div className="p-4 bg-gray-50 rounded-lg">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                SMS Notification Preferences
+                SMS Notifications
               </label>
               <label className="flex items-start space-x-3 cursor-pointer">
                 <input
@@ -730,13 +730,13 @@ const AgencySettings: React.FC<AgencySettingsProps> = ({ user, onSaveSuccess }) 
                 />
                 <div>
                   <span className="text-sm font-medium text-gray-700">
-                    Opt in to receive SMS notifications for new trip requests
+                    Receive SMS notifications for new trip requests
                   </span>
-                  <p className="mt-1 text-sm text-gray-600">
-                    By enabling, you consent to receive SMS notifications when healthcare facilities create trips within your service area. Message and data rates may apply.
+                  <p className="mt-1 text-xs text-gray-600">
+                    When enabled, you will receive SMS notifications when healthcare facilities create trips within your service area.
                   </p>
-                  <p className="mt-2 text-xs text-gray-500">
-                    <strong>Opt out:</strong> Uncheck this box and save, or reply STOP to any SMS message.
+                  <p className="mt-2 text-xs text-gray-700 font-medium">
+                    By checking this box and providing your agency phone number, you agree to receive SMS notifications from TraccEMS. Message and data rates may apply. Reply STOP to unsubscribe at any time.
                   </p>
                 </div>
               </label>
