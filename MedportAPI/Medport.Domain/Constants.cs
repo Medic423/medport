@@ -265,6 +265,17 @@ namespace Medport.Domain
         }
 
         /// <summary>
+        /// Analytics related messages
+        /// </summary>
+        public static class AnalyticsConstants
+        {
+            public static class GenericMessages
+            {
+                public const string AnalyticsRetrievedSuccesfully = "Analytics retrieved successfully";
+            }
+        }
+
+        /// <summary>
         /// Backhaul detection constants
         /// </summary>
         public static class BackhaulDetection

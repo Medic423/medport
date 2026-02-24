@@ -15,7 +15,6 @@
     <Folder Include="Features\AgencyResponses\Commands\Requests\" />
     <Folder Include="Features\AgencyResponses\Queries\Requests\" />
     <Folder Include="Features\Analytics\Commands\Requests\" />
-    <Folder Include="Features\Analytics\Queries\Requests\" />
     <Folder Include="Features\Auths\Commands\Requests\" />
     <Folder Include="Features\Auths\Queries\Requests\" />
     <Folder Include="Features\Backups\Commands\Requests\" />
