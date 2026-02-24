@@ -145,7 +145,8 @@ router.post('/healthcare/register', async (req, res) => {
       zipCode, 
       phone, 
       latitude, 
-      longitude 
+      longitude,
+      smsOptIn 
     } = req.body;
 
     if (!email || !password || !name || !facilityName || !facilityType) {
@@ -214,7 +215,8 @@ router.post('/healthcare/register', async (req, res) => {
           manageMultipleLocations: manageMultipleLocations || false, // ✅ NEW: Multi-location flag
           userType: 'HEALTHCARE',
           isActive: true, // Active by default; trial/payment can auto-deactivate at end of free trial
-          orgAdmin: isFirst
+          orgAdmin: isFirst,
+          smsNotifications: smsOptIn !== undefined ? (smsOptIn === true || smsOptIn === 'true') : false // Explicit opt-in at registration
         }
       });
 
@@ -993,7 +995,8 @@ router.post('/ems/register', async (req, res) => {
       latitude, 
       longitude, 
       capabilities, 
-      operatingHours 
+      operatingHours,
+      smsOptIn 
     } = req.body;
 
     console.log('TCC_DEBUG: Extracted fields:', {
@@ -1105,7 +1108,8 @@ router.post('/ems/register', async (req, res) => {
         longitude: longitude ? parseFloat(longitude) : null,
         isActive: true, // Auto-approve new EMS registrations
         status: 'ACTIVE', // Set status explicitly
-        requiresReview: false // No review needed for auto-approved agencies
+        requiresReview: false, // No review needed for auto-approved agencies
+        acceptsNotifications: smsOptIn !== undefined ? (smsOptIn === true || smsOptIn === 'true') : true // Explicit opt-in; default true for backward compat
         // Note: Not setting addedAt or addedBy as they may not exist in production database
       };
       
@@ -1130,7 +1134,7 @@ router.post('/ems/register', async (req, res) => {
               INSERT INTO ems_agencies (
                 id, name, "contactName", phone, email, address, city, state, "zipCode",
                 "serviceArea", capabilities, "isActive", status, "createdAt", "updatedAt",
-                latitude, longitude, "operatingHours", "requiresReview"
+                latitude, longitude, "operatingHours", "requiresReview", "acceptsNotifications"
               )
               VALUES (
                 ${agencyId},
@@ -1151,7 +1155,8 @@ router.post('/ems/register', async (req, res) => {
                 ${agencyData.latitude || null},
                 ${agencyData.longitude || null},
                 ${agencyData.operatingHours ? JSON.stringify(agencyData.operatingHours) : null}::jsonb,
-                ${agencyData.requiresReview || false}
+                ${agencyData.requiresReview || false},
+                ${agencyData.acceptsNotifications ?? true}
               )
             `;
             

@@ -73,13 +73,25 @@ echo "  - Killing nodemon processes..."
 pkill -f nodemon 2>/dev/null || true
 echo "  - Killing ts-node processes..."
 pkill -f "ts-node src/index.ts" 2>/dev/null || true
-echo "  - Killing processes on ports 3000 and 5001..."
-lsof -ti:3000 | xargs kill -9 2>/dev/null || true
-lsof -ti:5001 | xargs kill -9 2>/dev/null || true
+echo "  - Killing vite processes..."
+pkill -f "vite" 2>/dev/null || true
+echo "  - Killing processes on ports 3000, 3001, and 5001..."
+for port in 3000 3001 5001; do
+  lsof -ti:$port 2>/dev/null | xargs kill -9 2>/dev/null || true
+done
 
-# Wait for ports to be released
+# Wait for ports to be released (retry loop - processes need time to shut down)
 echo "⏳ Waiting for ports to be released..."
-sleep 3
+PORT_WAIT=0
+MAX_PORT_WAIT=15
+while [ $PORT_WAIT -lt $MAX_PORT_WAIT ]; do
+  if ! lsof -Pi :5001 -sTCP:LISTEN -t >/dev/null 2>&1 && \
+     ! lsof -Pi :3000 -sTCP:LISTEN -t >/dev/null 2>&1; then
+    break
+  fi
+  sleep 2
+  PORT_WAIT=$((PORT_WAIT + 2))
+done
 
 # Verify ports are free
 if lsof -Pi :5001 -sTCP:LISTEN -t >/dev/null 2>&1; then
