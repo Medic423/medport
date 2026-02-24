@@ -134,7 +134,7 @@ After updating all locations:
 |------|-------|----------|--------|
 | 1112 | Business registration number is missing or invalid | High | ⏳ Pending |
 | 1413 | Opt-in - consent for messaging is a requirement for service | High | ✅ Complete |
-| 1203 | Website is password protected or requires login | High | ⏳ Pending |
+| 1203 | Website is password protected or requires login | High | ✅ Complete |
 
 ---
 
@@ -196,9 +196,11 @@ After updating all locations:
 
 ---
 
-### Plan: Code 1203 - Website Accessibility
+### Plan: Code 1203 - Website Accessibility ✅ COMPLETE
 
 **Issue:** Website is password protected or requires login.
+
+**Status:** ✅ **FIXED** (February 24, 2026) — Root URL (`/`) serves public landing page; `/login` redirects to `/` for compatibility.
 
 **Current Setup:** Main website `https://traccems.com` may redirect unauthenticated users to a login page.
 
@@ -238,7 +240,7 @@ Before updating and resubmitting the application:
 
 - [ ] **1112:** Business registration/Tax ID verified, correct format, correct field
 - [x] **1413:** Consent disclaimer visible at opt-in; screenshot updated; application narrative updated ✅
-- [ ] **1203:** `https://traccems.com` loads publicly (no login); all URLs tested in incognito
+- [x] **1203:** `https://traccems.com` loads publicly (no login); /login redirects to / ✅
 - [x] OneDrive opt-in screenshot links tested in incognito (both accessible) ✅
 - [ ] Run `./scripts/verify-toll-free-urls.sh`
 - [ ] Re-read rejection comments in Azure Portal before resubmitting
@@ -259,4 +261,4 @@ Before updating and resubmitting the application:
 ---
 
 **Last Updated:** February 24, 2026  
-**Status:** Local files updated ✅ | Code 1413 (opt-in consent) complete ✅ | OneDrive screenshots uploaded and verified | Codes 1112 and 1203 pending
+**Status:** Local files updated ✅ | Code 1413 complete ✅ | Code 1203 complete (landing page public, /login→/ redirect) ✅ | Code 1112 pending
