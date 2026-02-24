@@ -21,8 +21,6 @@
     <Folder Include="Features\Auths\Queries\Requests\" />
     <Folder Include="Features\Backups\Commands\Requests\" />
     <Folder Include="Features\Backups\Queries\Requests\" />
-    <Folder Include="Features\DropdownCategories\Commands\Requests\" />
-    <Folder Include="Features\DropdownCategories\Queries\Requests\" />
     <Folder Include="Features\DropdownOptions\Commands\Requests\" />
     <Folder Include="Features\DropdownOptions\Queries\Requests\" />
     <Folder Include="Features\EMSAnalytics\Commands\Requests\" />

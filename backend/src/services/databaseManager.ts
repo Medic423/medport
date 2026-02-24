@@ -1,10 +1,25 @@
+import path from 'path';
 import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
 
+// Backend root: from dist/services/ go up to backend/ (so .env is found when running "node dist/index.js")
+const backendRoot = path.join(__dirname, '..', '..');
+
 // Load environment variables before initializing database
-// Load .env first, then .env.local (which will override .env values)
 dotenv.config();
+dotenv.config({ path: path.join(backendRoot, '.env'), override: false });
+dotenv.config({ path: path.join(backendRoot, '.env.local'), override: true });
 dotenv.config({ path: '.env.local', override: true });
+
+// Build DATABASE_URL from DB_* vars if set (avoids password encoding issues in .env)
+if (process.env.DB_USER != null && process.env.DB_PASSWORD !== undefined) {
+  const enc = encodeURIComponent;
+  const host = process.env.DB_HOST || 'localhost';
+  const port = process.env.DB_PORT || '5432';
+  const db = process.env.DB_NAME || 'postgres';
+  const schema = process.env.DB_SCHEMA || 'public';
+  process.env.DATABASE_URL = `postgresql://${enc(process.env.DB_USER)}:${enc(process.env.DB_PASSWORD)}@${host}:${port}/${db}?schema=${schema}`;
+}
 
 class DatabaseManager {
   private static instance: DatabaseManager;

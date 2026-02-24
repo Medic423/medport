@@ -23,6 +23,7 @@ public class HospitalConstants
         public const string ModelValidationAttributeInvalid = "ModelValidationAttribute.ActionFilter.Invalid";
         public const string GetHospitalByIdQueryHandlerNotFound = "GetHospitalByIdQueryHandler.Handle.NotFound";
         public const string UpdateHospitalCommandHandlerNotFound = "UpdateHospitalCommandHandler.Handle.NotFound";
+        public const string DeleteHospitalCommandHandlerNotFound = "DeleteHospitalCommandHandler.Handle.NotFound";
     }
 
 }

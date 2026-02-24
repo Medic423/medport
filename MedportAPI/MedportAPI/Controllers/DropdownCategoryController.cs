@@ -1,9 +1,13 @@
 ﻿using Medport.API.Tracc.Controllers.BaseController;
 using Medport.API.Tracc.CustomAttributes;
-using Medport.Common.DTOs;
+using Medport.Application.Tracc.Features.DropdownCategories.Queries.Requests;
+using Medport.Application.Tracc.Features.DropdownCategories.Commands.Requests;
+using Medport.Application.Tracc.Features.DropdownCategories.Queries.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics.CodeAnalysis;
+using Medport.Application.Tracc.Common.DTOs;
+using Medport.Application.Tracc.Features.DropdownCategories.Constants;
 
 namespace Medport.API.Tracc.Controllers;
 
@@ -15,51 +19,55 @@ namespace Medport.API.Tracc.Controllers;
 public class DropdownCategoryController : ApiControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<PaginatedList<ShedDto>>> GetAllPaginated(
-            [FromQuery] GetAllShedWithPaginationQuery query,
-            CancellationToken cancellationToken)
+    public async Task<ActionResult> GetAll(CancellationToken cancellationToken)
     {
-        return Ok(await Mediator.Send(query, cancellationToken));
+        var data = await Mediator.Send(new GetAllDropdownCategoriesQuery(), cancellationToken);
+
+        var response = ApiResponse<List<DropdownCategoryDto>>.Ok(data, DropdownCategoryConstants.GenericMessages.CategoriesRetrievedSuccesfully);
+
+        return Ok(response);
     }
 
-    [HttpGet("AutoComplete/InternationalCustomerLoadStop")]
-    public async Task<ActionResult<List<ShedWithAddressAutocompleteDto>>> GetInternationalCustomerLoadStopShedAutocomplete(
-       [FromQuery] GetLoadStopShedAutocompleteQuery query,
-       CancellationToken cancellationToken
-)
+    [HttpGet("{id}")]
+    public async Task<ActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
-        query.IsInternationalCustomer = true;
-        return await Mediator.Send(query, cancellationToken);
-    }
+        var data = await Mediator.Send(new GetDropdownCategoryByIdQuery(id), cancellationToken);
 
-    [HttpGet("{shedGuid}")]
-    public async Task<ActionResult<ShedDto>> GetByIdQuery(Guid shedGuid, CancellationToken cancellationToken)
-    {
-        return Ok(await Mediator.Send(new GetShedByIdQuery(shedGuid), cancellationToken));
+        var response = ApiResponse<DropdownCategoryDto>.Ok(data, DropdownCategoryConstants.GenericMessages.CategoriesRetrievedSuccesfully);
+
+        return Ok(response);
     }
 
     [HttpPost]
-    public async Task<ActionResult<Guid>> Create(CreateShedCommand command)
+    public ActionResult Create()
     {
-        return Ok(await Mediator.Send(command));
+        // Creation of categories is disabled in the original service
+        return Forbid();
     }
 
     [HttpPut("{id}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesDefaultResponseType]
-    public async Task<ActionResult> Update(Guid id, [FromBody] UpdateShedCommand command)
+    public async Task<ActionResult> Update(
+        Guid id, 
+        [FromBody] UpdateDropdownCategoryCommand command, 
+        CancellationToken cancellationToken
+    )
     {
-        await Mediator.Send(command);
-        return NoContent();
+        command.Id = id;
+
+        var updatedDropdown = await Mediator.Send(command, cancellationToken);
+
+        var response = ApiResponse<DropdownCategoryDto>.Ok(updatedDropdown, DropdownCategoryConstants.GenericMessages.UpdatedSuccesfully);
+
+        return Ok(response);
     }
 
     [HttpDelete("{id}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesDefaultResponseType]
-    public async Task<ActionResult> Delete(Guid id)
+    public async Task<ActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
-        await Mediator.Send(new DeleteShedCommand(id));
-        return NoContent();
+        await Mediator.Send(new DeleteDropdownCategoryCommand(id), cancellationToken);
+
+        var response = ApiResponse<object>.Ok(null, DropdownCategoryConstants.GenericMessages.DeletedSuccesfully);
+
+        return Ok(response);
     }
 }
