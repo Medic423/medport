@@ -1,65 +1,45 @@
-﻿using Medport.API.Tracc.Controllers.BaseController;
+using Medport.API.Tracc.Controllers.BaseController;
 using Medport.API.Tracc.CustomAttributes;
-using Medport.Common.DTOs;
+using Medport.Application.Tracc.Features.EMSAnalytics.Queries.Dtos;
+using Medport.Application.Tracc.Features.EMSAnalytics.Queries.Requests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Medport.API.Tracc.Controllers;
 
-[Route("api/[controller]")]
+[Route("api/ems/analytics")]
 [ApiController]
 [Authorize]
 [ServiceFilter(typeof(ModelValidationAttribute))]
 [ExcludeFromCodeCoverage]
 public class EMSAnalyticsController : ApiControllerBase
 {
-    [HttpGet]
-    public async Task<ActionResult<PaginatedList<ShedDto>>> GetAllPaginated(
-            [FromQuery] GetAllShedWithPaginationQuery query,
-            CancellationToken cancellationToken)
+    [HttpGet("overview")]
+    public async Task<ActionResult> GetOverview([FromQuery] GetEmsOverviewQuery query, CancellationToken cancellationToken)
     {
-        return Ok(await Mediator.Send(query, cancellationToken));
+        var data = await Mediator.Send(query, cancellationToken);
+        return Ok(ApiResponse<EmsOverviewDto>.Ok(data));
     }
 
-    [HttpGet("AutoComplete/InternationalCustomerLoadStop")]
-    public async Task<ActionResult<List<ShedWithAddressAutocompleteDto>>> GetInternationalCustomerLoadStopShedAutocomplete(
-       [FromQuery] GetLoadStopShedAutocompleteQuery query,
-       CancellationToken cancellationToken
-)
+    [HttpGet("trips")]
+    public async Task<ActionResult> GetTrips([FromQuery] GetEmsTripsQuery query, CancellationToken cancellationToken)
     {
-        query.IsInternationalCustomer = true;
-        return await Mediator.Send(query, cancellationToken);
+        var data = await Mediator.Send(query, cancellationToken);
+        return Ok(ApiResponse<EmsTripsDto>.Ok(data));
     }
 
-    [HttpGet("{shedGuid}")]
-    public async Task<ActionResult<ShedDto>> GetByIdQuery(Guid shedGuid, CancellationToken cancellationToken)
+    [HttpGet("units")]
+    public async Task<ActionResult> GetUnits([FromQuery] GetEmsUnitsQuery query, CancellationToken cancellationToken)
     {
-        return Ok(await Mediator.Send(new GetShedByIdQuery(shedGuid), cancellationToken));
+        var data = await Mediator.Send(query, cancellationToken);
+        return Ok(ApiResponse<EmsUnitsDto>.Ok(data));
     }
 
-    [HttpPost]
-    public async Task<ActionResult<Guid>> Create(CreateShedCommand command)
+    [HttpGet("performance")]
+    public async Task<ActionResult> GetPerformance([FromQuery] GetEmsPerformanceQuery query, CancellationToken cancellationToken)
     {
-        return Ok(await Mediator.Send(command));
-    }
-
-    [HttpPut("{id}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesDefaultResponseType]
-    public async Task<ActionResult> Update(Guid id, [FromBody] UpdateShedCommand command)
-    {
-        await Mediator.Send(command);
-        return NoContent();
-    }
-
-    [HttpDelete("{id}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesDefaultResponseType]
-    public async Task<ActionResult> Delete(Guid id)
-    {
-        await Mediator.Send(new DeleteShedCommand(id));
-        return NoContent();
+        var data = await Mediator.Send(query, cancellationToken);
+        return Ok(ApiResponse<EmsPerformanceDto>.Ok(data));
     }
 }
