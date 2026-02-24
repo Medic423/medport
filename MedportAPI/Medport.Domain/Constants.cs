@@ -265,6 +265,27 @@ namespace Medport.Domain
         }
 
         /// <summary>
+        /// Agency response related constants (messages and error codes)
+        /// </summary>
+        public static class AgencyResponseConstants
+        {
+            public static class GenericMessages
+            {
+                public const string RetrievedSuccesfully = "Agency responses retrieved successfully";
+                public const string CreatedSuccesfully = "Agency response created successfully";
+                public const string UpdatedSuccesfully = "Agency response updated successfully";
+                public const string DeletedSuccesfully = "Agency response deleted successfully";
+            }
+
+            public static class Error
+            {
+                public const string GetNotFound = "AgencyResponse.Get.NotFound";
+                public const string UpdateNotFound = "AgencyResponse.Update.NotFound";
+                public const string DeleteNotFound = "AgencyResponse.Delete.NotFound";
+            }
+        }
+
+        /// <summary>
         /// Analytics related messages
         /// </summary>
         public static class AnalyticsConstants

@@ -12,8 +12,6 @@
     <Folder Include="Common\Helpers\" />
     <Folder Include="Common\Interfaces\" />
     <Folder Include="Features\AdminNotifications\Commands\Requests\" />
-    <Folder Include="Features\AgencyResponses\Commands\Requests\" />
-    <Folder Include="Features\AgencyResponses\Queries\Requests\" />
     <Folder Include="Features\Analytics\Commands\Requests\" />
     <Folder Include="Features\Auths\Commands\Requests\" />
     <Folder Include="Features\Auths\Queries\Requests\" />
