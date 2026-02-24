@@ -1,9 +1,10 @@
 ﻿using Medport.API.Tracc.Controllers.BaseController;
 using Medport.API.Tracc.CustomAttributes;
-using Medport.Common.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics.CodeAnalysis;
+using System.Security.Claims;
+using System.Collections.Generic;
 
 namespace Medport.API.Tracc.Controllers;
 
@@ -15,51 +16,63 @@ namespace Medport.API.Tracc.Controllers;
 public class EMSSubUsersController : ApiControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<PaginatedList<ShedDto>>> GetAllPaginated(
-            [FromQuery] GetAllShedWithPaginationQuery query,
-            CancellationToken cancellationToken)
+    public async Task<ActionResult<ApiResponse<IEnumerable<Medport.Application.Tracc.Features.EMSSubUsers.Queries.Dtos.EmsSubUserDto>>>> GetAll(CancellationToken cancellationToken)
     {
-        return Ok(await Mediator.Send(query, cancellationToken));
-    }
+        var callerEmail = User?.FindFirst(ClaimTypes.Email)?.Value ?? User?.FindFirst("email")?.Value;
+        var callerUserType = User?.FindFirst("userType")?.Value ?? User?.FindFirst(ClaimTypes.Role)?.Value;
 
-    [HttpGet("AutoComplete/InternationalCustomerLoadStop")]
-    public async Task<ActionResult<List<ShedWithAddressAutocompleteDto>>> GetInternationalCustomerLoadStopShedAutocomplete(
-       [FromQuery] GetLoadStopShedAutocompleteQuery query,
-       CancellationToken cancellationToken
-)
-    {
-        query.IsInternationalCustomer = true;
-        return await Mediator.Send(query, cancellationToken);
-    }
+        var data = await Mediator.Send(new Medport.Application.Tracc.Features.EMSSubUsers.Queries.Requests.GetEmsSubUsersQuery { CallerEmail = callerEmail, CallerUserType = callerUserType }, cancellationToken);
 
-    [HttpGet("{shedGuid}")]
-    public async Task<ActionResult<ShedDto>> GetByIdQuery(Guid shedGuid, CancellationToken cancellationToken)
-    {
-        return Ok(await Mediator.Send(new GetShedByIdQuery(shedGuid), cancellationToken));
+        return Ok(ApiResponse<IEnumerable<Medport.Application.Tracc.Features.EMSSubUsers.Queries.Dtos.EmsSubUserDto>>.Ok(data));
     }
 
     [HttpPost]
-    public async Task<ActionResult<Guid>> Create(CreateShedCommand command)
+    public async Task<ActionResult<ApiResponse<Medport.Application.Tracc.Features.EMSSubUsers.Queries.Dtos.CreateEmsSubUserResultDto>>> Create([FromBody] Medport.Application.Tracc.Features.EMSSubUsers.Commands.Requests.CreateEmsSubUserCommand command, CancellationToken cancellationToken)
     {
-        return Ok(await Mediator.Send(command));
+        command.CallerEmail = User?.FindFirst(ClaimTypes.Email)?.Value ?? User?.FindFirst("email")?.Value;
+        command.CallerUserType = User?.FindFirst("userType")?.Value ?? User?.FindFirst(ClaimTypes.Role)?.Value;
+
+        var data = await Mediator.Send(command, cancellationToken);
+        return Ok(ApiResponse<Medport.Application.Tracc.Features.EMSSubUsers.Queries.Dtos.CreateEmsSubUserResultDto>.Ok(data));
     }
 
-    [HttpPut("{id}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesDefaultResponseType]
-    public async Task<ActionResult> Update(Guid id, [FromBody] UpdateShedCommand command)
+    [HttpPatch("{id}")]
+    public async Task<ActionResult<ApiResponse<Medport.Application.Tracc.Features.EMSSubUsers.Queries.Dtos.EmsSubUserDto>>> Update(Guid id, [FromBody] Medport.Application.Tracc.Features.EMSSubUsers.Commands.Requests.UpdateEmsSubUserCommand command, CancellationToken cancellationToken)
     {
-        await Mediator.Send(command);
-        return NoContent();
+        command.Id = id;
+        command.CallerEmail = User?.FindFirst(ClaimTypes.Email)?.Value ?? User?.FindFirst("email")?.Value;
+        command.CallerUserType = User?.FindFirst("userType")?.Value ?? User?.FindFirst(ClaimTypes.Role)?.Value;
+
+        var data = await Mediator.Send(command, cancellationToken);
+        return Ok(ApiResponse<Medport.Application.Tracc.Features.EMSSubUsers.Queries.Dtos.EmsSubUserDto>.Ok(data));
+    }
+
+    [HttpPost("{id}/reset-temp-password")]
+    public async Task<ActionResult<ApiResponse<Medport.Application.Tracc.Features.EMSSubUsers.Queries.Dtos.ResetEmsSubUserResultDto>>> ResetTempPassword(Guid id, CancellationToken cancellationToken)
+    {
+        var command = new Medport.Application.Tracc.Features.EMSSubUsers.Commands.Requests.ResetEmsSubUserPasswordCommand
+        {
+            Id = id,
+            CallerEmail = User?.FindFirst(ClaimTypes.Email)?.Value ?? User?.FindFirst("email")?.Value,
+            CallerUserType = User?.FindFirst("userType")?.Value ?? User?.FindFirst(ClaimTypes.Role)?.Value
+        };
+
+        var data = await Mediator.Send(command, cancellationToken);
+        return Ok(ApiResponse<Medport.Application.Tracc.Features.EMSSubUsers.Queries.Dtos.ResetEmsSubUserResultDto>.Ok(data));
     }
 
     [HttpDelete("{id}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesDefaultResponseType]
-    public async Task<ActionResult> Delete(Guid id)
+    public async Task<ActionResult<ApiResponse<string>>> Delete(Guid id, CancellationToken cancellationToken)
     {
-        await Mediator.Send(new DeleteShedCommand(id));
-        return NoContent();
+        var command = new Medport.Application.Tracc.Features.EMSSubUsers.Commands.Requests.DeleteEmsSubUserCommand
+        {
+            Id = id,
+            CallerEmail = User?.FindFirst(ClaimTypes.Email)?.Value ?? User?.FindFirst("email")?.Value,
+            CallerUserType = User?.FindFirst("userType")?.Value ?? User?.FindFirst(ClaimTypes.Role)?.Value
+        };
+
+        await Mediator.Send(command, cancellationToken);
+
+        return Ok(ApiResponse<string>.Ok(null, "Sub-user deleted"));
     }
 }
