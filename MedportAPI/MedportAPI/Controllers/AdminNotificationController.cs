@@ -20,50 +20,55 @@ public class AdminNotificationController : ApiControllerBase
     public async Task<ActionResult<ApiResponse<MessageStatsDto>>> GetStatsQuery(int days, CancellationToken cancellationToken)
     {
         var data = await Mediator.Send(new GetStatsQuery(days), cancellationToken);
-        var response = ApiResponse<MessageStatsDto>.Ok(data);
-
-        return Ok(response);
+        return Ok(ApiResponse<MessageStatsDto>.Ok(data));
     }
 
-    [HttpGet("broadcast")]
-    public async Task<ActionResult<ShedDto>> GetByIdQuery(Guid shedGuid, CancellationToken cancellationToken)
+    [HttpPost("broadcast")]
+    public async Task<ActionResult<ApiResponse<BroadcastResultDto>>> Broadcast([FromBody] SendBroadcastCommand command, CancellationToken cancellationToken)
     {
-        return Ok(await Mediator.Send(new GetShedByIdQuery(shedGuid), cancellationToken));
+        var data = await Mediator.Send(command, cancellationToken);
+        return Ok(ApiResponse<BroadcastResultDto>.Ok(data));
     }
 
     [HttpGet("templates")]
-    public async Task<ActionResult<ShedDto>> GetByIdQuery(Guid shedGuid, CancellationToken cancellationToken)
+    public async Task<ActionResult<ApiResponse<TemplatesDto>>> GetTemplates(CancellationToken cancellationToken)
     {
-        return Ok(await Mediator.Send(new GetShedByIdQuery(shedGuid), cancellationToken));
+        var data = await Mediator.Send(new GetTemplatesQuery(), cancellationToken);
+        return Ok(ApiResponse<TemplatesDto>.Ok(data));
     }
 
     [HttpGet("users")]
-    public async Task<ActionResult<ShedDto>> GetByIdQuery(Guid shedGuid, CancellationToken cancellationToken)
+    public async Task<ActionResult<ApiResponse<IEnumerable<NotificationUserDto>>>> GetUsers([FromQuery] string userType, [FromQuery] int limit = 100, CancellationToken cancellationToken = default)
     {
-        return Ok(await Mediator.Send(new GetShedByIdQuery(shedGuid), cancellationToken));
+        var data = await Mediator.Send(new GetUsersQuery(userType, limit), cancellationToken);
+        return Ok(ApiResponse<IEnumerable<NotificationUserDto>>.Ok(data));
     }
 
     [HttpGet("sms-stats")]
-    public async Task<ActionResult<ShedDto>> GetByIdQuery(Guid shedGuid, CancellationToken cancellationToken)
+    public async Task<ActionResult<ApiResponse<object>>> GetSmsStats([FromQuery] int days = 30, CancellationToken cancellationToken = default)
     {
-        return Ok(await Mediator.Send(new GetShedByIdQuery(shedGuid), cancellationToken));
+        var data = await Mediator.Send(new GetSmsStatsQuery(days), cancellationToken);
+        return Ok(ApiResponse<object>.Ok(data));
     }
 
     [HttpGet("carriers")]
-    public async Task<ActionResult<ShedDto>> GetByIdQuery(Guid shedGuid, CancellationToken cancellationToken)
+    public async Task<ActionResult<ApiResponse<IEnumerable<object>>>> GetCarriers(CancellationToken cancellationToken)
     {
-        return Ok(await Mediator.Send(new GetShedByIdQuery(shedGuid), cancellationToken));
-    }
-
-    [HttpGet("logs")]
-    public async Task<ActionResult<ShedDto>> GetByIdQuery(Guid shedGuid, CancellationToken cancellationToken)
-    {
-        return Ok(await Mediator.Send(new GetShedByIdQuery(shedGuid), cancellationToken));
+        var data = await Mediator.Send(new GetCarriersQuery(), cancellationToken);
+        return Ok(ApiResponse<IEnumerable<object>>.Ok(data));
     }
 
     [HttpPost("test-system")]
-    public async Task<ActionResult<Guid>> Create(CreateShedCommand command)
+    public async Task<ActionResult<ApiResponse<TestSystemResultDto>>> TestSystem([FromBody] TestNotificationSystemCommand command, CancellationToken cancellationToken)
     {
-        return Ok(await Mediator.Send(command));
+        var data = await Mediator.Send(command, cancellationToken);
+        return Ok(ApiResponse<TestSystemResultDto>.Ok(data));
+    }
+
+    [HttpGet("logs")]
+    public async Task<ActionResult<ApiResponse<IEnumerable<object>>>> GetLogs([FromQuery] int days = 30, [FromQuery] int limit = 100, [FromQuery] Guid? userId = null, [FromQuery] string channel = null, [FromQuery] string status = null, CancellationToken cancellationToken = default)
+    {
+        var data = await Mediator.Send(new GetLogsQuery(days, limit, userId, channel, status), cancellationToken);
+        return Ok(ApiResponse<IEnumerable<object>>.Ok(data));
     }
 }
