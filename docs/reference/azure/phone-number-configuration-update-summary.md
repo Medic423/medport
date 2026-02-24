@@ -183,8 +183,8 @@ After updating all locations:
    - Public pages (no login required): `/ems-register` and `/healthcare-register` — ideal for Azure verification
 
 3. **Screenshots captured and uploaded to OneDrive** — verified accessible in private/incognito window
-   - Healthcare: https://1drv.ms/i/c/817a4f10428e6e00/IQCgTl7dQFE_Q5MOyl2XR328AdvvC3JWFrdriC4ZqWCSpFs?e=HebuQx
-   - EMS: https://1drv.ms/i/c/817a4f10428e6e00/IQAh_q86ujbZSYcfgr-MTkIVAdsWJG5uVa2PixQfhHcX4EA?e=tpJodN
+   - EMS: https://1drv.ms/i/c/817a4f10428e6e00/IQCgTl7dQFE_Q5MOyl2XR328AdvvC3JWFrdriC4ZqWCSpFs?e=HebuQx
+   - Healthcare: https://1drv.ms/i/c/817a4f10428e6e00/IQAh_q86ujbZSYcfgr-MTkIVAdsWJG5uVa2PixQfhHcX4EA?e=tpJodN
 
 4. **Backend persistence**
    - EMS: `smsOptIn` → `acceptsNotifications` on `ems_agencies`
@@ -246,8 +246,8 @@ Before updating and resubmitting the application:
 - [ ] Re-read rejection comments in Azure Portal before resubmitting
 
 **Opt-in Screenshot Links (for Azure form):**
-- Healthcare: https://1drv.ms/i/c/817a4f10428e6e00/IQCgTl7dQFE_Q5MOyl2XR328AdvvC3JWFrdriC4ZqWCSpFs?e=HebuQx
-- EMS: https://1drv.ms/i/c/817a4f10428e6e00/IQAh_q86ujbZSYcfgr-MTkIVAdsWJG5uVa2PixQfhHcX4EA?e=tpJodN
+- EMS: https://1drv.ms/i/c/817a4f10428e6e00/IQCgTl7dQFE_Q5MOyl2XR328AdvvC3JWFrdriC4ZqWCSpFs?e=HebuQx
+- Healthcare: https://1drv.ms/i/c/817a4f10428e6e00/IQAh_q86ujbZSYcfgr-MTkIVAdsWJG5uVa2PixQfhHcX4EA?e=tpJodN
 
 ---
 
