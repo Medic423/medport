@@ -1,6 +1,8 @@
 ﻿using Medport.API.Tracc.Controllers.BaseController;
 using Medport.API.Tracc.CustomAttributes;
 using Medport.Application.Tracc.Common.DTOs;
+using Medport.Application.Tracc.Features.Units.Commands.Requests;
+using Medport.Application.Tracc.Features.Units.Queries.Dtos;
 using Medport.Application.Tracc.Features.Units.Queries.Requests;
 using Medport.Domain;
 using Microsoft.AspNetCore.Authorization;
@@ -64,7 +66,7 @@ public class UnitController : ApiControllerBase
     [HttpGet("available/{agencyId}")]
     public async Task<ActionResult> GetAvailable(Guid agencyId, CancellationToken cancellationToken)
     {
-        var data = await Mediator.Send(new GetAvailableUnitsQuery(agencyId.ToString()), cancellationToken);
+        var data = await Mediator.Send(new GetAvailableUnitsQuery(agencyId), cancellationToken);
         var response = ApiResponse<List<UnitDto>>.Ok(data);
         return Ok(response);
     }

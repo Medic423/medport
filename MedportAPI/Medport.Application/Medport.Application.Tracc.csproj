@@ -47,8 +47,6 @@
     <Folder Include="Features\TCCUnits\Queries\Requests\" />
     <Folder Include="Features\Trips\Commands\Requests\" />
     <Folder Include="Features\Trips\Queries\Requests\" />
-    <Folder Include="Features\Units\Commands\Requests\" />
-    <Folder Include="Features\Units\Queries\Requests\" />
   </ItemGroup>
 
   <ItemGroup>

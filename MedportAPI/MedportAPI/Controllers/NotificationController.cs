@@ -9,6 +9,7 @@ using Medport.Application.Tracc.Features.Notifications.Commands.Requests;
 using Medport.Application.Tracc.Features.Notifications.Queries.Dtos;
 using System.Threading;
 using System.Collections.Generic;
+using Medport.Application.Tracc.Common.DTOs;
 
 namespace Medport.API.Tracc.Controllers;
 

@@ -6,6 +6,7 @@ using Medport.Application.Tracc.Features.Maintenance.Queries.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics.CodeAnalysis;
+using Medport.Application.Tracc.Common.DTOs;
 
 namespace Medport.API.Tracc.Controllers;
 
