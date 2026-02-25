@@ -1,5 +1,6 @@
 using Medport.API.Tracc.Controllers.BaseController;
 using Medport.API.Tracc.CustomAttributes;
+using Medport.Application.Tracc.Common.DTOs;
 using Medport.Application.Tracc.Features.EMSAnalytics.Queries.Dtos;
 using Medport.Application.Tracc.Features.EMSAnalytics.Queries.Requests;
 using Microsoft.AspNetCore.Authorization;

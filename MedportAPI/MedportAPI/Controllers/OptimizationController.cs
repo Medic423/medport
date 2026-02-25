@@ -8,6 +8,7 @@ using Medport.Application.Tracc.Features.Optimizations.Commands.Requests;
 using Medport.Application.Tracc.Features.Optimizations.Queries.Requests;
 using System.Threading;
 using System.Collections.Generic;
+using Medport.Application.Tracc.Common.DTOs;
 
 namespace Medport.API.Tracc.Controllers;
 

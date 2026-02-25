@@ -1,5 +1,6 @@
 ﻿using Medport.API.Tracc.Controllers.BaseController;
 using Medport.API.Tracc.CustomAttributes;
+using Medport.Application.Tracc.Common.DTOs;
 using Medport.Common.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -29,7 +30,7 @@ public class HealthcareAgencyController : ApiControllerBase
             Total = data.TotalCount
         };
 
-        var response = ApiResponse<System.Collections.Generic.List<Medport.Application.Tracc.Features.HealthcareAgencies.Queries.Dtos.EmsAgencyDto>>.Ok([.. data.Items], null, pagination);
+        var response = ApiResponse<List<Medport.Application.Tracc.Features.HealthcareAgencies.Queries.Dtos.EmsAgencyDto>>.Ok([.. data.Items], null, pagination);
 
         return Ok(response);
     }

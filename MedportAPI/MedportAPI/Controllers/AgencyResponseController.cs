@@ -22,7 +22,7 @@ public class AgencyResponseController : ApiControllerBase
     {
         var data = await Mediator.Send(query, cancellationToken);
 
-        var response = ApiResponse<List<AgencyResponseDto>>.Ok(data, Medport.Domain.Constants.AgencyResponseConstants.GenericMessages.RetrievedSuccesfully);
+        var response = ApiResponse<List<AgencyResponseDto>>.Ok(data, Domain.Constants.AgencyResponseConstants.GenericMessages.RetrievedSuccesfully);
 
         return Ok(response);
     }
@@ -32,7 +32,7 @@ public class AgencyResponseController : ApiControllerBase
     {
         var data = await Mediator.Send(new GetAgencyResponseByIdQuery(id), cancellationToken);
 
-        var response = ApiResponse<AgencyResponseDto>.Ok(data, Medport.Domain.Constants.AgencyResponseConstants.GenericMessages.RetrievedSuccesfully);
+        var response = ApiResponse<AgencyResponseDto>.Ok(data, Domain.Constants.AgencyResponseConstants.GenericMessages.RetrievedSuccesfully);
 
         return Ok(response);
     }
@@ -42,7 +42,7 @@ public class AgencyResponseController : ApiControllerBase
     {
         var data = await Mediator.Send(command, cancellationToken);
 
-        var response = ApiResponse<AgencyResponseDto>.Ok(data, Medport.Domain.Constants.AgencyResponseConstants.GenericMessages.CreatedSuccesfully);
+        var response = ApiResponse<AgencyResponseDto>.Ok(data, Domain.Constants.AgencyResponseConstants.GenericMessages.CreatedSuccesfully);
 
         return Ok(response);
     }
@@ -56,7 +56,7 @@ public class AgencyResponseController : ApiControllerBase
 
         var data = await Mediator.Send(command, cancellationToken);
 
-        var response = ApiResponse<AgencyResponseDto>.Ok(data, Medport.Domain.Constants.AgencyResponseConstants.GenericMessages.UpdatedSuccesfully);
+        var response = ApiResponse<AgencyResponseDto>.Ok(data, Domain.Constants.AgencyResponseConstants.GenericMessages.UpdatedSuccesfully);
 
         return Ok(response);
     }

@@ -1,7 +1,6 @@
 using AutoMapper;
 using MediatR;
 using Medport.Application.Tracc.Features.Units.Commands.Requests;
-using Medport.Application.Tracc.Features.Units.Queries.Dtos;
 using Medport.Domain.Interfaces;
 using System.Diagnostics.CodeAnalysis;
 

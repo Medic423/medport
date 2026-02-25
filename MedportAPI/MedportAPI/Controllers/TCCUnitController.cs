@@ -1,14 +1,11 @@
 ﻿using Medport.API.Tracc.Controllers.BaseController;
 using Medport.API.Tracc.CustomAttributes;
-using Medport.Common.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics.CodeAnalysis;
 using Medport.Application.Tracc.Features.ProductionUnits.Queries.Requests;
 using Medport.Application.Tracc.Features.ProductionUnits.Queries.Dtos;
-using System.Threading;
-using System.Collections.Generic;
-using System;
+using Medport.Application.Tracc.Common.DTOs;
 
 namespace Medport.API.Tracc.Controllers;
 

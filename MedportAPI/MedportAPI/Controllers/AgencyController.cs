@@ -5,12 +5,9 @@ using Medport.Application.Tracc.Features.Agencies.Commands.Requests;
 using Medport.Application.Tracc.Features.Agencies.Constants;
 using Medport.Application.Tracc.Features.Agencies.Queries.DTOs;
 using Medport.Application.Tracc.Features.Agencies.Queries.Requests;
-using Medport.Application.Tracc.Features.Hospitals.Constants;
-using Medport.Application.Tracc.Features.Hospitals.Queries.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics.CodeAnalysis;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace Medport.API.Tracc.Controllers;
 

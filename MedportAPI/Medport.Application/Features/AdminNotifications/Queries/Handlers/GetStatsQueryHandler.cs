@@ -6,7 +6,7 @@ using Medport.Application.Tracc.Features.AdminNotifications.Queries.Requests;
 using Medport.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace Medport.Application.Tracc.Features.AdminNotifications.Queries;
+namespace Medport.Application.Tracc.Features.AdminNotifications.Queries.Handlers;
 public class GetStatsQueryHandler(IApplicationDbContext context, IMapper mapper) : IRequestHandler<GetStatsQuery, MessageStatsDto>
 {
     private readonly IApplicationDbContext _context = context;
