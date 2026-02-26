@@ -233,6 +233,24 @@ If you see this error on the Epic OAuth page (before login):
 
 ---
 
+### "Invalid OAuth 2.0 request" (on Hyperspace / HSWeb_uscdi login page)
+
+If you see this error when Epic redirects you to the Hyperspace login:
+
+1. **Use full scopes** – For clinician apps, Epic may reject minimal-scope requests. Use `http://localhost:5001/api/epic/auth` (not `/auth/minimal`). Ensure `EPIC_USE_MINIMAL_SCOPES` is **not** set in `.env.local`.
+
+2. **Start fresh** – The `ticket` in the Epic URL is one-time-use and expires. Never bookmark or reuse the `HSWeb_uscdi` URL. Always begin a new flow at `http://localhost:5001/api/epic/auth`.
+
+3. **Login credentials** – Use **sandbox test credentials** from Epic's [Sandbox Test Data](https://fhir.epic.com/Documentation?docId=testpatients) page, **not** your Epic UserWeb account. Common sandbox creds: username `fhirjason` (or `fhirdaisy`, `fhirderrick`, etc.), password `epicepic1`. For USCDI (HSWeb_uscdi), verify the doc for clinician/test user credentials. Patient IDs from that page are used *after* login when selecting a patient.
+
+4. **Redirect URI** – Verify `http://localhost:5001/api/epic/callback` matches exactly in Epic (http, port 5001, no trailing slash). This is the most common cause. In Epic portal: Developer → Apps → EMS Transport Companion → Redirect URI / Endpoint URL section. Add or verify this exact value.
+
+5. **Try without `aud`** – Add `EPIC_SKIP_AUD=1` to `backend/.env.local`, restart, and retry. Some Epic configs reject the `aud` parameter.
+
+6. **Epic propagation** – App config changes can take 1–24 hours to sync. If you recently added the redirect URI, wait and retry.
+
+---
+
 ## Next: Environment Setup
 
 After completing both steps, configure your backend:
