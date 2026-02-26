@@ -1,4 +1,4 @@
-name: Deploy to Azure Web App
+name: Deploy DotNet WebApi to Azure Web App
 
 on:
   workflow_dispatch:
@@ -10,7 +10,7 @@ on:
 
 env:
   DOTNET_VERSION: '9.0.x'
-  AZURE_WEBAPP_NAME: 'your-webapp-name'
+  AZURE_WEBAPP_NAME: 'traccems-app-api-dev'
 
 jobs:
   build-and-deploy:
