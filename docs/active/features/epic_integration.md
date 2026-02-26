@@ -165,7 +165,8 @@ The **EMS Transport Companion** app has been successfully created in Epic and is
 | Setting | Value |
 |---------|-------|
 | **Application Name** | EMS Transport Companion |
-| **Non-Production Client ID** | `878e5c65-cb93-4eb7-a284-656189c4e2ef` |
+| **Non-Production Client ID** (Sandbox) | `80c917fc-f6fe-4b9f-91cd-89a09f1cbbcd` |
+| **Client ID** (Production) | `878e5c65-cb93-4eb7-a284-656189c4e2ef` |
 | **Application Audience** | Clinicians or Administrative Users |
 | **Endpoint URL** | `https://tencomm.com/auth/epic/callback` |
 | **Dynamic Clients** | Cannot Register Dynamic Clients |

@@ -14,7 +14,7 @@ Copy these from `backend/src/.env.example` and fill in the actual values:
 
 | Variable | Description | Example (placeholder) |
 |----------|-------------|------------------------|
-| `EPIC_CLIENT_ID` | Non-production Client ID from Epic app registration | `B1R5b00c5-e513-4e6a-a009-3c88c8182cdb` (EMS Transport Companion) |
+| `EPIC_CLIENT_ID` | Non-Production Client ID (sandbox) or Client ID (production) from Epic app registration | Sandbox: `80c917fc-f6fe-4b9f-91cd-89a09f1cbbcd`; Production: `878e5c65-cb93-4eb7-a284-656189c4e2ef` (EMS Transport Companion) |
 | `EPIC_CLIENT_SECRET` | Sandbox Client Secret from Epic app registration | (from Epic portal; store securely) |
 | `EPIC_FHIR_BASE_URL` | Epic FHIR R4 base URL | `https://fhir.epic.com/interconnect-fhir-oauth/api/FHIR/R4` |
 | `EPIC_REDIRECT_URI` | OAuth callback URL (must match Epic registration) | `https://tencomm.com/auth/epic/callback` (prod) or `http://localhost:3000/auth/epic/callback` (dev) |

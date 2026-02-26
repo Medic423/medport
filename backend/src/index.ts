@@ -10,12 +10,24 @@ try {
   console.error('❌ [STARTUP] Failed to log initial message:', error);
 }
 
+import path from 'path';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
-import { databaseManager } from './services/databaseManager';
 import cookieParser from 'cookie-parser';
+
+// Load env from backend dir (explicit path; cwd can vary when run via npm/nodemon)
+const backendRoot = path.resolve(__dirname, '..');
+dotenv.config({ path: path.join(backendRoot, '.env') });
+const localResult = dotenv.config({ path: path.join(backendRoot, '.env.local'), override: true });
+const err = localResult.error as NodeJS.ErrnoException | undefined;
+if (err && err.code !== 'ENOENT') {
+  console.warn('[STARTUP] .env.local load warning:', err.message);
+}
+console.log('[STARTUP] EPIC_CLIENT_ID loaded:', (process.env.EPIC_CLIENT_ID || '').substring(0, 8) + '...');
+
+import { databaseManager } from './services/databaseManager';
 
 console.log('🔍 [STARTUP] Dependencies imported successfully');
 
@@ -46,11 +58,6 @@ import healthcareSubUsersRoutes from './routes/healthcareSubUsers';
 import emsSubUsersRoutes from './routes/emsSubUsers';
 import publicRoutes from './routes/public';
 import epicRoutes from './routes/epic';
-
-// Load environment variables
-// Load .env first, then .env.local (which will override .env values)
-dotenv.config();
-dotenv.config({ path: '.env.local', override: true });
 
 const app = express();
 const PORT = process.env.PORT || 5001;

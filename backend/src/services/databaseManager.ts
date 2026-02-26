@@ -1,10 +1,11 @@
+import path from 'path';
 import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
 
-// Load environment variables before initializing database
-// Load .env first, then .env.local (which will override .env values)
-dotenv.config();
-dotenv.config({ path: '.env.local', override: true });
+// Load environment variables before initializing database (explicit backend path)
+const backendRoot = path.resolve(__dirname, '..', '..');
+dotenv.config({ path: path.join(backendRoot, '.env') });
+dotenv.config({ path: path.join(backendRoot, '.env.local'), override: true });
 
 class DatabaseManager {
   private static instance: DatabaseManager;

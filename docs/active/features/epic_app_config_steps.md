@@ -20,7 +20,7 @@ Explicit instructions for the two Epic app configuration steps required before t
 1. From the fhir.epic.com homepage, go to **Developer** → **Apps** (or **Build Apps**)
    - Direct link: **https://fhir.epic.com/Developer/Apps**
 2. Find and click your app: **EMS Transport Companion**
-   - Non-Production Client ID: `878e5c65-cb93-4eb7-a284-656189c4e2ef`
+   - Non-Production Client ID (Sandbox): `80c917fc-f6fe-4b9f-91cd-89a09f1cbbcd` (use this for local/sandbox testing)
 
 ### 1.3 Locate Redirect URI / Endpoint URL
 
@@ -143,8 +143,32 @@ This is for validating Epic’s JWTs, not for app registration. Do **not** use t
 | SMART Scope Version | SMART v2 | ☐ Set |
 | JWK Set URL | Empty (if allowed) for client_secret auth | ☐ Verified |
 | App status | **Ready for Sandbox** or **Test** (not Draft) | ☐ Confirmed |
-| Non-Production Client ID | `878e5c65-cb93-4eb7-a284-656189c4e2ef` | ☐ Set in .env.local |
+| Non-Production Client ID | `80c917fc-f6fe-4b9f-91cd-89a09f1cbbcd` | ☐ Set in .env.local |
 | Backend env | `EPIC_REDIRECT_URI=http://localhost:5001/api/epic/callback` | ☐ Set |
+
+---
+
+## How to Look Up the Non-Production Client ID
+
+Epic assigns **two** Client IDs per app: one for Production and one for Non-Production (sandbox). For testing against fhir.epic.com, you must use the **Non-Production Client ID**.
+
+### Where to Find It
+
+1. **Epic Developer Portal**
+   - Log in to [https://fhir.epic.com](https://fhir.epic.com)
+   - Go to **Developer** → **Apps** (or **Build Apps**)
+   - Click your app (**EMS Transport Companion**)
+   - On the app detail or configuration page, look for a section such as:
+     - **Client IDs** / **OAuth 2.0 Client Configuration**
+     - **Non-Production Client ID** (for sandbox)
+     - **Production Client ID** or **Client ID** (for production)
+   - The Non-Production value is the UUID used for sandbox OAuth.
+
+2. **Epic Support**
+   - If the portal layout doesn’t clearly show both IDs, or you’re unsure which is which, contact [Epic support](https://open.epic.com/Home/Contact) and ask: *“Please confirm the Non-Production Client ID for EMS Transport Companion for sandbox testing.”*
+
+3. **Per Epic’s Email**
+   - Epic support may send a table listing both IDs. Use the **Non-Production Client ID** row for sandbox; use **Client ID (Production)** only when connecting to production Epic instances.
 
 ---
 
@@ -215,7 +239,7 @@ After completing both steps, configure your backend:
 
 1. Ensure `backend/.env.local` includes:
    ```env
-   EPIC_CLIENT_ID="B1R5b00c5-e513-4e6a-a009-3c88c8182cdb"
+   EPIC_CLIENT_ID="80c917fc-f6fe-4b9f-91cd-89a09f1cbbcd"
    EPIC_CLIENT_SECRET="<your-secret>"
    EPIC_FHIR_BASE_URL="https://fhir.epic.com/interconnect-fhir-oauth/api/FHIR/R4"
    EPIC_REDIRECT_URI="http://localhost:5001/api/epic/callback"

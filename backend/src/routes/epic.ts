@@ -60,12 +60,14 @@ router.get('/auth/url', (req, res) => {
   try {
     const { url, state } = buildAuthorizeUrl();
     const redirectUri = process.env.EPIC_REDIRECT_URI || '';
+    const clientId = process.env.EPIC_CLIENT_ID || '';
     res.json({
       success: true,
       authUrl: url,
       state,
       redirectUri,
-      hint: 'Verify redirectUri matches Epic app config exactly (no trailing slash, exact port)'
+      clientId,
+      hint: 'For sandbox use Non-Production Client ID (80c917fc...). Verify redirectUri matches Epic app config.'
     });
   } catch (error) {
     console.error('Epic auth URL error:', error);

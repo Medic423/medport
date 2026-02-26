@@ -9,7 +9,7 @@ Subject: App "EMS Transport Companion" Stuck in Draft – Ready for Sandbox Does
 
 Hello,
 
-I am developing the app "EMS Transport Companion" (Non-Production Client ID: B1R5b00c5-e513-4e6a-a009-3c88c8182cdb) on fhir.epic.com and need help with the following issues.
+I am developing the app "EMS Transport Companion" (Non-Production Client ID: 80c917fc-f6fe-4b9f-91cd-89a09f1cbbcd) on fhir.epic.com and need help with the following issues.
 
 ISSUE 1: App Remains in Draft After Clicking "Ready for Sandbox"
 When I make configuration changes, accept the terms, and click the "Ready for Sandbox" button, the app saves without showing any errors and returns me to the Build Apps screen. However, the app status remains "Draft" instead of changing to "Ready for Sandbox" or "Test."
@@ -26,7 +26,7 @@ The app configuration includes "Non-Production JWK Set URL" and "Production JWK 
 
 APP CONFIGURATION SUMMARY:
 - Application Name: EMS Transport Companion
-- Non-Production Client ID: 878e5c65-cb93-4eb7-a284-656189c4e2ef
+- Non-Production Client ID: 80c917fc-f6fe-4b9f-91cd-89a09f1cbbcd (sandbox)
 - Confidential Client: Yes (using client_secret)
 - SMART Scope Version: SMART v2
 - Endpoint URIs: 

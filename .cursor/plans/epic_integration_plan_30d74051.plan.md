@@ -37,7 +37,7 @@ This plan integrates Epic EMR for system interoperability with the TCC Healthcar
 
 ### Phase 1 Summary
 
-- **Client ID**: `B1R5b00c5-e513-4e6a-a009-3c88c8182cdb`
+- **Non-Production Client ID** (sandbox): `80c917fc-f6fe-4b9f-91cd-89a09f1cbbcd`
 - **Redirect URI**: `https://tencomm.com/auth/epic/callback` (add `http://localhost:3000/auth/epic/callback` in Epic for local dev if needed)
 - **Incoming APIs**: Condition, Encounter, Location, Observation, Patient, Relationship (Read)
 - **SMART**: STU3, SMART v2
@@ -45,10 +45,11 @@ This plan integrates Epic EMR for system interoperability with the TCC Healthcar
 
 ---
 
-## Phase 2: Epic Sandbox Connectivity — NEXT
+## Phase 2: Epic Sandbox Connectivity — COMPLETE
 
 **Branch**: `feature/epic-phase2-sandbox`  
-**Goal**: Implement OAuth2/SMART-on-FHIR auth and FHIR API client; validate against Epic sandbox.
+**Goal**: Implement OAuth2/SMART-on-FHIR auth and FHIR API client; validate against Epic sandbox.  
+**Status**: OAuth flow verified 2026-02-26. Use Non-Production Client ID for sandbox.
 
 ### Technical Notes
 
@@ -72,7 +73,7 @@ This plan integrates Epic EMR for system interoperability with the TCC Healthcar
 - [x] **2.10** Implement `GET /Condition?patient={id}&clinical-status=active`
 - [x] **2.11** Implement `GET /Organization/{id}` and `GET /Location/{id}` for resolving references
 - [x] **2.12** Add backend route(s) for Epic auth flow: `/api/epic/auth`, `/api/epic/callback`, `/api/epic/patient/{id}`, etc.
-- [ ] **2.13** Test full OAuth flow against sandbox (authorize → callback → token)
+- [x] **2.13** Test full OAuth flow against sandbox (authorize → callback → token) ✅ 2026-02-26
 - [ ] **2.14** Test FHIR reads with sandbox test patients (see Epic Sandbox Test Data docs)
 - [ ] **2.15** Document sandbox test patient IDs and sample ServiceRequest/Encounter IDs for QA
 
