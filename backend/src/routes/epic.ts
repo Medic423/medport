@@ -25,7 +25,7 @@ const FRONTEND_URL = (process.env.FRONTEND_URL || 'http://localhost:3000').trim(
 router.get('/auth', (req, res) => {
   try {
     const { url, state } = buildAuthorizeUrl();
-    // Redirect user to Epic
+    console.log('[Epic] Redirecting to auth URL (state:', state.substring(0, 8) + '...)');
     res.redirect(url);
   } catch (error) {
     console.error('Epic auth init error:', error);
@@ -35,13 +35,38 @@ router.get('/auth', (req, res) => {
 });
 
 /**
+ * GET /api/epic/auth/minimal
+ * Same as /auth but uses minimal scopes (openid fhirUser offline_access).
+ * Use for debugging: set EPIC_USE_MINIMAL_SCOPES=1 and try this endpoint.
+ */
+router.get('/auth/minimal', (req, res) => {
+  try {
+    process.env.EPIC_USE_MINIMAL_SCOPES = '1';
+    const { url } = buildAuthorizeUrl();
+    delete process.env.EPIC_USE_MINIMAL_SCOPES;
+    res.redirect(url);
+  } catch (error) {
+    console.error('Epic auth minimal error:', error);
+    const msg = error instanceof Error ? error.message : 'Epic authorization failed';
+    res.status(500).json({ success: false, error: msg });
+  }
+});
+
+/**
  * GET /api/epic/auth/url
- * Returns the authorize URL as JSON (for frontend to redirect manually)
+ * Returns the authorize URL as JSON (for debugging and frontend redirect)
  */
 router.get('/auth/url', (req, res) => {
   try {
     const { url, state } = buildAuthorizeUrl();
-    res.json({ success: true, authUrl: url, state });
+    const redirectUri = process.env.EPIC_REDIRECT_URI || '';
+    res.json({
+      success: true,
+      authUrl: url,
+      state,
+      redirectUri,
+      hint: 'Verify redirectUri matches Epic app config exactly (no trailing slash, exact port)'
+    });
   } catch (error) {
     console.error('Epic auth URL error:', error);
     const msg = error instanceof Error ? error.message : 'Epic authorization failed';

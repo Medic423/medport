@@ -24,6 +24,9 @@ const DEFAULT_SCOPES = [
   'offline_access'
 ].join(' ');
 
+// Minimal scopes for debugging OAuth issues (set EPIC_USE_MINIMAL_SCOPES=1)
+const MINIMAL_SCOPES = 'openid fhirUser offline_access';
+
 export interface EpicTokenSet {
   access_token: string;
   refresh_token?: string;
@@ -87,16 +90,24 @@ export function buildAuthorizeUrl(options?: { redirectUri?: string; state?: stri
   pkceStore.set(state, { state, code_verifier: codeVerifier, createdAt: Date.now() });
   cleanupPkceStore();
 
+  const cleanRedirect = redirectUri.trim().replace(/[\r\n]/g, '');
+  const useMinimal = process.env.EPIC_USE_MINIMAL_SCOPES === '1' || process.env.EPIC_USE_MINIMAL_SCOPES === 'true';
+  const scopes = useMinimal ? MINIMAL_SCOPES : DEFAULT_SCOPES;
+
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: clientId,
-    redirect_uri: redirectUri,
-    scope: DEFAULT_SCOPES,
+    redirect_uri: cleanRedirect,
+    scope: scopes,
     state,
     code_challenge: codeChallenge,
-    code_challenge_method: 'S256',
-    audience: process.env.EPIC_FHIR_BASE_URL || 'https://fhir.epic.com/interconnect-fhir-oauth/api/FHIR/R4'
+    code_challenge_method: 'S256'
   });
+  // Epic/SMART uses 'aud' for FHIR server URL. Omit if EPIC_SKIP_AUD=1 (for debugging)
+  if (process.env.EPIC_SKIP_AUD !== '1') {
+    const aud = (process.env.EPIC_FHIR_BASE_URL || 'https://fhir.epic.com/interconnect-fhir-oauth/api/FHIR/R4').trim();
+    params.set('aud', aud);
+  }
 
   const url = `${EPIC_AUTH_ENDPOINT}?${params.toString()}`;
   return { url, state, codeVerifier };
