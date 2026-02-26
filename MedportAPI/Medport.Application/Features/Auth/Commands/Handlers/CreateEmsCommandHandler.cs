@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using System.Threading.Tasks;
 using System.Threading;
 using System;
+using Microsoft.EntityFrameworkCore;
 
 namespace Medport.Application.Tracc.Features.Auth.Commands.Handlers;
 

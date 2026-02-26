@@ -1,11 +1,15 @@
-﻿using System;
+﻿using MediatR;
+using Medport.Application.Tracc.Features.Units.Queries.Dtos;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Medport.Application.Tracc.Features.Units.Commands.Requests;
 
-public class UpdateUnitStatusCommand
+public class UpdateUnitStatusCommand : IRequest<UnitDto>
 {
+    public string UnitId { get; set; }
+    public string Status { get; set; }
+    public string Location { get; set; }
+    public List<string> Crew { get; set; } = new();
 }
+

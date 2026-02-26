@@ -8,6 +8,7 @@ using Medport.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics.CodeAnalysis;
+using System.Security.Claims;
 
 namespace Medport.API.Tracc.Controllers;
 
@@ -82,6 +83,13 @@ public class UnitController : ApiControllerBase
         [FromBody] CreateUnitCommand command,
         CancellationToken cancellationToken)
     {
+        // Populate caller context from JWT claims so handler can resolve agency when needed
+        var callerIdStr = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User?.FindFirst("id")?.Value;
+        if (Guid.TryParse(callerIdStr, out var callerGuid)) command.CallerUserId = callerGuid;
+        command.CallerUserType = User?.FindFirst("userType")?.Value ?? User?.FindFirst(ClaimTypes.Role)?.Value;
+        var agencyIdStr = User?.FindFirst("agencyId")?.Value;
+        if (Guid.TryParse(agencyIdStr, out var agencyGuid)) command.CallerAgencyId = agencyGuid;
+
         var data = await Mediator.Send(command, cancellationToken);
         var response = ApiResponse<UnitDto>.Ok(data, Constants.UnitManagement.Messages.SavedSuccesfully);
         return Ok(response);
@@ -105,7 +113,7 @@ public class UnitController : ApiControllerBase
         CancellationToken cancellationToken)
     {
         // Ensure the unitId in the URL matches the command
-        command = command with { UnitId = unitId.ToString() };
+        command.UnitId = unitId.ToString();
 
         var data = await Mediator.Send(command, cancellationToken);
         var response = ApiResponse<UnitDto>.Ok(data, Constants.UnitManagement.Messages.UpdatedSuccesfully);
@@ -130,7 +138,7 @@ public class UnitController : ApiControllerBase
         CancellationToken cancellationToken)
     {
         // Ensure the unitId in the URL matches the command
-        command = command with { UnitId = unitId.ToString() };
+        command.UnitId = unitId.ToString();
 
         var data = await Mediator.Send(command, cancellationToken);
         var response = ApiResponse<UnitDto>.Ok(data, Constants.UnitManagement.Messages.StatusUpdatedSuccesfully);
@@ -149,7 +157,7 @@ public class UnitController : ApiControllerBase
     [ProducesDefaultResponseType]
     public async Task<ActionResult> Delete(Guid unitId, CancellationToken cancellationToken)
     {
-        await Mediator.Send(new DeleteUnitCommand(unitId.ToString()), cancellationToken);
+        await Mediator.Send(new DeleteUnitCommand { UnitId = unitId.ToString() }, cancellationToken);
         var response = ApiResponse<UnitDto>.Ok(null, Constants.UnitManagement.Messages.DeletedSuccesfully);
         return Ok(response);
     }

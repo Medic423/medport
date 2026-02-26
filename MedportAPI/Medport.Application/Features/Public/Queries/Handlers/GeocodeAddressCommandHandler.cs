@@ -1,11 +1,8 @@
 using MediatR;
 using Medport.Application.Tracc.Features.Public.Queries.Requests;
 using Medport.Application.Tracc.Features.Public.Queries.Dtos;
-using System.Threading.Tasks;
-using System.Threading;
-using System.Net.Http;
-using System.Web;
 using System.Text.Json;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace Medport.Application.Tracc.Features.Public.Queries.Handlers;
 
@@ -35,7 +32,7 @@ public class GeocodeAddressCommandHandler : IRequestHandler<GeocodeAddressComman
         {
             if (string.IsNullOrWhiteSpace(v)) continue;
 
-            var url = QueryHelpers.AddQueryString(NominatimBase, new System.Collections.Generic.Dictionary<string, string>
+            var url = QueryHelpers.AddQueryString(NominatimBase, new Dictionary<string, string>
             {
                 ["q"] = v,
                 ["format"] = "json",

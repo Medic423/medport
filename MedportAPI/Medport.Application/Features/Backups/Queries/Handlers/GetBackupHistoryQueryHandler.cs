@@ -1,19 +1,14 @@
 using MediatR;
 using Medport.Application.Tracc.Features.Backups.Queries.Dtos;
+using Medport.Application.Tracc.Features.Backups.Queries.Requests;
 using Medport.Domain.Interfaces;
-using Microsoft.EntityFrameworkCore;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 
 namespace Medport.Application.Tracc.Features.Backups.Queries.Handlers;
 
 [ExcludeFromCodeCoverage]
-public class GetBackupHistoryQueryHandler : IRequestHandler<GetBackupHistoryQuery, List<BackupFileDto>>
+public class GetBackupHistoryQueryHandler() : IRequestHandler<GetBackupHistoryQuery, List<BackupFileDto>>
 {
-    public GetBackupHistoryQueryHandler()
-    {
-    }
-
     public Task<List<BackupFileDto>> Handle(GetBackupHistoryQuery request, CancellationToken cancellationToken)
     {
         var backupDir = Path.Combine(Directory.GetCurrentDirectory(), "database-backups");

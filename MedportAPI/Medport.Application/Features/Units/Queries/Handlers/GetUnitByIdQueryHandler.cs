@@ -19,7 +19,7 @@ public class GetUnitByIdQueryHandler(IApplicationDbContext context, IMapper mapp
     public async Task<UnitDto> Handle(GetUnitByIdQuery request, CancellationToken cancellationToken)
     {
         // Find the unit
-        var unit = await _context.Units.FindAsync(new object[] { request.UnitId }, cancellationToken: cancellationToken);
+        var unit = await _context.Units.FindAsync([request.UnitId], cancellationToken: cancellationToken);
         if (unit == null)
         {
             throw new KeyNotFoundException($"Unit with ID {request.UnitId} not found");

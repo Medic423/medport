@@ -8,5 +8,6 @@ public class AnalyticsDto
     public int TotalDropdownCategories { get; set; }
     public int ActiveDropdownOptions { get; set; }
     public int TotalEmsAgencies { get; set; }
+    public int TotalCenterUsers { get; set; }
     public DateTime GeneratedAt { get; set; }
 }

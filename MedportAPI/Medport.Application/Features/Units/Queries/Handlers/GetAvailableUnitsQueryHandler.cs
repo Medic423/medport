@@ -1,10 +1,11 @@
 using AutoMapper;
 using MediatR;
-using Medport.Application.Tracc.Features.Units.Queries.Requests;
 using Medport.Application.Tracc.Features.Units.Queries.Dtos;
+using Medport.Application.Tracc.Features.Units.Queries.Requests;
 using Medport.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics.CodeAnalysis;
+using static Medport.Domain.Constants;
 
 namespace Medport.Application.Tracc.Features.Units.Queries.Handlers;
 
@@ -23,7 +24,7 @@ public class GetAvailableUnitsQueryHandler(IApplicationDbContext context, IMappe
         var units = await _context.Units
             .Where(u => u.AgencyId == request.AgencyId 
                 && u.IsActive 
-                && u.CurrentStatus == Constants.UnitStatuses.Available)
+                && u.CurrentStatus == UnitStatuses.Available)
             .OrderBy(u => u.UnitNumber)
             .ToListAsync(cancellationToken);
 

@@ -1,8 +1,5 @@
 using MediatR;
 using Medport.Application.Tracc.Features.AdminNotifications.Queries.Requests;
-using System.Threading.Tasks;
-using System.Threading;
-using System.Collections.Generic;
 
 namespace Medport.Application.Tracc.Features.AdminNotifications.Queries.Handlers;
 

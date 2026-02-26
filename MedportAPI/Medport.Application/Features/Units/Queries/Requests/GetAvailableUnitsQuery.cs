@@ -1,10 +1,6 @@
 ﻿using MediatR;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Medport.Application.Tracc.Features.Units.Queries.Dtos;
 
 namespace Medport.Application.Tracc.Features.Units.Queries.Requests;
 
-public class GetAvailableUnitsQuery(Guid AgencyId) : IRequest<>();
+public record GetAvailableUnitsQuery(Guid AgencyId) : IRequest<List<UnitDto>>;

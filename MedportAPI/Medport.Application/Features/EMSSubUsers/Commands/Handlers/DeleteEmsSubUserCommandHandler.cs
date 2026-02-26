@@ -2,22 +2,14 @@ using MediatR;
 using Medport.Domain.Interfaces;
 using Medport.Application.Tracc.Features.EMSSubUsers.Commands.Requests;
 using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
-using System.Threading;
-using System;
 
 namespace Medport.Application.Tracc.Features.EMSSubUsers.Commands.Handlers;
 
-public class DeleteEmsSubUserCommandHandler : IRequestHandler<DeleteEmsSubUserCommand>
+public class DeleteEmsSubUserCommandHandler(IApplicationDbContext context) : IRequestHandler<DeleteEmsSubUserCommand>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IApplicationDbContext _context = context;
 
-    public DeleteEmsSubUserCommandHandler(IApplicationDbContext context)
-    {
-        _context = context;
-    }
-
-    public async Task<Unit> Handle(DeleteEmsSubUserCommand request, CancellationToken cancellationToken)
+    public async Task Handle(DeleteEmsSubUserCommand request, CancellationToken cancellationToken)
     {
         if (request.CallerUserType != "EMS" && request.CallerUserType != "ADMIN")
             throw new UnauthorizedAccessException("Forbidden");
@@ -33,7 +25,5 @@ public class DeleteEmsSubUserCommandHandler : IRequestHandler<DeleteEmsSubUserCo
 
         _context.EmsUsers.Remove(sub);
         await _context.SaveChangesAsync(cancellationToken);
-
-        return Unit.Value;
     }
 }

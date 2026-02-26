@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Threading;
+using Medport.Domain.Entities;
 
 namespace Medport.Application.Tracc.Features.Facilities.Queries.Handlers;
 

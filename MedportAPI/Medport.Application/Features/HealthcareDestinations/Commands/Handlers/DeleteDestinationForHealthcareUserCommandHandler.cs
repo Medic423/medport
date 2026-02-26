@@ -7,16 +7,11 @@ using System.Threading;
 
 namespace Medport.Application.Tracc.Features.HealthcareDestinations.Commands.Handlers;
 
-public class DeleteDestinationForHealthcareUserCommandHandler : IRequestHandler<DeleteDestinationForHealthcareUserCommand>
+public class DeleteDestinationForHealthcareUserCommandHandler(IApplicationDbContext context) : IRequestHandler<DeleteDestinationForHealthcareUserCommand>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IApplicationDbContext _context = context;
 
-    public DeleteDestinationForHealthcareUserCommandHandler(IApplicationDbContext context)
-    {
-        _context = context;
-    }
-
-    public async Task<Unit> Handle(DeleteDestinationForHealthcareUserCommand request, CancellationToken cancellationToken)
+    public async Task Handle(DeleteDestinationForHealthcareUserCommand request, CancellationToken cancellationToken)
     {
         var entity = await _context.HealthcareDestinations.FirstOrDefaultAsync(h => h.Id == request.Id && h.HealthcareUserId == request.HealthcareUserId, cancellationToken);
         if (entity != null)
@@ -24,7 +19,5 @@ public class DeleteDestinationForHealthcareUserCommandHandler : IRequestHandler<
             entity.IsActive = false;
             await _context.SaveChangesAsync(cancellationToken);
         }
-
-        return Unit.Value;
     }
 }

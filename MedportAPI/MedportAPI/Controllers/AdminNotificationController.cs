@@ -60,16 +60,25 @@ public class AdminNotificationController : ApiControllerBase
     }
 
     [HttpPost("test-system")]
-    public async Task<ActionResult<ApiResponse<TestSystemResultDto>>> TestSystem([FromBody] TestNotificationSystemCommand command, CancellationToken cancellationToken)
+    public async Task<ActionResult<ApiResponse<TestSystemResultDto>>> TestSystem(
+        [FromBody] TestNotificationSystemCommand command, 
+        CancellationToken cancellationToken
+    )
     {
         var data = await Mediator.Send(command, cancellationToken);
         return Ok(ApiResponse<TestSystemResultDto>.Ok(data));
     }
 
     [HttpGet("logs")]
-    public async Task<ActionResult<ApiResponse<IEnumerable<object>>>> GetLogs([FromQuery] int days = 30, [FromQuery] int limit = 100, [FromQuery] Guid? userId = null, [FromQuery] string channel = null, [FromQuery] string status = null, CancellationToken cancellationToken = default)
+    public async Task<ActionResult> GetLogs(
+        [FromBody] GetLogsQuery query,
+        CancellationToken cancellationToken = default
+    )
     {
-        var data = await Mediator.Send(new GetLogsQuery(days, limit, userId, channel, status), cancellationToken);
-        return Ok(ApiResponse<IEnumerable<object>>.Ok(data));
+        var data = await Mediator.Send(query, cancellationToken);
+
+        var response = ApiResponse<IEnumerable<object>>.Ok(data);
+
+        return Ok(response);
     }
 }

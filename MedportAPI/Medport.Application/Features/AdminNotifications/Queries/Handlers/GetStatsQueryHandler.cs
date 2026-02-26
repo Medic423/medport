@@ -57,19 +57,19 @@ public class GetStatsQueryHandler(IApplicationDbContext context, IMapper mapper)
                 }
 
                 // User stats
-                if (!stats.ByUser.ContainsKey(log.UserId))
+                if (!stats.ByUser.ContainsKey(log.UserId.ToString()))
                 {
-                    stats.ByUser[log.UserId] = new MessageCountDto();
+                    stats.ByUser[log.UserId.ToString()] = new MessageCountDto();
                 }
 
-                stats.ByUser[log.UserId].Sent++;
+                stats.ByUser[log.UserId.ToString()].Sent++;
                 if (log.Status == AdminNotificationConstants.SentStatus)
                 {
-                    stats.ByUser[log.UserId].Delivered++;
+                    stats.ByUser[log.UserId.ToString()].Delivered++;
                 }
                 if (log.Status == AdminNotificationConstants.FailedStatus)
                 {
-                    stats.ByUser[log.UserId].Failed++;
+                    stats.ByUser[log.UserId.ToString()].Failed++;
                 }
 
                 // Type stats

@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Medport.Application.Tracc.Features.Hospitals.Constants;
+﻿namespace Medport.Application.Tracc.Features.Hospitals.Constants;
 
 public class HospitalConstants
 {

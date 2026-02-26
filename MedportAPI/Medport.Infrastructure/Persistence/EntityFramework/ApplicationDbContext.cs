@@ -42,6 +42,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     #region Transport DbSets
     public DbSet<TransportRequest> TransportRequests { get; set; }
     public DbSet<AgencyResponse> AgencyResponses { get; set; }
+    public DbSet<NotificationLog> NotificationLogs { get; set; }
     #endregion
 
     #region Reference Data DbSets

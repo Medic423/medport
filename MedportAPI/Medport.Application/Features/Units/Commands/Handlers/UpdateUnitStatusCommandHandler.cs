@@ -1,7 +1,9 @@
 using AutoMapper;
 using MediatR;
 using Medport.Application.Tracc.Features.Units.Commands.Requests;
+using Medport.Application.Tracc.Features.Units.Queries.Dtos;
 using Medport.Domain.Interfaces;
+using System;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Medport.Application.Tracc.Features.Units.Commands.Handlers;
@@ -18,7 +20,12 @@ public class UpdateUnitStatusCommandHandler(IApplicationDbContext context, IMapp
     public async Task<UnitDto> Handle(UpdateUnitStatusCommand request, CancellationToken cancellationToken)
     {
         // Find the unit
-        var unit = await _context.Units.FindAsync(new object[] { request.UnitId }, cancellationToken: cancellationToken);
+        if (!Guid.TryParse(request.UnitId, out var unitGuid))
+        {
+            throw new ArgumentException("Invalid unit id");
+        }
+
+        var unit = await _context.Units.FindAsync(new object[] { unitGuid }, cancellationToken: cancellationToken);
         if (unit == null)
         {
             throw new KeyNotFoundException($"Unit with ID {request.UnitId} not found");

@@ -31,6 +31,7 @@ public interface IApplicationDbContext
     #region Transport DbSets
     DbSet<TransportRequest> TransportRequests { get; set; }
     DbSet<AgencyResponse> AgencyResponses { get; set; }
+    DbSet<NotificationLog> NotificationLogs { get; set; }
     #endregion
 
     #region Reference Data DbSets

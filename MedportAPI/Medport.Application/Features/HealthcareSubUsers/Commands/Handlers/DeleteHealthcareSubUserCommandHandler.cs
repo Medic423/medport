@@ -2,22 +2,14 @@ using MediatR;
 using Medport.Domain.Interfaces;
 using Medport.Application.Tracc.Features.HealthcareSubUsers.Commands.Requests;
 using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
-using System.Threading;
-using System;
 
 namespace Medport.Application.Tracc.Features.HealthcareSubUsers.Commands.Handlers;
 
-public class DeleteHealthcareSubUserCommandHandler : IRequestHandler<DeleteHealthcareSubUserCommand>
+public class DeleteHealthcareSubUserCommandHandler(IApplicationDbContext context) : IRequestHandler<DeleteHealthcareSubUserCommand>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IApplicationDbContext _context = context;
 
-    public DeleteHealthcareSubUserCommandHandler(IApplicationDbContext context)
-    {
-        _context = context;
-    }
-
-    public async Task<Unit> Handle(DeleteHealthcareSubUserCommand request, CancellationToken cancellationToken)
+    public async Task Handle(DeleteHealthcareSubUserCommand request, CancellationToken cancellationToken)
     {
         if (request.CallerUserType != "HEALTHCARE" && request.CallerUserType != "ADMIN")
             throw new UnauthorizedAccessException("Forbidden");
@@ -33,7 +25,5 @@ public class DeleteHealthcareSubUserCommandHandler : IRequestHandler<DeleteHealt
 
         _context.HealthcareUsers.Remove(sub);
         await _context.SaveChangesAsync(cancellationToken);
-
-        return Unit.Value;
     }
 }

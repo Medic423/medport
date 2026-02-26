@@ -19,7 +19,12 @@ public class UpdateUnitCommandHandler(IApplicationDbContext context, IMapper map
     public async Task<UnitDto> Handle(UpdateUnitCommand request, CancellationToken cancellationToken)
     {
         // Find the unit
-        var unit = await _context.Units.FindAsync(new object[] { request.UnitId }, cancellationToken: cancellationToken);
+        if (!Guid.TryParse(request.UnitId, out var unitGuid))
+        {
+            throw new ArgumentException("Invalid unit id");
+        }
+
+        var unit = await _context.Units.FindAsync([unitGuid], cancellationToken: cancellationToken);
         if (unit == null)
         {
             throw new KeyNotFoundException($"Unit with ID {request.UnitId} not found");
@@ -31,15 +36,15 @@ public class UpdateUnitCommandHandler(IApplicationDbContext context, IMapper map
             unit.UnitNumber = request.UnitNumber;
         }
 
-        if (!string.IsNullOrWhiteSpace(request.UnitType))
-        {
-            unit.UnitType = request.UnitType;
-        }
+        //if (!string.IsNullOrWhiteSpace(request.UnitType))
+        //{
+        //    unit.UnitType = request.UnitType;
+        //}
 
-        if (!string.IsNullOrWhiteSpace(request.Description))
-        {
-            unit.Description = request.Description;
-        }
+        //if (!string.IsNullOrWhiteSpace(request.Description))
+        //{
+        //    unit.Description = request.Description;
+        //}
 
         if (request.Capabilities != null && request.Capabilities.Any())
         {

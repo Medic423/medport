@@ -1,18 +1,13 @@
 using MediatR;
 using Medport.Application.Tracc.Features.Backups.Commands.Requests;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 
 namespace Medport.Application.Tracc.Features.Backups.Commands.Handlers;
 
 [ExcludeFromCodeCoverage]
-public class DeleteBackupCommandHandler : IRequestHandler<DeleteBackupCommand>
+public class DeleteBackupCommandHandler() : IRequestHandler<DeleteBackupCommand>
 {
-    public DeleteBackupCommandHandler()
-    {
-    }
-
-    public Task<Unit> Handle(DeleteBackupCommand request, CancellationToken cancellationToken)
+    public Task Handle(DeleteBackupCommand request, CancellationToken cancellationToken)
     {
         var backupDir = Path.Combine(Directory.GetCurrentDirectory(), "database-backups");
         var filePath = Path.Combine(backupDir, request.Filename);
@@ -34,6 +29,6 @@ public class DeleteBackupCommandHandler : IRequestHandler<DeleteBackupCommand>
         }
         catch { }
 
-        return Task.FromResult(Unit.Value);
+        return Task.CompletedTask;
     }
 }

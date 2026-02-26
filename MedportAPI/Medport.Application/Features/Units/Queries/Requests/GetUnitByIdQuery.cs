@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using MediatR;
+using Medport.Application.Tracc.Features.Units.Queries.Dtos;
 
 namespace Medport.Application.Tracc.Features.Units.Queries.Requests;
 
-public class GetUnitByIdQuery
-{
-}
+public record GetUnitByIdQuery(Guid UnitId) : IRequest<UnitDto>;
