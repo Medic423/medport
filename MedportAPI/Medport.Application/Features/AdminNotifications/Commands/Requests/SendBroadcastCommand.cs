@@ -1,13 +1,24 @@
 using MediatR;
 using Medport.Application.Tracc.Features.AdminNotifications.Queries.Dtos;
-using System.Collections.Generic;
 
 namespace Medport.Application.Tracc.Features.AdminNotifications.Commands.Requests;
 
 public class SendBroadcastCommand : IRequest<BroadcastResultDto>
 {
-    public string NotificationType { get; set; }
-    public object EmailData { get; set; }
-    public object SmsData { get; set; }
-    public IEnumerable<string> UserTypes { get; set; } = new List<string>{ "ADMIN", "USER", "HEALTHCARE", "EMS" };
+    public required string NotificationType { get; set; }
+    public string? Message { get; set; }
+    public SendBroadcastCommandEmailDataBody? EmailData { get; set; }
+    public SendBroadcastCommandSmsDataBody? SmsData { get; set; }
+    public List<string> UserTypes { get; set; } = ["ADMIN", "USER", "HEALTHCARE", "EMS"];
+}
+
+public class SendBroadcastCommandEmailDataBody
+{
+    public string? Subject { get; set; }
+    public string? Body { get; set; }
+}
+
+public class SendBroadcastCommandSmsDataBody
+{
+    public string? Message { get; set; }
 }
