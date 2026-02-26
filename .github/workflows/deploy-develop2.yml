@@ -10,11 +10,11 @@ on:
 
 env:
   DOTNET_VERSION: '9.0.x'
-  AZURE_WEBAPP_NAME: 'traccems-app-api-dev'
+  AZURE_WEBAPP_NAME: 'your-webapp-name'
 
 jobs:
   build-and-deploy:
-    if: github.event.pull_request.merged == true
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
 
     steps:
