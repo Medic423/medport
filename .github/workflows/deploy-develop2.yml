@@ -1,0 +1,42 @@
+name: Deploy to Azure Web App
+
+on:
+  pull_request:
+    branches:
+      - develop2
+    types:
+      - closed
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  AZURE_WEBAPP_NAME: 'traccems-app-api-dev'
+
+jobs:
+  build-and-deploy:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore MedportAPI/MedportAPI/Medport.API.Tracc.csproj
+
+      - name: Build
+        run: dotnet build MedportAPI/MedportAPI/Medport.API.Tracc.csproj --configuration Release --no-restore
+
+      - name: Publish
+        run: dotnet publish MedportAPI/MedportAPI/Medport.API.Tracc.csproj --configuration Release --no-build --output ./publish
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_DOTNET_WEBAPP_PUBLISH_PROFILE }}
+          package: ./publish
