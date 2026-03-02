@@ -1,8 +1,16 @@
 # Connector Lines Fix Plan
 
 **Date:** February 11, 2026  
-**Status:** Deferred  
+**Status:** Partially addressed (responsive fix 2026-03-02)  
 **Related:** landing_implementation_checklst.md, Phase 4.3 (Who TRACC is for), Phase 5.3 (How TRACC works)
+
+## Responsive Fix (2026-03-02)
+
+Connector graphics were overlapping text when the browser was resized because they used fixed pixel widths and absolute positioning. Changes made:
+
+- **WhoTracIsForSection:** Moved left bracket from title row into content row as first flex item; replaced absolute positioning of right bracket with flex layout; applied responsive `clamp()` widths to all connector SVGs.
+- **ProcessSection:** Same pattern – bracket in content row, responsive widths via `clamp()`.
+- Connectors now flow with the layout and scale with viewport, preventing overlap on resize.
 
 ---
 

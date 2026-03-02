@@ -24,12 +24,13 @@ const steps = [
   },
 ];
 
-/** Connector 1: Bracket – left of "How TRACC works"; top bar ends at Y-axis of Connector 2 ellipse (right edge at x=221 in Connector 2) */
+/** Connector 1: Bracket – left of "How TRACC works"; top bar ends at Y-axis of Connector 2 ellipse. Responsive width so it scales with viewport and doesn't overlap text on resize. */
 const BracketConnector: React.FC = () => (
   <svg
     viewBox="0 0 1004 420"
     preserveAspectRatio="xMinYMin meet"
-    className="flex-shrink-0 w-[411px] md:w-[576px] h-auto min-w-[411px] md:min-w-[576px] mt-[65px]"
+    className="flex-shrink-0 h-auto"
+    style={{ width: 'min(100%, clamp(280px, 35vw, 576px))' }}
     aria-hidden
   >
     <path d="M 20 0 L 820 0 L 820 20 L 0 20 Q 0 0 20 0 Z" fill="#006AC6" />
@@ -39,11 +40,12 @@ const BracketConnector: React.FC = () => (
   </svg>
 );
 
-/** Connector 2: Horizontal bar + dot (lollipop) – between steps */
+/** Connector 2: Horizontal bar + dot (lollipop) – between steps. Responsive sizing. */
 const Connector2: React.FC = () => (
   <svg
     viewBox="0 0 250 80"
-    className="flex-shrink-0 w-20 md:w-28 h-auto"
+    className="flex-shrink-0 h-auto"
+    style={{ width: 'clamp(80px, 10vw, 112px)' }}
     aria-hidden
   >
     <rect x="0" y="30" width="182" height="20" rx="10" fill="#006AC6" />
@@ -69,26 +71,27 @@ const ProcessSection: React.FC = () => {
         }}
       />
 
-      {/* Section title with bracket on left */}
+      {/* Section title – bracket is in content row so it flows with layout */}
       <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 mb-0">
-        <div className="flex items-start gap-4">
-          <BracketConnector />
-          <h2
-            className="font-serifa font-medium text-right flex-1 min-w-0 pr-4 md:pr-8 mr-16 md:mr-24 lg:mr-32 -ml-20"
-            style={{
-              fontSize: 'clamp(2rem, 5vw, 80px)',
-              lineHeight: '131px',
-            }}
-          >
-            <span style={{ color: '#FF5700' }}>How</span>{' '}
-            <span style={{ color: '#001872' }}>TRACC works</span>
-          </h2>
-        </div>
+        <h2
+          className="font-serifa font-medium text-right"
+          style={{
+            fontSize: 'clamp(2rem, 5vw, 80px)',
+            lineHeight: '131px',
+          }}
+        >
+          <span style={{ color: '#FF5700' }}>How</span>{' '}
+          <span style={{ color: '#001872' }}>TRACC works</span>
+        </h2>
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-[100px]">
-        {/* Three steps with Connector 2 on each side of 2. Match */}
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-4 md:-mt-8">
+        {/* Left bracket + three steps + Connector 2 – all in one flex row so connectors respect resize */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-center gap-6 lg:gap-8">
+          {/* Connector 1: left bracket – first flex item so it flows with content */}
+          <div className="hidden md:block flex-shrink-0 self-start pt-8" aria-hidden>
+            <BracketConnector />
+          </div>
           {steps.map((step) => (
             <React.Fragment key={step.number}>
               <div className="text-center flex-1 min-w-0">

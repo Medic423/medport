@@ -22,12 +22,14 @@ const audiences = [
   },
 ];
 
-/** Bracket connector – lengthened vertical to reach icons; ellipse aligns with column titles */
+/** Bracket connector – lengthened vertical to reach icons; ellipse aligns with column titles. Uses responsive width so it scales with viewport and doesn't overlap text on resize. */
 const BracketConnector: React.FC = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 230 480"
-    className="flex-shrink-0 w-16 md:w-24 h-auto mt-[65px]"
+    preserveAspectRatio="xMinYMin meet"
+    className="flex-shrink-0 h-auto"
+    style={{ width: 'clamp(48px, 8vw, 96px)' }}
     aria-hidden
   >
     <path d="M 20 0 L 102 0 L 102 20 L 0 20 Q 0 0 20 0 Z" fill="#006AC6" />
@@ -37,12 +39,14 @@ const BracketConnector: React.FC = () => (
   </svg>
 );
 
-/** Mirror bracket – vertical on right, ellipse at bottom left; top of bar aligns with left ellipse X */
+/** Mirror bracket – vertical on right, ellipse at bottom left; top of bar aligns with left ellipse X. Responsive width so it scales with viewport. */
 export const BracketConnectorMirror: React.FC<{ className?: string }> = ({ className = '' }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 230 670"
-    className={`flex-shrink-0 w-16 md:w-24 h-auto ${className}`}
+    preserveAspectRatio="xMaxYMin meet"
+    className={`flex-shrink-0 h-auto ${className}`}
+    style={{ width: 'clamp(48px, 8vw, 96px)' }}
     aria-hidden
   >
     <g transform="translate(230, 0) scale(-1, 1)">
@@ -54,11 +58,12 @@ export const BracketConnectorMirror: React.FC<{ className?: string }> = ({ class
   </svg>
 );
 
-/** Connector 2: Horizontal bar + dot (lollipop) – between columns */
+/** Connector 2: Horizontal bar + dot (lollipop) – between columns. Responsive sizing. */
 const LollipopConnector: React.FC = () => (
   <svg
     viewBox="0 0 250 80"
-    className="flex-shrink-0 w-20 md:w-28 h-auto"
+    className="flex-shrink-0 h-auto"
+    style={{ width: 'clamp(80px, 10vw, 112px)' }}
     aria-hidden
   >
     <rect x="0" y="30" width="182" height="20" rx="10" fill="#006AC6" />
@@ -84,26 +89,27 @@ const WhoTracIsForSection: React.FC = () => {
         }}
       />
 
-      {/* Section title with brackets */}
+      {/* Section title – no bracket here; bracket is in content row so it flows with layout */}
       <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8">
-        <div className="mb-0 flex items-start gap-4">
-          <BracketConnector />
-          <h2
-            className="font-serifa font-medium flex-1 min-w-0 pr-20 md:pr-24"
-            style={{
-              fontSize: 'clamp(2rem, 5vw, 80px)',
-              lineHeight: '131px',
-            }}
-          >
-            <span style={{ color: '#FF5700' }}>Who</span>{' '}
-            <span style={{ color: '#001872' }}>TRACC is for</span>
-          </h2>
-        </div>
+        <h2
+          className="font-serifa font-medium"
+          style={{
+            fontSize: 'clamp(2rem, 5vw, 80px)',
+            lineHeight: '131px',
+          }}
+        >
+          <span style={{ color: '#FF5700' }}>Who</span>{' '}
+          <span style={{ color: '#001872' }}>TRACC is for</span>
+        </h2>
       </div>
 
       <div className="relative w-full max-w-7xl mx-auto pl-4 sm:pl-6 lg:pl-8 pr-4 sm:pr-6 lg:pr-8">
-        {/* Three columns with Connector 2 (lollipop) between them; Connector 3 on right, top bar aligned with lollipops */}
-        <div className="relative flex flex-col md:flex-row md:items-center md:justify-start gap-4 lg:gap-5 -mt-28 md:-mt-32 md:ml-8">
+        {/* Left bracket + three columns + lollipops + right bracket – all in one flex row so connectors respect resize */}
+        <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4 lg:gap-5 -mt-4 md:-mt-8 md:ml-0">
+          {/* Connector 1: left bracket – first flex item so it flows with content */}
+          <div className="hidden md:block flex-shrink-0 self-start pt-8" aria-hidden>
+            <BracketConnector />
+          </div>
           {audiences.map((audience, index) => (
             <React.Fragment key={index}>
               <div className="text-center flex-1 min-w-0">
@@ -139,11 +145,8 @@ const WhoTracIsForSection: React.FC = () => {
               )}
             </React.Fragment>
           ))}
-          {/* Connector 3: right side, same padding as Connector 1; top bar aligned with Connector 2 (lollipop) row */}
-          <div
-            className="absolute right-4 sm:right-6 lg:right-8 top-[calc(50%-10px)] z-10 hidden md:block translate-x-[120px]"
-            aria-hidden
-          >
+          {/* Connector 3: right side, flows with flex layout so it respects resize (no absolute positioning) */}
+          <div className="hidden md:flex flex-shrink-0 items-center justify-end pl-4" aria-hidden>
             <BracketConnectorMirror />
           </div>
         </div>
