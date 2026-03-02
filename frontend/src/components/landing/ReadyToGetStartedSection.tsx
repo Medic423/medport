@@ -17,7 +17,7 @@ const ReadyToGetStartedSection: React.FC<ReadyToGetStartedSectionProps> = ({
   return (
     <section
       id="ready-to-get-started"
-      className="relative py-16 md:py-20 overflow-hidden bg-tracc-primary"
+      className="relative -mt-[108px] pt-0 pb-16 md:pb-20 overflow-hidden bg-tracc-primary"
       style={{
         backgroundColor: '#001872',
         backgroundImage: `url(${ctaBgUrl})`,

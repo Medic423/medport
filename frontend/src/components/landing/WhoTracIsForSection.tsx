@@ -81,7 +81,7 @@ const WhoTracIsForSection: React.FC<WhoTracIsForSectionProps> = ({ includeHowSec
   return (
     <section
       id="who-tracc-is-for"
-      className="relative pt-1 pb-10 md:pt-9 md:pb-10 overflow-visible"
+      className="relative pt-1 pb-0 md:pt-9 md:pb-0 overflow-visible"
       style={{ backgroundColor: SECTION_BG }}
     >
       {/* Grid pattern – opacity 0.38 per figma */}

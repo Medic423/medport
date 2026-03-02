@@ -149,7 +149,7 @@ const ProcessSection: React.FC = () => {
 
 /** How content only – steps + connectors, no section wrapper or header. For use in InformationSection. */
 export const ProcessContent: React.FC = () => (
-  <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 md:pb-24">
+  <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-0">
     <div className="flex flex-col md:flex-row md:items-center md:justify-center gap-6 lg:gap-8">
       <div
         className="hidden md:block flex-shrink-0 self-end mb-24 -ml-[26px] sm:-ml-[34px] lg:-ml-[42px] relative overflow-visible"
