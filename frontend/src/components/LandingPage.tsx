@@ -2,7 +2,6 @@ import React from 'react';
 import Navigation from './landing/Navigation';
 import HeroSection from './landing/HeroSection';
 import WhoTracIsForSection from './landing/WhoTracIsForSection';
-import ProcessSection from './landing/ProcessSection';
 import ReadyToGetStartedSection from './landing/ReadyToGetStartedSection';
 import Footer from './landing/Footer';
 
@@ -27,8 +26,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onShowRegistration }
       <Navigation />
       <main className="overflow-x-visible">
         <HeroSection onLogin={onLogin} onShowRegistration={onShowRegistration} />
-        <WhoTracIsForSection />
-        <ProcessSection />
+        <WhoTracIsForSection includeHowSection />
         <ReadyToGetStartedSection onShowRegistration={onShowRegistration} />
       </main>
       <Footer />

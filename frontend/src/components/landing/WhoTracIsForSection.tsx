@@ -1,4 +1,5 @@
 import React from 'react';
+import { ProcessContent } from './ProcessSection';
 
 const SECTION_BG = '#F0F3FF';
 const GRID_URL = '/landing/patterns/TRACC_Grid_Tile.svg';
@@ -51,9 +52,9 @@ export const BracketConnectorMirror: React.FC<{ className?: string }> = ({ class
   >
     <g transform="translate(230, 0) scale(-1, 1)">
       <path d="M 20 0 L 182 0 L 182 20 L 0 20 Q 0 0 20 0 Z" fill="#006AC6" />
-      <rect x="0" y="20" width="20" height="583" fill="#006AC6" />
-      <rect x="0" y="603" width="182" height="20" fill="#006AC6" />
-      <ellipse cx="198" cy="613" rx="23" ry="24" fill="#006AC6" />
+      <rect x="0" y="20" width="20" height="550" fill="#006AC6" />
+      <rect x="0" y="570" width="182" height="20" fill="#006AC6" />
+      <ellipse cx="198" cy="580" rx="23" ry="24" fill="#006AC6" />
     </g>
   </svg>
 );
@@ -71,7 +72,12 @@ const LollipopConnector: React.FC = () => (
   </svg>
 );
 
-const WhoTracIsForSection: React.FC = () => {
+interface WhoTracIsForSectionProps {
+  /** When true, renders "How TRACC works" header and content between the two informational rows (Phase 1 layout) */
+  includeHowSection?: boolean;
+}
+
+const WhoTracIsForSection: React.FC<WhoTracIsForSectionProps> = ({ includeHowSection = false }) => {
   return (
     <section
       id="who-tracc-is-for"
@@ -89,8 +95,8 @@ const WhoTracIsForSection: React.FC = () => {
         }}
       />
 
-      {/* Section title – no bracket here; bracket is in content row so it flows with layout */}
-      <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8">
+      {/* Section title – shifted right for 1 grid square spacing from connector top bar; 1 grid square (40px) below */}
+      <div className="relative z-10 w-full pl-[calc(1rem+40px)] sm:pl-[calc(1.5rem+40px)] lg:pl-[calc(2rem+40px)] pr-4 sm:pr-6 lg:pr-8 mb-10">
         <h2
           className="font-serifa font-medium"
           style={{
@@ -103,11 +109,11 @@ const WhoTracIsForSection: React.FC = () => {
         </h2>
       </div>
 
-      <div className="relative w-full max-w-7xl mx-auto pl-4 sm:pl-6 lg:pl-8 pr-4 sm:pr-6 lg:pr-8">
+      <div className="relative w-full max-w-7xl ml-0 mr-auto pl-4 sm:pl-6 lg:pl-8 pr-4 sm:pr-6 lg:pr-8">
         {/* Left bracket + three columns + lollipops + right bracket – all in one flex row so connectors respect resize */}
         <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4 lg:gap-5 -mt-4 md:-mt-8 md:ml-0">
-          {/* Connector 1: left bracket – first flex item so it flows with content */}
-          <div className="hidden md:block flex-shrink-0 self-start pt-8" aria-hidden>
+          {/* Connector 1: left bracket – top bar ~middle of 'W' in header; aligned to left border */}
+          <div className="hidden md:block flex-shrink-0 self-start pt-8 -mt-[105px] -ml-4 sm:-ml-6 lg:-ml-8" aria-hidden>
             <BracketConnector />
           </div>
           {audiences.map((audience, index) => (
@@ -139,18 +145,36 @@ const WhoTracIsForSection: React.FC = () => {
                 </p>
               </div>
               {index < audiences.length - 1 && (
-                <div className="flex justify-center items-center min-w-[80px] md:min-w-[112px] shrink-0">
+                <div className="flex justify-center items-center min-w-[80px] md:min-w-[112px] shrink-0 -mt-[7px]">
                   <LollipopConnector />
                 </div>
               )}
             </React.Fragment>
           ))}
-          {/* Connector 3: right side, flows with flex layout so it respects resize (no absolute positioning) */}
-          <div className="hidden md:flex flex-shrink-0 items-center justify-end pl-4" aria-hidden>
-            <BracketConnectorMirror />
-          </div>
         </div>
       </div>
+
+      {includeHowSection && (
+        <>
+          {/* "How TRACC works" header – between Who content and How content per reference */}
+          <div
+            id="quick-start"
+            className="relative z-10 w-full px-4 sm:px-6 lg:px-8 pr-20 md:pr-28 lg:pr-32 py-8 md:py-12"
+          >
+            <h2
+              className="font-serifa font-medium text-center md:text-right max-w-7xl mx-auto"
+              style={{
+                fontSize: 'clamp(2rem, 5vw, 80px)',
+                lineHeight: '131px',
+              }}
+            >
+              <span style={{ color: '#FF5700' }}>How</span>{' '}
+              <span style={{ color: '#001872' }}>TRACC works</span>
+            </h2>
+          </div>
+          <ProcessContent />
+        </>
+      )}
     </section>
   );
 };
