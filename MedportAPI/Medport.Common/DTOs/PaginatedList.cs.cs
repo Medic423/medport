@@ -21,11 +21,21 @@ public class PaginatedList<T>
 
     public bool HasNextPage => PageNumber < TotalPages - 1; //Page index starts at 0
 
-    public static async Task<PaginatedList<T>> CreateAsync(IQueryable<T> source, int pageNumber, int pageSize, CancellationToken cancellationToken)
+    public static async Task<PaginatedList<T>> CreateAsync(
+        IQueryable<T> source, 
+        int pageNumber, 
+        int pageSize, 
+        CancellationToken cancellationToken
+    )
     {
         var count = await source.CountAsync(cancellationToken);
 
         List<T> items = new();
+
+        if (pageNumber == 1)
+        {
+            pageNumber = 0;
+        }
 
         if (pageSize == -1)
         {

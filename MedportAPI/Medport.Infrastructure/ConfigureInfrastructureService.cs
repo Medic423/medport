@@ -12,8 +12,9 @@ public static class ConfigureInfrastructureService
 {
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services)
     {
+        //TODO
         //IMCLSettings settings = services.BuildServiceProvider().GetRequiredService<IMCLSettings>();
-        string heroConnectionString = "TODO";//settings.GetSetting(Constants.KeyVaults.EnvironmentSecretNames.HeroConnString);
+        string heroConnectionString = "Server=tcp:traccems-dbserver-dev.database.windows.net,1433;Initial Catalog=traccems-db-dev;Persist Security Info=False;User ID=traccemsadmin;Password=rFWzcx2Y2bs8ugh;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=True;Connection Timeout=30;";//settings.GetSetting(Constants.KeyVaults.EnvironmentSecretNames.HeroConnString);
 
         services.AddDbContext<IApplicationDbContext, ApplicationDbContext>(options =>
             options.UseSqlServer(heroConnectionString,

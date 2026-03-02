@@ -1,13 +1,14 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Medport.API.Tracc.CustomAttributes;
+using Medport.API.Tracc.Infrastructure;
+using Medport.Application.Common;
+using Medport.Application.Tracc;
+using Medport.Application.Tracc.Features.AgencyResponses.Mappings;
+using Medport.Infrastructure;
+using Medport.Infrastructure.Azure;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Diagnostics.CodeAnalysis;
-using Medport.Infrastructure;
-using Medport.Application.Common;
-using Medport.Application.Tracc;
-using Medport.Infrastructure.Azure;
-using Medport.API.Tracc.Infrastructure;
-
 
 namespace Medport.API.Tracc;
 
@@ -25,11 +26,18 @@ public static class ServiceExtensions
 
         services.AddCors();
 
+        services.AddScoped<ModelValidationAttribute>();
+
         services.AddAzureInfrastructureServices();
         //services.InstantiateApplicationHeroSettings(Configuration);
         
         /// TODO
-        //services.AddAutoMapper(new[] { typeof(LegacyMappingProfile), typeof(AppCodeProfile) });
+
+        services.AddAutoMapper(cfg =>
+        {
+            //cfg.LicenseKey = "<Your-License-Key-Here>"; // Register for a license key at AutoMapper.io
+        }, typeof(AgencyResponsesMappingProfile).Assembly); // Scans the assembly for classes inheriting from Profile
+
 
         services.AddApplicationServices();
         services.AddApplicationCommonServices();
@@ -40,7 +48,8 @@ public static class ServiceExtensions
         services.AddHttpClient();
         services.AddAzureInfrastructureTypedHttpClients();
 
-        services.RegisterClasses();
+        // Removed recursive self-call:
+        // services.RegisterClasses();
 
         //services.AddControllers(options =>
         //{
@@ -61,35 +70,6 @@ public static class ServiceExtensions
         {
             options.SuppressModelStateInvalidFilter = true;
         });
-        //services.AddScoped<ModelValidationAttribute>();
-
-        //services.AddSwaggerGen(_ =>
-        //{
-        //    _.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-        //    {
-        //        In = ParameterLocation.Header,
-        //        Description = "Please enter token",
-        //        Name = "Authorization",
-        //        Type = SecuritySchemeType.Http,
-        //        BearerFormat = "JWT",
-        //        Scheme = "bearer"
-        //    });
-
-        //    _.AddSecurityRequirement(new OpenApiSecurityRequirement
-        //        {
-        //            {
-        //                new OpenApiSecurityScheme
-        //                {
-        //                    Reference = new OpenApiReference
-        //                    {
-        //                        Type=ReferenceType.SecurityScheme,
-        //                        Id="Bearer"
-        //                    }
-        //                },
-        //                new string[]{}
-        //            }
-        //        });
-        //});
 
     }
 

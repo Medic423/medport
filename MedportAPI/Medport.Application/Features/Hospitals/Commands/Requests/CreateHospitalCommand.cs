@@ -32,7 +32,7 @@ public record CreateHospitalCommand : IRequest<HospitalDto>
     
     public required string Region { get; set; }
     
-    public JsonElement Coordinates { get; set; }
+    //public JsonElement Coordinates { get; set; }
 
     public double? Latitude { get; set; }
 

@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using MediatR;
+﻿using MediatR;
 using Medport.Application.Tracc.Features.AdminNotifications.Constants;
 using Medport.Application.Tracc.Features.AdminNotifications.Queries.Dtos;
 using Medport.Application.Tracc.Features.AdminNotifications.Queries.Requests;
@@ -7,15 +6,14 @@ using Medport.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace Medport.Application.Tracc.Features.AdminNotifications.Queries.Handlers;
-public class GetStatsQueryHandler(IApplicationDbContext context, IMapper mapper) : IRequestHandler<GetStatsQuery, MessageStatsDto>
+public class GetStatsQueryHandler : IRequestHandler<GetStatsQuery, MessageStatsDto>
 {
-    private readonly IApplicationDbContext _context = context;
-    private readonly IMapper _mapper = mapper;
+    private readonly IApplicationDbContext _context;
+
+    public GetStatsQueryHandler(IApplicationDbContext context) => _context = context;
 
     public async Task<MessageStatsDto> Handle(GetStatsQuery request, CancellationToken cancellationToken)
     {
-        // Check if admin 
-        // May want to add middleware to controller route for this and not do in here
         try
         {
             var since = DateTime.UtcNow.AddDays(-request.days);
@@ -23,7 +21,7 @@ public class GetStatsQueryHandler(IApplicationDbContext context, IMapper mapper)
             var logs = await _context.NotificationLogs
                 .Where(x => x.SentAt >= since)
                 .Include(x => x.User)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             var stats = new MessageStatsDto
             {
@@ -57,30 +55,32 @@ public class GetStatsQueryHandler(IApplicationDbContext context, IMapper mapper)
                 }
 
                 // User stats
-                if (!stats.ByUser.ContainsKey(log.UserId.ToString()))
+                var userKey = log.UserId.ToString();
+                if (!stats.ByUser.ContainsKey(userKey))
                 {
-                    stats.ByUser[log.UserId.ToString()] = new MessageCountDto();
+                    stats.ByUser[userKey] = new MessageCountDto();
                 }
 
-                stats.ByUser[log.UserId.ToString()].Sent++;
+                stats.ByUser[userKey].Sent++;
                 if (log.Status == AdminNotificationConstants.SentStatus)
                 {
-                    stats.ByUser[log.UserId.ToString()].Delivered++;
+                    stats.ByUser[userKey].Delivered++;
                 }
                 if (log.Status == AdminNotificationConstants.FailedStatus)
                 {
-                    stats.ByUser[log.UserId.ToString()].Failed++;
+                    stats.ByUser[userKey].Failed++;
                 }
 
                 // Type stats
-                if (!stats.ByType.ContainsKey(log.NotificationType))
+                var typeKey = log.NotificationType ?? string.Empty;
+                if (!stats.ByType.ContainsKey(typeKey))
                 {
-                    stats.ByType[log.NotificationType] = new MessageCountDto();
+                    stats.ByType[typeKey] = new MessageCountDto();
                 }
 
-                stats.ByType[log.NotificationType].Sent++;
-                if (log.Status == AdminNotificationConstants.SentStatus) stats.ByType[log.NotificationType].Delivered++;
-                if (log.Status == AdminNotificationConstants.FailedStatus) stats.ByType[log.NotificationType].Failed++;
+                stats.ByType[typeKey].Sent++;
+                if (log.Status == AdminNotificationConstants.SentStatus) stats.ByType[typeKey].Delivered++;
+                if (log.Status == AdminNotificationConstants.FailedStatus) stats.ByType[typeKey].Failed++;
             }
 
             stats.DeliveryRate = stats.TotalSent > 0
@@ -104,8 +104,8 @@ public class GetStatsQueryHandler(IApplicationDbContext context, IMapper mapper)
                     Email = new MessageCountDto(),
                     Sms = new MessageCountDto()
                 },
-                ByUser = [],
-                ByType = []
+                ByUser = new Dictionary<string, MessageCountDto>(),
+                ByType = new Dictionary<string, MessageCountDto>()
             };
         }
     }

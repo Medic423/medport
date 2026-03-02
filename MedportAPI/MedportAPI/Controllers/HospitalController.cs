@@ -13,14 +13,14 @@ namespace Medport.API.Tracc.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize]
+//[Authorize]
 [ServiceFilter(typeof(ModelValidationAttribute))]
 [ExcludeFromCodeCoverage]
 public class HospitalController : ApiControllerBase
 {
     // need error handling fix global exception to return api response of fail instead
     [HttpGet]
-    public async Task<ActionResult> GetAllPaginated(
+    public async Task<ActionResult<ApiResponse<List<HospitalDto>>>> GetAllPaginated(
             [FromQuery] GetAllHospitalsWithPaginationQuery query,
             CancellationToken cancellationToken
     )

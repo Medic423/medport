@@ -31,7 +31,7 @@ public class HospitalDto
     public List<string> Capabilities { get; set; } = new();
 
     // Equivalent to Prisma JsonValue
-    public JsonElement Coordinates { get; set; }
+    //public JsonElement Coordinates { get; set; }
 
     public string Region { get; set; } = string.Empty;
 

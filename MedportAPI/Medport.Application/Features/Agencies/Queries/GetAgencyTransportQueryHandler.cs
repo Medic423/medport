@@ -19,17 +19,15 @@ public class GetAgencyTransportQueryHandler(IApplicationDbContext context, IMapp
         // ADMIN without agencyId → return demo admin data
         if (request.AgencyId == Guid.Empty)
         {
-            // TODO FIX
-            //if (role == "ADMIN")
-            //{
-            //    return DemoDataHelper.AdminDemoRequests();
-            //}
+            //TODOFIX
+            //role == "ADMIN"
+            if (true)
+            {
+                return DemoDataHelper.AdminDemoRequests();
+            }
         }
 
-        // TODO FIX
-        // Demo Mode
-        var isDemoMode = true;//authHeader == "Bearer demo-agency-token";
-        if (isDemoMode)
+        if (request.IsDemo)
         {
             return DemoDataHelper.DemoRequests();
         }

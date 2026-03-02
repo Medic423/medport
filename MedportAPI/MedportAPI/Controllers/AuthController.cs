@@ -27,7 +27,10 @@ public class AuthController : ApiControllerBase
     }
 
     [HttpPost("login")]
-    public async Task<ActionResult<ApiResponse<AuthResultDto>>> Login([FromBody] LoginCommand command, CancellationToken cancellationToken)
+    public async Task<ActionResult<ApiResponse<AuthResultDto>>> Login(
+        [FromBody] LoginCommand command, 
+        CancellationToken cancellationToken
+    )
     {
         var data = await _mediator.Send(command, cancellationToken);
         if (data == null) return Unauthorized(ApiResponse<object>.Fail("Invalid credentials"));

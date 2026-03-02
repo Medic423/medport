@@ -21,7 +21,13 @@ public class AgencyController : ApiControllerBase
     [HttpGet("transport-requests/{agencyId}")]
     public async Task<ActionResult> GetTransportRequest(Guid agencyId,CancellationToken cancellationToken)
     {
-        return Ok(await Mediator.Send(new GetAgencyTransportQuery(agencyId), cancellationToken));
+        HttpContext.Request.Headers.TryGetValue("Authorization", out var authorizationHeader);
+        
+        bool isDemo = authorizationHeader == "Bearer demo-agency-token";
+
+        var response = await Mediator.Send(new GetAgencyTransportQuery(agencyId, isDemo), cancellationToken);
+
+        return Ok(response);
     }
 
     [HttpPost("/transport-requests/{agencyId}/accept")]
@@ -51,4 +57,6 @@ public class AgencyController : ApiControllerBase
 
         return Ok(response);
     }
+
+    //TODO Add agencies endpoints here 
 }
