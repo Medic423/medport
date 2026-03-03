@@ -49,7 +49,7 @@ public class GetHospitalSearchQueryHandler(IApplicationDbContext context, IMappe
         query = ParameterLogic(query, request);
 
         // Sort
-        query = new DataSort<Hospital>().Sort(query, "asc");
+        query = new DataSort<Hospital>().Sort(query, $"{nameof(Hospital.Name)} asc");
 
         // Execute 
         return await _mapper

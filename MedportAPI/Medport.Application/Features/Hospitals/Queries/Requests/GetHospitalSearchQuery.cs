@@ -10,7 +10,7 @@ namespace Medport.Application.Tracc.Features.Hospitals.Queries.Requests;
 /// </summary>
 
 [ExcludeFromCodeCoverage]
-public class GetHospitalSearchQuery : IRequest<PaginatedList<HospitalDto>>
+public record GetHospitalSearchQuery : IRequest<PaginatedList<HospitalDto>>
 {
     public string? Query { get; set; }
     public int Page { get; set; } = 1;

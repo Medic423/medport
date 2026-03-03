@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Medport.Application.Tracc.Features.AgencyResponses.Commands.Requests;
 using Medport.Application.Tracc.Features.AgencyResponses.Queries.Dtos;
+using Medport.Application.Tracc.Features.Hospitals.Commands.Requests;
 using Medport.Application.Tracc.Features.Hospitals.Queries.Dtos;
 using Medport.Domain.Entities;
 
@@ -12,6 +13,13 @@ public class HospitalMappingProfile : Profile
     {
         CreateMap<Hospital, HospitalDto>();
 
+        CreateMap<CreateHospitalCommand, Hospital>();
+
+        CreateMap<UpdateHospitalCommand, Hospital>();
+
+        CreateMap<ApproveHospitalCommand, Hospital>();
+
+        CreateMap<RejectHospitalCommand, Hospital>();
     }
 }
 

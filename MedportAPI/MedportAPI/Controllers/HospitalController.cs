@@ -48,15 +48,15 @@ public class HospitalController : ApiControllerBase
 
     [HttpGet("search")]
     public async Task<ActionResult> GetSearchQuery(
-            [FromQuery] GetHospitalSearchQuery query,
+            [FromQuery] GetHospitalSearchQuery request,
             CancellationToken cancellationToken)
     {
-        var data = await Mediator.Send(query, cancellationToken);
+        var data = await Mediator.Send(request, cancellationToken);
 
         var pagination = new PaginationDto
         {
-            Limit = query.Limit,
-            Page = query.Page,
+            Limit = request.Limit,
+            Page = request.Page,
             TotalPages = data.TotalPages,
             Total = data.TotalCount
         };
@@ -76,11 +76,15 @@ public class HospitalController : ApiControllerBase
         return Ok(response);
     }
 
-    [HttpPut("{id}")]
+    [HttpPut("{Id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesDefaultResponseType]
-    public async Task<ActionResult> Update(string Id, [FromBody] UpdateHospitalCommand command, CancellationToken cancellationToken)
+    public async Task<ActionResult> Update(
+        [FromRoute] Guid Id,
+        [FromBody] UpdateHospitalCommand command, 
+        CancellationToken cancellationToken
+    )
     {
         var data = await Mediator.Send(command, cancellationToken);
 
@@ -89,10 +93,13 @@ public class HospitalController : ApiControllerBase
         return Ok(response);
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete("{Id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesDefaultResponseType]
-    public async Task<ActionResult> Delete(Guid Id, CancellationToken cancellationToken)
+    public async Task<ActionResult> Delete(
+        [FromRoute] Guid Id,
+        CancellationToken cancellationToken
+    )
     {
         await Mediator.Send(new DeleteHospitalCommand(Id),cancellationToken);
 
@@ -102,12 +109,12 @@ public class HospitalController : ApiControllerBase
         return Ok(response);
     }
 
-    [HttpPut("{id}/approve")]
+    [HttpPut("{Id}/approve")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesDefaultResponseType]
     public async Task<ActionResult> ApproveHospital(
-        Guid Id, 
+        [FromRoute] Guid Id, 
         [FromBody] ApproveHospitalCommand command, 
         CancellationToken cancellationToken
     )
@@ -119,16 +126,19 @@ public class HospitalController : ApiControllerBase
         return Ok(response);
     }
 
-    [HttpPut("{id}/reject")]
+    [HttpPut("{Id}/reject")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesDefaultResponseType]
     public async Task<ActionResult> RejectHospital(
-        Guid Id, 
-        [FromBody] RejectHospitalCommand command, 
+        [FromRoute] Guid Id,
+        [FromBody] RejectHospitalCommand command,
         CancellationToken cancellationToken
     )
     {
+        // Ensure the command contains the id from the route
+        command.Id = Id;
+
         var data = await Mediator.Send(command, cancellationToken);
 
         var response = ApiResponse<HospitalDto>.Ok(data, HospitalConstants.GenericMessages.RejectedSuccesfully);
