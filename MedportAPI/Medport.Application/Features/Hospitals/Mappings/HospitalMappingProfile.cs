@@ -11,7 +11,9 @@ public class HospitalMappingProfile : Profile
 {
     public HospitalMappingProfile()
     {
-        CreateMap<Hospital, HospitalDto>();
+        CreateMap<Hospital, HospitalDto>()
+            .ForMember(dest => dest.LocationName, opt => opt.MapFrom(src => src.Name))
+            .ForMember(dest => dest.FacilityType, opt => opt.MapFrom(src => src.Type));
 
         CreateMap<CreateHospitalCommand, Hospital>();
 

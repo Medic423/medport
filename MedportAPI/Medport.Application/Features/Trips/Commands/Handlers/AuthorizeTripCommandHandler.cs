@@ -8,14 +8,9 @@ using System.Threading;
 
 namespace Medport.Application.Tracc.Features.Trips.Commands.Handlers;
 
-public class AuthorizeTripCommandHandler : IRequestHandler<AuthorizeTripCommand, TransportRequestDto>
+public class AuthorizeTripCommandHandler(IApplicationDbContext context) : IRequestHandler<AuthorizeTripCommand, TransportRequestDto>
 {
-    private readonly IApplicationDbContext _context;
-
-    public AuthorizeTripCommandHandler(IApplicationDbContext context)
-    {
-        _context = context;
-    }
+    private readonly IApplicationDbContext _context = context;
 
     public async Task<TransportRequestDto> Handle(AuthorizeTripCommand request, CancellationToken cancellationToken)
     {

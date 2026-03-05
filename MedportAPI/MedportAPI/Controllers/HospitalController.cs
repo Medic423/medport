@@ -5,7 +5,6 @@ using Medport.Application.Tracc.Features.Hospitals.Commands.Requests;
 using Medport.Application.Tracc.Features.Hospitals.Constants;
 using Medport.Application.Tracc.Features.Hospitals.Queries.Dtos;
 using Medport.Application.Tracc.Features.Hospitals.Queries.Requests;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics.CodeAnalysis;
 
@@ -136,7 +135,6 @@ public class HospitalController : ApiControllerBase
         CancellationToken cancellationToken
     )
     {
-        // Ensure the command contains the id from the route
         command.Id = Id;
 
         var data = await Mediator.Send(command, cancellationToken);

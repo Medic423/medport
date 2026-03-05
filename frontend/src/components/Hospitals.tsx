@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building2, Plus, Edit, Trash2, CheckCircle, XCircle, Clock, Settings } from 'lucide-react';
 import api from '../services/api';
+import dotnetapi from '../services/dotnet-api';
+
 
 interface Hospital {
   id: string;
@@ -49,8 +51,12 @@ const Hospitals: React.FC = () => {
       console.log('TCC_COMMAND: Fetching healthcare facilities...');
       
       // Fetch from healthcare_locations table (not old hospitals table)
-      const response = await api.get('/api/healthcare/locations/all');
+      const response = await dotnetapi.get('/api/hospital');
+      const responsetwo = await api.get('/api/healthcare/locations/all');
       
+      console.log(response)
+      console.log(responsetwo)
+
       if (response.data?.success && Array.isArray(response.data.data)) {
         // Map healthcare_locations to Hospital interface format
         const facilitiesData = response.data.data.map((loc: any) => ({
@@ -86,7 +92,7 @@ const Hospitals: React.FC = () => {
 
   const handleApprove = async (hospitalId: string) => {
     try {
-      const response = await api.put(`/api/tcc/hospitals/${hospitalId}/approve`);
+      const response = await dotnetapi.put(`/api/hospital/${hospitalId}/approve`);
       console.log('Hospital approved:', response.data);
       
       // Refresh the hospitals list
@@ -99,7 +105,7 @@ const Hospitals: React.FC = () => {
 
   const handleReject = async (hospitalId: string) => {
     try {
-      const response = await api.put(`/api/tcc/hospitals/${hospitalId}/reject`);
+      const response = await dotnetapi.put(`/api/hospital/${hospitalId}/reject`);
       console.log('Hospital rejected:', response.data);
       
       // Refresh the hospitals list
@@ -252,7 +258,7 @@ const Hospitals: React.FC = () => {
       console.log('TCC_DEBUG: Edit form data:', editFormData);
       console.log('TCC_DEBUG: isActive value:', editFormData.isActive, 'type:', typeof editFormData.isActive);
       
-      const response = await api.put(`/api/healthcare/locations/${editingHospital.id}/admin`, {
+      const response = await dotnetapi.put(`/api/hospital/${editingHospital.id}`, {
         locationName: editFormData.name,
         address: editFormData.address,
         city: editFormData.city,
@@ -290,7 +296,7 @@ const Hospitals: React.FC = () => {
     }
 
     try {
-      const response = await api.delete(`/api/tcc/hospitals/${hospitalId}`);
+      const response = await dotnetapi.delete(`/api/hospital/${hospitalId}`);
       console.log('Hospital deleted:', response.data);
       
       // Refresh the hospitals list

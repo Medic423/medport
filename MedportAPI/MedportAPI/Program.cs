@@ -6,6 +6,16 @@ using Medport.Infrastructure.Persistence.EntityFramework;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("LocalDev", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000") // exact origin of your frontend
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials(); // only if you actually send credentials
+    });
+});
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -14,6 +24,8 @@ builder.Services.AddOpenApi();
 builder.Services.RegisterClasses();
 
 var app = builder.Build();
+
+app.UseCors("LocalDev");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
