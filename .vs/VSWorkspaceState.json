@@ -1,7 +1,11 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\.github",
+    "\\.github\\workflows",
+    "\\MedportAPI",
+    "\\MedportAPI\\MedportAPI"
   ],
-  "SelectedNode": "\\MedportAPI.sln",
+  "SelectedNode": "\\MedportAPI\\MedportAPI\\Program.cs",
   "PreviewInSolutionExplorer": false
 }

@@ -1,32 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { 
   Search, 
   Filter, 
   Download, 
   RefreshCw, 
-  Eye, 
   Edit, 
   X, 
   CheckCircle, 
   Clock, 
   AlertCircle,
   Truck,
-  MapPin,
-  Calendar,
-  User,
   ChevronDown,
   ChevronUp,
-  Plus,
   Send,
-  Radio,
   Trash2,
-  Shield,
-  Archive
+  Archive,
+  Map
 } from 'lucide-react';
 import { tripsAPI } from '../services/api';
 import TripDispatchScreen from './TripDispatchScreen';
+import TripMap from './TripMap';
+import { MapBounds, isTripInBounds } from '../utils/mapBounds';
+import clsx from 'clsx';
 
 interface Trip {
   id: string;
@@ -58,6 +54,8 @@ interface Trip {
     hospital?: {
       id: string;
       name: string;
+      latitude?: number;
+      longitude?: number;
     };
   };
   // Healthcare facility fields
@@ -68,6 +66,24 @@ interface Trip {
     city?: string;
     state?: string;
     facilityType?: string;
+    latitude?: number;
+    longitude?: number;
+  };
+  // Origin facility fields
+  originFacility?: {
+    id: string;
+    name: string;
+    type?: string;
+    latitude?: number;
+    longitude?: number;
+  };
+  // Destination facility fields
+  destinationFacility?: {
+    id: string;
+    name: string;
+    type?: string;
+    latitude?: number;
+    longitude?: number;
   };
   createdBy?: {
     id: string;
@@ -113,9 +129,10 @@ interface TripCardProps {
   };
   onRefresh: () => void;
   onEdit?: (tripId: string) => void;
+  onDispatch?: (trip: Trip) => void;
 }
 
-const TripCard: React.FC<TripCardProps> = ({ trip, user, onRefresh, onEdit, onDispatch }) => {
+const TripCard: React.FC<TripCardProps> = ({ trip, onRefresh, onEdit, onDispatch }) => {
   const [loading, setLoading] = useState(false);
 
   const formatDateTime = (dateString: string) => {
@@ -249,32 +266,7 @@ const TripCard: React.FC<TripCardProps> = ({ trip, user, onRefresh, onEdit, onDi
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'EMERGENT':
-        return 'bg-red-100 text-red-800';
-      case 'URGENT':
-        return 'bg-orange-100 text-orange-800';
-      case 'ROUTINE':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
 
-  const formatPriority = (priority: string) => {
-    switch (priority) {
-      case 'CRITICAL':
-        return 'EMERGENT';
-      case 'HIGH':
-        return 'URGENT';
-      case 'MEDIUM':
-      case 'LOW':
-        return 'ROUTINE';
-      default:
-        return priority;
-    }
-  };
 
   // Count accepted agencies
   const acceptedAgenciesCount = trip.agencyResponses?.filter((r: any) => r.response === 'ACCEPTED').length || 0;
@@ -397,7 +389,6 @@ const TripCard: React.FC<TripCardProps> = ({ trip, user, onRefresh, onEdit, onDi
 };
 
 const TripsView: React.FC<TripsViewProps> = ({ user }) => {
-  const navigate = useNavigate();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [activeTrips, setActiveTrips] = useState<Trip[]>([]);
   const [completedTrips, setCompletedTrips] = useState<any[]>([]);
@@ -421,8 +412,14 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
   const [showFilters, setShowFilters] = useState(true);
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
   const [showTripModal, setShowTripModal] = useState(false);
-  const [sortField, setSortField] = useState<keyof Trip>('createdAt');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [sortField] = useState<keyof Trip>('createdAt');
+  const [sortDirection] = useState<'asc' | 'desc'>('desc');
+  
+  // Map view states
+  const [showMapView, setShowMapView] = useState(false);
+  const [mapBounds, setMapBounds] = useState<MapBounds | null>(null);
+  const [highlightedTripId, setHighlightedTripId] = useState<string | null>(null);
+  const [tripsInBounds, setTripsInBounds] = useState<Trip[]>([]);
   
   // Dispatch screen state
   const [dispatchTrip, setDispatchTrip] = useState<Trip | null>(null);
@@ -453,6 +450,7 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
           const tripIdSet = new Set(tripsData.map((t: any) => t.id));
           
           // Group responses by trip ID (only for trips we're displaying)
+          // @ts-ignore - Map constructor type issue
           const responsesByTrip = new Map<string, any[]>();
           allResponses.forEach((response: any) => {
             if (tripIdSet.has(response.tripId)) {
@@ -580,10 +578,10 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
   }, []);
 
   // Auto-refresh every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(fetchTrips, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  // useEffect(() => {
+  //   const interval = setInterval(fetchTrips, 30000);
+  //   return () => clearInterval(interval);
+  // }, []);
 
   // Apply filters (only to active trips)
   useEffect(() => {
@@ -674,23 +672,39 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
       const aVal = a[sortField];
       const bVal = b[sortField];
       
-      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+      if (aVal != null && bVal != null) {
+        if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+      }
       return 0;
     });
 
     setFilteredTrips(filtered);
   }, [activeTrips, searchTerm, statusFilter, priorityFilter, transportFilter, dateFilter, healthcareFacilityFilter, sortField, sortDirection, user, activeTab]);
 
-  // Handle sort
-  const handleSort = (field: keyof Trip) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
+  // Filter trips based on map bounds when in map view
+  useEffect(() => {
+    if (!showMapView || !mapBounds) {
+      setTripsInBounds(filteredTrips);
+      return;
     }
-  };
+
+    const tripsWithinBounds = filteredTrips.filter(trip => {
+      const pickupCoords = trip.originFacility?.latitude && trip.originFacility?.longitude
+        ? { lat: trip.originFacility.latitude || 0, lng: trip.originFacility.longitude || 0 }
+        : null;
+
+      const destinationCoords = trip.destinationFacility?.latitude && trip.destinationFacility?.longitude
+        ? { lat: trip.destinationFacility.latitude || 0, lng: trip.destinationFacility.longitude || 0 }
+        : null;
+
+      return pickupCoords ? isTripInBounds(pickupCoords, destinationCoords, mapBounds) : false;
+    });
+
+    setTripsInBounds(tripsWithinBounds);
+  }, [filteredTrips, mapBounds, showMapView]);
+
+
 
   // Get status badge
   const getStatusBadge = (status: string) => {
@@ -858,11 +872,7 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
     window.URL.revokeObjectURL(url);
   };
 
-  // View trip details
-  const viewTripDetails = (trip: Trip) => {
-    setSelectedTrip(trip);
-    setShowTripModal(true);
-  };
+
 
   if (loading) {
     return (
@@ -909,6 +919,20 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
             <RefreshCw className="w-4 h-4 mr-2" />
             Refresh
           </button>
+          {activeTab === 'active' && (
+            <button
+              onClick={() => setShowMapView(!showMapView)}
+              className={clsx(
+                'inline-flex items-center px-3 py-2 border shadow-sm text-sm leading-4 font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500',
+                showMapView
+                  ? 'border-primary-500 bg-primary-50 text-primary-700 hover:bg-primary-100'
+                  : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+              )}
+            >
+              <Map className="w-4 h-4 mr-2" />
+              {showMapView ? 'Hide Map' : 'Show Map'}
+            </button>
+          )}
           {activeTab === 'active' && (
             <button
               onClick={exportToCSV}
@@ -1149,63 +1173,135 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
       {/* Active Trips Tab Content */}
       {activeTab === 'active' && (
         <>
-          {/* Results Summary */}
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-700">
-              Showing <span className="font-medium">{filteredTrips.length}</span> of{' '}
-              <span className="font-medium">{activeTrips.length}</span> active trips
-            </p>
-            <p className="text-sm text-gray-500">
-              Last updated: {lastRefresh.toLocaleTimeString()}
-            </p>
-          </div>
+          {showMapView ? (
+            // Map View with Side-by-Side Layout
+            <div className="grid grid-cols-3 gap-4 h-screen max-h-[calc(100vh-300px)]">
+              {/* Map Panel (left side) - 60% width */}
+              <div className="col-span-2 bg-white rounded-lg shadow overflow-hidden">
+                <TripMap
+                  trips={activeTrips}
+                  onBoundsChange={(bounds) => setMapBounds(bounds)}
+                  onTripClick={(tripId) => {
+                    setHighlightedTripId(tripId);
+                    const trip = activeTrips.find(t => t.id === tripId);
+                    if (trip) {
+                      setSelectedTrip(trip);
+                    }
+                  }}
+                  highlightedTripId={highlightedTripId || undefined}
+                />
+              </div>
 
-          {/* Trip Cards */}
-          <div className="space-y-4">
-            {filteredTrips.map((trip) => (
-              <TripCard 
-                key={trip.id} 
-                trip={trip} 
-                user={user}
-                onRefresh={fetchTrips}
-                onEdit={(tripId) => {
-                  // Navigate to edit page - for now show trip details modal
-                  setSelectedTrip(trips.find(t => t.id === tripId) || null);
-                  setShowTripModal(true);
-                }}
-                onDispatch={(trip) => {
-                  // Map Trip to TransportRequest format expected by TripDispatchScreen
-                  const tripForDispatch = {
-                    id: trip.id,
-                    patientId: trip.patientId,
-                    fromLocation: trip.fromLocation,
-                    toLocation: trip.toLocation,
-                    scheduledTime: trip.scheduledTime,
-                    transportLevel: trip.transportLevel,
-                    urgencyLevel: trip.urgencyLevel,
-                    diagnosis: trip.diagnosis,
-                    mobilityLevel: trip.mobilityLevel,
-                    notes: '',
-                    tripNumber: trip.tripNumber
-                  };
-                  setDispatchTrip(tripForDispatch as any);
-                  setShowDispatchScreen(true);
-                }}
-              />
-            ))}
+              {/* Trip List Panel (right side) - 40% width */}
+              <div className="col-span-1 bg-white rounded-lg shadow overflow-hidden flex flex-col">
+                {/* List Header */}
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <p className="text-sm text-gray-700">
+                    <span className="font-medium">{tripsInBounds.length}</span> trips in view
+                  </p>
+                </div>
 
-            {filteredTrips.length === 0 && (
-              <div className="text-center py-12">
-                <Truck className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No active trips found</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  {searchTerm || statusFilter !== 'ALL' || priorityFilter !== 'ALL' || transportFilter !== 'ALL' || dateFilter !== 'ALL'
-                    ? 'Try adjusting your filters to see more results.'
-                    : 'No active trips at this time.'}
+                {/* Scrollable List */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  {tripsInBounds.length > 0 ? (
+                    tripsInBounds.map((trip) => (
+                      <div
+                        key={trip.id}
+                        onClick={() => {
+                          setHighlightedTripId(trip.id);
+                          setSelectedTrip(trip);
+                        }}
+                        className={clsx(
+                          'p-3 rounded-lg border-2 cursor-pointer transition-colors',
+                          highlightedTripId === trip.id
+                            ? 'border-primary-500 bg-primary-50'
+                            : 'border-gray-200 bg-white hover:bg-gray-50'
+                        )}
+                      >
+                        <p className="font-semibold text-sm text-gray-900">
+                          {trip.tripNumber || trip.patientId}
+                        </p>
+                        <p className="text-xs text-gray-600 mt-1">
+                          {trip.fromLocation}
+                        </p>
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-xs font-medium text-gray-700">
+                            {trip.priority}
+                          </span>
+                          {getPriorityBadge(trip.priority)}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-center text-gray-500">
+                      <p className="text-sm">No trips in current view</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            // Regular List View
+            <>
+              {/* Results Summary */}
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-700">
+                  Showing <span className="font-medium">{filteredTrips.length}</span> of{' '}
+                  <span className="font-medium">{activeTrips.length}</span> active trips
+                </p>
+                <p className="text-sm text-gray-500">
+                  Last updated: {lastRefresh.toLocaleTimeString()}
                 </p>
               </div>
-            )}
-          </div>
+
+              {/* Trip Cards */}
+              <div className="space-y-4">
+                {filteredTrips.map((trip) => (
+                  <TripCard 
+                    key={trip.id} 
+                    trip={trip} 
+                    user={user}
+                    onRefresh={fetchTrips}
+                    onEdit={(tripId) => {
+                      // Navigate to edit page - for now show trip details modal
+                      setSelectedTrip(trips.find(t => t.id === tripId) || null);
+                      setShowTripModal(true);
+                    }}
+                    onDispatch={(trip) => {
+                      // Map Trip to TransportRequest format expected by TripDispatchScreen
+                      const tripForDispatch = {
+                        id: trip.id,
+                        patientId: trip.patientId,
+                        fromLocation: trip.fromLocation,
+                        toLocation: trip.toLocation,
+                        scheduledTime: trip.scheduledTime,
+                        transportLevel: trip.transportLevel,
+                        urgencyLevel: trip.urgencyLevel,
+                        diagnosis: trip.diagnosis,
+                        mobilityLevel: trip.mobilityLevel,
+                        notes: '',
+                        tripNumber: trip.tripNumber
+                      };
+                      setDispatchTrip(tripForDispatch as any);
+                      setShowDispatchScreen(true);
+                    }}
+                  />
+                ))}
+
+                {filteredTrips.length === 0 && (
+                  <div className="text-center py-12">
+                    <Truck className="mx-auto h-12 w-12 text-gray-400" />
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">No active trips found</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      {searchTerm || statusFilter !== 'ALL' || priorityFilter !== 'ALL' || transportFilter !== 'ALL' || dateFilter !== 'ALL'
+                        ? 'Try adjusting your filters to see more results.'
+                        : 'No active trips at this time.'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </>
       )}
 
@@ -1444,10 +1540,10 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
               trip={dispatchTrip}
               user={{
                 id: user.id,
-                email: user.email || '',
-                name: user.name || '',
+                email: '',
+                name: '',
                 userType: user.userType
-              }}
+              } as any}
               onDispatchComplete={() => {
                 console.log('TCC_DEBUG: Dispatch completed, refreshing trips...');
                 setShowDispatchScreen(false);

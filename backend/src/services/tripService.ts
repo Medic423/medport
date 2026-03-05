@@ -309,14 +309,20 @@ export class TripService {
           select: {
             id: true,
             name: true,
-            type: true
+            type: true,
+            latitude: true,
+            longitude: true,
+            coordinates: true
           }
         },
         destinationFacility: {
           select: {
             id: true,
             name: true,
-            type: true
+            type: true,
+            latitude: true,
+            longitude: true,
+            coordinates: true
           }
         },
         pickupLocation: {
@@ -326,7 +332,15 @@ export class TripService {
             floor: true,
             room: true,
             contactPhone: true,
-            contactEmail: true
+            contactEmail: true,
+            hospital: {
+              select: {
+                id: true,
+                name: true,
+                latitude: true,
+                longitude: true
+              }
+            }
           }
         },
         healthcareLocation: {
@@ -335,7 +349,18 @@ export class TripService {
             locationName: true,
             city: true,
             state: true,
-            facilityType: true
+            facilityType: true,
+            latitude: true,
+            longitude: true,
+            hospital: {
+              select: {
+                id: true,
+                name: true,
+                coordinates: true,
+                latitude: true,
+                longitude: true
+              }
+            }
           }
         }
       };
@@ -377,6 +402,73 @@ export class TripService {
       });
 
       console.log('TCC_DEBUG: Found trips:', trips.length);
+
+      console.log('TCC_DEBUG: Raw facility data from Prisma (before normalization):', (trips as any[]).map(t => ({
+        id: t.id,
+        originFacilityId: t.originFacilityId,
+        originFacility: t.originFacility
+          ? { id: t.originFacility.id, name: t.originFacility.name, latitude: t.originFacility.latitude, longitude: t.originFacility.longitude, coordinates: t.originFacility.coordinates }
+          : null,
+        destinationFacilityId: t.destinationFacilityId,
+        destinationFacility: t.destinationFacility
+          ? { id: t.destinationFacility.id, name: t.destinationFacility.name, latitude: t.destinationFacility.latitude, longitude: t.destinationFacility.longitude, coordinates: t.destinationFacility.coordinates }
+          : null,
+      })));
+
+      // Normalize facility coordinates from coordinates JSON field right after Prisma query
+      // Facility rows often store coords only in the coordinates JSONB column ({lat, lng})
+      // while the latitude/longitude columns are null.
+      for (const trip of trips as any[]) {
+        for (const facilityKey of ['originFacility', 'destinationFacility'] as const) {
+          const fac = (trip as any)[facilityKey];
+          if (fac && fac.coordinates && typeof fac.coordinates === 'object') {
+            const c = fac.coordinates as any;
+            if (fac.latitude == null) fac.latitude  = c.lat  ?? c.latitude  ?? null;
+            if (fac.longitude == null) fac.longitude = c.lng  ?? c.longitude ?? null;
+
+            console.log('lat/lng',fac.latitude && fac.longitude);
+          }
+        }
+      }
+      
+      // Debug: Check raw Prisma data
+      if (trips.length > 0) {
+        const firstTrip = trips[0] as any;
+        console.log('TCC_DEBUG: Raw Prisma data - First trip:', {
+          id: firstTrip.id,
+          originFacilityId: firstTrip.originFacilityId,
+          destinationFacilityId: firstTrip.destinationFacilityId,
+          originFacilityExists: !!firstTrip.originFacility,
+          originFacility: firstTrip.originFacility ? {
+            id: firstTrip.originFacility.id,
+            name: firstTrip.originFacility.name,
+            type: firstTrip.originFacility.type,
+            latitude: firstTrip.originFacility.latitude,
+            longitude: firstTrip.originFacility.longitude,
+            coordinates: firstTrip.originFacility.coordinates
+          } : 'null',
+          destinationFacilityExists: !!firstTrip.destinationFacility,
+          destinationFacility: firstTrip.destinationFacility ? {
+            id: firstTrip.destinationFacility.id,
+            name: firstTrip.destinationFacility.name,
+            type: firstTrip.destinationFacility.type,
+            latitude: firstTrip.destinationFacility.latitude,
+            longitude: firstTrip.destinationFacility.longitude,
+            coordinates: firstTrip.destinationFacility.coordinates
+          } : 'null'
+        });
+      }
+      
+      // Debug: Check facility coordinates
+      if (trips.length > 0) {
+        const firstTrip = trips[0] as any;
+        console.log('TCC_DEBUG: First trip facilities:', {
+          originFacilityKeys: firstTrip.originFacility ? Object.keys(firstTrip.originFacility) : 'null',
+          originFacility: firstTrip.originFacility,
+          destinationFacilityKeys: firstTrip.destinationFacility ? Object.keys(firstTrip.destinationFacility) : 'null',
+          destinationFacility: firstTrip.destinationFacility
+        });
+      }
       
       // ✅ DIAGNOSTIC: If no trips found and healthcareUserId filter is active, check what trips exist
       if (trips.length === 0 && filters?.healthcareUserId) {
@@ -470,19 +562,69 @@ export class TripService {
           // Format fromLocation: use healthcareLocation, originFacility, or fallback to fromLocation string
           const tripAny = trip as any;
           let fromLocationStr = tripAny.fromLocation || '';
+          let fromLatitude: number | null = null;
+          let fromLongitude: number | null = null;
+          
           if (!fromLocationStr && tripAny.healthcareLocation) {
             const hl = tripAny.healthcareLocation;
             fromLocationStr = (hl.locationName || 
               `${hl.city || ''}, ${hl.state || ''}`.trim()) || '';
+            
+            // Try to get coordinates from hospital.coordinates (JSONB) first, then fall back to direct fields
+            if (hl.hospital?.coordinates && typeof hl.hospital.coordinates === 'object') {
+              const coords = hl.hospital.coordinates as any;
+              fromLatitude = coords.lat || coords.latitude || hl.latitude || null;
+              fromLongitude = coords.lng || coords.longitude || hl.longitude || null;
+            } else if (hl.hospital?.latitude || hl.hospital?.longitude) {
+              fromLatitude = hl.hospital.latitude || hl.latitude || null;
+              fromLongitude = hl.hospital.longitude || hl.longitude || null;
+            } else {
+              fromLatitude = hl.latitude || null;
+              fromLongitude = hl.longitude || null;
+            }
+            
+            // Update healthcareLocation object to include coordinates
+            if (tripAny.healthcareLocation && fromLatitude !== null && fromLongitude !== null) {
+              tripAny.healthcareLocation.latitude = fromLatitude;
+              tripAny.healthcareLocation.longitude = fromLongitude;
+            }
           }
           if (!fromLocationStr && tripAny.originFacility) {
             fromLocationStr = tripAny.originFacility.name || '';
+            // Prefer direct lat/lng; fall back to coordinates JSON if null
+            let ofLat = tripAny.originFacility.latitude ?? null;
+            let ofLng = tripAny.originFacility.longitude ?? null;
+            if ((ofLat == null || ofLng == null) && tripAny.originFacility.coordinates && typeof tripAny.originFacility.coordinates === 'object') {
+              const c = tripAny.originFacility.coordinates as any;
+              if (ofLat == null) ofLat = c.lat ?? c.latitude ?? null;
+              if (ofLng == null) ofLng = c.lng ?? c.longitude ?? null;
+              // Write back so the object in the response is also populated
+              tripAny.originFacility.latitude  = ofLat;
+              tripAny.originFacility.longitude = ofLng;
+            }
+            if (ofLat !== undefined) fromLatitude  = ofLat;
+            if (ofLng !== undefined) fromLongitude = ofLng;
           }
 
           // Format toLocation: use destinationFacility or fallback to toLocation string
           let toLocationStr = tripAny.toLocation || '';
+          let toLatitude: number | null = null;
+          let toLongitude: number | null = null;
+          
           if (!toLocationStr && tripAny.destinationFacility) {
             toLocationStr = tripAny.destinationFacility.name || '';
+            let dfLat = tripAny.destinationFacility.latitude ?? null;
+            let dfLng = tripAny.destinationFacility.longitude ?? null;
+            if ((dfLat == null || dfLng == null) && tripAny.destinationFacility.coordinates && typeof tripAny.destinationFacility.coordinates === 'object') {
+              const c = tripAny.destinationFacility.coordinates as any;
+              if (dfLat == null) dfLat = c.lat ?? c.latitude ?? null;
+              if (dfLng == null) dfLng = c.lng ?? c.longitude ?? null;
+              // Write back so the object in the response is also populated
+              tripAny.destinationFacility.latitude  = dfLat;
+              tripAny.destinationFacility.longitude = dfLng;
+            }
+            toLatitude  = dfLat;
+            toLongitude = dfLng;
           }
 
           // Calculate distance and time if we have location data
@@ -493,24 +635,36 @@ export class TripService {
             });
             
             if (distanceResult.success && distanceResult.data) {
-              return {
+              const tripWithDistance = {
                 ...trip,
                 fromLocation: fromLocationStr,
                 toLocation: toLocationStr,
+                fromLatitude,
+                fromLongitude,
+                toLatitude,
+                toLongitude,
                 distanceMiles: distanceResult.data.distance,
                 estimatedTripTimeMinutes: distanceResult.data.estimatedTimeMinutes
               };
+              return tripWithDistance;
             }
           }
           
           // If no location data or calculation failed, return trip with formatted locations
-          return {
+          debugger; // Breakpoint: inspect toLatitude, toLongitude, and other location values here
+          const tripWithLocations = {
             ...trip,
             fromLocation: fromLocationStr,
             toLocation: toLocationStr,
+            fromLatitude,
+            fromLongitude,
+            toLatitude,
+            toLongitude,
             distanceMiles: null,
             estimatedTripTimeMinutes: null
           };
+          debugger;
+          return tripWithLocations;
         } catch (error) {
           console.error('TCC_DEBUG: Error calculating distance for trip:', trip.id, error);
           // Format locations even on error
@@ -520,17 +674,104 @@ export class TripService {
             (tripAny.originFacility?.name) || '';
           const toLocationStr = tripAny.toLocation || 
             (tripAny.destinationFacility?.name) || '';
-          return {
+          
+          let fromLatitude: number | null = null;
+          let fromLongitude: number | null = null;
+          
+          // Try to get coordinates from healthcare location hospital.coordinates first
+          if (tripAny.healthcareLocation?.hospital?.coordinates && typeof tripAny.healthcareLocation.hospital.coordinates === 'object') {
+            const coords = tripAny.healthcareLocation.hospital.coordinates as any;
+            fromLatitude = coords.lat || coords.latitude || tripAny.healthcareLocation?.latitude || tripAny.originFacility?.latitude || null;
+            fromLongitude = coords.lng || coords.longitude || tripAny.healthcareLocation?.longitude || tripAny.originFacility?.longitude || null;
+          } else if (tripAny.healthcareLocation?.hospital?.latitude || tripAny.healthcareLocation?.hospital?.longitude) {
+            fromLatitude = tripAny.healthcareLocation.hospital.latitude || tripAny.healthcareLocation?.latitude || tripAny.originFacility?.latitude || null;
+            fromLongitude = tripAny.healthcareLocation.hospital.longitude || tripAny.healthcareLocation?.longitude || tripAny.originFacility?.longitude || null;
+          } else {
+            fromLatitude = tripAny.healthcareLocation?.latitude || tripAny.originFacility?.latitude || null;
+            fromLongitude = tripAny.healthcareLocation?.longitude || tripAny.originFacility?.longitude || null;
+          }
+          
+          let toLatitude: number | null = tripAny.destinationFacility?.latitude || null;
+          let toLongitude: number | null = tripAny.destinationFacility?.longitude || null;
+          
+          // Update healthcareLocation object to include coordinates
+          if (tripAny.healthcareLocation && fromLatitude !== null && fromLongitude !== null) {
+            tripAny.healthcareLocation.latitude = fromLatitude;
+            tripAny.healthcareLocation.longitude = fromLongitude;
+          }
+          
+          const tripWithErrorHandling = {
             ...trip,
             fromLocation: fromLocationStr,
             toLocation: toLocationStr,
+            fromLatitude,
+            fromLongitude,
+            toLatitude,
+            toLongitude,
             distanceMiles: null,
             estimatedTripTimeMinutes: null
           };
+          return tripWithErrorHandling;
         }
       }));
       
       console.log('TCC_DEBUG: Trip transformation complete. Processed', tripsWithDistance.length, 'trips');
+
+      // Post-process: Ensure all healthcare locations have coordinates properly populated from hospital.coordinates
+      for (const trip of tripsWithDistance as any[]) {
+        if (trip.healthcareLocation && trip.healthcareLocation.hospital) {
+          const hospital = trip.healthcareLocation.hospital;
+          
+          // Extract coordinates from hospital.coordinates (JSONB with {lat, lng}) if not already set
+          if (hospital.coordinates && typeof hospital.coordinates === 'object') {
+            const coords = hospital.coordinates as any;
+            if (!trip.healthcareLocation.latitude && coords.lat !== undefined) {
+              trip.healthcareLocation.latitude = coords.lat;
+            }
+            if (!trip.healthcareLocation.longitude && coords.lng !== undefined) {
+              trip.healthcareLocation.longitude = coords.lng;
+            }
+          }
+          
+          // Fallback to hospital.latitude/longitude if hospital.coordinates isn't available
+          if (!trip.healthcareLocation.latitude && hospital.latitude) {
+            trip.healthcareLocation.latitude = hospital.latitude;
+          }
+          if (!trip.healthcareLocation.longitude && hospital.longitude) {
+            trip.healthcareLocation.longitude = hospital.longitude;
+          }
+        }
+      }
+      console.log('TCC_DEBUG: Healthcare location coordinates populated');
+
+      // Post-process: Populate originFacility/destinationFacility lat/lng from coordinates JSON if direct fields are null
+      for (const trip of tripsWithDistance as any[]) {
+        if (trip.originFacility) {
+          const of_ = trip.originFacility;
+          if ((!of_.latitude || !of_.longitude) && of_.coordinates && typeof of_.coordinates === 'object') {
+            const coords = of_.coordinates as any;
+            if (!of_.latitude && (coords.lat !== undefined || coords.latitude !== undefined)) {
+              of_.latitude = coords.lat ?? coords.latitude;
+            }
+            if (!of_.longitude && (coords.lng !== undefined || coords.longitude !== undefined)) {
+              of_.longitude = coords.lng ?? coords.longitude;
+            }
+          }
+        }
+        if (trip.destinationFacility) {
+          const df = trip.destinationFacility;
+          if ((!df.latitude || !df.longitude) && df.coordinates && typeof df.coordinates === 'object') {
+            const coords = df.coordinates as any;
+            if (!df.latitude && (coords.lat !== undefined || coords.latitude !== undefined)) {
+              df.latitude = coords.lat ?? coords.latitude;
+            }
+            if (!df.longitude && (coords.lng !== undefined || coords.longitude !== undefined)) {
+              df.longitude = coords.lng ?? coords.longitude;
+            }
+          }
+        }
+      }
+      console.log('TCC_DEBUG: Facility coordinates populated from coordinates JSON');
 
       // Enrich with creator info for healthcare-created trips (including facility name)
       try {
@@ -583,7 +824,23 @@ export class TripService {
             serialized[field] = serialized[field].toISOString();
           }
         });
+
         return serialized;
+      });
+
+      // Final debug: Show what's being returned to frontend
+      console.log('TCC_DEBUG: FINAL RESPONSE - First trip to frontend:', {
+        tripCount: serializedTrips.length,
+        firstTrip: serializedTrips.length > 0 ? {
+          id: serializedTrips[0].id,
+          originFacility: (serializedTrips[0] as any).originFacility,
+          destinationFacility: (serializedTrips[0] as any).destinationFacility,
+          healthcareLocation: (serializedTrips[0] as any).healthcareLocation,
+          fromLatitude: (serializedTrips[0] as any).fromLatitude,
+          fromLongitude: (serializedTrips[0] as any).fromLongitude,
+          toLatitude: (serializedTrips[0] as any).toLatitude,
+          toLongitude: (serializedTrips[0] as any).toLongitude
+        } : null
       });
 
       return { success: true, data: serializedTrips };

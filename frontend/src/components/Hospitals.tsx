@@ -36,7 +36,6 @@ const Hospitals: React.FC = () => {
   // Filtering state
   const [searchTerm, setSearchTerm] = useState('');
   const [stateFilter, setStateFilter] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
 
   useEffect(() => {
@@ -122,8 +121,9 @@ const Hospitals: React.FC = () => {
     type: '',
     capabilities: [] as string[],
     region: '',
-    latitude: '',
-    longitude: ''
+    latitude: '' as string | number,
+    longitude: '' as string | number,
+    isActive: true
   });
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
@@ -200,8 +200,8 @@ const Hospitals: React.FC = () => {
         const { latitude, longitude } = response.data.data;
         setEditFormData(prev => ({
           ...prev,
-          latitude: parseFloat(latitude.toString()),
-          longitude: parseFloat(longitude.toString())
+          latitude: latitude.toString(),
+          longitude: longitude.toString()
         }));
         setEditError(null);
         console.log('TCC_DEBUG: Coordinates set successfully:', latitude, longitude);
@@ -260,8 +260,8 @@ const Hospitals: React.FC = () => {
         zipCode: editFormData.zipCode,
         phone: editFormData.phone || null,
         facilityType: editFormData.type,
-        latitude: editFormData.latitude ? parseFloat(editFormData.latitude) : null,
-        longitude: editFormData.longitude ? parseFloat(editFormData.longitude) : null,
+        latitude: editFormData.latitude ? parseFloat(editFormData.latitude.toString()) : null,
+        longitude: editFormData.longitude ? parseFloat(editFormData.longitude.toString()) : null,
         isActive: Boolean(editFormData.isActive), // Ensure boolean value
         email: editFormData.email || null // Include email to update healthcareUser
       });

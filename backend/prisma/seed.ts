@@ -303,15 +303,15 @@ async function main() {
 
     // Create locations for chuck@ferrellhospitals.com
     const locations = [
-      { name: 'Penn Highlands Brookville', address: '100 Hospital Road', city: 'Brookville', state: 'PA', zip: '15825', phone: '(814) 849-1852', primary: true },
-      { name: 'Penn Highlands DuBois', address: '100 Hospital Avenue', city: 'DuBois', state: 'PA', zip: '15801', phone: '(814) 371-2200', primary: false },
-      { name: 'Penn Highlands Mon Valley', address: '1163 Country Club Road', city: 'Monongahela', state: 'PA', zip: '15063', phone: '(724) 258-1000', primary: false },
-      { name: 'Penn Highlands Clearfield', address: '809 Turnpike Avenue', city: 'Clearfield', state: 'PA', zip: '16830', phone: '(814) 765-5300', primary: false },
-      { name: 'Penn Highlands Elk', address: '763 Johnsonburg Road', city: 'St. Marys', state: 'PA', zip: '15857', phone: '(814) 834-4200', primary: false },
-      { name: 'Penn Highlands State College', address: '239 Colonnade Boulevard', city: 'State College', state: 'PA', zip: '16803', phone: '(814) 231-7000', primary: false },
-      { name: 'Penn Highlands Connellsville', address: '401 East Murphy Avenue', city: 'Connellsville', state: 'PA', zip: '15425', phone: '(724) 628-1500', primary: false },
-      { name: 'Penn Highlands Huntingdon', address: '1225 Warm Springs Avenue', city: 'Huntingdon', state: 'PA', zip: '16652', phone: '(814) 643-3300', primary: false },
-      { name: 'Penn Highlands Tyrone', address: '187 Hospital Drive', city: 'Tyrone', state: 'PA', zip: '16686', phone: '(814) 684-1255', primary: false },
+      { name: 'Penn Highlands Brookville', address: '100 Hospital Road', city: 'Brookville', state: 'PA', zip: '15825', phone: '(814) 849-1852', primary: true, latitude: 40.9547, longitude: -78.5678 },
+      { name: 'Penn Highlands DuBois', address: '100 Hospital Avenue', city: 'DuBois', state: 'PA', zip: '15801', phone: '(814) 371-2200', primary: false, latitude: 41.1069, longitude: -78.7596 },
+      { name: 'Penn Highlands Mon Valley', address: '1163 Country Club Road', city: 'Monongahela', state: 'PA', zip: '15063', phone: '(724) 258-1000', primary: false, latitude: 40.2167, longitude: -79.9186 },
+      { name: 'Penn Highlands Clearfield', address: '809 Turnpike Avenue', city: 'Clearfield', state: 'PA', zip: '16830', phone: '(814) 765-5300', primary: false, latitude: 41.0307, longitude: -78.4408 },
+      { name: 'Penn Highlands Elk', address: '763 Johnsonburg Road', city: 'St. Marys', state: 'PA', zip: '15857', phone: '(814) 834-4200', primary: false, latitude: 41.4369, longitude: -78.5997 },
+      { name: 'Penn Highlands State College', address: '239 Colonnade Boulevard', city: 'State College', state: 'PA', zip: '16803', phone: '(814) 231-7000', primary: false, latitude: 40.7980, longitude: -77.8634 },
+      { name: 'Penn Highlands Connellsville', address: '401 East Murphy Avenue', city: 'Connellsville', state: 'PA', zip: '15425', phone: '(724) 628-1500', primary: false, latitude: 40.0194, longitude: -79.5905 },
+      { name: 'Penn Highlands Huntingdon', address: '1225 Warm Springs Avenue', city: 'Huntingdon', state: 'PA', zip: '16652', phone: '(814) 643-3300', primary: false, latitude: 40.4854, longitude: -77.9928 },
+      { name: 'Penn Highlands Tyrone', address: '187 Hospital Drive', city: 'Tyrone', state: 'PA', zip: '16686', phone: '(814) 684-1255', primary: false, latitude: 40.6820, longitude: -78.2434 },
     ];
 
     for (const loc of locations) {
@@ -326,7 +326,9 @@ async function main() {
           phone: loc.phone,
           facilityType: 'HOSPITAL',
           isPrimary: loc.primary,
-          isActive: true
+          isActive: true,
+          latitude: (loc as any).latitude || null,
+          longitude: (loc as any).longitude || null
         }
       });
       console.log(`✅ Location created: ${loc.name}`);
@@ -492,52 +494,9 @@ async function main() {
     }
     console.log(`✅ ${pickupCount} pickup locations created`);
 
-    // Create pickup locations for healthcare locations (multi-location users)
-    const chuckPickupLocations = [
-      { healthcareUserId: chuckUser.id, name: 'Emergency Department', description: 'Main ED', contactPhone: '(814) 849-1852', locationName: 'Penn Highlands Brookville' },
-      { healthcareUserId: chuckUser.id, name: 'Main Entrance', description: 'Main hospital entrance', contactPhone: '(814) 849-1852', locationName: 'Penn Highlands Brookville' },
-      { healthcareUserId: chuckUser.id, name: 'Emergency Department', description: 'Main ED', contactPhone: '(814) 371-2200', locationName: 'Penn Highlands DuBois' },
-      { healthcareUserId: chuckUser.id, name: 'Main Entrance', description: 'Main entrance', contactPhone: '(814) 371-2200', locationName: 'Penn Highlands DuBois' },
-      { healthcareUserId: chuckUser.id, name: 'Emergency Department', description: 'Main ED', contactPhone: '(724) 258-1000', locationName: 'Penn Highlands Mon Valley' },
-      { healthcareUserId: chuckUser.id, name: 'Patient Tower', description: 'Patient tower entrance', contactPhone: '(724) 258-1000', locationName: 'Penn Highlands Mon Valley' },
-      { healthcareUserId: chuckUser.id, name: 'Emergency Department', description: 'Main ED', contactPhone: '(814) 765-5300', locationName: 'Penn Highlands Clearfield' },
-      { healthcareUserId: chuckUser.id, name: 'Main Entrance', description: 'Main entrance', contactPhone: '(814) 765-5300', locationName: 'Penn Highlands Clearfield' },
-      { healthcareUserId: chuckUser.id, name: 'Emergency Department', description: 'Main ED', contactPhone: '(814) 834-4200', locationName: 'Penn Highlands Elk' },
-      { healthcareUserId: chuckUser.id, name: 'Main Entrance', description: 'Main entrance', contactPhone: '(814) 834-4200', locationName: 'Penn Highlands Elk' },
-      { healthcareUserId: chuckUser.id, name: 'Emergency Department', description: 'Main ED', contactPhone: '(814) 231-7000', locationName: 'Penn Highlands State College' },
-      { healthcareUserId: chuckUser.id, name: 'Main Entrance', description: 'Main entrance', contactPhone: '(814) 231-7000', locationName: 'Penn Highlands State College' },
-      { healthcareUserId: chuckUser.id, name: 'Emergency Department', description: 'Main ED', contactPhone: '(724) 628-1500', locationName: 'Penn Highlands Connellsville' },
-      { healthcareUserId: chuckUser.id, name: 'Main Entrance', description: 'Main entrance', contactPhone: '(724) 628-1500', locationName: 'Penn Highlands Connellsville' },
-      { healthcareUserId: chuckUser.id, name: 'Emergency Department', description: 'Main ED', contactPhone: '(814) 643-3300', locationName: 'Penn Highlands Huntingdon' },
-      { healthcareUserId: chuckUser.id, name: 'Main Entrance', description: 'Main entrance', contactPhone: '(814) 643-3300', locationName: 'Penn Highlands Huntingdon' },
-      { healthcareUserId: chuckUser.id, name: 'Emergency Department', description: 'Main ED', contactPhone: '(814) 684-1255', locationName: 'Penn Highlands Tyrone' },
-      { healthcareUserId: chuckUser.id, name: 'Main Entrance', description: 'Main entrance', contactPhone: '(814) 684-1255', locationName: 'Penn Highlands Tyrone' },
-    ];
-
-    // Get chuck's healthcare locations
-    const chuckHealthcareLocations = await prisma.healthcareLocation.findMany({
-      where: { healthcareUserId: chuckUser.id }
-    });
-
-    for (const loc of chuckPickupLocations) {
-      const healthcareLocation = chuckHealthcareLocations.find(h => h.locationName === loc.locationName);
-      if (healthcareLocation) {
-        await prisma.pickup_locations.create({
-          data: {
-            id: `pickup-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            hospitalId: healthcareLocation.id, // Use healthcare location ID as hospitalId
-            name: loc.name,
-            description: loc.description,
-            contactPhone: loc.contactPhone,
-            isActive: true,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          }
-        });
-        pickupCount++;
-      }
-    }
-    console.log(`✅ ${pickupCount} total pickup locations created`);
+    // Note: pickup_locations are for hospitals only
+    // Healthcare locations don't need separate pickup locations - they use the hospitalId relationship if needed
+    console.log('🌱 Healthcare location setup complete with hospital relationships');
 
     // Create sample transport request
     const transportRequest = await prisma.transportRequest.create({

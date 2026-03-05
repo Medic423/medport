@@ -68,6 +68,7 @@ model HealthcareUser {
 model HealthcareLocation {
   id                String             @id @default(cuid())
   healthcareUserId  String
+  hospitalId        String?
   locationName      String
   address           String
   city              String
@@ -82,9 +83,11 @@ model HealthcareLocation {
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   healthcareUser    HealthcareUser     @relation(fields: [healthcareUserId], references: [id], onDelete: Cascade)
+  hospital          Hospital?          @relation(fields: [hospitalId], references: [id], onDelete: SetNull)
   transportRequests TransportRequest[]
 
   @@index([healthcareUserId])
+  @@index([hospitalId])
   @@index([isActive])
   @@map("healthcare_locations")
 }
@@ -131,27 +134,29 @@ model HealthcareDestination {
 }
 
 model Hospital {
-  id             String    @id @default(cuid())
-  name           String
-  address        String
-  city           String
-  state          String
-  zipCode        String
-  phone          String?
-  email          String?
-  type           String
-  capabilities   String[]
-  region         String
-  coordinates    Json?
-  latitude       Float?
-  longitude      Float?
-  operatingHours String?
-  isActive       Boolean   @default(true)
-  requiresReview Boolean   @default(false)
-  approvedAt     DateTime?
-  approvedBy     String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id                String              @id @default(cuid())
+  name              String
+  address           String
+  city              String
+  state             String
+  zipCode           String
+  phone             String?
+  email             String?
+  type              String
+  capabilities      String[]
+  region            String
+  coordinates       Json?
+  latitude          Float?
+  longitude         Float?
+  operatingHours    String?
+  isActive          Boolean             @default(true)
+  requiresReview    Boolean             @default(false)
+  approvedAt        DateTime?
+  approvedBy        String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  pickupLocations   pickup_locations[]
+  healthcareLocations HealthcareLocation[]
 
   @@map("hospitals")
 }
@@ -398,6 +403,7 @@ model pickup_locations {
   isActive     Boolean            @default(true)
   createdAt    DateTime           @default(now())
   updatedAt    DateTime
+  hospital     Hospital           @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   trips        TransportRequest[]
   legacyTrips  Trip[]
 }
