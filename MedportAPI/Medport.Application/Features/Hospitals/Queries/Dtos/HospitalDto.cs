@@ -1,5 +1,4 @@
-﻿using System.Text.Json;
-
+﻿
 namespace Medport.Application.Tracc.Features.Hospitals.Queries.Dtos;
 
 public class HospitalDto

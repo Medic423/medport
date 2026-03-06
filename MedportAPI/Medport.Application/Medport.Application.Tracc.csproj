@@ -27,8 +27,7 @@
     <Folder Include="Features\HealthcareAgencies\Queries\Requests\" />
     <Folder Include="Features\HealthcareDestinations\Commands\Requests\" />
     <Folder Include="Features\HealthcareDestinations\Queries\Requests\" />
-    <Folder Include="Features\HealthcareLocations\Commands\Requests\" />
-    <Folder Include="Features\HealthcareLocations\Queries\Requests\" />
+    <Folder Include="Features\HealthcareLocations\Mappings\" />
     <Folder Include="Features\HealthcareSubUsers\Commands\Requests\" />
     <Folder Include="Features\HealthcareSubUsers\Queries\Requests\" />
     <Folder Include="Features\Maintenances\Commands\Requests\" />
