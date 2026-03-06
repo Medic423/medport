@@ -3,7 +3,7 @@ import {
   GoogleMap,
   MarkerF,
   InfoWindowF,
-  PolylineF,
+  DirectionsRenderer,
   useJsApiLoader,
 } from '@react-google-maps/api';
 import { MapBounds, LatLng, calculateBoundingBox, calculateBoundsCenter, calculateZoomLevel } from '../utils/mapBounds';
@@ -30,8 +30,11 @@ const TripMap: React.FC<TripMapProps> = ({
   const [mapBounds, setMapBounds] = useState<MapBounds | null>(null);
   const [hoveredTripId, setHoveredTripId] = useState<string | null>(null);
   const [initialBoundsSet, setInitialBoundsSet] = useState(false);
+  const [directionsResults, setDirectionsResults] = useState<Record<string, google.maps.DirectionsResult>>({});
   const mapRef = useRef<google.maps.Map | null>(null);
   const boundsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const directionsServiceRef = useRef<google.maps.DirectionsService | null>(null);
+  const fetchedTripIdsRef = useRef<Set<string>>(new Set());
 
   // Memoize all coordinates extraction to prevent unnecessary recalculations
   const allCoordinates = useMemo(() => {
@@ -202,6 +205,36 @@ const TripMap: React.FC<TripMapProps> = ({
     return null;
   };
 
+  // Fetch driving directions for each trip once the Maps API is loaded
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (!directionsServiceRef.current) {
+      directionsServiceRef.current = new google.maps.DirectionsService();
+    }
+    trips.forEach((trip) => {
+      if (fetchedTripIdsRef.current.has(trip.id)) return;
+      const origin = getPickupCoords(trip);
+      const destination = getDestinationCoords(trip);
+      if (!origin || !destination) return;
+      fetchedTripIdsRef.current.add(trip.id);
+      directionsServiceRef.current!.route(
+        {
+          origin,
+          destination,
+          travelMode: google.maps.TravelMode.DRIVING,
+        },
+        (result, status) => {
+          if (status === google.maps.DirectionsStatus.OK && result) {
+            setDirectionsResults((prev) => ({ ...prev, [trip.id]: result }));
+          } else {
+            // Allow retry on failure
+            fetchedTripIdsRef.current.delete(trip.id);
+          }
+        }
+      );
+    });
+  }, [isLoaded, trips]);
+
   if (loadError) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-lg">
@@ -245,24 +278,23 @@ const TripMap: React.FC<TripMapProps> = ({
       onBoundsChanged={handleBoundsChange}
       options={mapOptions}
     >
-      {/* Render polylines (routes) for all trips */}
+      {/* Render driving routes for all trips */}
       {trips.map((trip) => {
-        const pickupCoords = getPickupCoords(trip);
-        const destinationCoords = getDestinationCoords(trip);
-
-        if (!pickupCoords || !destinationCoords) return null;
-
+        const result = directionsResults[trip.id];
+        if (!result) return null;
         return (
-          <PolylineF
-            key={`polyline-${trip.id}`}
-            path={[pickupCoords, destinationCoords]}
+          <DirectionsRenderer
+            key={`route-${trip.id}`}
+            directions={result}
             options={{
-              strokeColor: getColorByStatus(trip.status),
-              strokeOpacity: highlightedTripId === trip.id ? 1 : 0.6,
-              strokeWeight: highlightedTripId === trip.id ? 4 : 2,
-              clickable: true,
+              suppressMarkers: true,
+              polylineOptions: {
+                strokeColor: getColorByStatus(trip.status),
+                strokeOpacity: highlightedTripId === trip.id ? 1 : 0.6,
+                strokeWeight: highlightedTripId === trip.id ? 4 : 2,
+                clickable: true,
+              },
             }}
-            onClick={() => onTripClick?.(trip.id)}
           />
         );
       })}
