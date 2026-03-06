@@ -3,7 +3,7 @@ import {
   GoogleMap,
   MarkerF,
   InfoWindowF,
-  Polyline,
+  PolylineF,
   useJsApiLoader,
 } from '@react-google-maps/api';
 import { MapBounds, LatLng, calculateBoundingBox, calculateBoundsCenter, calculateZoomLevel } from '../utils/mapBounds';
@@ -38,20 +38,7 @@ const TripMap: React.FC<TripMapProps> = ({
     const coords: LatLng[] = [];
     trips.forEach((trip) => {
       // Pickup location coordinates
-      if (
-        trip.healthcareLocation?.latitude &&
-        trip.healthcareLocation?.longitude
-      ) {
-        coords.push({
-          lat: trip.healthcareLocation.latitude,
-          lng: trip.healthcareLocation.longitude,
-        });
-      } else if (trip.pickupLocation?.hospital?.latitude && trip.pickupLocation?.hospital?.longitude) {
-        coords.push({
-          lat: trip.pickupLocation.hospital.latitude,
-          lng: trip.pickupLocation.hospital.longitude,
-        });
-      } else if (trip.originFacility?.latitude && trip.originFacility?.longitude) {
+      if (trip.originFacility?.latitude && trip.originFacility?.longitude) {
         coords.push({
           lat: trip.originFacility.latitude,
           lng: trip.originFacility.longitude,
@@ -121,7 +108,7 @@ const TripMap: React.FC<TripMapProps> = ({
   const handleMapLoad = useCallback(
     (map: google.maps.Map) => {
       mapRef.current = map;
-      
+
       if (mapBounds && allCoordinates.length > 0) {
         const center = calculateBoundsCenter(mapBounds);
         const zoomLevel = calculateZoomLevel(mapBounds);
@@ -196,22 +183,10 @@ const TripMap: React.FC<TripMapProps> = ({
   };
 
   const getPickupCoords = (trip: any): LatLng | null => {
-    if (trip.healthcareLocation?.latitude && trip.healthcareLocation?.longitude) {
-      return {
-        lat: trip.healthcareLocation.latitude,
-        lng: trip.healthcareLocation.longitude,
-      };
-    }
-    if (trip.pickupLocation?.hospital?.latitude && trip.pickupLocation?.hospital?.longitude) {
-      return {
-        lat: trip.pickupLocation.hospital.latitude,
-        lng: trip.pickupLocation.hospital.longitude,
-      };
-    }
     if (trip.originFacility?.latitude && trip.originFacility?.longitude) {
       return {
-        lat: trip.originFacility.latitude,
-        lng: trip.originFacility.longitude,
+        lat: parseFloat(trip.originFacility.latitude),
+        lng: parseFloat(trip.originFacility.longitude),
       };
     }
     return null;
@@ -220,8 +195,8 @@ const TripMap: React.FC<TripMapProps> = ({
   const getDestinationCoords = (trip: any): LatLng | null => {
     if (trip.destinationFacility?.latitude && trip.destinationFacility?.longitude) {
       return {
-        lat: trip.destinationFacility.latitude,
-        lng: trip.destinationFacility.longitude,
+        lat: parseFloat(trip.destinationFacility.latitude),
+        lng: parseFloat(trip.destinationFacility.longitude),
       };
     }
     return null;
@@ -278,7 +253,7 @@ const TripMap: React.FC<TripMapProps> = ({
         if (!pickupCoords || !destinationCoords) return null;
 
         return (
-          <Polyline
+          <PolylineF
             key={`polyline-${trip.id}`}
             path={[pickupCoords, destinationCoords]}
             options={{
