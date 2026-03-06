@@ -1182,10 +1182,15 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
                   trips={activeTrips}
                   onBoundsChange={(bounds) => setMapBounds(bounds)}
                   onTripClick={(tripId) => {
-                    setHighlightedTripId(tripId);
-                    const trip = activeTrips.find(t => t.id === tripId);
-                    if (trip) {
-                      setSelectedTrip(trip);
+                    if (highlightedTripId === tripId) {
+                      setHighlightedTripId(null);
+                      setSelectedTrip(null);
+                    } else {
+                      setHighlightedTripId(tripId);
+                      const trip = activeTrips.find(t => t.id === tripId);
+                      if (trip) {
+                        setSelectedTrip(trip);
+                      }
                     }
                   }}
                   highlightedTripId={highlightedTripId || undefined}
@@ -1208,8 +1213,13 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
                       <div
                         key={trip.id}
                         onClick={() => {
-                          setHighlightedTripId(trip.id);
-                          setSelectedTrip(trip);
+                          if (highlightedTripId === trip.id) {
+                            setHighlightedTripId(null);
+                            setSelectedTrip(null);
+                          } else {
+                            setHighlightedTripId(trip.id);
+                            setSelectedTrip(trip);
+                          }
                         }}
                         className={clsx(
                           'p-3 rounded-lg border-2 cursor-pointer transition-colors',

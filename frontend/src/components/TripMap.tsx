@@ -4,6 +4,7 @@ import {
   MarkerF,
   InfoWindowF,
   DirectionsRenderer,
+  PolylineF,
   useJsApiLoader,
 } from '@react-google-maps/api';
 import { MapBounds, LatLng, calculateBoundingBox, calculateBoundsCenter, calculateZoomLevel } from '../utils/mapBounds';
@@ -166,6 +167,8 @@ const TripMap: React.FC<TripMapProps> = ({
     }, 500);
   }, [onBoundsChange]);
 
+  const HIGHLIGHT_COLOR = '#F87171';
+
   const getColorByStatus = (status: string): string => {
     switch (status) {
       case 'PENDING':
@@ -282,20 +285,47 @@ const TripMap: React.FC<TripMapProps> = ({
       {trips.map((trip) => {
         const result = directionsResults[trip.id];
         if (!result) return null;
+        const isHighlighted = highlightedTripId === trip.id;
         return (
-          <DirectionsRenderer
-            key={`route-${trip.id}`}
-            directions={result}
-            options={{
-              suppressMarkers: true,
-              polylineOptions: {
-                strokeColor: getColorByStatus(trip.status),
-                strokeOpacity: highlightedTripId === trip.id ? 1 : 0.6,
-                strokeWeight: highlightedTripId === trip.id ? 4 : 2,
+          <React.Fragment key={`route-group-${trip.id}`}>
+            {/* Outline/stroke layer rendered underneath when highlighted */}
+            {isHighlighted && (
+              <PolylineF
+                path={result.routes[0].overview_path}
+                options={{
+                  strokeColor: HIGHLIGHT_COLOR,
+                  strokeOpacity: 1,
+                  strokeWeight: 12,
+                  clickable: false,
+                  zIndex: 8,
+                }}
+              />
+            )}
+            <DirectionsRenderer
+              directions={result}
+              options={{
+                suppressMarkers: true,
+                preserveViewport: true,
+                polylineOptions: {
+                  strokeColor: getColorByStatus(trip.status),
+                  strokeOpacity: isHighlighted ? 1 : 0.5,
+                  strokeWeight: isHighlighted ? 6 : 2,
+                  zIndex: isHighlighted ? 10 : 1,
+                },
+              }}
+            />
+            {/* Invisible wide overlay for click detection on the route */}
+            <PolylineF
+              path={result.routes[0].overview_path}
+              options={{
+                strokeOpacity: 0,
+                strokeWeight: 20,
                 clickable: true,
-              },
-            }}
-          />
+                zIndex: isHighlighted ? 11 : 2,
+              }}
+              onClick={() => onTripClick?.(trip.id)}
+            />
+          </React.Fragment>
         );
       })}
 
@@ -314,11 +344,11 @@ const TripMap: React.FC<TripMapProps> = ({
             onMouseOut={() => setHoveredTripId(null)}
             icon={{
               path: google.maps.SymbolPath.CIRCLE,
-              scale: 8,
+              scale: (highlightedTripId === trip.id || hoveredTripId === trip.id) ? 11 : 8,
               fillColor: getColorByStatus(trip.status),
               fillOpacity: 1,
-              strokeColor: '#FFFFFF',
-              strokeWeight: 2,
+              strokeColor: (highlightedTripId === trip.id || hoveredTripId === trip.id) ? HIGHLIGHT_COLOR : '#FFFFFF',
+              strokeWeight: (highlightedTripId === trip.id || hoveredTripId === trip.id) ? 3 : 2,
             }}
           >
             {hoveredTripId === trip.id && (
@@ -354,11 +384,11 @@ const TripMap: React.FC<TripMapProps> = ({
             onMouseOut={() => setHoveredTripId(null)}
             icon={{
               path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
-              scale: 6,
+              scale: (highlightedTripId === trip.id || hoveredTripId === trip.id) ? 9 : 6,
               fillColor: getColorByStatus(trip.status),
               fillOpacity: 1,
-              strokeColor: '#FFFFFF',
-              strokeWeight: 2,
+              strokeColor: (highlightedTripId === trip.id || hoveredTripId === trip.id) ? HIGHLIGHT_COLOR : '#FFFFFF',
+              strokeWeight: (highlightedTripId === trip.id || hoveredTripId === trip.id) ? 3 : 2,
             }}
           >
             {hoveredTripId === trip.id && (
