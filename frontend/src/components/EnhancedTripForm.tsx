@@ -1262,10 +1262,9 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
             fromLocationId: (user.userType === 'ADMIN' || user.userType === 'USER') ? 
                            (selectedTCCFacilityId || selectedFacility?.id || formData.fromLocationId) :
                            (formData.fromLocationId || undefined),
+            originFacilityId: selectedFacility?.id || undefined,
             pickupLocationId: formData.pickupLocationId || undefined,
             toLocation: formData.toLocation,
-            // ✅ FIX: Include destinationFacilityId in enhanced payload
-            // Use the destination facility ID (already in correct format)
             destinationFacilityId: destinationFacility?.id || undefined,
             scheduledTime: new Date(formData.scheduledTime).toISOString(),
             transportLevel: formData.transportLevel as any,

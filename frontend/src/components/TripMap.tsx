@@ -3,8 +3,6 @@ import {
   GoogleMap,
   MarkerF,
   InfoWindowF,
-  DirectionsRenderer,
-  PolylineF,
   useJsApiLoader,
 } from '@react-google-maps/api';
 import { MapBounds, LatLng, calculateBoundingBox, calculateBoundsCenter, calculateZoomLevel } from '../utils/mapBounds';
@@ -36,6 +34,7 @@ const TripMap: React.FC<TripMapProps> = ({
   const boundsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const directionsServiceRef = useRef<google.maps.DirectionsService | null>(null);
   const fetchedTripIdsRef = useRef<Set<string>>(new Set());
+  const routePolylinesRef = useRef<google.maps.Polyline[]>([]);
 
   // Memoize all coordinates extraction to prevent unnecessary recalculations
   const allCoordinates = useMemo(() => {
@@ -208,35 +207,101 @@ const TripMap: React.FC<TripMapProps> = ({
     return null;
   };
 
-  // Fetch driving directions for each trip once the Maps API is loaded
+  // Fetch driving directions for the selected trip only (lazy)
   useEffect(() => {
-    if (!isLoaded) return;
+    if (!isLoaded || !highlightedTripId) {
+      // Clear any drawn polylines when nothing is selected
+      routePolylinesRef.current.forEach(p => p.setMap(null));
+      routePolylinesRef.current = [];
+      return;
+    }
+
     if (!directionsServiceRef.current) {
       directionsServiceRef.current = new google.maps.DirectionsService();
     }
-    trips.forEach((trip) => {
-      if (fetchedTripIdsRef.current.has(trip.id)) return;
-      const origin = getPickupCoords(trip);
-      const destination = getDestinationCoords(trip);
-      if (!origin || !destination) return;
-      fetchedTripIdsRef.current.add(trip.id);
-      directionsServiceRef.current!.route(
-        {
-          origin,
-          destination,
-          travelMode: google.maps.TravelMode.DRIVING,
-        },
-        (result, status) => {
-          if (status === google.maps.DirectionsStatus.OK && result) {
-            setDirectionsResults((prev) => ({ ...prev, [trip.id]: result }));
-          } else {
-            // Allow retry on failure
-            fetchedTripIdsRef.current.delete(trip.id);
-          }
+
+    const trip = trips.find(t => t.id === highlightedTripId);
+    if (!trip || !mapRef.current) return;
+
+    // If already fetched, draw immediately
+    if (directionsResults[highlightedTripId]) {
+      drawRoute(highlightedTripId, directionsResults[highlightedTripId], trip);
+      return;
+    }
+
+    // Fetch if not yet cached
+    if (fetchedTripIdsRef.current.has(highlightedTripId)) return;
+    const origin = getPickupCoords(trip);
+    const destination = getDestinationCoords(trip);
+    if (!origin || !destination) return;
+
+    fetchedTripIdsRef.current.add(highlightedTripId);
+    directionsServiceRef.current.route(
+      { origin, destination, travelMode: google.maps.TravelMode.DRIVING },
+      (result, status) => {
+        if (status === google.maps.DirectionsStatus.OK && result) {
+          setDirectionsResults(prev => ({ ...prev, [trip.id]: result }));
+        } else {
+          fetchedTripIdsRef.current.delete(highlightedTripId);
         }
-      );
+      }
+    );
+  }, [isLoaded, highlightedTripId, trips]);
+
+  // Re-draw route when directions result arrives for the selected trip
+  useEffect(() => {
+    if (!highlightedTripId || !directionsResults[highlightedTripId] || !mapRef.current) return;
+    const trip = trips.find(t => t.id === highlightedTripId);
+    if (!trip) return;
+    drawRoute(highlightedTripId, directionsResults[highlightedTripId], trip);
+  }, [directionsResults, highlightedTripId]);
+
+  function drawRoute(tripId: string, result: google.maps.DirectionsResult, trip: any) {
+    // Clear previous polylines first
+    routePolylinesRef.current.forEach(p => p.setMap(null));
+    routePolylinesRef.current = [];
+
+    if (!mapRef.current) return;
+    const path = result.routes[0].overview_path;
+
+    const outline = new google.maps.Polyline({
+      path,
+      strokeColor: HIGHLIGHT_COLOR,
+      strokeOpacity: 1,
+      strokeWeight: 12,
+      clickable: false,
+      zIndex: 8,
+      map: mapRef.current,
     });
-  }, [isLoaded, trips]);
+
+    const route = new google.maps.Polyline({
+      path,
+      strokeColor: getColorByStatus(trip.status),
+      strokeOpacity: 1,
+      strokeWeight: 6,
+      clickable: false,
+      zIndex: 10,
+      map: mapRef.current,
+    });
+
+    const clickOverlay = new google.maps.Polyline({
+      path,
+      strokeOpacity: 0,
+      strokeWeight: 20,
+      zIndex: 11,
+      map: mapRef.current,
+    });
+    clickOverlay.addListener('click', () => onTripClick?.(tripId));
+
+    routePolylinesRef.current = [outline, route, clickOverlay];
+  }
+
+  // Cleanup route polylines on unmount
+  useEffect(() => {
+    return () => {
+      routePolylinesRef.current.forEach(p => p.setMap(null));
+    };
+  }, []);
 
   if (loadError) {
     return (
@@ -281,55 +346,7 @@ const TripMap: React.FC<TripMapProps> = ({
       onBoundsChanged={handleBoundsChange}
       options={mapOptions}
     >
-      {/* Render driving routes for all trips */}
-      {trips.map((trip) => {
-        const result = directionsResults[trip.id];
-        if (!result) return null;
-        const isHighlighted = highlightedTripId === trip.id;
-        return (
-          <React.Fragment key={`route-group-${trip.id}`}>
-            {/* Outline/stroke layer rendered underneath when highlighted */}
-            {isHighlighted && (
-              <PolylineF
-                path={result.routes[0].overview_path}
-                options={{
-                  strokeColor: HIGHLIGHT_COLOR,
-                  strokeOpacity: 1,
-                  strokeWeight: 12,
-                  clickable: false,
-                  zIndex: 8,
-                }}
-              />
-            )}
-            <DirectionsRenderer
-              directions={result}
-              options={{
-                suppressMarkers: true,
-                preserveViewport: true,
-                polylineOptions: {
-                  strokeColor: getColorByStatus(trip.status),
-                  strokeOpacity: isHighlighted ? 1 : 0.5,
-                  strokeWeight: isHighlighted ? 6 : 2,
-                  zIndex: isHighlighted ? 10 : 1,
-                },
-              }}
-            />
-            {/* Invisible wide overlay for click detection on the route */}
-            <PolylineF
-              path={result.routes[0].overview_path}
-              options={{
-                strokeOpacity: 0,
-                strokeWeight: 20,
-                clickable: true,
-                zIndex: isHighlighted ? 11 : 2,
-              }}
-              onClick={() => onTripClick?.(trip.id)}
-            />
-          </React.Fragment>
-        );
-      })}
-
-      {/* Render pickup markers */}
+      {/* Pickup markers – always visible so users can click to select a trip */}
       {trips.map((trip) => {
         const pickupCoords = getPickupCoords(trip);
         if (!pickupCoords) return null;
@@ -369,8 +386,9 @@ const TripMap: React.FC<TripMapProps> = ({
         );
       })}
 
-      {/* Render destination markers */}
+      {/* Render destination markers only when selected */}
       {trips.map((trip) => {
+        if (highlightedTripId !== trip.id) return null;
         const destinationCoords = getDestinationCoords(trip);
         if (!destinationCoords) return null;
 
@@ -384,11 +402,11 @@ const TripMap: React.FC<TripMapProps> = ({
             onMouseOut={() => setHoveredTripId(null)}
             icon={{
               path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
-              scale: (highlightedTripId === trip.id || hoveredTripId === trip.id) ? 9 : 6,
+              scale: 9,
               fillColor: getColorByStatus(trip.status),
               fillOpacity: 1,
-              strokeColor: (highlightedTripId === trip.id || hoveredTripId === trip.id) ? HIGHLIGHT_COLOR : '#FFFFFF',
-              strokeWeight: (highlightedTripId === trip.id || hoveredTripId === trip.id) ? 3 : 2,
+              strokeColor: HIGHLIGHT_COLOR,
+              strokeWeight: 3,
             }}
           >
             {hoveredTripId === trip.id && (

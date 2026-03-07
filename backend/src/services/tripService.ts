@@ -59,8 +59,10 @@ export interface EnhancedCreateTripRequest {
   patientAgeCategory?: 'NEWBORN' | 'INFANT' | 'TODDLER' | 'ADULT';
   fromLocation: string;
   fromLocationId?: string; // ✅ NEW: Reference to healthcare location
+  originFacilityId?: string; // ✅ Reference to origin facility (for map coordinates)
   pickupLocationId?: string;
   toLocation: string;
+  destinationFacilityId?: string; // ✅ Reference to destination facility (for map coordinates)
   scheduledTime: string; // ISO string
   transportLevel: 'BLS' | 'ALS' | 'CCT' | 'Other';
   urgencyLevel: 'Routine' | 'Urgent' | 'Emergent';
@@ -1280,6 +1282,18 @@ export class TripService {
         }
       } else {
         console.log('TCC_DEBUG: No fromLocationId provided, skipping healthcare location connection');
+      }
+
+      // Connect origin facility relation if provided (used for map coordinates)
+      if (data.originFacilityId) {
+        tripData.originFacility = { connect: { id: data.originFacilityId } };
+        console.log('TCC_DEBUG: Connected originFacility:', data.originFacilityId);
+      }
+
+      // Connect destination facility relation if provided (used for map coordinates)
+      if (data.destinationFacilityId) {
+        tripData.destinationFacility = { connect: { id: data.destinationFacilityId } };
+        console.log('TCC_DEBUG: Connected destinationFacility:', data.destinationFacilityId);
       }
 
       const trip = await prisma.transportRequest.create({

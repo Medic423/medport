@@ -127,8 +127,10 @@ router.post('/enhanced', (req, res, next) => {
       insuranceCompany,
       fromLocation,
       fromLocationId,
+      originFacilityId,
       pickupLocationId,
       toLocation,
+      destinationFacilityId,
       scheduledTime,
       transportLevel,
       urgencyLevel,
@@ -181,6 +183,7 @@ router.post('/enhanced', (req, res, next) => {
       insuranceCompany,
       fromLocation,
       fromLocationId,
+      originFacilityId,
       pickupLocationId,
       toLocation,
       scheduledTime: finalScheduledTime,
@@ -194,6 +197,7 @@ router.post('/enhanced', (req, res, next) => {
       notes,
       priority,
       status, // ✅ Phase 3: Allow custom status for dispatch workflow (PENDING_DISPATCH)
+      destinationFacilityId,
       healthcareUserId: req.user?.userType === 'HEALTHCARE' ? req.user.id : undefined, // ✅ CRITICAL: Set healthcare user ID
       // ✅ TCC Command: Audit trail
       createdByTCCUserId,
