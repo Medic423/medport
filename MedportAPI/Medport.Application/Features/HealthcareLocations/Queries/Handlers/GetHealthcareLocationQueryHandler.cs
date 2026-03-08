@@ -9,7 +9,7 @@ using System.Linq.Dynamic.Core;
 
 namespace Medport.Application.Tracc.Features.HealthcareLocations.Queries.Handlers;
 
-public class GetActiveHealthcareLocationsQueryHandler(
+public class GetHealthcareLocationQueryHandler(
     IApplicationDbContext context,
     IMapper mapper
 ) : IRequestHandler<GetHealthcareLocationsQuery, List<HealthcareLocationDto>>
@@ -22,9 +22,9 @@ public class GetActiveHealthcareLocationsQueryHandler(
         CancellationToken cancellationToken
     )
     {
-        IQueryable<HealthcareLocation> query = _context.HealthcareLocations;
+        IQueryable<HealthcareLocation> query = _context.HealthcareLocations.AsNoTracking();
 
-        query = query.Where(x => x.Id == request.HealthcareUserId && x.IsActive == request.IsActive);
+        query = query.Where(x => x.HealthcareUserId == request.HealthcareUserId && x.IsActive == request.IsActive);
 
         List<HealthcareLocationDto> healthcareLocations = await _mapper
             .ProjectTo<HealthcareLocationDto>(query)

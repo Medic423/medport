@@ -1,21 +1,16 @@
 using MediatR;
 using Medport.Application.Tracc.Features.HealthcareLocations.Commands.Requests;
 using Medport.Application.Tracc.Features.HealthcareLocations.Queries.Dtos;
+using Medport.Application.Tracc.Features.Public.Queries.Requests;
 using Medport.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace Medport.Application.Tracc.Features.HealthcareLocations.Commands.Handlers;
 
-public class AdminUpdateHealthcareLocationCommandHandler : IRequestHandler<AdminUpdateHealthcareLocationCommand, HealthcareLocationDto>
+public class AdminUpdateHealthcareLocationCommandHandler(IApplicationDbContext context, IMediator mediator) : IRequestHandler<AdminUpdateHealthcareLocationCommand, HealthcareLocationDto>
 {
-    private readonly IApplicationDbContext _context;
-    private readonly IMediator _mediator;
-
-    public AdminUpdateHealthcareLocationCommandHandler(IApplicationDbContext context, IMediator mediator)
-    {
-        _context = context;
-        _mediator = mediator;
-    }
+    private readonly IApplicationDbContext _context = context;
+    private readonly IMediator _mediator = mediator;
 
     public async Task<HealthcareLocationDto> Handle(AdminUpdateHealthcareLocationCommand request, CancellationToken cancellationToken)
     {
@@ -32,7 +27,7 @@ public class AdminUpdateHealthcareLocationCommandHandler : IRequestHandler<Admin
             // Attempt geocode via mediator if available
             try
             {
-                var geo = await _mediator.Send(new Medport.Application.Tracc.Features.Public.Queries.Requests.GeocodeAddressCommand
+                var geo = await _mediator.Send(new GeocodeAddressCommand
                 {
                     Address = request.Address ?? entity.Address,
                     City = request.City ?? entity.City,

@@ -8,12 +8,12 @@ using Medport.Domain.Interfaces;
 namespace Medport.Application.Tracc.Features.HealthcareLocations.Commands.Handlers;
 
 public class CreateHealthcareLocationCommandHandler(IApplicationDbContext context, IMapper mapper) : 
-    IRequestHandler<UpdateHealthcareLocationCommand, HealthcareLocationDto>
+    IRequestHandler<CreateHealthcareLocationCommand, HealthcareLocationDto>
 {
     private readonly IApplicationDbContext _context = context;
     private readonly IMapper _mapper = mapper;
 
-    public async Task<HealthcareLocationDto> Handle(UpdateHealthcareLocationCommand request, CancellationToken cancellationToken)
+    public async Task<HealthcareLocationDto> Handle(CreateHealthcareLocationCommand request, CancellationToken cancellationToken)
     {
         HealthcareLocation newHealthcareLocation = _mapper.Map<HealthcareLocation>(request);
 
