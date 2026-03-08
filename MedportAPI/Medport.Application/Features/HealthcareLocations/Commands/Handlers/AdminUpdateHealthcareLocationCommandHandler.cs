@@ -2,6 +2,7 @@ using MediatR;
 using Medport.Application.Tracc.Features.HealthcareLocations.Commands.Requests;
 using Medport.Application.Tracc.Features.HealthcareLocations.Queries.Dtos;
 using Medport.Application.Tracc.Features.Public.Queries.Requests;
+using Medport.Domain.Entities;
 using Medport.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,13 +19,52 @@ public class AdminUpdateHealthcareLocationCommandHandler(IApplicationDbContext c
             .Include(h => h.PickupLocations)
             .FirstOrDefaultAsync(h => h.Id == request.Id, cancellationToken);
 
-        if (entity == null) return null;
+        // TODO Add Error handling 
+        if (entity == null)
+        {
+            return null;
+        }
 
-        // Determine if address fields changed and latitude/longitude not provided
-        var addressChanged = !string.IsNullOrWhiteSpace(request.Address) || !string.IsNullOrWhiteSpace(request.City) || !string.IsNullOrWhiteSpace(request.State) || !string.IsNullOrWhiteSpace(request.ZipCode);
+        await UpdateGeoCodes(request,entity,cancellationToken);
+
+        await UpdateEntity(request, entity, cancellationToken);
+
+        await UpdateHealthcareUser(request, entity, cancellationToken);
+
+        return new HealthcareLocationDto
+        {
+            Id = entity.Id,
+            LocationName = entity.LocationName,
+            Address = entity.Address,
+            City = entity.City,
+            State = entity.State,
+            ZipCode = entity.ZipCode,
+            Phone = entity.Phone,
+            FacilityType = entity.FacilityType,
+            IsPrimary = entity.IsPrimary,
+            IsActive = entity.IsActive,
+            Latitude = entity.Latitude,
+            Longitude = entity.Longitude,
+            CreatedAt = entity.CreatedAt,
+            UpdatedAt = entity.UpdatedAt,
+            HealthcareUserId = entity.HealthcareUserId
+        };
+    }
+
+    private async Task UpdateGeoCodes(
+        AdminUpdateHealthcareLocationCommand request,
+        HealthcareLocation entity,
+        CancellationToken cancellationToken
+    )
+    {
+        var addressChanged =
+            (request.Address != null && !string.Equals(request.Address, entity.Address, StringComparison.OrdinalIgnoreCase)) ||
+            (request.City != null && !string.Equals(request.City, entity.City, StringComparison.OrdinalIgnoreCase)) ||
+            (request.State != null && !string.Equals(request.State, entity.State, StringComparison.OrdinalIgnoreCase)) ||
+            (request.ZipCode != null && !string.Equals(request.ZipCode, entity.ZipCode, StringComparison.OrdinalIgnoreCase));
+
         if (addressChanged && (!request.Latitude.HasValue && !request.Longitude.HasValue))
         {
-            // Attempt geocode via mediator if available
             try
             {
                 var geo = await _mediator.Send(new GeocodeAddressCommand
@@ -47,8 +87,14 @@ public class AdminUpdateHealthcareLocationCommandHandler(IApplicationDbContext c
                 // ignore geocode failures
             }
         }
+    }
 
-        // Update entity fields
+    private async Task UpdateEntity(
+        AdminUpdateHealthcareLocationCommand request,
+        HealthcareLocation entity,
+        CancellationToken cancellationToken
+    )
+    {
         entity.LocationName = request.LocationName ?? entity.LocationName;
         entity.Address = request.Address ?? entity.Address;
         entity.City = request.City ?? entity.City;
@@ -67,7 +113,7 @@ public class AdminUpdateHealthcareLocationCommandHandler(IApplicationDbContext c
         if (request.IsActive.HasValue)
         {
             entity.IsActive = request.IsActive.Value;
-            // Sync to HealthcareUser so login works
+            
             var user = await _context.HealthcareUsers.FirstOrDefaultAsync(u => u.Id == entity.HealthcareUserId, cancellationToken);
             if (user != null)
             {
@@ -78,7 +124,14 @@ public class AdminUpdateHealthcareLocationCommandHandler(IApplicationDbContext c
         entity.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync(cancellationToken);
+    }
 
+    private async Task UpdateHealthcareUser(
+        AdminUpdateHealthcareLocationCommand request,
+        HealthcareLocation entity,
+        CancellationToken cancellationToken
+    )
+    {
         // Update healthcareUser email if provided
         if (!string.IsNullOrWhiteSpace(request.Email))
         {
@@ -90,24 +143,5 @@ public class AdminUpdateHealthcareLocationCommandHandler(IApplicationDbContext c
                 await _context.SaveChangesAsync(cancellationToken);
             }
         }
-
-        return new HealthcareLocationDto
-        {
-            Id = entity.Id,
-            LocationName = entity.LocationName,
-            Address = entity.Address,
-            City = entity.City,
-            State = entity.State,
-            ZipCode = entity.ZipCode,
-            Phone = entity.Phone,
-            FacilityType = entity.FacilityType,
-            IsPrimary = entity.IsPrimary,
-            IsActive = entity.IsActive,
-            Latitude = entity.Latitude,
-            Longitude = entity.Longitude,
-            CreatedAt = entity.CreatedAt,
-            UpdatedAt = entity.UpdatedAt,
-            HealthcareUserId = entity.HealthcareUserId
-        };
     }
 }

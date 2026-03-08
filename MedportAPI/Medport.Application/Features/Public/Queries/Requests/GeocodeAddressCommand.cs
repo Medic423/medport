@@ -1,8 +1,14 @@
 using MediatR;
+using Medport.Application.Tracc.Features.Public.Queries.Dtos;
+using Medport.Application.Tracc.Features.Public.Queries.Handlers;
 
 namespace Medport.Application.Tracc.Features.Public.Queries.Requests;
 
-public class GeocodeAddressCommand : IRequest<Medport.Application.Tracc.Features.Public.Queries.Dtos.GeocodeResultDto>
+/// <summary>
+/// See <see cref="GeocodeAddressCommandHandler"/>
+/// </summary>
+
+public class GeocodeAddressCommand : IRequest<GeocodeResultDto>
 {
     public string Address { get; set; }
     public string City { get; set; }
