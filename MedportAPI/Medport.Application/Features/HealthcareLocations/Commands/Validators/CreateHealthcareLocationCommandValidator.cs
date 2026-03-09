@@ -1,6 +1,5 @@
 ﻿using FluentValidation;
 using Medport.Application.Tracc.Features.HealthcareLocations.Commands.Requests;
-using Medport.Application.Tracc.Features.Hospitals.Commands.Requests;
 
 namespace Medport.Application.Tracc.Features.HealthcareLocations.Commands.Validators;
 

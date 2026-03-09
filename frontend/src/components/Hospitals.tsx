@@ -51,7 +51,7 @@ const Hospitals: React.FC = () => {
       console.log('TCC_COMMAND: Fetching healthcare facilities...');
       
       // Fetch from healthcare_locations table (not old hospitals table)
-      const response = await dotnetapi.get('/api/hospital');
+      const response = await dotnetapi.get('/api/healthcarelocation');
       const responsetwo = await api.get('/api/healthcare/locations/all');
       
       console.log(response)
@@ -67,7 +67,7 @@ const Hospitals: React.FC = () => {
           state: loc.state,
           zipCode: loc.zipCode,
           phone: loc.phone || '',
-          email: loc.healthcareUser?.email || '', // Get email from linked healthcareUser
+          email: loc.email || '', // Get email from linked healthcareUser
           type: loc.facilityType,
           capabilities: [],
           region: loc.state,
@@ -258,7 +258,7 @@ const Hospitals: React.FC = () => {
       console.log('TCC_DEBUG: Edit form data:', editFormData);
       console.log('TCC_DEBUG: isActive value:', editFormData.isActive, 'type:', typeof editFormData.isActive);
       
-      const response = await dotnetapi.put(`/api/hospital/${editingHospital.id}`, {
+      const response = await dotnetapi.put(`/api/healthcarelocation/${editingHospital.id}`, {
         locationName: editFormData.name,
         address: editFormData.address,
         city: editFormData.city,
@@ -296,7 +296,7 @@ const Hospitals: React.FC = () => {
     }
 
     try {
-      const response = await dotnetapi.delete(`/api/hospital/${hospitalId}`);
+      const response = await dotnetapi.delete(`/api/healthcarelocation/${hospitalId}`);
       console.log('Hospital deleted:', response.data);
       
       // Refresh the hospitals list
