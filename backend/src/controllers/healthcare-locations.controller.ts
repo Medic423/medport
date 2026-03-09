@@ -8,14 +8,14 @@ export class HealthcareLocationsController {
    */
   async createLocation(req: Request, res: Response) {
     try {
-      const healthcareUserId = (req as any).user?.id;
+      const healthcareUserId = (req as any).user?.organizationId;
 
       if (!healthcareUserId) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
       const {
-        locationName,
+        locationName: name,
         address,
         city,
         state,
@@ -27,7 +27,7 @@ export class HealthcareLocationsController {
       } = req.body;
 
       // Validation
-      if (!locationName || !address || !city || !state || !zipCode || !facilityType) {
+      if (!name || !address || !city || !state || !zipCode || !facilityType) {
         return res.status(400).json({
           error: 'Missing required fields',
           required: ['locationName', 'address', 'city', 'state', 'zipCode', 'facilityType'],
@@ -35,7 +35,7 @@ export class HealthcareLocationsController {
       }
 
       const location = await healthcareLocationsService.createLocation(healthcareUserId, {
-        locationName,
+        name,
         address,
         city,
         state,
@@ -59,7 +59,7 @@ export class HealthcareLocationsController {
    */
   async getLocations(req: Request, res: Response) {
     try {
-      const healthcareUserId = (req as any).user?.id;
+      const healthcareUserId = (req as any).user?.organizationId;
 
       if (!healthcareUserId) {
         return res.status(401).json({ error: 'Unauthorized' });
@@ -79,7 +79,7 @@ export class HealthcareLocationsController {
    */
   async getActiveLocations(req: Request, res: Response) {
     try {
-      const healthcareUserId = (req as any).user?.id;
+      const healthcareUserId = (req as any).user?.organizationId;
 
       if (!healthcareUserId) {
         return res.status(401).json({ error: 'Unauthorized' });
@@ -99,7 +99,7 @@ export class HealthcareLocationsController {
    */
   async getLocationStatistics(req: Request, res: Response) {
     try {
-      const healthcareUserId = (req as any).user?.id;
+      const healthcareUserId = (req as any).user?.organizationId;
 
       if (!healthcareUserId) {
         return res.status(401).json({ error: 'Unauthorized' });
@@ -119,7 +119,7 @@ export class HealthcareLocationsController {
    */
   async getLocationById(req: Request, res: Response) {
     try {
-      const healthcareUserId = (req as any).user?.id;
+      const healthcareUserId = (req as any).user?.organizationId;
       const { id } = req.params;
 
       if (!healthcareUserId) {
@@ -143,7 +143,7 @@ export class HealthcareLocationsController {
    */
   async updateLocation(req: Request, res: Response) {
     try {
-      const healthcareUserId = (req as any).user?.id;
+      const healthcareUserId = (req as any).user?.organizationId;
       const { id } = req.params;
 
       if (!healthcareUserId) {
@@ -173,7 +173,7 @@ export class HealthcareLocationsController {
    */
   async deleteLocation(req: Request, res: Response) {
     try {
-      const healthcareUserId = (req as any).user?.id;
+      const healthcareUserId = (req as any).user?.organizationId;
       const { id } = req.params;
 
       if (!healthcareUserId) {
@@ -200,7 +200,7 @@ export class HealthcareLocationsController {
    */
   async setPrimaryLocation(req: Request, res: Response) {
     try {
-      const healthcareUserId = (req as any).user?.id;
+      const healthcareUserId = (req as any).user?.organizationId;
       const { id } = req.params;
 
       if (!healthcareUserId) {

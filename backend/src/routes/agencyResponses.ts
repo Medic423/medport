@@ -133,34 +133,17 @@ router.get('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
     console.log('TCC_DEBUG: Get agency responses request with query:', req.query);
     console.log('TCC_DEBUG: User:', { id: req.user?.id, email: req.user?.email, userType: req.user?.userType });
     
-    // For EMS users, automatically filter by their agencyId
+    // For organization users, automatically filter by their organizationId
     let agencyId = req.query.agencyId as string | undefined;
     
-    if (req.user?.userType === 'EMS') {
-      // Get agencyId from user object or database
+    if (req.user?.userType === 'ORGANIZATION_USER') {
+      // Use organizationId directly from user token
       if (!agencyId) {
-        agencyId = req.user.agencyId;
-        
-        // If not in user object, look it up
-        if (!agencyId && req.user.email) {
-          try {
-            const db = databaseManager.getPrismaClient();
-            const emsUser = await db.eMSUser.findUnique({
-              where: { email: req.user.email },
-              select: { agencyId: true }
-            });
-            if (emsUser?.agencyId) {
-              agencyId = emsUser.agencyId;
-              console.log('TCC_DEBUG: Found agencyId from database:', agencyId);
-            }
-          } catch (lookupError: any) {
-            console.error('TCC_DEBUG: Error looking up EMS user:', lookupError.message);
-          }
-        }
+        agencyId = req.user.organizationId;
       }
       
       if (!agencyId) {
-        console.log('TCC_DEBUG: No agencyId found for EMS user, returning empty array');
+        console.log('TCC_DEBUG: No organizationId found for user, returning empty array');
         return res.json({
           success: true,
           data: []

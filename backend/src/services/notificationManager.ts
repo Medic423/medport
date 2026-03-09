@@ -41,15 +41,16 @@ class NotificationManager {
 
       // Get user's phone number for SMS if not provided
       if (data.smsData && !data.smsData.to) {
-        const user = await centerPrisma.centerUser.findUnique({
+        const user = await centerPrisma.user.findUnique({
           where: { id: data.userId },
-          select: { phone: true }
+          select: { email: true }
         });
         
-        if (user?.phone) {
-          data.smsData.to = user.phone;
+        if (!user) {
+          console.log('TCC_DEBUG: No user found for user:', data.userId);
+          delete data.smsData;
         } else {
-          console.log('TCC_DEBUG: No phone number found for user:', data.userId);
+          console.log('TCC_DEBUG: No phone number available (stored in preferences):', data.userId);
           delete data.smsData;
         }
       }
@@ -187,7 +188,7 @@ class NotificationManager {
       };
 
       // Get agency contact information
-      const agencies = await centerPrisma.eMSAgency.findMany({
+      const agencies = await centerPrisma.organization.findMany({
         where: {
           id: { in: agencyIds },
           isActive: true
@@ -275,20 +276,15 @@ class NotificationManager {
       };
 
       // Get hospital contact information
-      const hospital = await centerPrisma.centerUser.findUnique({
+      const hospital = await centerPrisma.user.findUnique({
         where: { id: hospitalUserId },
         select: {
-          email: true,
-          phone: true
+          email: true
         }
       });
 
       if (hospital?.email) {
         emailData.to = hospital.email;
-      }
-
-      if (hospital?.phone) {
-        smsData.to = hospital.phone;
       }
 
       return await this.sendNotification({

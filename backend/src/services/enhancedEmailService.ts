@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+﻿import nodemailer from 'nodemailer';
 import { PrismaClient } from '@prisma/client';
 import enhancedSMSService from './enhancedSMSService';
 import twilioSMSService from './twilioSMSService';
@@ -67,18 +67,15 @@ class EnhancedEmailService {
    */
   async getUserNotificationPreferences(userId: string): Promise<NotificationPreferences> {
     try {
-      // Get user's global notification settings
-      const user = await centerPrisma.centerUser.findUnique({
+      // Get user's notification preferences from userPreference table
+      const user = await centerPrisma.user.findUnique({
         where: { id: userId },
         select: {
-          emailNotifications: true,
-          smsNotifications: true,
-          phone: true,
-          notificationPreferences: {
+          email: true,
+          preferences: {
             select: {
-              notificationType: true,
-              emailEnabled: true,
-              smsEnabled: true
+              preferenceType: true,
+              value: true
             }
           }
         }
@@ -94,20 +91,16 @@ class EnhancedEmailService {
         };
       }
 
-      // Build notification types map
-      const notificationTypes: { [key: string]: { email: boolean; sms: boolean } } = {};
-      user.notificationPreferences.forEach(pref => {
-        notificationTypes[pref.notificationType] = {
-          email: pref.emailEnabled,
-          sms: pref.smsEnabled
-        };
-      });
+      const emailPref = user.preferences?.find(p => p.preferenceType === 'NOTIFICATION_EMAIL');
+      const smsPref = user.preferences?.find(p => p.preferenceType === 'NOTIFICATION_SMS');
+      const emailEnabled = emailPref ? emailPref.value !== 'false' : true;
+      const smsEnabled = smsPref ? smsPref.value === 'true' : false;
 
       return {
-        emailEnabled: user.emailNotifications,
-        smsEnabled: user.smsNotifications,
-        phone: user.phone || '',
-        notificationTypes
+        emailEnabled,
+        smsEnabled,
+        phone: '',
+        notificationTypes: {}
       };
     } catch (error) {
       console.error('TCC_DEBUG: Error getting user notification preferences:', error);
@@ -393,11 +386,11 @@ class EnhancedEmailService {
   private getEmailTemplates(): Record<string, EmailTemplate> {
     return {
       newTripRequest: {
-        subject: '🚑 New Transport Request - Action Required',
+        subject: 'ðŸš‘ New Transport Request - Action Required',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: #1e40af; color: white; padding: 20px; text-align: center;">
-              <h1>🚑 New Transport Request</h1>
+              <h1>ðŸš‘ New Transport Request</h1>
             </div>
             <div style="padding: 20px; background: #f8fafc;">
               <h2>Transport Details</h2>
@@ -434,13 +427,13 @@ class EnhancedEmailService {
                 {{/if}}
                 {{#if isolation}}
                 <tr>
-                  <td style="padding: 8px; border: 1px solid #e2e8f0;"><strong>⚠️ Isolation Required</strong></td>
+                  <td style="padding: 8px; border: 1px solid #e2e8f0;"><strong>âš ï¸ Isolation Required</strong></td>
                   <td style="padding: 8px; border: 1px solid #e2e8f0; color: #dc2626;">Yes</td>
                 </tr>
                 {{/if}}
                 {{#if bariatric}}
                 <tr>
-                  <td style="padding: 8px; border: 1px solid #e2e8f0;"><strong>🛏️ Bariatric Transport</strong></td>
+                  <td style="padding: 8px; border: 1px solid #e2e8f0;"><strong>ðŸ›ï¸ Bariatric Transport</strong></td>
                   <td style="padding: 8px; border: 1px solid #e2e8f0; color: #dc2626;">Yes</td>
                 </tr>
                 {{/if}}
@@ -467,8 +460,8 @@ Origin: {{originFacility}}
 Destination: {{destinationFacility}}
 Ready Window: {{readyStart}} - {{readyEnd}}
 {{#if specialRequirements}}Special Requirements: {{specialRequirements}}{{/if}}
-{{#if isolation}}⚠️ Isolation Required: Yes{{/if}}
-{{#if bariatric}}🛏️ Bariatric Transport: Yes{{/if}}
+{{#if isolation}}âš ï¸ Isolation Required: Yes{{/if}}
+{{#if bariatric}}ðŸ›ï¸ Bariatric Transport: Yes{{/if}}
 
 View in Dashboard: {{dashboardUrl}}
 

@@ -8,9 +8,9 @@ const router = express.Router();
 // Apply authentication to all routes
 router.use(authenticateAdmin);
 
-// Restrict to EMS users only
+// Restrict to organization users only (EMS type)
 router.use(async (req: AuthenticatedRequest, res, next) => {
-  if (!req.user || req.user.userType !== 'EMS') {
+  if (!req.user || req.user.userType !== 'ORGANIZATION_USER') {
     return res.status(403).json({ success: false, error: 'EMS access required' });
   }
   next();
@@ -18,17 +18,13 @@ router.use(async (req: AuthenticatedRequest, res, next) => {
 
 async function resolveAgencyContext(req: AuthenticatedRequest) {
   const emsPrisma = databaseManager.getPrismaClient();
-  let agencyId = req.user?.id || null; // For EMS tokens, this should already be agencyId
+  // organizationId is now directly on the user token
+  const agencyId = req.user?.organizationId || null;
   let agencyName: string | null = null;
 
   try {
-    if (!agencyId && req.user?.email) {
-      const emsUser = await emsPrisma.eMSUser.findUnique({ where: { email: req.user.email } });
-      agencyId = emsUser?.agencyId || null;
-    }
-
     if (agencyId) {
-      const agency = await emsPrisma.eMSAgency.findUnique({ where: { id: agencyId } });
+      const agency = await emsPrisma.organization.findUnique({ where: { id: agencyId } });
       agencyName = agency?.name || null;
     }
   } catch (error) {

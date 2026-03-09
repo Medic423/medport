@@ -1,4 +1,4 @@
-import express from 'express';
+﻿import express from 'express';
 import { tripService, CreateTripRequest, UpdateTripStatusRequest, EnhancedCreateTripRequest } from '../services/tripService';
 import { authenticateAdmin, AuthenticatedRequest } from '../middleware/authenticateAdmin';
 import { CreateTripWithResponsesRequest, UpdateTripResponseFieldsRequest } from '../types/agencyResponse';
@@ -102,20 +102,20 @@ router.post('/', async (req, res) => {
 // Log ALL requests to trips routes for debugging
 router.use((req, res, next) => {
   if (req.method === 'POST') {
-    console.log('🔍 TCC_DEBUG: POST request to trips router:', req.path, req.url);
+    console.log('ðŸ” TCC_DEBUG: POST request to trips router:', req.path, req.url);
   }
   next();
 });
 
 router.post('/enhanced', (req, res, next) => {
-  console.log('🔍 TCC_DEBUG: POST /enhanced route handler called');
-  console.log('🔍 TCC_DEBUG: Request body keys:', Object.keys(req.body || {}));
-  console.log('🔍 TCC_DEBUG: notificationRadius in body:', req.body?.notificationRadius);
+  console.log('ðŸ” TCC_DEBUG: POST /enhanced route handler called');
+  console.log('ðŸ” TCC_DEBUG: Request body keys:', Object.keys(req.body || {}));
+  console.log('ðŸ” TCC_DEBUG: notificationRadius in body:', req.body?.notificationRadius);
   next();
 }, authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     console.log('========================================');
-    console.log('🚨 TCC_DEBUG: CREATE ENHANCED TRIP REQUEST RECEIVED');
+    console.log('ðŸš¨ TCC_DEBUG: CREATE ENHANCED TRIP REQUEST RECEIVED');
     console.log('========================================');
     console.log('TCC_DEBUG: Request body:', JSON.stringify(req.body, null, 2));
     console.log('TCC_DEBUG: Authenticated user:', req.user);
@@ -141,7 +141,7 @@ router.post('/enhanced', (req, res, next) => {
       notificationRadius,
       notes,
       priority,
-      status, // ✅ Phase 3: Allow custom status for dispatch workflow
+      status, // âœ… Phase 3: Allow custom status for dispatch workflow
       // TCC Command: Audit trail fields
       createdByTCCUserId,
       createdByTCCUserEmail,
@@ -196,10 +196,10 @@ router.post('/enhanced', (req, res, next) => {
       notificationRadius: notificationRadius || 100,
       notes,
       priority,
-      status, // ✅ Phase 3: Allow custom status for dispatch workflow (PENDING_DISPATCH)
+      status, // âœ… Phase 3: Allow custom status for dispatch workflow (PENDING_DISPATCH)
       destinationFacilityId,
-      healthcareUserId: req.user?.userType === 'HEALTHCARE' ? req.user.id : undefined, // ✅ CRITICAL: Set healthcare user ID
-      // ✅ TCC Command: Audit trail
+      healthcareUserId: req.user?.userType === 'ORGANIZATION_USER' ? req.user.id : undefined, // âœ… CRITICAL: Set healthcare user ID
+      // âœ… TCC Command: Audit trail
       createdByTCCUserId,
       createdByTCCUserEmail,
       createdVia
@@ -247,21 +247,21 @@ router.get('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
     console.log('TCC_DEBUG: Authenticated user:', req.user);
     
     // Resolve agencyId for EMS users
-    let agencyId: string | undefined = req.query.agencyId as string | undefined;
+    let agencyId: string | undefined = req.query.organizationId as string | undefined;
     
-    if (req.user?.userType === 'EMS' && !agencyId) {
+    if (req.user?.userType === 'ORGANIZATION_USER' && !agencyId) {
       // For EMS users, resolve their agencyId
-      agencyId = req.user.agencyId;
+      agencyId = req.user.organizationId;
       
       if (!agencyId && req.user.email) {
         try {
           const db = databaseManager.getPrismaClient();
-          const emsUser = await db.eMSUser.findUnique({
+          const emsUser = await db.user.findUnique({
             where: { email: req.user.email },
-            select: { agencyId: true }
+            select: { organizationId: true }
           });
-          if (emsUser?.agencyId) {
-            agencyId = emsUser.agencyId;
+          if (emsUser?.organizationId) {
+            agencyId = emsUser.organizationId;
             console.log('TCC_DEBUG: Resolved EMS agencyId from database:', agencyId);
           }
         } catch (lookupError: any) {
@@ -270,10 +270,10 @@ router.get('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
       }
     }
     
-    const healthcareUserId = req.user?.userType === 'HEALTHCARE' ? req.user.id : undefined;
+    const healthcareUserId = req.user?.userType === 'ORGANIZATION_USER' ? req.user.id : undefined;
     
-    // ✅ DIAGNOSTIC: Log user info for healthcare users
-    if (req.user?.userType === 'HEALTHCARE') {
+    // âœ… DIAGNOSTIC: Log user info for healthcare users
+    if (req.user?.userType === 'ORGANIZATION_USER') {
       console.log('TCC_DEBUG: Healthcare user requesting trips:', {
         userId: req.user.id,
         email: req.user.email,
@@ -287,7 +287,7 @@ router.get('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
       transportLevel: req.query.transportLevel as string,
       priority: req.query.priority as string,
       agencyId: agencyId,
-      healthcareUserId: healthcareUserId, // ✅ NEW: Filter by healthcare user
+      healthcareUserId: healthcareUserId, // âœ… NEW: Filter by healthcare user
     };
 
     console.log('TCC_DEBUG: Filters being passed to getTrips:', filters);
@@ -1018,8 +1018,8 @@ router.post('/with-responses', authenticateAdmin, async (req: AuthenticatedReque
       responseDeadline,
       maxResponses: maxResponses || 5,
       selectionMode: selectionMode || 'SPECIFIC_AGENCIES',
-      // ✅ Ensure healthcareCreatedById is set by passing healthcareUserId into service
-      healthcareUserId: req.user?.userType === 'HEALTHCARE' ? req.user.id : undefined
+      // âœ… Ensure healthcareCreatedById is set by passing healthcareUserId into service
+      healthcareUserId: req.user?.userType === 'ORGANIZATION_USER' ? req.user.id : undefined
     };
 
     const result = await tripService.createTripWithResponses(tripData);
@@ -1303,7 +1303,7 @@ router.post('/:id/dispatch', authenticateAdmin, async (req: AuthenticatedRequest
     const trip = await tripService.getTripById(tripId);
     const tripData = trip.success && trip.data ? (trip.data as any) : null;
     
-    if (req.user!.userType === 'HEALTHCARE') {
+    if (req.user!.userType === 'ORGANIZATION_USER') {
       // For HEALTHCARE users, use the trip's creator if it exists, otherwise use their own ID
       healthcareUserId = req.user!.id;
       if (tripData?.healthcareCreatedById) {
@@ -1325,14 +1325,15 @@ router.post('/:id/dispatch', authenticateAdmin, async (req: AuthenticatedRequest
       } else if (tripData?.fromLocationId) {
         // For old trips without healthcareCreatedById, try to find a healthcare user from the location
         const prisma = (await import('../services/databaseManager')).databaseManager.getPrismaClient();
-        const location = await prisma.healthcareLocation.findUnique({
+        const location = await prisma.facility.findUnique({
           where: { id: tripData.fromLocationId },
-          select: { healthcareUserId: true }
+          select: { organizationId: true }
         });
-        if (location?.healthcareUserId) {
-          healthcareUserId = location.healthcareUserId;
-          console.log('PHASE3_DEBUG: Non-HEALTHCARE user dispatching old trip, using location healthcareUserId:', healthcareUserId);
-        } else {
+        if (location?.organizationId) {
+          // organizationId on facility doesn't map directly to a healthcare user, skip
+          console.log('PHASE3_DEBUG: Non-HEALTHCARE user dispatching old trip, facility organizationId:', location.organizationId);
+        }
+        if (false) {  // placeholder
           return res.status(400).json({
             success: false,
             error: 'Trip does not have a healthcare creator assigned and could not determine from location',

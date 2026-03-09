@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Units Management Routes
  * 
  * NOTE: Units Management UI has been disabled (see docs/active/sessions/2026-01/units-management-disabled.md)
@@ -15,7 +15,6 @@
 import express from 'express';
 import { unitService, UnitFormData, UnitStatusUpdate } from '../services/unitService';
 import { authenticateAdmin, AuthenticatedRequest } from '../middleware/authenticateAdmin';
-import { databaseManager } from '../services/databaseManager';
 
 const router = express.Router();
 
@@ -27,34 +26,15 @@ router.get('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     const user = req.user;
     console.log('TCC_DEBUG: GET /api/units - Request received');
-    console.log('TCC_DEBUG: User:', { id: user?.id, email: user?.email, userType: user?.userType, agencyId: user?.agencyId });
     
     let units;
     
-    if (user?.userType === 'EMS') {
-      // For EMS users, get units for their agency
-      // First try to get agencyId from user object, then lookup from database
-      let agencyId = user.agencyId;
-      
-      if (!agencyId && user.email) {
-        console.log('TCC_DEBUG: No agencyId in user object, looking up EMS user');
-        try {
-          const db = databaseManager.getPrismaClient();
-          const emsUser = await db.eMSUser.findUnique({
-            where: { email: user.email },
-            select: { agencyId: true }
-          });
-          if (emsUser?.agencyId) {
-            agencyId = emsUser.agencyId;
-            console.log('TCC_DEBUG: Found agencyId from database:', agencyId);
-          }
-        } catch (lookupError: any) {
-          console.error('TCC_DEBUG: Error looking up EMS user:', lookupError.message);
-        }
-      }
+    if (user?.userType === 'ORGANIZATION_USER') {
+      // For organization users, get units for their organization
+      const agencyId = user.organizationId;
       
       if (!agencyId) {
-        console.log('TCC_DEBUG: No agencyId found, returning empty array');
+        console.log('TCC_DEBUG: No organizationId found, returning empty array');
         return res.json({
           success: true,
           data: []
@@ -110,11 +90,11 @@ router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
     // Determine agencyId based on user type
     let agencyId: string;
     
-    if (user.userType === 'EMS') {
+    if (user.userType === 'ORGANIZATION_USER') {
       // For EMS users, use their agencyId
-      agencyId = user.agencyId || user.id;
-      console.log('🔍 Units API: Creating unit for EMS agency:', agencyId);
-    } else if (user.userType === 'ADMIN') {
+      agencyId = user.organizationId || user.id;
+      console.log('ðŸ” Units API: Creating unit for EMS agency:', agencyId);
+    } else if (user.userType === 'SYSTEM_ADMIN') {
       // For admin users, require agencyId in request body (if not provided, use first available agency)
       agencyId = (unitData as any).agencyId;
       if (!agencyId) {
@@ -152,7 +132,7 @@ router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
  */
 router.get('/available', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
-    const agencyId = req.user?.id;
+    const agencyId = req.user?.organizationId;
     
     if (!agencyId) {
       return res.status(400).json({
@@ -191,7 +171,7 @@ router.get('/on-duty', authenticateAdmin, async (req: AuthenticatedRequest, res)
  */
 router.get('/analytics', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
-    const agencyId = req.user?.id;
+    const agencyId = req.user?.organizationId || req.user?.id;
     
     if (!agencyId) {
       return res.status(400).json({
@@ -265,11 +245,11 @@ router.put('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => 
     // Determine agencyId for ownership verification
     let agencyId: string | undefined;
     
-    if (user.userType === 'EMS') {
+    if (user.userType === 'ORGANIZATION_USER') {
       // For EMS users, verify they own the unit
-      agencyId = user.agencyId || user.id;
-      console.log('🔍 Units API: Updating unit for EMS agency:', agencyId);
-    } else if (user.userType === 'ADMIN') {
+      agencyId = user.organizationId || user.id;
+      console.log('ðŸ” Units API: Updating unit for EMS agency:', agencyId);
+    } else if (user.userType === 'SYSTEM_ADMIN') {
       // Admin users can update any unit (no agencyId restriction)
       agencyId = undefined;
     } else {
@@ -350,8 +330,8 @@ router.delete('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) 
     }
     
     // For EMS users, verify they own the unit before deletion
-    if (user.userType === 'EMS') {
-      const agencyId = user.agencyId || user.id;
+    if (user.userType === 'ORGANIZATION_USER') {
+      const agencyId = user.organizationId || user.id;
       
       // Get the unit to verify ownership
       const unit = await unitService.getUnitById(id);

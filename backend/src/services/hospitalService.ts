@@ -17,6 +17,7 @@ export interface HospitalData {
   operatingHours?: string;
   isActive?: boolean;
   requiresReview?: boolean;
+  organizationId?: string;
 }
 
 export interface HospitalSearchFilters {
@@ -41,7 +42,7 @@ export class HospitalService {
   async createHospital(data: HospitalData): Promise<any> {
     const centerDB = databaseManager.getPrismaClient();
     
-    return await centerDB.hospital.create({
+    return await centerDB.facility.create({
       data: {
         name: data.name,
         address: data.address,
@@ -50,7 +51,7 @@ export class HospitalService {
         zipCode: data.zipCode,
         phone: data.phone,
         email: data.email,
-        type: data.type,
+        facilityType: (data.type || 'OTHER') as any,
         capabilities: data.capabilities,
         region: data.region,
         coordinates: data.coordinates,
@@ -58,7 +59,8 @@ export class HospitalService {
         longitude: data.longitude,
         operatingHours: data.operatingHours,
         isActive: data.isActive ?? true,
-        requiresReview: data.requiresReview ?? false
+        requiresReview: data.requiresReview ?? false,
+        organizationId: data.organizationId || 'default'
       }
     });
   }
@@ -79,7 +81,7 @@ export class HospitalService {
       where.state = whereFilters.state;
     }
     if (whereFilters.type) {
-      where.type = whereFilters.type;
+      where.facilityType = whereFilters.type;
     }
     if (whereFilters.region) {
       where.region = whereFilters.region;
@@ -89,13 +91,13 @@ export class HospitalService {
     }
 
     const [hospitals, total] = await Promise.all([
-      centerDB.hospital.findMany({
+      centerDB.facility.findMany({
         where,
         orderBy: { name: 'asc' },
         skip,
         take: limit
       }),
-      centerDB.hospital.count({ where })
+      centerDB.facility.count({ where })
     ]);
 
     return {
@@ -108,7 +110,7 @@ export class HospitalService {
 
   async getHospitalById(id: string): Promise<any | null> {
     const centerDB = databaseManager.getPrismaClient();
-    return await centerDB.hospital.findUnique({
+    return await centerDB.facility.findUnique({
       where: { id }
     });
   }
@@ -118,7 +120,7 @@ export class HospitalService {
     const hospitalDB = databaseManager.getPrismaClient();
     
     // Update hospital record
-    const updatedHospital = await centerDB.hospital.update({
+    const updatedHospital = await centerDB.facility.update({
       where: { id },
       data: {
         ...data,
@@ -130,18 +132,18 @@ export class HospitalService {
     // Find healthcareLocation records by matching name (since they're linked by facility name)
     if (data.isActive !== undefined) {
       try {
-        await hospitalDB.healthcareLocation.updateMany({
+        await hospitalDB.facility.updateMany({
           where: {
-            locationName: updatedHospital.name
+            name: updatedHospital.name
           },
           data: {
             isActive: data.isActive,
             updatedAt: new Date()
           }
         });
-        console.log(`Synced isActive=${data.isActive} to healthcareLocation records for facility: ${updatedHospital.name}`);
+        console.log(`Synced isActive=${data.isActive} to facility records for: ${updatedHospital.name}`);
       } catch (error) {
-        console.warn('Failed to sync isActive to healthcareLocation records:', error);
+        console.warn('Failed to sync isActive to facility records:', error);
         // Don't fail the update if sync fails
       }
     }
@@ -151,14 +153,14 @@ export class HospitalService {
 
   async deleteHospital(id: string): Promise<void> {
     const centerDB = databaseManager.getPrismaClient();
-    await centerDB.hospital.delete({
+    await centerDB.facility.delete({
       where: { id }
     });
   }
 
   async searchHospitals(query: string): Promise<any[]> {
     const centerDB = databaseManager.getPrismaClient();
-    return await centerDB.hospital.findMany({
+    return await centerDB.facility.findMany({
       where: {
         OR: [
           { name: { contains: query, mode: 'insensitive' } },
@@ -174,7 +176,7 @@ export class HospitalService {
 
   async approveHospital(id: string, approvedBy: string): Promise<any> {
     const centerDB = databaseManager.getPrismaClient();
-    return await centerDB.hospital.update({
+    return await centerDB.facility.update({
       where: { id },
       data: {
         isActive: true,
@@ -188,7 +190,7 @@ export class HospitalService {
 
   async rejectHospital(id: string, approvedBy: string): Promise<any> {
     const centerDB = databaseManager.getPrismaClient();
-    return await centerDB.hospital.update({
+    return await centerDB.facility.update({
       where: { id },
       data: {
         isActive: false,

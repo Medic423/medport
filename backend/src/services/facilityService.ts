@@ -3,6 +3,7 @@ import { databaseManager } from './databaseManager';
 export interface FacilityData {
   name: string;
   type: string;
+  organizationId?: string;
   address: string;
   city: string;
   state: string;
@@ -58,17 +59,17 @@ export class FacilityService {
   async createFacility(data: FacilityData): Promise<any> {
     const prisma = databaseManager.getPrismaClient();
     
-    return await prisma.hospital.create({
+    return await prisma.facility.create({
       data: {
+        organizationId: data.organizationId || 'default',
         name: data.name,
-        type: data.type,
+        facilityType: (data.type as any) || 'OTHER',
         address: data.address,
         city: data.city,
         state: data.state,
         zipCode: data.zipCode,
         phone: data.phone,
         email: data.email,
-        region: data.state, // Use state as region for now
         isActive: data.isActive ?? true
       }
     });
@@ -126,8 +127,7 @@ export class FacilityService {
             zipCode: true,
             phone: true,
             email: true,
-            type: true,
-            region: true,
+            facilityType: true,
             isActive: true,
             createdAt: true,
             updatedAt: true,
@@ -186,8 +186,7 @@ export class FacilityService {
               zipCode: true,
               phone: true,
               email: true,
-              type: true,
-              region: true,
+              facilityType: true,
               isActive: true,
               createdAt: true,
               updatedAt: true,

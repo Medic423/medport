@@ -186,11 +186,21 @@ export class TripService {
         console.log('TCC_FILTER_DEBUG: Filtering trips for healthcareUserId:', filters.healthcareUserId);
         
         try {
-          // Get all location IDs for this user
-          const locations = await prisma.healthcareLocation.findMany({
-            where: { healthcareUserId: filters.healthcareUserId },
-            select: { id: true }
+          // Look up the user's organizationId first, then query facilities for that org
+          const user = await prisma.user.findUnique({
+            where: { id: filters.healthcareUserId },
+            select: { id: true, organizationId: true }
           });
+          const organizationId = user?.organizationId ?? null;
+          console.log('TCC_FILTER_DEBUG: Resolved organizationId:', organizationId, 'for userId:', filters.healthcareUserId);
+
+          // Get all facility IDs for this user's organization
+          const locations = organizationId
+            ? await prisma.facility.findMany({
+                where: { organizationId },
+                select: { id: true }
+              })
+            : [];
           const locationIds = locations.map(loc => loc.id);
           
           console.log('TCC_FILTER_DEBUG: Found', locationIds.length, 'locations for user');
@@ -199,7 +209,7 @@ export class TripService {
           const healthcareUserConditions: any[] = [];
           
           // Always include trips created by this user (even if fromLocationId doesn't match)
-          healthcareUserConditions.push({ healthcareCreatedById: filters.healthcareUserId });
+          healthcareUserConditions.push({ createdByUserId: filters.healthcareUserId });
           
           // If user has locations, also include trips from those locations
           if (locationIds.length > 0) {
@@ -226,18 +236,17 @@ export class TripService {
           }
         } catch (locationError: any) {
           console.error('TCC_DEBUG: Error fetching healthcare locations:', locationError);
-          // If location query fails, fall back to filtering by healthcareCreatedById only
-          // Combine with existing filters properly
+          // If location query fails, fall back to filtering by createdByUserId only
           if (where.OR && Array.isArray(where.OR)) {
             where.AND = [
               { OR: where.OR },
-              { healthcareCreatedById: filters.healthcareUserId }
+              { createdByUserId: filters.healthcareUserId }
             ];
             delete where.OR;
           } else {
-            where.healthcareCreatedById = filters.healthcareUserId;
+            where.createdByUserId = filters.healthcareUserId;
           }
-          console.log('TCC_DEBUG: Fallback to healthcareCreatedById filter due to location query error');
+          console.log('TCC_DEBUG: Fallback to createdByUserId filter due to location query error');
         }
       }
       if (filters?.transportLevel) {
@@ -311,7 +320,7 @@ export class TripService {
           select: {
             id: true,
             name: true,
-            type: true,
+            facilityType: true,
             latitude: true,
             longitude: true,
             coordinates: true
@@ -321,7 +330,7 @@ export class TripService {
           select: {
             id: true,
             name: true,
-            type: true,
+            facilityType: true,
             latitude: true,
             longitude: true,
             coordinates: true
@@ -335,7 +344,7 @@ export class TripService {
             room: true,
             contactPhone: true,
             contactEmail: true,
-            hospital: {
+            facility: {
               select: {
                 id: true,
                 name: true,
@@ -345,24 +354,15 @@ export class TripService {
             }
           }
         },
-        healthcareLocation: {
+        fromFacility: {
           select: {
             id: true,
-            locationName: true,
+            name: true,
             city: true,
             state: true,
             facilityType: true,
             latitude: true,
-            longitude: true,
-            hospital: {
-              select: {
-                id: true,
-                name: true,
-                coordinates: true,
-                latitude: true,
-                longitude: true
-              }
-            }
+            longitude: true
           }
         }
       };
@@ -444,7 +444,7 @@ export class TripService {
           originFacility: firstTrip.originFacility ? {
             id: firstTrip.originFacility.id,
             name: firstTrip.originFacility.name,
-            type: firstTrip.originFacility.type,
+            facilityType: firstTrip.originFacility.facilityType,
             latitude: firstTrip.originFacility.latitude,
             longitude: firstTrip.originFacility.longitude,
             coordinates: firstTrip.originFacility.coordinates
@@ -453,7 +453,7 @@ export class TripService {
           destinationFacility: firstTrip.destinationFacility ? {
             id: firstTrip.destinationFacility.id,
             name: firstTrip.destinationFacility.name,
-            type: firstTrip.destinationFacility.type,
+            facilityType: firstTrip.destinationFacility.facilityType,
             latitude: firstTrip.destinationFacility.latitude,
             longitude: firstTrip.destinationFacility.longitude,
             coordinates: firstTrip.destinationFacility.coordinates
@@ -486,7 +486,7 @@ export class TripService {
             select: {
               id: true,
               patientId: true,
-              healthcareCreatedById: true,
+              createdByUserId: true,
               fromLocationId: true,
               status: true,
               createdAt: true
@@ -497,22 +497,26 @@ export class TripService {
           console.log('TCC_DEBUG: Recent trips in database (last 24h):', recentTrips.length);
           console.log('TCC_DEBUG: Recent trips sample:', recentTrips.map(t => ({
             patientId: t.patientId,
-            healthcareCreatedById: (t as any).healthcareCreatedById,
+            createdByUserId: (t as any).createdByUserId,
             fromLocationId: (t as any).fromLocationId,
             status: (t as any).status
           })));
           
-          // Check if user has locations
-          const userLocations = await prisma.healthcareLocation.findMany({
-            where: { healthcareUserId: filters.healthcareUserId },
-            select: { id: true, locationName: true }
+          // Check if user has facilities
+          const diagUser = await prisma.user.findUnique({
+            where: { id: filters.healthcareUserId },
+            select: { organizationId: true }
           });
-          console.log('TCC_DEBUG: User locations:', userLocations.length, userLocations.map(l => ({ id: l.id, name: l.locationName })));
+          const userLocations = await prisma.facility.findMany({
+            where: { organizationId: diagUser?.organizationId ?? '' },
+            select: { id: true, name: true }
+          });
+          console.log('TCC_DEBUG: User facilities:', userLocations.length, userLocations.map(l => ({ id: l.id, name: l.name })));
           
           // Check trips created by this user
           const userCreatedTrips = await prisma.transportRequest.findMany({
             where: {
-              healthcareCreatedById: filters.healthcareUserId,
+              createdByUserId: filters.healthcareUserId,
               createdAt: {
                 gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
               }
@@ -544,10 +548,10 @@ export class TripService {
             };
           })
         );
-        console.log('TCC_FILTER_DEBUG: Trips healthcareCreatedById sample →',
+        console.log('TCC_FILTER_DEBUG: Trips createdByUserId sample →',
           trips.slice(0, 3).map(t => ({
             id: t.id,
-            healthcareCreatedById: (t as any).healthcareCreatedById
+            createdByUserId: (t as any).createdByUserId
           }))
         );
       } catch (e) {
@@ -573,13 +577,13 @@ export class TripService {
               `${hl.city || ''}, ${hl.state || ''}`.trim()) || '';
             
             // Try to get coordinates from hospital.coordinates (JSONB) first, then fall back to direct fields
-            if (hl.hospital?.coordinates && typeof hl.hospital.coordinates === 'object') {
-              const coords = hl.hospital.coordinates as any;
+            if (hl.facility?.coordinates && typeof hl.facility.coordinates === 'object') {
+              const coords = hl.facility.coordinates as any;
               fromLatitude = coords.lat || coords.latitude || hl.latitude || null;
               fromLongitude = coords.lng || coords.longitude || hl.longitude || null;
-            } else if (hl.hospital?.latitude || hl.hospital?.longitude) {
-              fromLatitude = hl.hospital.latitude || hl.latitude || null;
-              fromLongitude = hl.hospital.longitude || hl.longitude || null;
+            } else if (hl.facility?.latitude || hl.facility?.longitude) {
+              fromLatitude = hl.facility.latitude || hl.latitude || null;
+              fromLongitude = hl.facility.longitude || hl.longitude || null;
             } else {
               fromLatitude = hl.latitude || null;
               fromLongitude = hl.longitude || null;
@@ -681,13 +685,13 @@ export class TripService {
           let fromLongitude: number | null = null;
           
           // Try to get coordinates from healthcare location hospital.coordinates first
-          if (tripAny.healthcareLocation?.hospital?.coordinates && typeof tripAny.healthcareLocation.hospital.coordinates === 'object') {
-            const coords = tripAny.healthcareLocation.hospital.coordinates as any;
+          if (tripAny.healthcareLocation?.facility?.coordinates && typeof tripAny.healthcareLocation.facility.coordinates === 'object') {
+            const coords = tripAny.healthcareLocation.facility.coordinates as any;
             fromLatitude = coords.lat || coords.latitude || tripAny.healthcareLocation?.latitude || tripAny.originFacility?.latitude || null;
             fromLongitude = coords.lng || coords.longitude || tripAny.healthcareLocation?.longitude || tripAny.originFacility?.longitude || null;
-          } else if (tripAny.healthcareLocation?.hospital?.latitude || tripAny.healthcareLocation?.hospital?.longitude) {
-            fromLatitude = tripAny.healthcareLocation.hospital.latitude || tripAny.healthcareLocation?.latitude || tripAny.originFacility?.latitude || null;
-            fromLongitude = tripAny.healthcareLocation.hospital.longitude || tripAny.healthcareLocation?.longitude || tripAny.originFacility?.longitude || null;
+          } else if (tripAny.healthcareLocation?.facility?.latitude || tripAny.healthcareLocation?.facility?.longitude) {
+            fromLatitude = tripAny.healthcareLocation.facility.latitude || tripAny.healthcareLocation?.latitude || tripAny.originFacility?.latitude || null;
+            fromLongitude = tripAny.healthcareLocation.facility.longitude || tripAny.healthcareLocation?.longitude || tripAny.originFacility?.longitude || null;
           } else {
             fromLatitude = tripAny.healthcareLocation?.latitude || tripAny.originFacility?.latitude || null;
             fromLongitude = tripAny.healthcareLocation?.longitude || tripAny.originFacility?.longitude || null;
@@ -719,14 +723,14 @@ export class TripService {
       
       console.log('TCC_DEBUG: Trip transformation complete. Processed', tripsWithDistance.length, 'trips');
 
-      // Post-process: Ensure all healthcare locations have coordinates properly populated from hospital.coordinates
+      // Post-process: Ensure all healthcare locations have coordinates properly populated from facility.coordinates
       for (const trip of tripsWithDistance as any[]) {
-        if (trip.healthcareLocation && trip.healthcareLocation.hospital) {
-          const hospital = trip.healthcareLocation.hospital;
+        if (trip.healthcareLocation && trip.healthcareLocation.facility) {
+          const facility = trip.healthcareLocation.facility;
           
-          // Extract coordinates from hospital.coordinates (JSONB with {lat, lng}) if not already set
-          if (hospital.coordinates && typeof hospital.coordinates === 'object') {
-            const coords = hospital.coordinates as any;
+          // Extract coordinates from facility.coordinates (JSONB with {lat, lng}) if not already set
+          if (facility.coordinates && typeof facility.coordinates === 'object') {
+            const coords = facility.coordinates as any;
             if (!trip.healthcareLocation.latitude && coords.lat !== undefined) {
               trip.healthcareLocation.latitude = coords.lat;
             }
@@ -735,12 +739,12 @@ export class TripService {
             }
           }
           
-          // Fallback to hospital.latitude/longitude if hospital.coordinates isn't available
-          if (!trip.healthcareLocation.latitude && hospital.latitude) {
-            trip.healthcareLocation.latitude = hospital.latitude;
+          // Fallback to facility.latitude/longitude if facility.coordinates isn't available
+          if (!trip.healthcareLocation.latitude && facility.latitude) {
+            trip.healthcareLocation.latitude = facility.latitude;
           }
-          if (!trip.healthcareLocation.longitude && hospital.longitude) {
-            trip.healthcareLocation.longitude = hospital.longitude;
+          if (!trip.healthcareLocation.longitude && facility.longitude) {
+            trip.healthcareLocation.longitude = facility.longitude;
           }
         }
       }
@@ -778,16 +782,16 @@ export class TripService {
       // Enrich with creator info for healthcare-created trips (including facility name)
       try {
         const creatorIds = Array.from(new Set(tripsWithDistance
-          .map(t => (t as any).healthcareCreatedById)
+          .map(t => (t as any).createdByUserId)
           .filter(Boolean)));
         if (creatorIds.length > 0) {
-          const creators = await prisma.healthcareUser.findMany({
+          const creators = await prisma.user.findMany({
             where: { id: { in: creatorIds } },
-            select: { id: true, name: true, email: true, facilityName: true }
+            select: { id: true, name: true, email: true }
           });
           const creatorMap = new Map(creators.map(c => [c.id, c]));
           for (const t of tripsWithDistance as any[]) {
-            const cid = t.healthcareCreatedById;
+            const cid = t.createdByUserId;
             if (cid && creatorMap.has(cid)) {
               t.createdBy = creatorMap.get(cid);
             }
@@ -799,12 +803,14 @@ export class TripService {
 
       // Add healthcareFacilityName field to each trip
       for (const trip of tripsWithDistance as any[]) {
-        // Priority: healthcareLocation.locationName > healthcareUser.facilityName > "TCC Created"
-        if (trip.healthcareLocation?.locationName) {
+        // Priority: fromFacility.name > createdBy.organization name > "TCC Created"
+        if (trip.fromFacility?.name) {
+          trip.healthcareFacilityName = trip.fromFacility.name;
+        } else if (trip.healthcareLocation?.locationName) {
           trip.healthcareFacilityName = trip.healthcareLocation.locationName;
         } else if (trip.createdBy?.facilityName) {
           trip.healthcareFacilityName = trip.createdBy.facilityName;
-        } else if (trip.healthcareCreatedById) {
+        } else if (trip.createdByUserId) {
           // Trip was created by healthcare user but we don't have facility name
           trip.healthcareFacilityName = 'Unknown Facility';
         } else {
@@ -872,14 +878,14 @@ export class TripService {
             select: {
               id: true,
               name: true,
-              type: true
+              facilityType: true
             }
           },
           destinationFacility: {
             select: {
               id: true,
               name: true,
-              type: true
+              facilityType: true
             }
           },
           pickupLocation: {
@@ -1071,7 +1077,7 @@ export class TripService {
           console.log('TCC_EDIT_DEBUG: Updating pickup location with:', pickupLocationUpdate);
 
           // Update the pickup location
-          await prisma.pickup_locations.update({
+          await prisma.pickupLocation.update({
             where: { id: currentTrip.pickupLocation.id },
             data: pickupLocationUpdate
           });
@@ -1146,7 +1152,7 @@ export class TripService {
     try {
       // For now, return a simple list of agencies
       // This can be expanded later to actually query agencies based on hospital location
-      const agencies = await prisma.eMSAgency.findMany({
+      const agencies = await prisma.organization.findMany({
         where: {
           isActive: true
         },
@@ -1182,12 +1188,12 @@ export class TripService {
       // ✅ Determine if this is from a multi-location facility
       let isMultiLocationFacility = false;
       if (data.healthcareUserId) {
-        const healthcareUser = await prisma.healthcareUser.findUnique({
+        const healthcareUser = await prisma.user.findUnique({
           where: { id: data.healthcareUserId },
-          select: { manageMultipleLocations: true }
+          select: { id: true }
         });
-        isMultiLocationFacility = healthcareUser?.manageMultipleLocations || false;
-        console.log('MULTI_LOC: User manages multiple locations:', isMultiLocationFacility);
+        isMultiLocationFacility = !!healthcareUser;
+        console.log('MULTI_LOC: User found:', isMultiLocationFacility);
       }
       
       const tripData: any = {
@@ -1220,16 +1226,20 @@ export class TripService {
         notes: data.notes || null,
         isolation: false,
         bariatric: false,
-        healthcareCreatedById: data.healthcareUserId || null,
       };
       
-      console.log('TCC_CREATE_DEBUG: Trip data healthcareCreatedById before create:', tripData.healthcareCreatedById);
+      // Set creator via relation connect
+      if (data.healthcareUserId) {
+        tripData.createdByUser = { connect: { id: data.healthcareUserId } };
+      }
+      
+      console.log('TCC_CREATE_DEBUG: Trip data createdByUser before create:', data.healthcareUserId);
 
       // Connect pickup location relation if provided
       if (data.pickupLocationId) {
         console.log('TCC_DEBUG: Validating pickup location:', data.pickupLocationId);
         // First verify the pickup location exists
-        const pickupLocation = await prisma.pickup_locations.findUnique({
+        const pickupLocation = await prisma.pickupLocation.findUnique({
           where: { id: data.pickupLocationId }
         });
         
@@ -1252,17 +1262,17 @@ export class TripService {
       // Connect healthcare location relation if provided
       if (data.fromLocationId) {
         console.log('TCC_DEBUG: Validating healthcare location:', data.fromLocationId);
-        // Verify the healthcare location exists
-        const healthcareLocation = await prisma.healthcareLocation.findUnique({
+        // Verify the from facility exists
+        const healthcareLocation = await prisma.facility.findUnique({
           where: { id: data.fromLocationId },
           select: {
             id: true,
-            locationName: true,
-            healthcareUserId: true
+            name: true,
+            organizationId: true
           }
         });
         
-        console.log('TCC_DEBUG: Healthcare location lookup result:', healthcareLocation ? `Found: ${healthcareLocation.locationName}` : 'NOT FOUND');
+        console.log('TCC_DEBUG: Facility lookup result:', healthcareLocation ? `Found: ${healthcareLocation.name}` : 'NOT FOUND');
         
         if (!healthcareLocation) {
           console.error('TCC_DEBUG: From Location not found:', data.fromLocationId);
@@ -1272,14 +1282,10 @@ export class TripService {
           };
         }
         
-        console.log('TCC_DEBUG: Healthcare location validated:', healthcareLocation.locationName);
-        tripData.healthcareLocation = { connect: { id: data.fromLocationId } };
+        console.log('TCC_DEBUG: Facility validated:', healthcareLocation.name);
+        tripData.fromFacility = { connect: { id: data.fromLocationId } };
         
-        // ✅ FIX: If healthcareUserId wasn't provided (e.g., TCC Command), set it from the location's owner
-        if (!tripData.healthcareCreatedById && healthcareLocation.healthcareUserId) {
-          tripData.healthcareCreatedById = healthcareLocation.healthcareUserId;
-          console.log('TCC_DEBUG: Set healthcareCreatedById from location owner:', healthcareLocation.healthcareUserId);
-        }
+        // ✅ FIX: If healthcareUserId wasn't provided (e.g., TCC Command), skip creator — organizationId is not a user ID
       } else {
         console.log('TCC_DEBUG: No fromLocationId provided, skipping healthcare location connection');
       }
@@ -1299,10 +1305,10 @@ export class TripService {
       const trip = await prisma.transportRequest.create({
         data: tripData,
         include: {
-          healthcareLocation: {
+          fromFacility: {
             select: {
               id: true,
-              locationName: true,
+              name: true,
               city: true,
               state: true,
               facilityType: true,
@@ -1314,8 +1320,8 @@ export class TripService {
       });
 
       console.log('TCC_DEBUG: Enhanced trip created successfully:', trip.id);
-      console.log('MULTI_LOC: Trip created with location:', trip.healthcareLocation?.locationName || 'N/A');
-      console.log('TCC_CREATE_DEBUG: Created trip healthcareCreatedById:', (trip as any).healthcareCreatedById);
+      console.log('MULTI_LOC: Trip created with location:', trip.fromFacility?.name || 'N/A');
+      console.log('TCC_CREATE_DEBUG: Created trip createdByUserId:', (trip as any).createdByUserId);
       
       // SMS notification (feature-flagged, non-blocking)
       console.log('========================================');
@@ -1437,7 +1443,7 @@ export class TripService {
     console.log('TCC_DEBUG: Getting available agencies');
     
     try {
-      const agencies = await prisma.eMSAgency.findMany({
+      const agencies = await prisma.organization.findMany({
         where: {
           isActive: true
         },
@@ -1800,7 +1806,7 @@ export class TripService {
       
       // Get agency names for all agencies in responses
       const agencyIds = [...new Set(agencyResponses.map(r => r.agencyId))];
-      const agencies = await prisma.eMSAgency.findMany({
+      const agencies = await prisma.organization.findMany({
         where: { id: { in: agencyIds } },
         select: { id: true, name: true }
       });
@@ -2017,17 +2023,17 @@ export class TripService {
 
       // Get origin coordinates
       if (data.fromLocationId) {
-        const healthcareLocation = await prisma.healthcareLocation.findUnique({
+        const fromFacility = await prisma.facility.findUnique({
           where: { id: data.fromLocationId },
-          select: { latitude: true, longitude: true, locationName: true }
+          select: { latitude: true, longitude: true, name: true }
         });
         
-        if (healthcareLocation?.latitude && healthcareLocation?.longitude) {
+        if (fromFacility?.latitude && fromFacility?.longitude) {
           fromCoords = {
-            latitude: healthcareLocation.latitude,
-            longitude: healthcareLocation.longitude
+            latitude: fromFacility.latitude,
+            longitude: fromFacility.longitude
           };
-          console.log('TCC_DEBUG: Found origin coordinates from healthcare location:', fromCoords);
+          console.log('TCC_DEBUG: Found origin coordinates from facility:', fromCoords);
         }
       }
 
@@ -2051,20 +2057,20 @@ export class TripService {
       if (!fromCoords && data.fromLocation) {
         console.log('TCC_DEBUG: Looking up coordinates for fromLocation:', data.fromLocation);
         
-        // Try to find the location in healthcare locations
-        const healthcareLocation = await prisma.healthcareLocation.findFirst({
+        // Try to find the location in facilities
+        const fromFacility = await prisma.facility.findFirst({
           where: { 
-            locationName: { contains: data.fromLocation, mode: 'insensitive' }
+            name: { contains: data.fromLocation, mode: 'insensitive' }
           },
-          select: { latitude: true, longitude: true, locationName: true }
+          select: { latitude: true, longitude: true, name: true }
         });
         
-        if (healthcareLocation?.latitude && healthcareLocation?.longitude) {
+        if (fromFacility?.latitude && fromFacility?.longitude) {
           fromCoords = {
-            latitude: healthcareLocation.latitude,
-            longitude: healthcareLocation.longitude
+            latitude: fromFacility.latitude,
+            longitude: fromFacility.longitude
           };
-          console.log('TCC_DEBUG: Found coordinates from healthcare location:', fromCoords);
+          console.log('TCC_DEBUG: Found coordinates from facility:', fromCoords);
         } else {
           // Fallback to mock coordinates if not found
           console.log('TCC_DEBUG: Using mock coordinates for fromLocation:', data.fromLocation);
@@ -2075,20 +2081,20 @@ export class TripService {
       if (!toCoords && data.toLocation) {
         console.log('TCC_DEBUG: Looking up coordinates for toLocation:', data.toLocation);
         
-        // Try to find the location in healthcare locations
-        const healthcareLocation = await prisma.healthcareLocation.findFirst({
+        // Try to find the location in facilities
+        const toFacility = await prisma.facility.findFirst({
           where: { 
-            locationName: { contains: data.toLocation, mode: 'insensitive' }
+            name: { contains: data.toLocation, mode: 'insensitive' }
           },
-          select: { latitude: true, longitude: true, locationName: true }
+          select: { latitude: true, longitude: true, name: true }
         });
         
-        if (healthcareLocation?.latitude && healthcareLocation?.longitude) {
+        if (toFacility?.latitude && toFacility?.longitude) {
           toCoords = {
-            latitude: healthcareLocation.latitude,
-            longitude: healthcareLocation.longitude
+            latitude: toFacility.latitude,
+            longitude: toFacility.longitude
           };
-          console.log('TCC_DEBUG: Found coordinates from healthcare location:', toCoords);
+          console.log('TCC_DEBUG: Found coordinates from facility:', toCoords);
         } else {
           // Fallback to mock coordinates if not found
           console.log('TCC_DEBUG: Using mock coordinates for toLocation:', data.toLocation);

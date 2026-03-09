@@ -53,10 +53,10 @@ export class HealthcareTripDispatchService {
       const trip = await prisma.transportRequest.findUnique({
         where: { id: tripId },
         include: {
-          healthcareLocation: {
+          fromFacility: {
             select: {
               id: true,
-              locationName: true,
+              name: true,
               latitude: true,
               longitude: true,
               address: true,
@@ -72,11 +72,11 @@ export class HealthcareTripDispatchService {
       }
 
       // Verify trip belongs to this healthcare user
-      const tripCreatorId = (trip as any).healthcareCreatedById;
+      const tripCreatorId = (trip as any).createdByUserId;
       console.log('PHASE3_DEBUG: Trip creator ID:', tripCreatorId, 'Requested healthcareUserId:', healthcareUserId);
       
       if (!tripCreatorId) {
-        console.warn('PHASE3_DEBUG: Trip has no healthcareCreatedById - this may be an old trip');
+        console.warn('PHASE3_DEBUG: Trip has no createdByUserId - this may be an old trip');
         // Allow access if healthcareUserId is provided (for ADMIN users dispatching on behalf)
         // But log a warning
       } else if (tripCreatorId !== healthcareUserId) {
@@ -88,14 +88,14 @@ export class HealthcareTripDispatchService {
         throw new Error(`Trip does not belong to this healthcare user. Trip creator: ${tripCreatorId}, Requested user: ${healthcareUserId}`);
       }
 
-      const originCoords = trip.healthcareLocation 
-        ? { lat: trip.healthcareLocation.latitude, lng: trip.healthcareLocation.longitude }
+      const originCoords = trip.fromFacility 
+        ? { lat: trip.fromFacility.latitude, lng: trip.fromFacility.longitude }
         : null;
 
-      console.log('PHASE3_DEBUG: Trip origin location:', trip.healthcareLocation?.locationName, 'Coords:', originCoords);
+      console.log('PHASE3_DEBUG: Trip origin location:', trip.fromFacility?.name, 'Coords:', originCoords);
 
-      // Get all registered agencies (from EMSAgency)
-      const registeredAgencies = await prisma.eMSAgency.findMany({
+      // Get all registered agencies (from Organization)
+      const registeredAgencies = await prisma.organization.findMany({
         where: {
           isActive: true,
           acceptsNotifications: true
@@ -119,7 +119,7 @@ export class HealthcareTripDispatchService {
       if (registeredAgencies.length === 0) {
         console.warn('PHASE3_DEBUG: No registered agencies found with isActive=true and acceptsNotifications=true');
         // Check if there are any agencies at all
-        const allAgencies = await prisma.eMSAgency.findMany({ select: { id: true, name: true, isActive: true, acceptsNotifications: true } });
+        const allAgencies = await prisma.organization.findMany({ select: { id: true, name: true, isActive: true, acceptsNotifications: true } });
         console.log('PHASE3_DEBUG: Total agencies in database:', allAgencies.length);
         console.log('PHASE3_DEBUG: Agencies breakdown:', {
           total: allAgencies.length,
@@ -133,22 +133,28 @@ export class HealthcareTripDispatchService {
       // Note: If healthcareUserId is null (old trip), we'll skip user agencies
       let userAgencies: any[] = [];
       if (healthcareUserId) {
-        userAgencies = await prisma.eMSAgency.findMany({
+        userAgencies = await prisma.organization.findMany({
           where: {
             addedBy: healthcareUserId,
             isActive: true
-          },
-          include: {
-            healthcarePreferences: {
-              where: {
-                healthcareUserId: healthcareUserId
-              },
-              select: {
-                isPreferred: true
-              }
-            }
           }
         });
+        // Get preference status for user agencies separately
+        if (userAgencies.length > 0) {
+          const prefs = await prisma.organizationPreference.findMany({
+            where: {
+              organizationId: healthcareUserId,
+              preferenceType: 'PREFERRED_EMS_AGENCY',
+              targetOrganizationId: { in: userAgencies.map((a: any) => a.id) }
+            },
+            select: { targetOrganizationId: true, value: true }
+          });
+          const prefMap = new Map(prefs.map((p: any) => [p.targetOrganizationId, (p.value as any)?.isPreferred ?? true]));
+          userAgencies = userAgencies.map((a: any) => ({
+            ...a,
+            isPreferredByUser: prefMap.get(a.id) ?? false
+          }));
+        }
         console.log('PHASE3_DEBUG: Found user agencies for healthcareUserId:', healthcareUserId, 'count:', userAgencies.length);
       } else {
         console.warn('PHASE3_DEBUG: No healthcareUserId provided, skipping user agencies lookup');
@@ -191,7 +197,7 @@ export class HealthcareTripDispatchService {
 
       // Add user's added agencies (these might overlap with registered agencies)
       for (const agency of userAgencies) {
-        const isPreferred = agency.healthcarePreferences?.[0]?.isPreferred || false;
+        const isPreferred = agency.isPreferredByUser || false;
         const isRegistered = agencyMap.has(agency.id);
 
         // Calculate distance if we have origin coordinates
@@ -335,7 +341,7 @@ export class HealthcareTripDispatchService {
       const trip = await prisma.transportRequest.findUnique({
         where: { id: tripId },
         include: {
-          healthcareLocation: true,
+          fromFacility: true,
           destinationFacility: true,
           pickupLocation: true
         }
@@ -346,11 +352,11 @@ export class HealthcareTripDispatchService {
       }
 
       // Verify trip belongs to this healthcare user
-      const tripCreatorId = (trip as any).healthcareCreatedById;
+      const tripCreatorId = (trip as any).createdByUserId;
       console.log('PHASE3_DEBUG: Dispatch - Trip creator ID:', tripCreatorId, 'Requested healthcareUserId:', healthcareUserId);
       
       if (!tripCreatorId) {
-        console.warn('PHASE3_DEBUG: Dispatch - Trip has no healthcareCreatedById - this may be an old trip');
+        console.warn('PHASE3_DEBUG: Dispatch - Trip has no createdByUserId - this may be an old trip');
         // Allow access if healthcareUserId is provided (for ADMIN users dispatching on behalf)
         // But log a warning
       } else if (tripCreatorId !== healthcareUserId) {
@@ -368,7 +374,7 @@ export class HealthcareTripDispatchService {
       }
 
       // Validate all selected agencies belong to user OR are registered
-      const agencies = await prisma.eMSAgency.findMany({
+      const agencies = await prisma.organization.findMany({
         where: {
           id: { in: dispatchData.agencyIds },
           isActive: true
@@ -439,7 +445,7 @@ export class HealthcareTripDispatchService {
     
     try {
       // Get agency details for notifications
-      const agencies = await prisma.eMSAgency.findMany({
+      const agencies = await prisma.organization.findMany({
         where: { id: { in: agencyIds } },
         include: {
           users: {

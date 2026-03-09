@@ -7,112 +7,153 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model CenterUser {
-  id                      String                   @id @default(cuid())
-  email                   String                   @unique
-  password                String
-  name                    String
-  userType                String
-  phone                   String?
-  emailNotifications      Boolean                  @default(true)
-  smsNotifications        Boolean                  @default(false)
-  isActive                Boolean                  @default(true)
-  deletedAt               DateTime?
-  isDeleted               Boolean                  @default(false)
-  lastLogin               DateTime?
-  lastActivity            DateTime?
-  createdAt               DateTime                 @default(now())
-  updatedAt               DateTime                 @updatedAt
-  notificationLogs        NotificationLog[]
-  notificationPreferences NotificationPreference[]
+// ─── Enums ────────────────────────────────────────────────────────────────────
 
+enum UserType {
+  SYSTEM_ADMIN
+  ORGANIZATION_USER
+  FACILITY_USER
+}
+
+enum OrganizationType {
+  HEALTHCARE
+  EMS
+}
+
+enum FacilityType {
+  HOSPITAL
+  CLINIC
+  NURSING_HOME
+  REHAB_FACILITY
+  URGENT_CARE
+  OTHER
+}
+
+enum OrganizationPreferenceType {
+  PREFERRED_EMS_AGENCY
+}
+
+enum UserPreferenceType {
+  NOTIFICATION_EMAIL
+  NOTIFICATION_SMS
+  NOTIFICATION_PUSH
+}
+
+// ─── User ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id                 String           @id @default(cuid())
+  email              String           @unique
+  password           String
+  name               String
+  userType           UserType
+  organizationId     String?
+  mustChangePassword Boolean          @default(false)
+  isActive           Boolean          @default(true)
+  isDeleted          Boolean          @default(false)
+  deletedAt          DateTime?
+  lastLogin          DateTime?
+  lastActivity       DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  organization       Organization?    @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  preferences        UserPreference[]
+  notificationLogs   NotificationLog[]
+  createdTrips       TransportRequest[]
+
+  @@index([email])
+  @@index([organizationId])
   @@index([isDeleted])
   @@index([lastLogin])
   @@index([lastActivity])
-  @@map("center_users")
+  @@map("users")
 }
 
-model HealthcareUser {
-  id                      String                       @id @default(cuid())
-  email                   String                       @unique
-  password                String
-  name                    String
-  facilityName            String
-  facilityType            String
-  userType                String                       @default("HEALTHCARE")
-  isActive                Boolean                      @default(true)
-  smsNotifications        Boolean                     @default(false)
-  manageMultipleLocations Boolean                      @default(false)
-  isSubUser               Boolean                      @default(false)
-  parentUserId            String?
-  mustChangePassword      Boolean                      @default(false)
-  orgAdmin                Boolean                      @default(false)
-  deletedAt               DateTime?
-  isDeleted               Boolean                      @default(false)
-  lastLogin               DateTime?
-  lastActivity            DateTime?
-  createdAt               DateTime                     @default(now())
-  updatedAt               DateTime                     @updatedAt
-  locations               HealthcareLocation[]
-  agencyPreferences       HealthcareAgencyPreference[]
-  destinations            HealthcareDestination[]
-  parentUser              HealthcareUser?              @relation("HealthcareUserParent", fields: [parentUserId], references: [id])
-  subUsers                HealthcareUser[]             @relation("HealthcareUserParent")
+model UserPreference {
+  id             String             @id @default(cuid())
+  userId         String
+  preferenceType UserPreferenceType
+  value          Json
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([isDeleted])
-  @@index([lastLogin])
-  @@index([lastActivity])
-  @@map("healthcare_users")
+  @@unique([userId, preferenceType])
+  @@index([userId])
+  @@map("user_preferences")
 }
 
-model HealthcareLocation {
-  id                String             @id @default(cuid())
-  healthcareUserId  String
-  hospitalId        String?
-  locationName      String
-  address           String
-  city              String
-  state             String
-  zipCode           String
-  phone             String?
-  facilityType      String
-  isActive          Boolean            @default(true)
-  isPrimary         Boolean            @default(false)
-  latitude          Float?
-  longitude         Float?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  healthcareUser    HealthcareUser     @relation(fields: [healthcareUserId], references: [id], onDelete: Cascade)
-  hospital          Hospital?          @relation(fields: [hospitalId], references: [id], onDelete: SetNull)
-  transportRequests TransportRequest[]
+// ─── Organization (was: Facility + EMSAgency) ─────────────────────────────────
 
-  @@index([healthcareUserId])
-  @@index([hospitalId])
+model Organization {
+  id                   String                       @id @default(cuid())
+  name                 String
+  organizationType     OrganizationType
+  contactName          String?
+  phone                String?
+  email                String?
+  address              String?
+  city                 String?
+  state                String?
+  zipCode              String?
+  serviceArea          String[]                     @default([])
+  operatingHours       Json?
+  capabilities         String[]                     @default([])
+  pricingStructure     Json?
+  isActive             Boolean                      @default(true)
+  status               String                       @default("ACTIVE")
+  addedBy              String?
+  addedAt              DateTime                     @default(now())
+  acceptsNotifications Boolean                      @default(true)
+  approvedAt           DateTime?
+  approvedBy           String?
+  availableUnits       Int                          @default(0)
+  totalUnits           Int                          @default(0)
+  lastUpdated          DateTime                     @default(now())
+  latitude             Float?
+  longitude            Float?
+  coordinates          Json?
+  notificationMethods  String[]                     @default([])
+  requiresReview       Boolean                      @default(false)
+  serviceRadius        Int?
+  availabilityStatus   Json?                        @default("{\"isAvailable\":false,\"availableLevels\":[]}")
+  createdAt            DateTime                     @default(now())
+  updatedAt            DateTime                     @updatedAt
+  users                User[]
+  facilities           Facility[]
+  units                Unit[]
+  preferences          OrganizationPreference[]     @relation("OrganizationPreferences")
+  incomingPreferences  OrganizationPreference[]     @relation("TargetOrganizationPreferences")
+
+  @@index([organizationType])
   @@index([isActive])
-  @@map("healthcare_locations")
+  @@map("organizations")
 }
 
-model HealthcareAgencyPreference {
-  id               String         @id @default(cuid())
-  healthcareUserId String
-  agencyId         String
-  isPreferred      Boolean        @default(false)
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  healthcareUser   HealthcareUser @relation(fields: [healthcareUserId], references: [id], onDelete: Cascade)
-  agency           EMSAgency      @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+model OrganizationPreference {
+  id                     String                     @id @default(cuid())
+  organizationId         String
+  preferenceType         OrganizationPreferenceType
+  targetOrganizationId   String?
+  value                  Json?
+  createdAt              DateTime                   @default(now())
+  updatedAt              DateTime                   @updatedAt
+  organization           Organization               @relation("OrganizationPreferences", fields: [organizationId], references: [id], onDelete: Cascade)
+  targetOrganization     Organization?              @relation("TargetOrganizationPreferences", fields: [targetOrganizationId], references: [id], onDelete: SetNull)
 
-  @@unique([healthcareUserId, agencyId])
-  @@index([healthcareUserId])
-  @@index([agencyId])
-  @@map("healthcare_agency_preferences")
+  @@unique([organizationId, preferenceType, targetOrganizationId])
+  @@index([organizationId])
+  @@index([targetOrganizationId])
+  @@map("organization_preferences")
 }
 
-model HealthcareDestination {
-  id               String         @id @default(cuid())
-  healthcareUserId String
+// ─── Facility (was: Hospital + HealthcareLocation + HealthcareDestination) ────
+
+model Facility {
+  id               String             @id @default(cuid())
   name             String
-  type             String
+  organizationId   String
+  facilityType     FacilityType
   address          String
   city             String
   state            String
@@ -120,113 +161,53 @@ model HealthcareDestination {
   phone            String?
   email            String?
   contactName      String?
+  capabilities     String[]           @default([])
+  region           String?
+  coordinates      Json?
   latitude         Float?
   longitude        Float?
-  isActive         Boolean        @default(true)
+  operatingHours   String?
+  isPrimary        Boolean            @default(false)
+  isActive         Boolean            @default(true)
+  requiresReview   Boolean            @default(false)
+  approvedAt       DateTime?
+  approvedBy       String?
   notes            String?
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  healthcareUser   HealthcareUser @relation(fields: [healthcareUserId], references: [id], onDelete: Cascade)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  organization     Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  pickupLocations  PickupLocation[]
+  fromTrips        TransportRequest[] @relation("FromFacility")
+  originTrips      TransportRequest[] @relation("OriginFacility")
+  destinationTrips TransportRequest[] @relation("DestinationFacility")
 
-  @@index([healthcareUserId])
+  @@index([organizationId])
+  @@index([facilityType])
   @@index([isActive])
-  @@map("healthcare_destinations")
+  @@map("facilities")
 }
 
-model Hospital {
-  id                String              @id @default(cuid())
-  name              String
-  address           String
-  city              String
-  state             String
-  zipCode           String
-  phone             String?
-  email             String?
-  type              String
-  capabilities      String[]
-  region            String
-  coordinates       Json?
-  latitude          Float?
-  longitude         Float?
-  operatingHours    String?
-  isActive          Boolean             @default(true)
-  requiresReview    Boolean             @default(false)
-  approvedAt        DateTime?
-  approvedBy        String?
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  pickupLocations   pickup_locations[]
-  healthcareLocations HealthcareLocation[]
+// ─── PickupLocation (was: pickup_locations) ───────────────────────────────────
 
-  @@map("hospitals")
-}
+model PickupLocation {
+  id           String             @id @default(cuid())
+  facilityId   String
+  name         String
+  description  String?
+  contactPhone String?
+  contactEmail String?
+  floor        String?
+  room         String?
+  isActive     Boolean            @default(true)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  facility     Facility           @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  trips        TransportRequest[]
+  legacyTrips  Trip[]
 
-model EMSUser {
-  id                 String     @id @default(cuid())
-  email              String     @unique
-  password           String
-  name               String
-  agencyName         String
-  agencyId           String?
-  isActive           Boolean    @default(true)
-  userType           String     @default("EMS")
-  isSubUser          Boolean    @default(false)
-  parentUserId       String?
-  mustChangePassword Boolean    @default(false)
-  orgAdmin           Boolean    @default(false)
-  deletedAt          DateTime?
-  isDeleted          Boolean    @default(false)
-  lastLogin          DateTime?
-  lastActivity       DateTime?
-  createdAt          DateTime   @default(now())
-  updatedAt          DateTime   @updatedAt
-  agency             EMSAgency? @relation(fields: [agencyId], references: [id])
-  parentUser         EMSUser?   @relation("EMSUserParent", fields: [parentUserId], references: [id])
-  subUsers           EMSUser[]  @relation("EMSUserParent")
-
-  @@index([isDeleted])
-  @@index([lastLogin])
-  @@index([lastActivity])
-  @@map("ems_users")
-}
-
-model EMSAgency {
-  id                    String                       @id @default(cuid())
-  name                  String
-  contactName           String
-  phone                 String
-  email                 String
-  address               String
-  city                  String
-  state                 String
-  zipCode               String
-  serviceArea           String[]
-  operatingHours        Json?
-  capabilities          String[]
-  pricingStructure      Json?
-  isActive              Boolean                      @default(true)
-  status                String                       @default("ACTIVE")
-  addedBy               String?
-  addedAt               DateTime                     @default(now())
-  createdAt             DateTime                     @default(now())
-  updatedAt             DateTime                     @updatedAt
-  acceptsNotifications  Boolean                      @default(true)
-  approvedAt            DateTime?
-  approvedBy            String?
-  availableUnits        Int                          @default(0)
-  lastUpdated           DateTime                     @default(now())
-  latitude              Float?
-  longitude             Float?
-  notificationMethods   String[]
-  requiresReview        Boolean                      @default(false)
-  serviceRadius         Int?
-  totalUnits            Int                          @default(0)
-  availabilityStatus    Json?                        @default("{\"isAvailable\":false,\"availableLevels\":[]}")
-  users                 EMSUser[]
-  units                 Unit[]
-  healthcarePreferences HealthcareAgencyPreference[]
-
-  @@map("ems_agencies")
+  @@index([facilityId])
+  @@index([isActive])
+  @@map("pickup_locations")
 }
 
 model Trip {
@@ -294,7 +275,7 @@ model Trip {
   responseDeadline         DateTime?
   responseStatus           String            @default("PENDING")
   selectionMode            String            @default("SPECIFIC_AGENCIES")
-  pickup_locations         pickup_locations? @relation(fields: [pickupLocationId], references: [id])
+  pickupLocation           PickupLocation?   @relation(fields: [pickupLocationId], references: [id])
 
   @@map("trips")
 }
@@ -391,22 +372,7 @@ model backhaul_opportunities {
   isActive     Boolean  @default(true)
 }
 
-model pickup_locations {
-  id           String             @id
-  hospitalId   String
-  name         String
-  description  String?
-  contactPhone String?
-  contactEmail String?
-  floor        String?
-  room         String?
-  isActive     Boolean            @default(true)
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime
-  hospital     Hospital           @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
-  trips        TransportRequest[]
-  legacyTrips  Trip[]
-}
+
 
 model pricing_models {
   id                  String   @id
@@ -485,7 +451,7 @@ model Unit {
   lastStatusUpdate DateTime           @default(now())
   assignedTrips    TransportRequest[]
   analytics        unit_analytics?
-  agency           EMSAgency          @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  agency           Organization       @relation(fields: [agencyId], references: [id], onDelete: Cascade)
   agencyResponses  AgencyResponse[] // Units can be assigned to multiple agency responses
 
   @@unique([agencyId, unitNumber])
@@ -506,31 +472,18 @@ model unit_analytics {
   @@map("unit_analytics")
 }
 
-model NotificationPreference {
-  id               String     @id @default(cuid())
-  userId           String
-  notificationType String
-  emailEnabled     Boolean    @default(true)
-  smsEnabled       Boolean    @default(false)
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
-  user             CenterUser @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, notificationType])
-  @@map("notification_preferences")
-}
-
 model NotificationLog {
-  id               String     @id @default(cuid())
+  id               String   @id @default(cuid())
   userId           String
   notificationType String
   channel          String
   status           String
-  sentAt           DateTime   @default(now())
+  sentAt           DateTime @default(now())
   deliveredAt      DateTime?
   errorMessage     String?
-  user             CenterUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("notification_logs")
 }
 
@@ -610,8 +563,7 @@ model TransportRequest {
   pickupLocationId              String?
   assignedAgencyId              String?
   assignedUnitId                String?
-  createdById                   String?
-  healthcareCreatedById         String?
+  createdByUserId               String?
   isolation                     Boolean             @default(false)
   bariatric                     Boolean             @default(false)
   notes                         String?
@@ -620,11 +572,12 @@ model TransportRequest {
   patientAgeCategory            String?
   createdAt                     DateTime            @default(now())
   updatedAt                     DateTime            @updatedAt
-  assignedUnit                  Unit?               @relation(fields: [assignedUnitId], references: [id])
-  destinationFacility           Facility?           @relation("DestinationFacility", fields: [destinationFacilityId], references: [id])
-  healthcareLocation            HealthcareLocation? @relation(fields: [fromLocationId], references: [id])
-  originFacility                Facility?           @relation("OriginFacility", fields: [originFacilityId], references: [id])
-  pickupLocation                pickup_locations?   @relation(fields: [pickupLocationId], references: [id])
+  assignedUnit                  Unit?          @relation(fields: [assignedUnitId], references: [id])
+  destinationFacility           Facility?      @relation("DestinationFacility", fields: [destinationFacilityId], references: [id])
+  fromFacility                  Facility?      @relation("FromFacility", fields: [fromLocationId], references: [id])
+  originFacility                Facility?      @relation("OriginFacility", fields: [originFacilityId], references: [id])
+  pickupLocation                PickupLocation? @relation(fields: [pickupLocationId], references: [id])
+  createdByUser                 User?          @relation(fields: [createdByUserId], references: [id])
   agencyResponses               AgencyResponse[]
 
   @@index([fromLocationId])
@@ -632,30 +585,4 @@ model TransportRequest {
   @@map("transport_requests")
 }
 
-model Facility {
-  id               String             @id @default(cuid())
-  name             String
-  address          String
-  city             String
-  state            String
-  zipCode          String
-  phone            String?
-  email            String?
-  type             String
-  capabilities     String[]           @default([])
-  region           String
-  coordinates      Json?
-  latitude         Float?
-  longitude        Float?
-  operatingHours   String?
-  isActive         Boolean            @default(true)
-  requiresReview   Boolean            @default(false)
-  approvedAt       DateTime?
-  approvedBy       String?
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
-  destinationTrips TransportRequest[] @relation("DestinationFacility")
-  originTrips      TransportRequest[] @relation("OriginFacility")
 
-  @@map("facilities")
-}

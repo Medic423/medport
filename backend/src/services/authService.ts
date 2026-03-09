@@ -1,17 +1,14 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { UserType } from '@prisma/client';
 import { databaseManager } from './databaseManager';
 
 export interface User {
   id: string;
   email: string;
   name: string;
-  userType: 'ADMIN' | 'USER' | 'HEALTHCARE' | 'EMS';
-  facilityName?: string;
-  agencyName?: string;
-  agencyId?: string;
-  manageMultipleLocations?: boolean; // ✅ NEW: Multi-location flag
-  orgAdmin?: boolean; // ✅ Org-scoped admin for Healthcare/EMS
+  userType: UserType;
+  organizationId?: string;
 }
 
 export interface LoginCredentials {
@@ -29,388 +26,106 @@ export interface AuthResult {
 
 export class AuthService {
   private jwtSecret: string;
-  private emsPrisma: any;
 
   constructor() {
     this.jwtSecret = process.env.JWT_SECRET || 'fallback-secret-key';
-    this.emsPrisma = databaseManager.getPrismaClient(); // ✅ FIXED: Use unified database
-    console.log('TCC_DEBUG: AuthService constructor - JWT_SECRET loaded:', this.jwtSecret ? 'YES' : 'NO');
-    console.log('TCC_DEBUG: JWT_SECRET value:', this.jwtSecret);
   }
 
   async login(credentials: LoginCredentials): Promise<AuthResult> {
     try {
-      console.log('TCC_DEBUG: AuthService.login called with:', { email: credentials.email, password: credentials.password ? '***' : 'missing' });
       const { email, password } = credentials;
+      const db = databaseManager.getPrismaClient();
 
-      // Use unified database to find user
-      console.log('TCC_DEBUG: Getting Prisma client from databaseManager...');
-      const db = databaseManager.getPrismaClient(); // ✅ FIXED: Use unified database
-      console.log('TCC_DEBUG: Prisma client obtained:', db ? 'YES' : 'NO');
-      
-      // Defensive check: ensure database client is available
       if (!db) {
-        console.error('❌ AuthService.login: Database client is undefined');
-        return {
-          success: false,
-          error: 'Database connection unavailable. Please contact support.'
-        };
-      }
-      
-      console.log('TCC_DEBUG: Database client available, proceeding with user lookup...');
-      
-      let user: any = null;
-      let userType: 'ADMIN' | 'USER' | 'HEALTHCARE' | 'EMS' = 'ADMIN';
-      let userData: User;
-      let mustChangePassword = false;
-
-      // Try to find user in CenterUser table first (check all users, including deleted)
-      console.log('TCC_DEBUG: Looking up user in centerUser table...');
-      let foundUser: any = null;
-      try {
-        foundUser = await db.centerUser?.findFirst({
-          where: { email },
-          select: {
-            id: true,
-            email: true,
-            password: true,
-            name: true,
-            userType: true,
-            isActive: true,
-            isDeleted: true,
-            lastLogin: true,
-            // lastActivity is optional, don't select it for login queries
-          }
-        });
-        console.log('TCC_DEBUG: centerUser lookup result:', foundUser ? `Found user: ${foundUser.email}` : 'Not found');
-      } catch (dbError) {
-        console.error('❌ Error querying centerUser table:', dbError);
-        console.error('❌ Error details:', JSON.stringify(dbError, null, 2));
-        throw dbError;
-      }
-      if (foundUser) {
-        userType = foundUser.userType as 'ADMIN' | 'USER';
-        user = foundUser;
-        console.log('TCC_DEBUG: User found in centerUser table, type:', userType);
+        return { success: false, error: 'Database connection unavailable. Please contact support.' };
       }
 
-      // If not found, try HealthcareUser table
-      if (!foundUser) {
-        try {
-          foundUser = await db.healthcareUser?.findFirst({
-            where: { email },
-            select: {
-              id: true,
-              email: true,
-              password: true,
-              name: true,
-              facilityName: true,
-              facilityType: true,
-              isActive: true,
-              isDeleted: true,
-              lastLogin: true,
-              mustChangePassword: true,
-              manageMultipleLocations: true,
-              orgAdmin: true,
-              // lastActivity is optional, don't select it for login queries
-            }
-          });
-          if (foundUser) {
-            userType = 'HEALTHCARE';
-            mustChangePassword = !!(foundUser as any).mustChangePassword;
-            user = foundUser;
-          }
-        } catch (dbError) {
-          console.error('❌ Error querying healthcareUser table:', dbError);
-          console.error('❌ Error details:', JSON.stringify(dbError, null, 2));
-          throw dbError;
+      const foundUser = await db.user.findUnique({
+        where: { email },
+        select: {
+          id: true,
+          email: true,
+          password: true,
+          name: true,
+          userType: true,
+          organizationId: true,
+          isActive: true,
+          isDeleted: true,
+          mustChangePassword: true,
         }
-      }
+      });
 
-      // If still not found, try EMSUser table
       if (!foundUser) {
-        try {
-          foundUser = await db.eMSUser?.findFirst({
-            where: { email },
-            select: {
-              id: true,
-              email: true,
-              password: true,
-              name: true,
-              agencyName: true,
-              agencyId: true,
-              isActive: true,
-              isDeleted: true,
-              lastLogin: true,
-              mustChangePassword: true,
-              orgAdmin: true,
-              // lastActivity is optional, don't select it for login queries
-            }
-          });
-          if (foundUser) {
-            userType = 'EMS';
-            mustChangePassword = !!(foundUser as any).mustChangePassword;
-            user = foundUser;
-          }
-        } catch (dbError) {
-          console.error('❌ Error querying eMSUser table:', dbError);
-          console.error('❌ Error details:', JSON.stringify(dbError, null, 2));
-          throw dbError;
-        }
+        return { success: false, error: 'No account found with this email address. Please check your email or contact support.' };
       }
 
-      console.log('TCC_DEBUG: User lookup complete. User found:', user ? { id: user.id, email: user.email, name: user.name, isActive: user.isActive, isDeleted: (user as any).isDeleted, userType } : 'null');
-
-      // Check if user exists at all
-      if (!user) {
-        console.log('TCC_DEBUG: No user found for email:', email);
-        return {
-          success: false,
-          error: 'No account found with this email address. Please check your email or contact support.'
-        };
+      if (foundUser.isDeleted) {
+        return { success: false, error: 'This account has been deleted. Please contact support if you believe this is an error.' };
       }
 
-      // Check if user is deleted
-      if ((user as any).isDeleted) {
-        console.log('TCC_DEBUG: User account has been deleted:', email);
-        return {
-          success: false,
-          error: 'This account has been deleted. Please contact support if you believe this is an error.'
-        };
+      if (!foundUser.isActive) {
+        return { success: false, error: 'This account has been deactivated. Please contact support to reactivate your account.' };
       }
 
-      // Check if user is inactive
-      if (!user.isActive) {
-        return {
-          success: false,
-          error: 'This account has been deactivated. Please contact support to reactivate your account.'
-        };
-      }
-
-      // Verify password (only check password if user exists and is not deleted/inactive)
-      const isValidPassword = await bcrypt.compare(password, user.password);
+      const isValidPassword = await bcrypt.compare(password, foundUser.password);
       if (!isValidPassword) {
-        console.log('TCC_DEBUG: Password mismatch for user:', email);
-        return {
-          success: false,
-          error: 'Incorrect password. Please check your password and try again.'
-        };
+        return { success: false, error: 'Incorrect password. Please check your password and try again.' };
       }
 
-      // Update lastLogin and lastActivity timestamps based on user type
+      // Update login timestamps
       try {
         const now = new Date();
-        console.log('TCC_DEBUG: Updating lastLogin and lastActivity in authService:', { email, userType, userId: user.id });
-        if (userType === 'ADMIN' || userType === 'USER') {
-          const updateResult = await db.centerUser.update({
-            where: { id: user.id },
-            data: { 
-              lastLogin: now,
-              lastActivity: now  // Also update lastActivity on login
-            }
-          });
-          console.log('TCC_DEBUG: Successfully updated lastLogin and lastActivity in authService (CenterUser):', { email, lastLogin: updateResult.lastLogin, lastActivity: updateResult.lastActivity });
-        } else if (userType === 'HEALTHCARE') {
-          const updateResult = await db.healthcareUser.update({
-            where: { id: user.id },
-            data: { 
-              lastLogin: now,
-              lastActivity: now  // Also update lastActivity on login
-            }
-          });
-          console.log('TCC_DEBUG: Successfully updated lastLogin and lastActivity in authService (HealthcareUser):', { email, lastLogin: updateResult.lastLogin, lastActivity: updateResult.lastActivity });
-        } else if (userType === 'EMS') {
-          const updateResult = await db.eMSUser.update({
-            where: { id: user.id },
-            data: { 
-              lastLogin: now,
-              lastActivity: now  // Also update lastActivity on login
-            }
-          });
-          console.log('TCC_DEBUG: Successfully updated lastLogin and lastActivity in authService (EMSUser):', { email, lastLogin: updateResult.lastLogin, lastActivity: updateResult.lastActivity });
-        }
+        await db.user.update({ where: { id: foundUser.id }, data: { lastLogin: now, lastActivity: now } });
       } catch (err) {
-        console.error('TCC_DEBUG: Error updating lastLogin/lastActivity in authService:', err);
-        // Don't fail login if update fails
+        console.error('Error updating lastLogin/lastActivity:', err);
       }
 
-      // For EMS users, use the agency ID from the relationship
-      let agencyId = user.id; // Default to user ID for non-EMS users
-      if (userType === 'EMS') {
-        // Use the agencyId from the user record - this is required for EMS users
-        const emsUser = user as any;
-        if (!emsUser.agencyId) {
-          console.error('TCC_DEBUG: EMS user missing agencyId:', { userId: user.id, email: user.email });
-          return {
-            success: false,
-            error: 'User not properly associated with an agency'
-          };
-        }
-        agencyId = emsUser.agencyId;
-        console.log('TCC_DEBUG: Using agencyId for EMS user:', { userId: user.id, agencyId });
-      }
-
-      // Generate JWT token
       const token = jwt.sign(
-        {
-          id: userType === 'EMS' ? agencyId : user.id,
-          email: user.email,
-          userType: userType
-        },
+        { id: foundUser.id, email: foundUser.email, userType: foundUser.userType, organizationId: foundUser.organizationId },
         this.jwtSecret,
         { expiresIn: '24h' }
       );
 
-      // Create user data based on type
-      userData = {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        userType: userType,
-        facilityName: userType === 'HEALTHCARE' ? (user as any).facilityName : undefined,
-        agencyName: userType === 'EMS' ? (user as any).agencyName : undefined,
-        agencyId: userType === 'EMS' ? (user as any).agencyId : undefined,
-        manageMultipleLocations: userType === 'HEALTHCARE' ? (user as any).manageMultipleLocations : undefined, // ✅ NEW: Multi-location flag
-        orgAdmin: userType === 'HEALTHCARE' || userType === 'EMS' ? !!(user as any).orgAdmin : undefined
+      const userData: User = {
+        id: foundUser.id,
+        email: foundUser.email,
+        name: foundUser.name,
+        userType: foundUser.userType,
+        organizationId: foundUser.organizationId ?? undefined,
       };
 
-      return {
-        success: true,
-        user: userData,
-        token,
-        mustChangePassword
-      };
-
+      return { success: true, user: userData, token, mustChangePassword: foundUser.mustChangePassword };
     } catch (error) {
-      console.error('❌ AuthService.login error:', error);
-      console.error('❌ AuthService.login error type:', error?.constructor?.name);
-      console.error('❌ AuthService.login error message:', error instanceof Error ? error.message : String(error));
-      console.error('❌ AuthService.login error stack:', error instanceof Error ? error.stack : 'No stack trace');
-      if (error instanceof Error) {
-        console.error('❌ AuthService.login error details:', {
-          name: error.name,
-          message: error.message,
-          stack: error.stack
-        });
-      }
-      return {
-        success: false,
-        error: 'Internal server error'
-      };
+      console.error('AuthService.login error:', error);
+      return { success: false, error: 'Internal server error' };
     }
   }
 
   async verifyToken(token: string): Promise<User | null> {
     try {
-      console.log('TCC_DEBUG: verifyToken called with JWT_SECRET:', this.jwtSecret ? 'SET' : 'NOT SET');
       const decoded = jwt.verify(token, this.jwtSecret) as any;
-      console.log('TCC_DEBUG: Token decoded successfully:', { id: decoded.id, email: decoded.email, userType: decoded.userType });
-      
-      if (!['ADMIN', 'USER', 'HEALTHCARE', 'EMS'].includes(decoded.userType)) {
+
+      if (!Object.values(UserType).includes(decoded.userType)) {
         return null;
       }
 
-      // Verify user still exists and is active using single database
       const db = databaseManager.getPrismaClient();
-      let user: any = null;
+      const user = await db.user.findUnique({
+        where: { id: decoded.id },
+        select: { id: true, email: true, name: true, userType: true, organizationId: true, isActive: true, isDeleted: true }
+      });
 
-      if (decoded.userType === 'ADMIN' || decoded.userType === 'USER') {
-        user = await db.centerUser.findUnique({
-          where: { id: decoded.id },
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            userType: true,
-            isActive: true,
-            isDeleted: true,
-            // lastActivity is optional, don't select it for verify queries
-          }
-        });
-      } else if (decoded.userType === 'HEALTHCARE') {
-        user = await db.healthcareUser.findUnique({
-          where: { id: decoded.id },
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            facilityName: true,
-            facilityType: true,
-            isActive: true,
-            isDeleted: true,
-            manageMultipleLocations: true,
-            orgAdmin: true,
-            // lastActivity is optional, don't select it for verify queries
-          }
-        });
-      } else if (decoded.userType === 'EMS') {
-        // For EMS users, decoded.id contains the agency ID, not the user ID
-        // We need to find the user by email since that's what we have in the token
-        
-        // Check if email exists in token
-        if (!decoded.email) {
-          console.error('TCC_DEBUG: EMS token missing email field:', { 
-            id: decoded.id, 
-            userType: decoded.userType 
-          });
-          return null;
-        }
-        
-        user = await db.eMSUser.findFirst({
-          where: { 
-            email: decoded.email,
-            isDeleted: false
-          },
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            agencyName: true,
-            agencyId: true,
-            isActive: true,
-            isDeleted: true,
-            orgAdmin: true,
-            // lastActivity is optional, don't select it for verify queries
-          }
-        });
-
-        if (!user || !user.isActive || (user as any).isDeleted) {
-          console.log('TCC_DEBUG: EMS user not found or inactive:', { 
-            email: decoded.email, 
-            found: !!user,
-            isActive: user?.isActive 
-          });
-          return null;
-        }
-
-        return {
-          id: decoded.id, // Use agency ID from token
-          email: user.email,
-          name: user.name,
-          userType: 'EMS',
-          agencyName: user.agencyName,
-          agencyId: user.agencyId,
-          orgAdmin: !!(user as any).orgAdmin
-        };
-      }
-
-      if (!user || !user.isActive) {
+      if (!user || !user.isActive || user.isDeleted) {
         return null;
       }
 
-      // Return unified user data
       return {
         id: user.id,
         email: user.email,
         name: user.name,
-        userType: decoded.userType as 'ADMIN' | 'USER' | 'HEALTHCARE' | 'EMS',
-        facilityName: decoded.userType === 'HEALTHCARE' ? (user as any).facilityName : undefined,
-        agencyName: decoded.userType === 'EMS' ? (user as any).agencyName : undefined,
-        agencyId: decoded.userType === 'EMS' ? (user as any).agencyId : undefined,
-        manageMultipleLocations: decoded.userType === 'HEALTHCARE' ? (user as any).manageMultipleLocations : undefined,
-        orgAdmin: decoded.userType === 'HEALTHCARE' || decoded.userType === 'EMS' ? !!(user as any).orgAdmin : undefined
+        userType: user.userType,
+        organizationId: user.organizationId ?? undefined,
       };
-
     } catch (error) {
       console.error('Token verification error:', error);
       return null;
@@ -421,20 +136,21 @@ export class AuthService {
     email: string;
     password: string;
     name: string;
-    userType: 'ADMIN' | 'USER';
+    userType: UserType;
+    organizationId?: string;
+    mustChangePassword?: boolean;
   }): Promise<User> {
-    const centerDB = databaseManager.getPrismaClient();
-    
-    // Hash password
+    const db = databaseManager.getPrismaClient();
     const hashedPassword = await bcrypt.hash(userData.password, 12);
 
-    // Create user
-    const user = await centerDB.centerUser.create({
+    const user = await db.user.create({
       data: {
         email: userData.email,
         password: hashedPassword,
         name: userData.name,
-        userType: userData.userType
+        userType: userData.userType,
+        organizationId: userData.organizationId ?? null,
+        mustChangePassword: userData.mustChangePassword ?? false,
       }
     });
 
@@ -442,101 +158,48 @@ export class AuthService {
       id: user.id,
       email: user.email,
       name: user.name,
-      userType: user.userType as 'ADMIN' | 'USER'
+      userType: user.userType,
+      organizationId: user.organizationId ?? undefined,
     };
   }
 
-  async createAdminUser(userData: {
-    email: string;
-    password: string;
-    name: string;
-  }): Promise<User> {
-    return this.createUser({ ...userData, userType: 'ADMIN' });
+  async createAdminUser(userData: { email: string; password: string; name: string }): Promise<User> {
+    return this.createUser({ ...userData, userType: UserType.SYSTEM_ADMIN });
   }
 
-  async createRegularUser(userData: {
-    email: string;
-    password: string;
-    name: string;
-  }): Promise<User> {
-    return this.createUser({ ...userData, userType: 'USER' });
+  async createRegularUser(userData: { email: string; password: string; name: string }): Promise<User> {
+    return this.createUser({ ...userData, userType: UserType.SYSTEM_ADMIN });
   }
 
   private validatePasswordStrength(password: string): string | null {
-    if (typeof password !== 'string' || password.length < 8) {
-      return 'Password must be at least 8 characters';
-    }
-    if (!/[A-Z]/.test(password)) {
-      return 'Password must include at least one uppercase letter';
-    }
-    if (!/[a-z]/.test(password)) {
-      return 'Password must include at least one lowercase letter';
-    }
-    if (!/[0-9]/.test(password)) {
-      return 'Password must include at least one number';
-    }
+    if (typeof password !== 'string' || password.length < 8) return 'Password must be at least 8 characters';
+    if (!/[A-Z]/.test(password)) return 'Password must include at least one uppercase letter';
+    if (!/[a-z]/.test(password)) return 'Password must include at least one lowercase letter';
+    if (!/[0-9]/.test(password)) return 'Password must include at least one number';
     return null;
   }
 
   async changePassword(params: {
     email: string;
-    userType: 'ADMIN' | 'USER' | 'HEALTHCARE' | 'EMS';
     currentPassword: string;
     newPassword: string;
   }): Promise<{ success: boolean; error?: string }> {
-    const { email, userType, currentPassword, newPassword } = params;
+    const { email, currentPassword, newPassword } = params;
 
     const validationError = this.validatePasswordStrength(newPassword);
-    if (validationError) {
-      return { success: false, error: validationError };
-    }
+    if (validationError) return { success: false, error: validationError };
 
     const db = databaseManager.getPrismaClient();
+    const user = await db.user.findFirst({ where: { email, isDeleted: false } });
 
-    // Locate user record by table based on userType
-    let user: any = null;
-    if (userType === 'ADMIN' || userType === 'USER') {
-      user = await db.centerUser.findFirst({ 
-        where: { 
-          email,
-          isDeleted: false
-        } 
-      });
-    } else if (userType === 'HEALTHCARE') {
-      user = await db.healthcareUser.findFirst({ 
-        where: { 
-          email,
-          isDeleted: false
-        } 
-      });
-    } else if (userType === 'EMS') {
-      user = await db.eMSUser.findFirst({ 
-        where: { 
-          email,
-          isDeleted: false
-        } 
-      });
-    }
-
-    if (!user || !user.isActive || (user as any).isDeleted) {
-      return { success: false, error: 'Account not found or inactive' };
-    }
+    if (!user || !user.isActive) return { success: false, error: 'Account not found or inactive' };
 
     const isCurrentValid = await bcrypt.compare(currentPassword, user.password);
-    if (!isCurrentValid) {
-      return { success: false, error: 'Current password is incorrect' };
-    }
+    if (!isCurrentValid) return { success: false, error: 'Current password is incorrect' };
 
     const hashed = await bcrypt.hash(newPassword, 12);
-
     try {
-      if (userType === 'ADMIN' || userType === 'USER') {
-        await db.centerUser.update({ where: { email }, data: { password: hashed } });
-      } else if (userType === 'HEALTHCARE') {
-        await db.healthcareUser.update({ where: { email }, data: { password: hashed, mustChangePassword: false } });
-      } else if (userType === 'EMS') {
-        await db.eMSUser.update({ where: { email }, data: { password: hashed, mustChangePassword: false } });
-      }
+      await db.user.update({ where: { email }, data: { password: hashed, mustChangePassword: false } });
     } catch (err) {
       console.error('changePassword update error:', err);
       return { success: false, error: 'Failed to update password' };

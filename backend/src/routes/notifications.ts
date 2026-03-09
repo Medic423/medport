@@ -285,38 +285,36 @@ router.put('/preferences', authenticateAdmin, async (req: AuthenticatedRequest, 
       notificationTypes 
     } = req.body;
 
-    // Update user's global notification settings
-    if (emailNotifications !== undefined || smsNotifications !== undefined || phone !== undefined) {
-      await prisma.centerUser.update({
-        where: { id: userId },
-        data: {
-          emailNotifications: emailNotifications,
-          smsNotifications: smsNotifications,
-          phone: phone
-        }
+    // Update user's global notification settings (phone stored as NOTIFICATION_SMS preference)
+    if (phone !== undefined) {
+      await prisma.userPreference.upsert({
+        where: { userId_preferenceType: { userId, preferenceType: 'NOTIFICATION_SMS' } },
+        update: { value: { enabled: smsNotifications ?? true, phone } },
+        create: { userId, preferenceType: 'NOTIFICATION_SMS', value: { enabled: smsNotifications ?? true, phone } }
+      });
+    } else if (smsNotifications !== undefined) {
+      await prisma.userPreference.upsert({
+        where: { userId_preferenceType: { userId, preferenceType: 'NOTIFICATION_SMS' } },
+        update: { value: { enabled: smsNotifications } },
+        create: { userId, preferenceType: 'NOTIFICATION_SMS', value: { enabled: smsNotifications } }
+      });
+    }
+    if (emailNotifications !== undefined) {
+      await prisma.userPreference.upsert({
+        where: { userId_preferenceType: { userId, preferenceType: 'NOTIFICATION_EMAIL' } },
+        update: { value: { enabled: emailNotifications } },
+        create: { userId, preferenceType: 'NOTIFICATION_EMAIL', value: { enabled: emailNotifications } }
       });
     }
 
-    // Update specific notification type preferences
+    // Update specific notification type preferences (stored as JSON in userPreference.value)
     if (notificationTypes) {
       for (const [type, settings] of Object.entries(notificationTypes)) {
-        await prisma.notificationPreference.upsert({
-          where: {
-            userId_notificationType: {
-              userId: userId,
-              notificationType: type
-            }
-          },
-          update: {
-            emailEnabled: (settings as any).email,
-            smsEnabled: (settings as any).sms
-          },
-          create: {
-            userId: userId,
-            notificationType: type,
-            emailEnabled: (settings as any).email || true,
-            smsEnabled: (settings as any).sms || false
-          }
+        const prefType = type.toUpperCase().startsWith('EMAIL') ? 'NOTIFICATION_EMAIL' : 'NOTIFICATION_SMS';
+        await prisma.userPreference.upsert({
+          where: { userId_preferenceType: { userId, preferenceType: prefType as any } },
+          update: { value: { enabled: (settings as any).email || (settings as any).sms } },
+          create: { userId, preferenceType: prefType as any, value: { enabled: true } }
         });
       }
     }

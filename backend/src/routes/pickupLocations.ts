@@ -1,30 +1,30 @@
-import express from 'express';
+﻿import express from 'express';
 import { databaseManager } from '../services/databaseManager';
 import { authenticateAdmin, AuthenticatedRequest } from '../middleware/authenticateAdmin';
 
 const router = express.Router();
 
 // Get all pickup locations for a specific hospital or facility
-router.get('/hospital/:hospitalId', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
+router.get('/hospital/:facilityId', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
-    const { hospitalId } = req.params;
+    const { facilityId } = req.params;
     const { includeInactive } = req.query;
 
-    console.log('TCC_DEBUG: Loading pickup locations for ID:', hospitalId);
+    console.log('TCC_DEBUG: Loading pickup locations for ID:', facilityId);
 
     // Check if this ID is a healthcare location (for multi-location facilities)
-    const healthcareLocation = await databaseManager.getPrismaClient().healthcareLocation.findUnique({
-      where: { id: hospitalId }
+    const healthcareLocation = await databaseManager.getPrismaClient().facility.findUnique({
+      where: { id: facilityId }
     });
 
-    let actualHospitalId = hospitalId;
+    let actualfacilityId = facilityId;
     
     if (healthcareLocation) {
-      console.log('TCC_DEBUG: Found healthcare location:', healthcareLocation.locationName);
+      console.log('TCC_DEBUG: Found healthcare location:', healthcareLocation.name);
       // For healthcare locations, query pickup_locations using the healthcare location ID
-      // Note: pickup_locations.hospitalId can reference either hospital.id or healthcare_location.id
+      // Note: pickup_locations.facilityId can reference either hospital.id or healthcare_location.id
       const whereClause: any = {
-        hospitalId: healthcareLocation.id
+        facilityId: healthcareLocation.id
       };
 
       // Only include active locations unless specifically requested
@@ -34,7 +34,7 @@ router.get('/hospital/:hospitalId', authenticateAdmin, async (req: Authenticated
 
       console.log('TCC_DEBUG: Querying pickup locations for healthcare location:', healthcareLocation.id);
 
-      const pickup_locationss = await databaseManager.getPrismaClient().pickup_locations.findMany({
+      const pickup_locationss = await databaseManager.getPrismaClient().pickupLocation.findMany({
         where: whereClause,
         orderBy: {
           name: 'asc'
@@ -50,21 +50,21 @@ router.get('/hospital/:hospitalId', authenticateAdmin, async (req: Authenticated
     } else {
       // First, try to find if this ID is a facility
       const facility = await databaseManager.getPrismaClient().facility.findUnique({
-        where: { id: hospitalId }
+        where: { id: facilityId }
       });
       
       if (facility) {
-        console.log('TCC_DEBUG: Found facility:', facility.name, 'type:', facility.type);
+        console.log('TCC_DEBUG: Found facility:', facility.name, 'type:', facility.facilityType);
         
         // If it's a facility, we need to find the corresponding hospital
-        if (facility.type === 'HOSPITAL' || facility.type === 'Hospital') {
+        if (facility.facilityType === 'HOSPITAL') {
           // Special case: If this is fac_test_hospital_001, map to hosp_test_hospital_001
           if (facility.id === 'fac_test_hospital_001') {
-            actualHospitalId = 'hosp_test_hospital_001';
+            actualfacilityId = 'hosp_test_hospital_001';
             console.log('TCC_DEBUG: Special case - mapped fac_test_hospital_001 to hosp_test_hospital_001');
           } else {
             // Find matching hospital by name
-            const matchingHospital = await databaseManager.getPrismaClient().hospital.findFirst({
+            const matchingHospital = await databaseManager.getPrismaClient().facility.findFirst({
               where: {
                 OR: [
                   { name: { contains: facility.name, mode: 'insensitive' } },
@@ -74,7 +74,7 @@ router.get('/hospital/:hospitalId', authenticateAdmin, async (req: Authenticated
             });
             
             if (matchingHospital) {
-              actualHospitalId = matchingHospital.id;
+              actualfacilityId = matchingHospital.id;
               console.log('TCC_DEBUG: Mapped facility to hospital:', matchingHospital.name);
             } else {
               console.log('TCC_DEBUG: No matching hospital found for facility:', facility.name);
@@ -86,7 +86,7 @@ router.get('/hospital/:hospitalId', authenticateAdmin, async (req: Authenticated
             }
           }
         } else {
-          console.log('TCC_DEBUG: Facility is not a hospital type:', facility.type);
+          console.log('TCC_DEBUG: Facility is not a hospital type:', facility.facilityType);
           // Return empty array for non-hospital facilities
           return res.json({
             success: true,
@@ -97,7 +97,7 @@ router.get('/hospital/:hospitalId', authenticateAdmin, async (req: Authenticated
     }
 
     const whereClause: any = {
-      hospitalId: actualHospitalId
+      facilityId: actualfacilityId
     };
 
     // Only include active locations unless specifically requested
@@ -105,9 +105,9 @@ router.get('/hospital/:hospitalId', authenticateAdmin, async (req: Authenticated
       whereClause.isActive = true;
     }
 
-    console.log('TCC_DEBUG: Querying pickup locations with hospitalId:', actualHospitalId);
+    console.log('TCC_DEBUG: Querying pickup locations with facilityId:', actualfacilityId);
 
-    const pickup_locationss = await databaseManager.getPrismaClient().pickup_locations.findMany({
+    const pickup_locationss = await databaseManager.getPrismaClient().pickupLocation.findMany({
       where: whereClause,
       orderBy: {
         name: 'asc'
@@ -134,7 +134,7 @@ router.get('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => 
   try {
     const { id } = req.params;
 
-    const pickup_locations = await databaseManager.getPrismaClient().pickup_locations.findUnique({
+    const pickup_locations = await databaseManager.getPrismaClient().pickupLocation.findUnique({
       where: { id }
     });
 
@@ -162,7 +162,7 @@ router.get('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => 
 router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     let {
-      hospitalId,
+      facilityId,
       name,
       description,
       contactPhone,
@@ -172,52 +172,38 @@ router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
     } = req.body;
 
     // Validate required fields
-    if (!hospitalId || !name) {
+    if (!facilityId || !name) {
       return res.status(400).json({
         success: false,
         error: 'Hospital ID and name are required'
       });
     }
 
-    // For single-location healthcare users, ALWAYS use their own facility
-    // regardless of what hospitalId they send (prevents managing other facilities)
-    if (req.user && req.user.userType === 'HEALTHCARE') {
-      const healthcareUser = await databaseManager.getPrismaClient().healthcareUser.findUnique({
-        where: { id: req.user.id }
+    // For ORGANIZATION_USER, use their organization's facility
+    if (req.user && req.user.userType === 'ORGANIZATION_USER' && req.user.organizationId) {
+      const userFacility = await databaseManager.getPrismaClient().facility.findFirst({
+        where: { organizationId: req.user.organizationId }
       });
 
-      if (healthcareUser && !healthcareUser.manageMultipleLocations) {
-        // Single-location user - use their HealthcareLocation (same source as HospitalSettings)
-        console.log('TCC_DEBUG: Single-location user detected, using their facility:', healthcareUser.facilityName);
-        const userLocation = await databaseManager.getPrismaClient().healthcareLocation.findFirst({
-          where: { healthcareUserId: healthcareUser.id }
-        });
-
-        if (userLocation) {
-          console.log('TCC_DEBUG: Found user\'s healthcare location:', userLocation.locationName, '- Overriding provided hospitalId');
-          hospitalId = userLocation.id;
-        } else {
-          return res.status(404).json({
-            success: false,
-            error: `Your facility "${healthcareUser.facilityName}" is not found in the system. Please contact support.`
-          });
-        }
+      if (userFacility) {
+        console.log('TCC_DEBUG: Using facility from user organization:', userFacility.name);
+        facilityId = userFacility.id;
       }
     }
 
     // Verify hospital or healthcare location exists
-    let hospital = await databaseManager.getPrismaClient().hospital.findUnique({
-      where: { id: hospitalId }
+    let hospital = await databaseManager.getPrismaClient().facility.findUnique({
+      where: { id: facilityId }
     });
 
     // If not found in Hospital table, check HealthcareLocation table (for multi-location users)
     if (!hospital) {
-      const healthcareLocation = await databaseManager.getPrismaClient().healthcareLocation.findUnique({
-        where: { id: hospitalId }
+      const healthcareLocation = await databaseManager.getPrismaClient().facility.findUnique({
+        where: { id: facilityId }
       });
 
       if (healthcareLocation) {
-        console.log('TCC_DEBUG: Creating pickup location for healthcare location:', healthcareLocation.locationName);
+        console.log('TCC_DEBUG: Creating pickup location for healthcare location:', healthcareLocation.name);
       } else {
         return res.status(404).json({
           success: false,
@@ -229,9 +215,9 @@ router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
     }
 
     // Check if pickup location with same name already exists for this hospital
-    const existingLocation = await databaseManager.getPrismaClient().pickup_locations.findFirst({
+    const existingLocation = await databaseManager.getPrismaClient().pickupLocation.findFirst({
       where: {
-        hospitalId,
+        facilityId,
         name: name.trim(),
         isActive: true
       }
@@ -244,10 +230,10 @@ router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
       });
     }
 
-    const pickup_locations = await databaseManager.getPrismaClient().pickup_locations.create({
+    const pickup_locations = await databaseManager.getPrismaClient().pickupLocation.create({
       data: {
         id: `pickup-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        hospitalId,
+        facilityId,
         name: name.trim(),
         description: description?.trim() || null,
         contactPhone: contactPhone?.trim() || null,
@@ -293,7 +279,7 @@ router.put('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => 
     } = req.body;
 
     // Check if pickup location exists
-    const existingLocation = await databaseManager.getPrismaClient().pickup_locations.findUnique({
+    const existingLocation = await databaseManager.getPrismaClient().pickupLocation.findUnique({
       where: { id }
     });
 
@@ -306,9 +292,9 @@ router.put('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => 
 
     // If updating name, check for duplicates
     if (name && name.trim() !== existingLocation.name) {
-      const duplicateLocation = await databaseManager.getPrismaClient().pickup_locations.findFirst({
+      const duplicateLocation = await databaseManager.getPrismaClient().pickupLocation.findFirst({
         where: {
-          hospitalId: existingLocation.hospitalId,
+          facilityId: existingLocation.facilityId,
           name: name.trim(),
           isActive: true,
           id: { not: id }
@@ -323,7 +309,7 @@ router.put('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => 
       }
     }
 
-    const updatedLocation = await databaseManager.getPrismaClient().pickup_locations.update({
+    const updatedLocation = await databaseManager.getPrismaClient().pickupLocation.update({
       where: { id },
       data: {
         name: name?.trim() || existingLocation.name,
@@ -356,7 +342,7 @@ router.delete('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) 
     const { id } = req.params;
 
     // Check if pickup location exists
-    const existingLocation = await databaseManager.getPrismaClient().pickup_locations.findUnique({
+    const existingLocation = await databaseManager.getPrismaClient().pickupLocation.findUnique({
       where: { id }
     });
 
@@ -382,7 +368,7 @@ router.delete('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) 
     }
 
     // Soft delete by setting isActive to false
-    await databaseManager.getPrismaClient().pickup_locations.update({
+    await databaseManager.getPrismaClient().pickupLocation.update({
       where: { id },
       data: { isActive: false }
     });
@@ -406,7 +392,7 @@ router.delete('/:id/hard', authenticateAdmin, async (req: AuthenticatedRequest, 
     const { id } = req.params;
 
     // Check if pickup location exists
-    const existingLocation = await databaseManager.getPrismaClient().pickup_locations.findUnique({
+    const existingLocation = await databaseManager.getPrismaClient().pickupLocation.findUnique({
       where: { id }
     });
 
@@ -432,7 +418,7 @@ router.delete('/:id/hard', authenticateAdmin, async (req: AuthenticatedRequest, 
     }
 
     // Hard delete
-    await databaseManager.getPrismaClient().pickup_locations.delete({
+    await databaseManager.getPrismaClient().pickupLocation.delete({
       where: { id }
     });
 

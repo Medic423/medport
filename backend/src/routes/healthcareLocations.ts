@@ -21,49 +21,76 @@ router.post('/', (req, res) => healthcareLocationsController.createLocation(req,
 router.get('/all', async (req, res) => {
   try {
     const user = (req as any).user;
-    
-    // Only TCC command staff can see all locations
-    if (user?.userType !== 'ADMIN' && user?.userType !== 'USER') {
-      return res.status(403).json({ 
-        success: false,
-        error: 'Access denied. TCC command staff only.' 
-      });
-    }
-    
-    console.log('TCC_COMMAND: Fetching all healthcare locations for:', user.email);
-    
+
     const { databaseManager } = require('../services/databaseManager');
     const db = databaseManager.getPrismaClient();
-    
-    // Include inactive locations so admins can see pending facilities for approval
-    // Include healthcareUser to get email address
-    const locations = await db.healthcareLocation.findMany({
-      include: {
-        healthcareUser: {
-          select: {
-            email: true
+
+    // SYSTEM_ADMIN: see all facilities across all orgs
+    // ORGANIZATION_USER (healthcare): see only their org's facilities
+    if (user?.userType === 'SYSTEM_ADMIN') {
+      console.log('TCC_COMMAND: Fetching all facilities for SYSTEM_ADMIN:', user.email);
+
+      const locations = await db.facility.findMany({
+        include: {
+          organization: {
+            select: { id: true, name: true, email: true }
           }
-        }
-      },
-      orderBy: [
-        { isActive: 'desc' }, // Active locations first
-        { state: 'asc' },
-        { city: 'asc' },
-        { locationName: 'asc' }
-      ]
-    });
-    
-    console.log('TCC_COMMAND: Found', locations.length, 'active healthcare locations');
-    
-    res.json({ 
-      success: true, 
-      data: locations 
+        },
+        orderBy: [
+          { isActive: 'desc' },
+          { state: 'asc' },
+          { city: 'asc' },
+          { name: 'asc' }
+        ]
+      });
+
+      console.log('TCC_COMMAND: Found', locations.length, 'facilities');
+
+      return res.json({
+        success: true,
+        data: locations.map((loc: any) => ({
+          ...loc,
+          locationName: loc.name,
+          facilityType: loc.facilityType,
+          healthcareUser: loc.organization ? { email: loc.organization.email } : null
+        }))
+      });
+    }
+
+    if (user?.userType === 'ORGANIZATION_USER' && user?.organizationId) {
+      console.log('TCC_COMMAND: Fetching facilities for ORGANIZATION_USER:', user.email, 'org:', user.organizationId);
+
+      const locations = await db.facility.findMany({
+        where: { organizationId: user.organizationId },
+        orderBy: [
+          { isPrimary: 'desc' },
+          { state: 'asc' },
+          { city: 'asc' },
+          { name: 'asc' }
+        ]
+      });
+
+      console.log('TCC_COMMAND: Found', locations.length, 'facilities for org');
+
+      return res.json({
+        success: true,
+        data: locations.map((loc: any) => ({
+          ...loc,
+          locationName: loc.name,
+          healthcareUser: { email: user.email }
+        }))
+      });
+    }
+
+    return res.status(403).json({
+      success: false,
+      error: 'Access denied.'
     });
   } catch (error) {
     console.error('TCC_COMMAND: Error fetching all healthcare locations:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: 'Failed to fetch healthcare locations' 
+      error: 'Failed to fetch healthcare locations'
     });
   }
 });
