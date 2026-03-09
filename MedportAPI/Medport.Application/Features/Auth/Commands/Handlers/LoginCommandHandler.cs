@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using static Medport.Domain.Constants.UnitManagement;
 
 namespace Medport.Application.Tracc.Features.Auth.Commands.Handlers;
 
@@ -21,11 +22,19 @@ public class LoginCommandHandler(IApplicationDbContext context) : IRequestHandle
     {
         var email = request.Email?.Trim();
         var password = request.Password;
+        var message = string.Empty;
 
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
         {
-            // TODO Throw Exception
-            return null;
+            message = "Must enter Email and Password";
+
+            return new AuthResultDto
+            {
+                User = null,
+                Token = string.Empty,
+                MustChangePassword = false,
+                Message = message
+            };
         }
 
         string userType = string.Empty;
@@ -64,14 +73,11 @@ public class LoginCommandHandler(IApplicationDbContext context) : IRequestHandle
             }
         }
 
-        if (
-            (isCenterUser && centerUser == null) ||
-            (isHealthcareUser && hcUser == null) ||
-            (isEmsUser && emsUser == null)
-        )
+        (var authDto,var validationFailed) = ErrorHandling(isCenterUser,centerUser,isHealthcareUser,hcUser,isEmsUser,emsUser);
+
+        if (validationFailed)
         {
-            // TODO Throw new exception
-            return null;
+            return authDto;
         }
 
         var token = GenerateToken(email,userType,userId);
@@ -87,7 +93,8 @@ public class LoginCommandHandler(IApplicationDbContext context) : IRequestHandle
         return new AuthResultDto { 
             User = dtoUser, 
             Token = token, 
-            MustChangePassword = mustChange 
+            MustChangePassword = mustChange,
+            Message = message
         };
     }
 
@@ -213,6 +220,61 @@ public class LoginCommandHandler(IApplicationDbContext context) : IRequestHandle
         return (wasFound, false, string.Empty, null);
     }
 
+    private static (AuthResultDto, bool) ErrorHandling(
+        bool isCenterUser, 
+        CenterUser centerUser,
+        bool isHealthcareUser,
+        HealthcareUser hcUser,
+        bool isEmsUser,
+        EmsUser emsUser
+    )
+    {
+        var message = string.Empty;
+        var validationFailed = false;
+
+        if (
+            (isCenterUser && centerUser == null) ||
+            (isHealthcareUser && hcUser == null) ||
+            (isEmsUser && emsUser == null)
+        )
+        {
+            message = "No account found with this email address. Please check your email or contact support.";
+            validationFailed = true;
+        }
+
+        if (
+            (isCenterUser && centerUser.IsDeleted) ||
+            (isHealthcareUser && hcUser.IsDeleted) ||
+            (isEmsUser && emsUser.IsDeleted)
+        )
+        {
+            message = "This account has been deleted. Please contact support if you believe this is an error.";
+
+            validationFailed = true;
+        }
+
+        if (
+            (isCenterUser && !centerUser.IsActive) ||
+            (isHealthcareUser && !hcUser.IsActive) ||
+            (isEmsUser && !emsUser.IsActive)
+        )
+        {
+            message = "This account has been deactivated. Please contact support to reactivate your account.";
+
+            validationFailed = true;
+        }
+
+        return (
+            new AuthResultDto
+            {
+                User = null,
+                Token = string.Empty,
+                MustChangePassword = false,
+                Message = message
+            },
+            validationFailed
+        );
+    }
     private string GenerateToken(string email, string userType, Guid userId)
     {
         // Generate JWT
