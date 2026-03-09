@@ -1,5 +1,3 @@
-using System;
-
 namespace Medport.Application.Tracc.Features.Auth.Queries.Dtos;
 
 public class AuthResultDto

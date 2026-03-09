@@ -8,7 +8,9 @@ using Medport.Infrastructure.Azure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.IdentityModel.Tokens;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace Medport.API.Tracc;
 
@@ -84,19 +86,17 @@ public static class ServiceExtensions
             options.RequireHttpsMetadata = false;
             options.SaveToken = true;
 
-            //TODO
-            //IMCLSettings mclSettings = services.BuildServiceProvider().GetRequiredService<IMCLSettings>();
-            //string jwtString = mclSettings.GetSetting(EnvironmentKeyVaultSecretNames.JWTToken);
-            //var jwtBytes = Encoding.ASCII.GetBytes(jwtString);
+            string jwtString = Environment.GetEnvironmentVariable("JWT_SECRET");
+            var jwtBytes = Encoding.ASCII.GetBytes(jwtString);
 
-            //options.TokenValidationParameters = new TokenValidationParameters
-            //{
-            //    ValidateIssuerSigningKey = true,
-            //    ValidateIssuer = false,
-            //    ValidateAudience = false,
-            //    IssuerSigningKey =
-            //        new SymmetricSecurityKey(jwtBytes)
-            //};
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                ValidateIssuer = false,
+                ValidateAudience = false,
+                IssuerSigningKey =
+                    new SymmetricSecurityKey(jwtBytes)
+            };
         });
     }
 

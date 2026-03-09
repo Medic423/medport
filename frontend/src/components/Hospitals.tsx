@@ -48,14 +48,9 @@ const Hospitals: React.FC = () => {
   const fetchHospitals = async () => {
     try {
       setLoading(true);
-      console.log('TCC_COMMAND: Fetching healthcare facilities...');
       
       // Fetch from healthcare_locations table (not old hospitals table)
       const response = await dotnetapi.get('/api/healthcarelocation');
-      const responsetwo = await api.get('/api/healthcare/locations/all');
-      
-      console.log(response)
-      console.log(responsetwo)
 
       if (response.data?.success && Array.isArray(response.data.data)) {
         // Map healthcare_locations to Hospital interface format
@@ -80,7 +75,6 @@ const Hospitals: React.FC = () => {
         }));
         
         setHospitals(facilitiesData);
-        console.log('TCC_COMMAND: Loaded', facilitiesData.length, 'healthcare facilities');
       }
     } catch (err: any) {
       setError(err.message);
@@ -93,7 +87,6 @@ const Hospitals: React.FC = () => {
   const handleApprove = async (hospitalId: string) => {
     try {
       const response = await dotnetapi.put(`/api/hospital/${hospitalId}/approve`);
-      console.log('Hospital approved:', response.data);
       
       // Refresh the hospitals list
       await fetchHospitals();
@@ -106,7 +99,6 @@ const Hospitals: React.FC = () => {
   const handleReject = async (hospitalId: string) => {
     try {
       const response = await dotnetapi.put(`/api/hospital/${hospitalId}/reject`);
-      console.log('Hospital rejected:', response.data);
       
       // Refresh the hospitals list
       await fetchHospitals();
@@ -179,14 +171,7 @@ const Hospitals: React.FC = () => {
     setEditError(null);
 
     try {
-      console.log('TCC_DEBUG: Geocoding hospital address:', {
-        address: editFormData.address,
-        city: editFormData.city,
-        state: editFormData.state,
-        zipCode: editFormData.zipCode,
-        hospitalName: editFormData.name
-      });
-
+ 
       // Add timeout wrapper to prevent hanging
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('Geocoding request timed out after 30 seconds')), 30000);
@@ -254,10 +239,6 @@ const Hospitals: React.FC = () => {
     try {
       // Update healthcareLocation record directly (since the list shows healthcareLocation records)
       // Use admin endpoint since we're in Command dashboard
-      console.log('TCC_DEBUG: Updating healthcare location:', editingHospital.id);
-      console.log('TCC_DEBUG: Edit form data:', editFormData);
-      console.log('TCC_DEBUG: isActive value:', editFormData.isActive, 'type:', typeof editFormData.isActive);
-      
       const response = await dotnetapi.put(`/api/healthcarelocation/${editingHospital.id}`, {
         locationName: editFormData.name,
         address: editFormData.address,
@@ -272,8 +253,6 @@ const Hospitals: React.FC = () => {
         email: editFormData.email || null // Include email to update healthcareUser
       });
       
-      console.log('TCC_DEBUG: Update response:', response.data);
-
       // Refresh the hospitals list
       await fetchHospitals();
       setEditingHospital(null);
@@ -297,7 +276,6 @@ const Hospitals: React.FC = () => {
 
     try {
       const response = await dotnetapi.delete(`/api/healthcarelocation/${hospitalId}`);
-      console.log('Hospital deleted:', response.data);
       
       // Refresh the hospitals list
       await fetchHospitals();
@@ -350,20 +328,14 @@ const Hospitals: React.FC = () => {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('TCC_DEBUG: Add Healthcare Facility button clicked');
-                console.log('TCC_DEBUG: Current location:', window.location.href);
-                console.log('TCC_DEBUG: Target URL:', window.location.origin + '/healthcare-register');
+                
                 
                 // Navigate to healthcare registration without clearing TCC session
                 // Use full URL to escape the dashboard routing context
                 const targetUrl = window.location.origin + '/healthcare-register';
-                console.log('TCC_DEBUG: Navigating to:', targetUrl);
                 window.location.href = targetUrl;
                 
-                console.log('TCC_DEBUG: Navigation command executed');
               }}
-              onMouseDown={() => console.log('TCC_DEBUG: Button mouse down event')}
-              onMouseUp={() => console.log('TCC_DEBUG: Button mouse up event')}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
               style={{ position: 'relative', zIndex: 9999 }}
             >
