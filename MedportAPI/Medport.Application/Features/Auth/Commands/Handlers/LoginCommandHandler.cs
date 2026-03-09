@@ -9,306 +9,170 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using static Medport.Domain.Constants.UnitManagement;
 
 namespace Medport.Application.Tracc.Features.Auth.Commands.Handlers;
 
 public class LoginCommandHandler(IApplicationDbContext context) : IRequestHandler<LoginCommand, AuthResultDto>
 {
     private readonly IApplicationDbContext _context = context;
-    private readonly string _jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET");
+    private readonly string _jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET")!;
 
     public async Task<AuthResultDto> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
         var email = request.Email?.Trim();
         var password = request.Password;
-        var message = string.Empty;
 
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+            return Fail("Must enter Email and Password");
+
+        var loginResult = await TryLogin(email, password, cancellationToken);
+
+        if (!loginResult.Succeed)
+            return Fail(loginResult.Message);
+
+        var token = GenerateToken(email, loginResult.UserType, loginResult.UserId);
+
+        var dtoUser = BuildUserDto(loginResult.User!, email, loginResult.UserType);
+
+        return new AuthResultDto
         {
-            message = "Must enter Email and Password";
-
-            return new AuthResultDto
-            {
-                User = null,
-                Token = string.Empty,
-                MustChangePassword = false,
-                Message = message
-            };
-        }
-
-        string userType = string.Empty;
-        Guid userId = Guid.Empty;
-        bool wasFound = false;
-        bool isCenterUser = false;
-        bool isHealthcareUser = false;
-        bool isEmsUser = false;
-        
-        CenterUser? centerUser = null;
-        EmsUser? emsUser = null;
-        HealthcareUser? hcUser = null;
-        bool mustChange = false;
-
-        (wasFound, userType, centerUser) = await CenterUserLogin(email,password,cancellationToken);
-        if (wasFound)
-        {
-            isCenterUser = true;
-        }
-        else
-        {
-            (wasFound, mustChange, userType, hcUser) = await HealthcareUsersLogin(email, password, cancellationToken);
-
-            if (wasFound)
-            {
-                isHealthcareUser = true;
-            }
-            else 
-            {
-                (wasFound, mustChange, userType, emsUser) = await EMSUserLogin(email, password, cancellationToken);
-                
-                if (wasFound)
-                {
-                    isEmsUser = true;
-                }
-            }
-        }
-
-        (var authDto,var validationFailed) = ErrorHandling(isCenterUser,centerUser,isHealthcareUser,hcUser,isEmsUser,emsUser);
-
-        if (validationFailed)
-        {
-            return authDto;
-        }
-
-        var token = GenerateToken(email,userType,userId);
-
-        var user = isCenterUser ? (object)centerUser : isHealthcareUser ? (object)hcUser : (object)emsUser;
-
-        var dtoUser = BuildUserDto(
-            user,
-            email,
-            userType
-        );
-
-        return new AuthResultDto { 
-            User = dtoUser, 
-            Token = token, 
-            MustChangePassword = mustChange,
-            Message = message
+            User = dtoUser,
+            Token = token,
+            MustChangePassword = loginResult.MustChangePassword,
+            Message = string.Empty
         };
     }
 
-    private async Task<(bool, string, CenterUser?)> CenterUserLogin(
-        string email,
-        string password,
-        CancellationToken cancellationToken
-    )
+    private async Task<LoginResult> TryLogin(string email, string password, CancellationToken cancellationToken)
     {
         var centerUser = await _context.CenterUsers
-            .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
-
-        bool wasFound = false;
+            .FirstOrDefaultAsync(x => x.Email == email, cancellationToken);
 
         if (centerUser != null)
-        {
-            wasFound = true;
+            return await ValidateCenterUser(centerUser, password, cancellationToken);
 
-            var passwordHasher = new PasswordHasher<object>();
-            var userType = centerUser.UserType;
-            var userUserId = centerUser.Id;
+        var healthcareUser = await _context.HealthcareUsers
+            .FirstOrDefaultAsync(x => x.Email == email, cancellationToken);
 
-            var verify = passwordHasher.VerifyHashedPassword(null, centerUser.Password, password);
+        if (healthcareUser != null)
+            return await ValidateHealthcareUser(healthcareUser, password, cancellationToken);
 
-            if (verify == PasswordVerificationResult.Failed)
-            {
-                // TODO Throw Exception
-                return (wasFound, "", null);
-            }
-
-            // update last login
-            centerUser.LastLogin = DateTime.UtcNow;
-            centerUser.LastActivity = DateTime.UtcNow;
-            _context.CenterUsers.Update(centerUser);
-
-            await _context.SaveChangesAsync(cancellationToken);
-
-            return (wasFound, userType, centerUser);
-        }
-
-        return (wasFound, string.Empty, null);
-    }
-
-    private async Task<(bool, bool, string, HealthcareUser?)> HealthcareUsersLogin(
-        string email,
-        string password,
-        CancellationToken cancellationToken
-    )
-    {
-        var hcUser = await _context.HealthcareUsers
-                .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
-
-        bool wasFound = false;
-
-        if (hcUser != null)
-        {
-            wasFound = true;
-
-            var passwordHasher = new PasswordHasher<object>();
-            var userType = "HEALTHCARE";
-            var userUserId = hcUser.Id;
-            var mustChange = false;
-
-            var verify = passwordHasher.VerifyHashedPassword(null, hcUser.Password, password);
-
-            if (verify == PasswordVerificationResult.Failed)
-            {
-                // TODO Throw Exception
-                return (wasFound, mustChange, "", null);
-            }
-
-            mustChange = hcUser.MustChangePassword;
-            hcUser.LastLogin = DateTime.UtcNow;
-            hcUser.LastActivity = DateTime.UtcNow;
-            _context.HealthcareUsers.Update(hcUser);
-
-            await _context.SaveChangesAsync(cancellationToken);
-
-            return (wasFound, mustChange, userType, hcUser);
-        }
-
-        return (wasFound, false, string.Empty, null);
-    }
-
-    private async Task<(bool, bool, string, EmsUser?)> EMSUserLogin(
-        string email,
-        string password,
-        CancellationToken cancellationToken
-    )
-    {
-        var emsUser = await _context.EmsUsers.AsNoTracking().FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
-
-        bool wasFound = false;
+        var emsUser = await _context.EmsUsers
+            .FirstOrDefaultAsync(x => x.Email == email, cancellationToken);
 
         if (emsUser != null)
-        {
-            wasFound = true;
+            return await ValidateEmsUser(emsUser, password, cancellationToken);
 
-            var passwordHasher = new PasswordHasher<object>();
-            var userType = "EMS";
-            var userUserId = emsUser.Id;
-            var mustChange = false;
-
-            var verify = passwordHasher.VerifyHashedPassword(null, emsUser.Password, password);
-            if (verify == PasswordVerificationResult.Failed)
-            {
-                // TODO Throw Exception
-                return (wasFound, mustChange, "", null);
-            }
-
-            mustChange = emsUser.MustChangePassword;
-            emsUser.LastLogin = DateTime.UtcNow;
-            emsUser.LastActivity = DateTime.UtcNow;
-            _context.EmsUsers.Update(emsUser);
-
-            await _context.SaveChangesAsync(cancellationToken);
-
-            return (wasFound, mustChange, userType, emsUser);
-        }
-
-        return (wasFound, false, string.Empty, null);
+        return LoginResult.Fail("No account found with this email address.");
     }
 
-    private static (AuthResultDto, bool) ErrorHandling(
-        bool isCenterUser, 
-        CenterUser centerUser,
-        bool isHealthcareUser,
-        HealthcareUser hcUser,
-        bool isEmsUser,
-        EmsUser emsUser
-    )
+    private async Task<LoginResult> ValidateCenterUser(
+        CenterUser user,
+        string password,
+        CancellationToken cancellationToken)
     {
-        var message = string.Empty;
-        var validationFailed = false;
+        if (!VerifyPassword(user.Password, password))
+            return LoginResult.Fail("Invalid password.");
 
-        if (
-            (isCenterUser && centerUser == null) ||
-            (isHealthcareUser && hcUser == null) ||
-            (isEmsUser && emsUser == null)
-        )
-        {
-            message = "No account found with this email address. Please check your email or contact support.";
-            validationFailed = true;
-        }
+        if (user.IsDeleted)
+            return LoginResult.Fail("This account has been deleted.");
 
-        if (
-            (isCenterUser && centerUser.IsDeleted) ||
-            (isHealthcareUser && hcUser.IsDeleted) ||
-            (isEmsUser && emsUser.IsDeleted)
-        )
-        {
-            message = "This account has been deleted. Please contact support if you believe this is an error.";
+        if (!user.IsActive)
+            return LoginResult.Fail("This account has been deactivated.");
 
-            validationFailed = true;
-        }
+        user.LastLogin = DateTime.UtcNow;
+        user.LastActivity = DateTime.UtcNow;
 
-        if (
-            (isCenterUser && !centerUser.IsActive) ||
-            (isHealthcareUser && !hcUser.IsActive) ||
-            (isEmsUser && !emsUser.IsActive)
-        )
-        {
-            message = "This account has been deactivated. Please contact support to reactivate your account.";
+        _context.CenterUsers.Update(user);
+        await _context.SaveChangesAsync(cancellationToken);
 
-            validationFailed = true;
-        }
-
-        return (
-            new AuthResultDto
-            {
-                User = null,
-                Token = string.Empty,
-                MustChangePassword = false,
-                Message = message
-            },
-            validationFailed
-        );
+        return LoginResult.Success(user, user.Id, user.UserType, false);
     }
+
+    private async Task<LoginResult> ValidateHealthcareUser(
+        HealthcareUser user,
+        string password,
+        CancellationToken cancellationToken)
+    {
+        if (!VerifyPassword(user.Password, password))
+            return LoginResult.Fail("Invalid password.");
+
+        if (user.IsDeleted)
+            return LoginResult.Fail("This account has been deleted.");
+
+        if (!user.IsActive)
+            return LoginResult.Fail("This account has been deactivated.");
+
+        user.LastLogin = DateTime.UtcNow;
+        user.LastActivity = DateTime.UtcNow;
+
+        _context.HealthcareUsers.Update(user);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return LoginResult.Success(user, user.Id, "HEALTHCARE", user.MustChangePassword);
+    }
+
+    private async Task<LoginResult> ValidateEmsUser(
+        EmsUser user,
+        string password,
+        CancellationToken cancellationToken)
+    {
+        if (!VerifyPassword(user.Password, password))
+            return LoginResult.Fail("Invalid password.");
+
+        if (user.IsDeleted)
+            return LoginResult.Fail("This account has been deleted.");
+
+        if (!user.IsActive)
+            return LoginResult.Fail("This account has been deactivated.");
+
+        user.LastLogin = DateTime.UtcNow;
+        user.LastActivity = DateTime.UtcNow;
+
+        _context.EmsUsers.Update(user);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return LoginResult.Success(user, user.Id, "EMS", user.MustChangePassword);
+    }
+
+    private static bool VerifyPassword(string hashedPassword, string password)
+    {
+        var hasher = new PasswordHasher<object>();
+        var result = hasher.VerifyHashedPassword(null, hashedPassword, password);
+
+        return result != PasswordVerificationResult.Failed;
+    }
+
     private string GenerateToken(string email, string userType, Guid userId)
     {
-        // Generate JWT
-        var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.ASCII.GetBytes(_jwtSecret);
+        var handler = new JwtSecurityTokenHandler();
 
-        var claims = new Claim[] {
-            new(ClaimTypes.NameIdentifier, userId.ToString()),
-            new(ClaimTypes.Email, email),
-            new("userType", userType)
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+            new Claim(ClaimTypes.Email, email),
+            new Claim("userType", userType)
         };
-        var tokenDescriptor = new SecurityTokenDescriptor
+
+        var descriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
             Expires = DateTime.UtcNow.AddHours(24),
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            SigningCredentials = new SigningCredentials(
+                new SymmetricSecurityKey(key),
+                SecurityAlgorithms.HmacSha256Signature)
         };
 
-        return tokenHandler.WriteToken(tokenHandler.CreateToken(tokenDescriptor));
+        return handler.WriteToken(handler.CreateToken(descriptor));
     }
 
-    private static UserDto BuildUserDto<T>(T user, string email, string userType)
+    private static UserDto BuildUserDto(object user, string email, string userType)
     {
         var dto = new UserDto
         {
             Email = email,
-            UserType = userType,
-            Id = Guid.Empty,
-            Name = null,
-            FacilityName = null,
-            ManageMultipleLocations = null,
-            OrgAdmin = null,
-            AgencyName = null,
-            AgencyId = null
+            UserType = userType
         };
 
         switch (user)
@@ -337,4 +201,38 @@ public class LoginCommandHandler(IApplicationDbContext context) : IRequestHandle
 
         return dto;
     }
+
+    private static AuthResultDto Fail(string message)
+    {
+        return new AuthResultDto
+        {
+            User = null,
+            Token = string.Empty,
+            MustChangePassword = false,
+            Message = message
+        };
+    }
+}
+
+public class LoginResult
+{
+    public bool Succeed { get; private set; }
+    public string Message { get; private set; } = "";
+    public object? User { get; private set; }
+    public Guid UserId { get; private set; }
+    public string UserType { get; private set; } = "";
+    public bool MustChangePassword { get; private set; }
+
+    public static LoginResult Fail(string message)
+        => new() { Succeed = false, Message = message };
+
+    public static LoginResult Success(object user, Guid id, string type, bool mustChange)
+        => new()
+        {
+            Succeed = true,
+            User = user,
+            UserId = id,
+            UserType = type,
+            MustChangePassword = mustChange
+        };
 }
