@@ -43,7 +43,7 @@ const HealthcareLogin: React.FC<HealthcareLoginProps> = ({ onBack, onLogin }) =>
       if (response.data.success) {
         const { user, token } = response.data;
         console.log('TCC_DEBUG: Healthcare login successful:', user);
-        
+        console.log('app.tsx healthcarelogin')
         // Store in localStorage
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(user));

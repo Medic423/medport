@@ -453,3 +453,12 @@ $RECYCLE.BIN/
 !.vscode/launch.json
 !.vscode/extensions.json
 #
+# Ignore GitHub Copilot snapshots created by Visual Studio
+# (covers .vs/CopilotSnapshots and any nested occurrences)
+.vs/CopilotSnapshots/
+.vs/CopilotSnapshots/**
+.vs/**/CopilotSnapshots/
+.vs/**/CopilotSnapshots/**
+
+# Also ignore any files that begin with CopilotSnapshots in .vs
+.vs/CopilotSnapshots*

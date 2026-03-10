@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { authAPI } from '../services/api';
+import { dotnetAuthAPI } from '../../services/dotnet-api';
+
 
 interface User {
   id: string;
@@ -21,7 +22,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
+  console.log('tyler')
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -31,9 +32,10 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
       // Clear any existing session before attempting login
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      
+      console.log('inside tyler')
       console.log('TCC_DEBUG: Attempting login with:', formData);
-      const response = await authAPI.login(formData);
+      const response = await dotnetAuthAPI.login(formData);
+      console.log(response)
       console.log('TCC_DEBUG: Login response:', response.data);
       
       if (response.data.success) {

@@ -71,12 +71,14 @@ function AppContent() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [user, location.pathname, navigate]);
 
-  const handleLogin = (userData: User, token: string) => {
+  const handleLogin = (userData: User, token: string, legacyToken: string) => {
     console.log('TCC_DEBUG: handleLogin called with userData:', userData);
     console.log('TCC_DEBUG: handleLogin called with token:', token ? 'present' : 'missing');
     
+    console.log('app.tsx localstorage')
     setUser(userData);
-    localStorage.setItem('token', token);
+    localStorage.setItem('dotnet_token', token);
+    localStorage.setItem('token', legacyToken);
     localStorage.setItem('user', JSON.stringify(userData));
     
     console.log('TCC_DEBUG: User state set, localStorage updated');
@@ -93,6 +95,7 @@ function AppContent() {
   const handleUserUpdate = (updatedUser: User, token?: string) => {
     setUser(updatedUser);
     localStorage.setItem('user', JSON.stringify(updatedUser));
+    console.log('app.tsx handleUserUpdate')
     if (token) {
       localStorage.setItem('token', token);
     }
@@ -216,12 +219,6 @@ function AppContent() {
       <Routes>
         <Route path="/" element={
           <LandingPage
-            onLogin={handleLogin}
-            onShowRegistration={handleShowRegistrationModal}
-          />
-        } />
-        <Route path="/login" element={
-          <UniversalLogin
             onLogin={handleLogin}
             onShowRegistration={handleShowRegistrationModal}
           />

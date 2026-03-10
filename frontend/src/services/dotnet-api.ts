@@ -49,7 +49,8 @@ const api = axios.create({
 
 // Request interceptor to add auth token
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  console.log('tyler inside auth interceptor')
+  const token = localStorage.getItem('dotnet_token');
   console.log('TCC_DEBUG: API request interceptor - token present:', !!token);
   console.log('TCC_DEBUG: API request interceptor - token value:', token ? token.substring(0, 20) + '...' : 'none');
   if (token) {
@@ -82,6 +83,7 @@ api.interceptors.request.use((config) => {
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => {
+    console.log('inside auth incetercep tyler')
     try {
       const url = response.config?.baseURL + (response.config?.url || '');
       if (url?.includes('/api/tcc/agencies') || url.includes('/api/tcc/analytics') || url.includes('/api/dropdown-options') || url.includes('/trip-agencies') || url.includes('/dispatch')) {
@@ -115,8 +117,8 @@ api.interceptors.response.use(
       
       if (!isAuthEndpoint) {
         // Only redirect for authenticated endpoints, not login failures
-        localStorage.removeItem('token');
-        window.location.href = '/login';
+        localStorage.removeItem('dotnet_token');
+        window.location.href = '/';
       }
     }
     return Promise.reject(error);
@@ -124,7 +126,7 @@ api.interceptors.response.use(
 );
 
 // Auth API
-export const authAPI = {
+export const dotnetAuthAPI = {
   login: (credentials: { email: string; password: string }) => {
     console.log('TCC_DEBUG: API login called with URL:', API_BASE_URL + '/api/auth/login');
     console.log('TCC_DEBUG: API login called with credentials:', credentials);

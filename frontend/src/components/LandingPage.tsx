@@ -14,7 +14,7 @@ interface User {
 }
 
 interface LandingPageProps {
-  onLogin: (user: User, token: string) => void;
+  onLogin: (user: User, token: string, legacyToken: string) => void;
   onShowRegistration: () => void;
 }
 

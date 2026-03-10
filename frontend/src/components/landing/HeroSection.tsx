@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Download } from 'lucide-react';
+import { dotnetAuthAPI } from '../../services/dotnet-api';
 import { authAPI } from '../../services/api';
+
 
 interface User {
   id: string;
@@ -11,7 +13,7 @@ interface User {
 }
 
 interface HeroSectionProps {
-  onLogin: (user: User, token: string) => void;
+  onLogin: (user: User, token: string, legacyToken: string) => void;
   onShowRegistration: () => void;
 }
 
@@ -35,22 +37,27 @@ const HeroSection: React.FC<HeroSectionProps> = ({
   };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
+    console.log('tyler here')
     e.preventDefault();
     setLoading(true);
     try {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      const response = await authAPI.login(formData);
+      const response = await dotnetAuthAPI.login(formData);
+      const legacyResponse = await authAPI.login(formData);
+      
+      var responseData = response.data.data; 
+      
       if (response.data.success) {
         setError('');
-        if (response.data.mustChangePassword === true) {
+        if (responseData.mustChangePassword === true) {
           try {
             localStorage.setItem('mustChangePassword', 'true');
           } catch {}
         }
-        onLogin(response.data.user, response.data.token);
+        onLogin(responseData.user, responseData.token, legacyResponse.data.token);
       } else {
-        setError(response.data.error || 'Login failed');
+        setError(responseData.error || 'Login failed');
       }
     } catch (err: unknown) {
       const res = err && typeof err === 'object' && 'response' in err ? (err as { response?: { data?: { error?: string } } }).response : undefined;

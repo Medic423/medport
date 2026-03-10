@@ -116,7 +116,7 @@ api.interceptors.response.use(
       if (!isAuthEndpoint) {
         // Only redirect for authenticated endpoints, not login failures
         localStorage.removeItem('token');
-        window.location.href = '/login';
+        window.location.href = '/';
       }
     }
     return Promise.reject(error);
