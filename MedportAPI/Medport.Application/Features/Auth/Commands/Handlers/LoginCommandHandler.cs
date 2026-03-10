@@ -5,6 +5,7 @@ using Medport.Domain.Entities;
 using Medport.Domain.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -12,10 +13,10 @@ using System.Text;
 
 namespace Medport.Application.Tracc.Features.Auth.Commands.Handlers;
 
-public class LoginCommandHandler(IApplicationDbContext context) : IRequestHandler<LoginCommand, AuthResultDto>
+public class LoginCommandHandler(IApplicationDbContext context, IConfiguration configuration) : IRequestHandler<LoginCommand, AuthResultDto>
 {
     private readonly IApplicationDbContext _context = context;
-    private readonly string _jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET")!;
+    private readonly IConfiguration _configuration = configuration;
 
     public async Task<AuthResultDto> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
@@ -145,7 +146,11 @@ public class LoginCommandHandler(IApplicationDbContext context) : IRequestHandle
 
     private string GenerateToken(string email, string userType, Guid userId)
     {
-        var key = Encoding.ASCII.GetBytes(_jwtSecret);
+        var jwtSecret = _configuration["JWT_SECRET"]
+                   ?? _configuration["Jwt:Secret"]
+                   ?? Environment.GetEnvironmentVariable("JWT_SECRET");
+
+        var key = Encoding.ASCII.GetBytes(jwtSecret);
         var handler = new JwtSecurityTokenHandler();
 
         var claims = new[]

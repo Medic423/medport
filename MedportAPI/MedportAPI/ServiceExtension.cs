@@ -17,7 +17,7 @@ namespace Medport.API.Tracc;
 [ExcludeFromCodeCoverage]
 public static class ServiceExtensions
 {
-    public static void RegisterClasses(this IServiceCollection services)
+    public static void RegisterClasses(this IServiceCollection services, IConfiguration configuration)
     {
         // Services
         services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
@@ -61,7 +61,7 @@ public static class ServiceExtensions
 
         //services.AddWorkerServices();
 
-        services.RegisterAuth();
+        services.RegisterAuth(configuration);
 
         services.AddSignalR();
 
@@ -75,7 +75,7 @@ public static class ServiceExtensions
 
     }
 
-    public static void RegisterAuth(this IServiceCollection services)
+    public static void RegisterAuth(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddAuthentication(options =>
         {
@@ -86,7 +86,9 @@ public static class ServiceExtensions
             options.RequireHttpsMetadata = false;
             options.SaveToken = true;
 
-            string jwtString = Environment.GetEnvironmentVariable("JWT_SECRET");
+            string jwtString = configuration["JWT_SECRET"]
+                   ?? configuration["Jwt:Secret"]
+                   ?? Environment.GetEnvironmentVariable("JWT_SECRET");
             var jwtBytes = Encoding.ASCII.GetBytes(jwtString);
 
             options.TokenValidationParameters = new TokenValidationParameters
