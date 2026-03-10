@@ -1105,7 +1105,7 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
           </button>
           {activeTab === 'active' && (
             <button
-              onClick={() => setShowMapView(!showMapView)}
+              onClick={() => { setShowMapView(!showMapView); setHighlightedTripId(null); setSelectedTrip(null); }}
               className={clsx(
                 'inline-flex items-center px-3 py-2 border shadow-sm text-sm leading-4 font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500',
                 showMapView

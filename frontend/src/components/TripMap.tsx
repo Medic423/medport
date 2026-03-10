@@ -168,6 +168,50 @@ const TripMap: React.FC<TripMapProps> = ({
 
   const HIGHLIGHT_COLOR = '#F87171';
 
+  const getAmbulanceIcon = (statusColor: string, isHighlighted: boolean): google.maps.Icon => {
+    const scale = isHighlighted ? 1.35 : 1;
+    const w = Math.round(36 * scale);
+    const h = Math.round(26 * scale);
+    const border = '#1E3A5F';
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 36 26">
+      <rect x="1" y="4" width="20" height="15" rx="2" fill="${statusColor}" stroke="${border}" stroke-width="1.5"/>
+      <path d="M21 8 H28 L33 13.5 V19 H21 V8z" fill="${statusColor}" stroke="${border}" stroke-width="1.5"/>
+      <circle cx="7"  cy="20.5" r="3" fill="${border}" stroke="${statusColor}" stroke-width="1"/>
+      <circle cx="27" cy="20.5" r="3" fill="${border}" stroke="${statusColor}" stroke-width="1"/>
+      <rect x="8"  y="7"  width="1.8" height="7" rx="0.6" fill="${border}"/>
+      <rect x="5.5" y="9.6" width="6.3" height="1.8" rx="0.6" fill="${border}"/>
+    </svg>`;
+    return {
+      url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+      scaledSize: new google.maps.Size(w, h),
+      anchor: new google.maps.Point(w / 2, h / 2),
+    };
+  };
+
+  const getHospitalIcon = (statusColor: string): google.maps.Icon => {
+    const w = 32;
+    const h = 40;
+    const border = '#1E3A5F';
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 32 40">
+      <!-- drop shadow -->
+      <ellipse cx="16" cy="38.5" rx="5" ry="1.5" fill="rgba(0,0,0,0.25)"/>
+      <!-- white backing circle for contrast -->
+      <circle cx="16" cy="14" r="13" fill="white" stroke="${border}" stroke-width="1.5"/>
+      <!-- colored circle -->
+      <circle cx="16" cy="14" r="11" fill="${statusColor}"/>
+      <!-- medical + sign -->
+      <rect x="13" y="7"  width="6" height="14" rx="2" fill="${border}"/>
+      <rect x="9"  y="11" width="14" height="6"  rx="2" fill="${border}"/>
+      <!-- pin tail -->
+      <path d="M10 24 Q16 40 16 40 Q16 40 22 24" fill="${statusColor}" stroke="${border}" stroke-width="1.5" stroke-linejoin="round"/>
+    </svg>`;
+    return {
+      url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+      scaledSize: new google.maps.Size(w, h),
+      anchor: new google.maps.Point(w / 2, h - 1),
+    };
+  };
+
   const getColorByStatus = (status: string): string => {
     switch (status) {
       case 'PENDING':
@@ -359,14 +403,10 @@ const TripMap: React.FC<TripMapProps> = ({
             onClick={() => onTripClick?.(trip.id)}
             onMouseOver={() => setHoveredTripId(trip.id)}
             onMouseOut={() => setHoveredTripId(null)}
-            icon={{
-              path: google.maps.SymbolPath.CIRCLE,
-              scale: (highlightedTripId === trip.id || hoveredTripId === trip.id) ? 11 : 8,
-              fillColor: getColorByStatus(trip.status),
-              fillOpacity: 1,
-              strokeColor: (highlightedTripId === trip.id || hoveredTripId === trip.id) ? HIGHLIGHT_COLOR : '#FFFFFF',
-              strokeWeight: (highlightedTripId === trip.id || hoveredTripId === trip.id) ? 3 : 2,
-            }}
+            icon={getAmbulanceIcon(
+              getColorByStatus(trip.status),
+              highlightedTripId === trip.id || hoveredTripId === trip.id
+            )}
           >
             {hoveredTripId === trip.id && (
               <InfoWindowF position={pickupCoords} onCloseClick={() => setHoveredTripId(null)}>
@@ -400,14 +440,7 @@ const TripMap: React.FC<TripMapProps> = ({
             onClick={() => onTripClick?.(trip.id)}
             onMouseOver={() => setHoveredTripId(trip.id)}
             onMouseOut={() => setHoveredTripId(null)}
-            icon={{
-              path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
-              scale: 9,
-              fillColor: getColorByStatus(trip.status),
-              fillOpacity: 1,
-              strokeColor: HIGHLIGHT_COLOR,
-              strokeWeight: 3,
-            }}
+            icon={getHospitalIcon(getColorByStatus(trip.status))}
           >
             {hoveredTripId === trip.id && (
               <InfoWindowF position={destinationCoords} onCloseClick={() => setHoveredTripId(null)}>
