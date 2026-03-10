@@ -369,7 +369,7 @@ const TripMap: React.FC<TripMapProps> = ({
             }}
           >
             {hoveredTripId === trip.id && (
-              <InfoWindowF onCloseClick={() => setHoveredTripId(null)}>
+              <InfoWindowF position={pickupCoords} onCloseClick={() => setHoveredTripId(null)}>
                 <div className="w-48 p-2">
                   <p className="font-semibold text-sm">{trip.tripNumber || trip.patientId}</p>
                   <p className="text-xs text-gray-600">Pickup Location</p>
@@ -410,7 +410,7 @@ const TripMap: React.FC<TripMapProps> = ({
             }}
           >
             {hoveredTripId === trip.id && (
-              <InfoWindowF onCloseClick={() => setHoveredTripId(null)}>
+              <InfoWindowF position={destinationCoords} onCloseClick={() => setHoveredTripId(null)}>
                 <div className="w-48 p-2">
                   <p className="font-semibold text-sm">{trip.tripNumber || trip.patientId}</p>
                   <p className="text-xs text-gray-600">Destination</p>
