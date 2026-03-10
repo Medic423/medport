@@ -388,6 +388,190 @@ const TripCard: React.FC<TripCardProps> = ({ trip, onRefresh, onEdit, onDispatch
   );
 };
 
+// Compact card for the map view trip list panel
+interface TripMapListItemProps {
+  trip: Trip;
+  user: {
+    id: string;
+    userType: 'ADMIN' | 'USER' | 'HEALTHCARE' | 'EMS';
+    facilityName?: string;
+  };
+  onRefresh: () => void;
+  onEdit?: (tripId: string) => void;
+  onDispatch?: (trip: Trip) => void;
+}
+
+const TripMapListItem: React.FC<TripMapListItemProps> = ({ trip, onRefresh, onEdit, onDispatch }) => {
+  const [loading, setLoading] = useState(false);
+
+  const formatDateTime = (dateString: string) => {
+    if (!dateString) return 'Not scheduled';
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+  const handleAcceptTrip = async () => {
+    if (loading) return;
+    if (window.confirm(`Authorize trip ${trip.tripNumber || trip.patientId} for dispatch to agencies?`)) {
+      setLoading(true);
+      try {
+        const response = await tripsAPI.updateStatus(trip.id, { status: 'PENDING_DISPATCH' });
+        if (response.data.success) onRefresh();
+        else alert(response.data.error || 'Failed to authorize trip');
+      } catch (error: any) {
+        alert(error.response?.data?.error || 'Failed to authorize trip');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleCancelTrip = async () => {
+    if (loading) return;
+    if (window.confirm(`Cancel trip ${trip.tripNumber || trip.patientId}?`)) {
+      setLoading(true);
+      try {
+        const response = await tripsAPI.updateStatus(trip.id, { status: 'CANCELLED' });
+        if (response.data.success) onRefresh();
+        else alert(response.data.error || 'Failed to cancel trip');
+      } catch (error: any) {
+        alert(error.response?.data?.error || 'Failed to cancel trip');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleDeleteTrip = async () => {
+    if (loading) return;
+    if (window.confirm(`Cancel/delete trip ${trip.tripNumber || trip.patientId}?`)) {
+      setLoading(true);
+      try {
+        const response = await tripsAPI.updateStatus(trip.id, { status: 'CANCELLED' });
+        if (response.data.success) onRefresh();
+        else alert(response.data.error || 'Failed to cancel trip');
+      } catch (error: any) {
+        alert(error.response?.data?.error || 'Failed to cancel trip');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'COMPLETED': return 'bg-green-100 text-green-800';
+      case 'CANCELLED': return 'bg-red-100 text-red-800';
+      case 'IN_PROGRESS': return 'bg-blue-100 text-blue-800';
+      case 'PENDING': return 'bg-yellow-100 text-yellow-800';
+      case 'ACCEPTED': return 'bg-purple-100 text-purple-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const acceptedAgenciesCount = trip.agencyResponses?.filter((r: any) => r.response === 'ACCEPTED').length || 0;
+  const hasSelectedAgency = trip.agencyResponses?.some((r: any) => r.isSelected === true && r.response === 'ACCEPTED') || false;
+
+  return (
+    <div className="flex flex-col p-3 bg-gray-50 rounded-lg">
+      {/* Info block */}
+      <div>
+        <p className="text-sm font-semibold text-gray-900">
+          Patient {trip.patientId}
+        </p>
+        <p className="text-xs text-gray-500 mt-0.5">
+          Pickup: {formatDateTime(trip.scheduledTime)}
+        </p>
+        <p className="text-xs text-gray-600 mt-1">
+          {trip.fromLocation} → {trip.toLocation}
+        </p>
+        <p className="text-xs text-gray-500 mt-0.5">
+          {trip.transportLevel} · Created {new Date(trip.createdAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })}
+        </p>
+
+        {/* Agency Responses */}
+        {trip.agencyResponses && trip.agencyResponses.length > 0 && (
+          <div className="mt-1.5 flex items-center flex-wrap gap-1">
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              {acceptedAgenciesCount} {acceptedAgenciesCount === 1 ? 'Agency' : 'Agencies'} Accepted
+            </span>
+            {hasSelectedAgency && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                Selected
+              </span>
+            )}
+          </div>
+        )}
+
+        {trip.healthcareFacilityName && (
+          <p className="text-xs text-gray-700 font-medium mt-1">
+            Facility: {trip.healthcareFacilityName}
+          </p>
+        )}
+
+        {trip.pickupLocation && (
+          <p className="text-xs text-blue-600 mt-0.5">
+            Pickup: {trip.pickupLocation.name}
+            {trip.pickupLocation.floor && ` · Floor ${trip.pickupLocation.floor}`}
+            {trip.pickupLocation.room && ` · Room ${trip.pickupLocation.room}`}
+            {trip.pickupLocation.contactPhone && ` · (${trip.pickupLocation.contactPhone})`}
+          </p>
+        )}
+      </div>
+
+      {/* Status + buttons row */}
+      <div className="mt-2.5 flex items-center flex-wrap gap-1.5">
+        <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${getStatusColor(trip.status)}`}>
+          {trip.status.replace('_', ' ')}
+        </span>
+
+        <div className="flex items-center gap-1 ml-auto">
+          {trip.status === 'PENDING_DISPATCH' && onDispatch && (
+            <button onClick={() => onDispatch(trip)} disabled={loading}
+              className="inline-flex items-center justify-center h-7 w-7 rounded-full bg-purple-100 text-purple-800 hover:bg-purple-200 transition-colors disabled:opacity-50"
+              title="Dispatch trip to EMS agencies">
+              <Send className="h-3.5 w-3.5" />
+            </button>
+          )}
+          {trip.status !== 'PENDING_DISPATCH' && trip.status !== 'CANCELLED' && trip.status !== 'COMPLETED' && trip.status !== 'HEALTHCARE_COMPLETED' && (
+            <button onClick={handleAcceptTrip} disabled={loading}
+              className="inline-flex items-center justify-center h-7 w-7 rounded-full bg-green-100 text-green-800 hover:bg-green-200 transition-colors disabled:opacity-50"
+              title="Authorize for dispatch">
+              <CheckCircle className="h-3.5 w-3.5" />
+            </button>
+          )}
+          {trip.status !== 'CANCELLED' && trip.status !== 'COMPLETED' && trip.status !== 'HEALTHCARE_COMPLETED' && (
+            <button onClick={handleCancelTrip} disabled={loading}
+              className="inline-flex items-center justify-center h-7 w-7 rounded-full bg-red-100 text-red-800 hover:bg-red-200 transition-colors disabled:opacity-50"
+              title="Cancel trip">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+          {trip.status !== 'COMPLETED' && trip.status !== 'HEALTHCARE_COMPLETED' && (
+            <button onClick={() => onEdit?.(trip.id)} disabled={loading}
+              className="inline-flex items-center justify-center h-7 w-7 rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors disabled:opacity-50"
+              title="Edit trip">
+              <Edit className="h-3.5 w-3.5" />
+            </button>
+          )}
+          <button onClick={handleDeleteTrip} disabled={loading}
+            className="inline-flex items-center justify-center h-7 w-7 rounded-full bg-gray-100 text-gray-800 hover:bg-gray-200 transition-colors disabled:opacity-50"
+            title="Delete trip">
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const TripsView: React.FC<TripsViewProps> = ({ user }) => {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [activeTrips, setActiveTrips] = useState<Trip[]>([]);
@@ -1175,9 +1359,9 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
         <>
           {showMapView ? (
             // Map View with Side-by-Side Layout
-            <div className="grid grid-cols-3 gap-4 h-screen max-h-[calc(100vh-300px)]">
+            <div className="grid grid-cols-5 gap-4 h-screen max-h-[calc(100vh-300px)]">
               {/* Map Panel (left side) - 60% width */}
-              <div className="col-span-2 bg-white rounded-lg shadow overflow-hidden">
+              <div className="col-span-3 bg-white rounded-lg shadow overflow-hidden">
                 <TripMap
                   trips={activeTrips}
                   onBoundsChange={(bounds) => setMapBounds(bounds)}
@@ -1198,7 +1382,7 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
               </div>
 
               {/* Trip List Panel (right side) - 40% width */}
-              <div className="col-span-1 bg-white rounded-lg shadow overflow-hidden flex flex-col">
+              <div className="col-span-2 bg-white rounded-lg shadow overflow-hidden flex flex-col">
                 {/* List Header */}
                 <div className="px-6 py-4 border-b border-gray-200">
                   <p className="text-sm text-gray-700">
@@ -1212,7 +1396,9 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
                     tripsInBounds.map((trip) => (
                       <div
                         key={trip.id}
-                        onClick={() => {
+                        onClick={(e) => {
+                          // Only toggle map highlight when clicking the card background, not action buttons
+                          if ((e.target as HTMLElement).closest('button')) return;
                           if (highlightedTripId === trip.id) {
                             setHighlightedTripId(null);
                             setSelectedTrip(null);
@@ -1222,24 +1408,38 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
                           }
                         }}
                         className={clsx(
-                          'p-3 rounded-lg border-2 cursor-pointer transition-colors',
+                          'rounded-lg border-2 cursor-pointer transition-colors',
                           highlightedTripId === trip.id
                             ? 'border-primary-500 bg-primary-50'
                             : 'border-gray-200 bg-white hover:bg-gray-50'
                         )}
                       >
-                        <p className="font-semibold text-sm text-gray-900">
-                          {trip.tripNumber || trip.patientId}
-                        </p>
-                        <p className="text-xs text-gray-600 mt-1">
-                          {trip.fromLocation}
-                        </p>
-                        <div className="flex items-center justify-between mt-2">
-                          <span className="text-xs font-medium text-gray-700">
-                            {trip.priority}
-                          </span>
-                          {getPriorityBadge(trip.priority)}
-                        </div>
+                        <TripMapListItem
+                          trip={trip}
+                          user={user}
+                          onRefresh={fetchTrips}
+                          onEdit={(tripId) => {
+                            setSelectedTrip(trips.find(t => t.id === tripId) || null);
+                            setShowTripModal(true);
+                          }}
+                          onDispatch={(trip) => {
+                            const tripForDispatch = {
+                              id: trip.id,
+                              patientId: trip.patientId,
+                              fromLocation: trip.fromLocation,
+                              toLocation: trip.toLocation,
+                              scheduledTime: trip.scheduledTime,
+                              transportLevel: trip.transportLevel,
+                              urgencyLevel: trip.urgencyLevel,
+                              diagnosis: trip.diagnosis,
+                              mobilityLevel: trip.mobilityLevel,
+                              notes: '',
+                              tripNumber: trip.tripNumber
+                            };
+                            setDispatchTrip(tripForDispatch as any);
+                            setShowDispatchScreen(true);
+                          }}
+                        />
                       </div>
                     ))
                   ) : (
