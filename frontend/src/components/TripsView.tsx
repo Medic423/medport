@@ -600,7 +600,7 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
   const [sortDirection] = useState<'asc' | 'desc'>('desc');
   
   // Map view states
-  const [showMapView, setShowMapView] = useState(false);
+  const [showMapView, setShowMapView] = useState(true);
   const [mapBounds, setMapBounds] = useState<MapBounds | null>(null);
   const [highlightedTripId, setHighlightedTripId] = useState<string | null>(null);
   const [tripsInBounds, setTripsInBounds] = useState<Trip[]>([]);
