@@ -1,4 +1,4 @@
-﻿import express from 'express';
+import express from 'express';
 import { healthcareAgencyService } from '../services/healthcareAgencyService';
 import { authenticateAdmin } from '../middleware/authenticateAdmin';
 import { AuthenticatedRequest } from '../middleware/authenticateAdmin';
@@ -18,7 +18,7 @@ router.use(authenticateAdmin);
 router.get('/available', async (req: AuthenticatedRequest, res) => {
   try {
     // Verify user is healthcare type
-    if (req.user?.userType !== 'ORGANIZATION_USER') {
+    if (req.user?.userType !== 'HEALTHCARE_ORGANIZATION_USER') {
       return res.status(403).json({
         success: false,
         error: 'Access denied: Healthcare users only',
@@ -72,7 +72,7 @@ router.get('/available', async (req: AuthenticatedRequest, res) => {
 router.get('/', async (req: AuthenticatedRequest, res) => {
   try {
     // Verify user is healthcare type
-    if (req.user?.userType !== 'ORGANIZATION_USER') {
+    if (req.user?.userType !== 'HEALTHCARE_ORGANIZATION_USER') {
       return res.status(403).json({
         success: false,
         error: 'Access denied: Healthcare users only',
@@ -121,7 +121,7 @@ router.get('/', async (req: AuthenticatedRequest, res) => {
 router.post('/', async (req: AuthenticatedRequest, res) => {
   try {
     // Verify user is healthcare type
-    if (req.user?.userType !== 'ORGANIZATION_USER') {
+    if (req.user?.userType !== 'HEALTHCARE_ORGANIZATION_USER') {
       return res.status(403).json({
         success: false,
         error: 'Access denied: Healthcare users only',
@@ -166,13 +166,13 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
  * MUST come before /:id route to avoid route conflicts
  */
 router.get('/trip-agencies', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
-  console.log('ðŸš¨ ROUTE HIT: GET /trip-agencies', req.query);
-  console.log('ðŸš¨ User from token:', { id: req.user?.id, email: req.user?.email, userType: req.user?.userType });
+  console.log('🚨 ROUTE HIT: GET /trip-agencies', req.query);
+  console.log('🚨 User from token:', { id: req.user?.id, email: req.user?.email, userType: req.user?.userType });
   try {
     const tripId = req.query.tripId as string;
     const mode = req.query.mode as 'PREFERRED' | 'GEOGRAPHIC' | 'HYBRID' | undefined;
     const radius = req.query.radius ? parseInt(req.query.radius as string) : undefined;
-    console.log('ðŸš¨ Processing trip-agencies request:', { tripId, mode, radius });
+    console.log('🚨 Processing trip-agencies request:', { tripId, mode, radius });
 
     if (!tripId) {
       return res.status(400).json({
@@ -186,7 +186,7 @@ router.get('/trip-agencies', authenticateAdmin, async (req: AuthenticatedRequest
     let healthcareUserId: string | null = null;
     const prisma = (await import('../services/databaseManager')).databaseManager.getPrismaClient();
     
-    if (req.user!.userType === 'ORGANIZATION_USER') {
+    if (req.user!.userType === 'HEALTHCARE_ORGANIZATION_USER') {
       // For HEALTHCARE users, use the trip's creator if it exists, otherwise use their own ID
       healthcareUserId = req.user!.id;
       const trip = await prisma.transportRequest.findUnique({
@@ -195,13 +195,13 @@ router.get('/trip-agencies', authenticateAdmin, async (req: AuthenticatedRequest
       });
       
       if (trip?.createdByUserId && trip.createdByUserId !== healthcareUserId) {
-        console.log('ðŸš¨ HEALTHCARE user accessing trip created by different user:', {
+        console.log('🚨 HEALTHCARE user accessing trip created by different user:', {
           tripCreator: trip.createdByUserId,
           currentUser: healthcareUserId
         });
         // Use the trip's creator ID instead
         healthcareUserId = trip.createdByUserId;
-        console.log('ðŸš¨ Using trip creator ID:', healthcareUserId);
+        console.log('🚨 Using trip creator ID:', healthcareUserId);
       }
     } else {
       // For ADMIN, USER, EMS, or any other user type, use the trip's createdByUserId
@@ -212,7 +212,7 @@ router.get('/trip-agencies', authenticateAdmin, async (req: AuthenticatedRequest
       
       if (trip?.createdByUserId) {
         healthcareUserId = trip.createdByUserId;
-        console.log('ðŸš¨ Non-HEALTHCARE user accessing trip, using createdByUserId:', healthcareUserId);
+        console.log('🚨 Non-HEALTHCARE user accessing trip, using createdByUserId:', healthcareUserId);
       } else if (trip?.fromLocationId) {
         // For old trips without createdByUserId, try to find the org from the location
         const location = await prisma.facility.findUnique({
@@ -220,7 +220,7 @@ router.get('/trip-agencies', authenticateAdmin, async (req: AuthenticatedRequest
           select: { organizationId: true }
         });
         if (location?.organizationId) {
-          // organizationId is on the facility, not a user id — skip and fall through
+          // organizationId is on the facility, not a user id � skip and fall through
           console.log('Non-HEALTHCARE user accessing old trip, facility organizationId:', location.organizationId);
         }
         return res.status(400).json({
@@ -270,7 +270,7 @@ router.get('/trip-agencies', authenticateAdmin, async (req: AuthenticatedRequest
 router.get('/search/:query', async (req: AuthenticatedRequest, res) => {
   try {
     // Verify user is healthcare type
-    if (req.user?.userType !== 'ORGANIZATION_USER') {
+    if (req.user?.userType !== 'HEALTHCARE_ORGANIZATION_USER') {
       return res.status(403).json({
         success: false,
         error: 'Access denied: Healthcare users only',
@@ -310,7 +310,7 @@ router.get('/search/:query', async (req: AuthenticatedRequest, res) => {
  */
 router.get('/registered/search', async (req: AuthenticatedRequest, res) => {
   try {
-    if (req.user?.userType !== 'ORGANIZATION_USER') {
+    if (req.user?.userType !== 'HEALTHCARE_ORGANIZATION_USER') {
       return res.status(403).json({
         success: false,
         error: 'Access denied: Healthcare users only',
@@ -348,7 +348,7 @@ router.get('/registered/search', async (req: AuthenticatedRequest, res) => {
  */
 router.post('/add-existing', async (req: AuthenticatedRequest, res) => {
   try {
-    if (req.user?.userType !== 'ORGANIZATION_USER') {
+    if (req.user?.userType !== 'HEALTHCARE_ORGANIZATION_USER') {
       return res.status(403).json({
         success: false,
         error: 'Access denied: Healthcare users only',
@@ -397,7 +397,7 @@ router.post('/add-existing', async (req: AuthenticatedRequest, res) => {
 router.get('/:id', async (req: AuthenticatedRequest, res) => {
   try {
     // Verify user is healthcare type
-    if (req.user?.userType !== 'ORGANIZATION_USER') {
+    if (req.user?.userType !== 'HEALTHCARE_ORGANIZATION_USER') {
       return res.status(403).json({
         success: false,
         error: 'Access denied: Healthcare users only',
@@ -444,7 +444,7 @@ router.get('/:id', async (req: AuthenticatedRequest, res) => {
 router.put('/:id', async (req: AuthenticatedRequest, res) => {
   try {
     // Verify user is healthcare type
-    if (req.user?.userType !== 'ORGANIZATION_USER') {
+    if (req.user?.userType !== 'HEALTHCARE_ORGANIZATION_USER') {
       return res.status(403).json({
         success: false,
         error: 'Access denied: Healthcare users only',
@@ -490,7 +490,7 @@ router.put('/:id', async (req: AuthenticatedRequest, res) => {
 router.patch('/:id/preferred', async (req: AuthenticatedRequest, res) => {
   try {
     // Verify user is healthcare type
-    if (req.user?.userType !== 'ORGANIZATION_USER') {
+    if (req.user?.userType !== 'HEALTHCARE_ORGANIZATION_USER') {
       return res.status(403).json({
         success: false,
         error: 'Access denied: Healthcare users only',
@@ -543,7 +543,7 @@ router.patch('/:id/preferred', async (req: AuthenticatedRequest, res) => {
 router.delete('/:id', async (req: AuthenticatedRequest, res) => {
   try {
     // Verify user is healthcare type
-    if (req.user?.userType !== 'ORGANIZATION_USER') {
+    if (req.user?.userType !== 'HEALTHCARE_ORGANIZATION_USER') {
       return res.status(403).json({
         success: false,
         error: 'Access denied: Healthcare users only',

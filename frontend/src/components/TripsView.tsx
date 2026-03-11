@@ -113,7 +113,7 @@ interface Trip {
 interface TripsViewProps {
   user: {
     id: string;
-    userType: 'ADMIN' | 'USER' | 'HEALTHCARE' | 'EMS';
+    userType: 'SYSTEM_ADMIN' | 'HEALTHCARE_ORGANIZATION_USER' | 'EMS_ORGANIZATION_USER';
     facilityName?: string;
   };
 }
@@ -124,7 +124,7 @@ interface TripCardProps {
   trip: Trip;
   user: {
     id: string;
-    userType: 'ADMIN' | 'USER' | 'HEALTHCARE' | 'EMS';
+    userType: 'SYSTEM_ADMIN' | 'HEALTHCARE_ORGANIZATION_USER' | 'EMS_ORGANIZATION_USER';
     facilityName?: string;
   };
   onRefresh: () => void;
@@ -393,7 +393,7 @@ interface TripMapListItemProps {
   trip: Trip;
   user: {
     id: string;
-    userType: 'ADMIN' | 'USER' | 'HEALTHCARE' | 'EMS';
+    userType: 'SYSTEM_ADMIN' | 'HEALTHCARE_ORGANIZATION_USER' | 'EMS_ORGANIZATION_USER';
     facilityName?: string;
   };
   onRefresh: () => void;
@@ -838,7 +838,7 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
     }
 
     // Hospital filter (for non-admin users)
-    if (user.userType !== 'ADMIN' && user.facilityName) {
+    if (user.userType !== 'SYSTEM_ADMIN' && user.facilityName) {
       filtered = filtered.filter(trip => 
         trip.fromLocation.toLowerCase().includes(user.facilityName!.toLowerCase())
       );

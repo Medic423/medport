@@ -16,7 +16,7 @@ interface User {
   id: string;
   email: string;
   name: string;
-  userType: 'ADMIN' | 'USER';
+  userType: 'SYSTEM_ADMIN' | 'HEALTHCARE_ORGANIZATION_USER' | 'EMS_ORGANIZATION_USER';
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -32,7 +32,7 @@ const UserManagement: React.FC = () => {
     name: '',
     email: '',
     password: '',
-    userType: 'USER' as 'ADMIN' | 'USER'
+    userType: 'SYSTEM_ADMIN' as 'SYSTEM_ADMIN' | 'HEALTHCARE_ORGANIZATION_USER' | 'EMS_ORGANIZATION_USER'
   });
 
   useEffect(() => {
@@ -56,7 +56,7 @@ const UserManagement: React.FC = () => {
           id: 'user-1',
           email: 'admin@tcc.com',
           name: 'TCC Administrator',
-          userType: 'ADMIN' as 'ADMIN' | 'USER',
+          userType: 'SYSTEM_ADMIN' as 'SYSTEM_ADMIN' | 'HEALTHCARE_ORGANIZATION_USER' | 'EMS_ORGANIZATION_USER',
           isActive: true,
           createdAt: '2024-01-01T00:00:00Z',
           updatedAt: '2024-09-22T15:43:00Z'
@@ -65,7 +65,7 @@ const UserManagement: React.FC = () => {
           id: 'user-2',
           email: 'manager@tcc.com',
           name: 'TCC Manager',
-          userType: 'USER' as 'ADMIN' | 'USER',
+          userType: 'SYSTEM_ADMIN' as 'SYSTEM_ADMIN' | 'HEALTHCARE_ORGANIZATION_USER' | 'EMS_ORGANIZATION_USER',
           isActive: true,
           createdAt: '2024-01-15T00:00:00Z',
           updatedAt: '2024-09-20T10:30:00Z'
@@ -74,7 +74,7 @@ const UserManagement: React.FC = () => {
           id: 'user-3',
           email: 'coordinator@tcc.com',
           name: 'TCC Coordinator',
-          userType: 'USER' as 'ADMIN' | 'USER',
+          userType: 'HEALTHCARE_ORGANIZATION_USER' as 'SYSTEM_ADMIN' | 'HEALTHCARE_ORGANIZATION_USER' | 'EMS_ORGANIZATION_USER',
           isActive: true,
           createdAt: '2024-02-01T00:00:00Z',
           updatedAt: '2024-09-18T14:20:00Z'
@@ -115,7 +115,7 @@ const UserManagement: React.FC = () => {
       name: '',
       email: '',
       password: '',
-      userType: 'USER'
+      userType: 'SYSTEM_ADMIN' as 'SYSTEM_ADMIN' | 'HEALTHCARE_ORGANIZATION_USER' | 'EMS_ORGANIZATION_USER'
     });
   };
 
@@ -231,13 +231,13 @@ const UserManagement: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        {user.userType === 'ADMIN' ? (
+                        {user.userType === 'SYSTEM_ADMIN' ? (
                           <Shield className="h-4 w-4 text-red-500 mr-2" />
                         ) : (
                           <User className="h-4 w-4 text-blue-500 mr-2" />
                         )}
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          user.userType === 'ADMIN' 
+                          user.userType === 'SYSTEM_ADMIN' 
                             ? 'bg-red-100 text-red-800' 
                             : 'bg-blue-100 text-blue-800'
                         }`}>
@@ -363,11 +363,12 @@ const UserManagement: React.FC = () => {
                   </label>
                   <select
                     value={formData.userType}
-                    onChange={(e) => setFormData({ ...formData, userType: e.target.value as 'ADMIN' | 'USER' })}
+                    onChange={(e) => setFormData({ ...formData, userType: e.target.value as 'SYSTEM_ADMIN' | 'HEALTHCARE_ORGANIZATION_USER' | 'EMS_ORGANIZATION_USER' })}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
                   >
-                    <option value="USER">User (Standard Access)</option>
-                    <option value="ADMIN">Admin (Full Access)</option>
+                    <option value="HEALTHCARE_ORGANIZATION_USER">Healthcare Organization User</option>
+                    <option value="EMS_ORGANIZATION_USER">EMS Organization User</option>
+                    <option value="SYSTEM_ADMIN">System Admin</option>
                   </select>
                 </div>
 

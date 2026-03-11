@@ -1,4 +1,4 @@
-﻿import express from 'express';
+import express from 'express';
 import { healthcareDestinationService } from '../services/healthcareDestinationService';
 import { authenticateAdmin } from '../middleware/authenticateAdmin';
 import { AuthenticatedRequest } from '../middleware/authenticateAdmin';
@@ -15,7 +15,7 @@ router.use(authenticateAdmin);
 router.get('/', async (req: AuthenticatedRequest, res) => {
   try {
     // Verify user is healthcare type
-    if (req.user?.userType !== 'ORGANIZATION_USER') {
+    if (req.user?.userType !== 'HEALTHCARE_ORGANIZATION_USER') {
       return res.status(403).json({
         success: false,
         error: 'Access denied: Healthcare users only',
@@ -73,7 +73,7 @@ router.get('/', async (req: AuthenticatedRequest, res) => {
 router.post('/', async (req: AuthenticatedRequest, res) => {
   try {
     // Verify user is healthcare type
-    if (req.user?.userType !== 'ORGANIZATION_USER') {
+    if (req.user?.userType !== 'HEALTHCARE_ORGANIZATION_USER') {
       return res.status(403).json({
         success: false,
         error: 'Access denied: Healthcare users only',
@@ -143,7 +143,7 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
 router.get('/:id', async (req: AuthenticatedRequest, res) => {
   try {
     // Verify user is healthcare type
-    if (req.user?.userType !== 'ORGANIZATION_USER') {
+    if (req.user?.userType !== 'HEALTHCARE_ORGANIZATION_USER') {
       return res.status(403).json({
         success: false,
         error: 'Access denied: Healthcare users only',
@@ -184,7 +184,7 @@ router.get('/:id', async (req: AuthenticatedRequest, res) => {
 router.put('/:id', async (req: AuthenticatedRequest, res) => {
   try {
     // Verify user is healthcare type
-    if (req.user?.userType !== 'ORGANIZATION_USER') {
+    if (req.user?.userType !== 'HEALTHCARE_ORGANIZATION_USER') {
       return res.status(403).json({
         success: false,
         error: 'Access denied: Healthcare users only',
@@ -230,7 +230,7 @@ router.put('/:id', async (req: AuthenticatedRequest, res) => {
 router.delete('/:id', async (req: AuthenticatedRequest, res) => {
   try {
     // Verify user is healthcare type
-    if (req.user?.userType !== 'ORGANIZATION_USER') {
+    if (req.user?.userType !== 'HEALTHCARE_ORGANIZATION_USER') {
       return res.status(403).json({
         success: false,
         error: 'Access denied: Healthcare users only',

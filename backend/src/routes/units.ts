@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Units Management Routes
  * 
  * NOTE: Units Management UI has been disabled (see docs/active/sessions/2026-01/units-management-disabled.md)
@@ -29,7 +29,7 @@ router.get('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
     
     let units;
     
-    if (user?.userType === 'ORGANIZATION_USER') {
+    if (user?.userType === 'EMS_ORGANIZATION_USER') {
       // For organization users, get units for their organization
       const agencyId = user.organizationId;
       
@@ -90,10 +90,10 @@ router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
     // Determine agencyId based on user type
     let agencyId: string;
     
-    if (user.userType === 'ORGANIZATION_USER') {
+    if (user.userType === 'EMS_ORGANIZATION_USER') {
       // For EMS users, use their agencyId
       agencyId = user.organizationId || user.id;
-      console.log('ðŸ” Units API: Creating unit for EMS agency:', agencyId);
+      console.log('🔍 Units API: Creating unit for EMS agency:', agencyId);
     } else if (user.userType === 'SYSTEM_ADMIN') {
       // For admin users, require agencyId in request body (if not provided, use first available agency)
       agencyId = (unitData as any).agencyId;
@@ -245,10 +245,10 @@ router.put('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => 
     // Determine agencyId for ownership verification
     let agencyId: string | undefined;
     
-    if (user.userType === 'ORGANIZATION_USER') {
+    if (user.userType === 'EMS_ORGANIZATION_USER') {
       // For EMS users, verify they own the unit
       agencyId = user.organizationId || user.id;
-      console.log('ðŸ” Units API: Updating unit for EMS agency:', agencyId);
+      console.log('🔍 Units API: Updating unit for EMS agency:', agencyId);
     } else if (user.userType === 'SYSTEM_ADMIN') {
       // Admin users can update any unit (no agencyId restriction)
       agencyId = undefined;
@@ -330,7 +330,7 @@ router.delete('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) 
     }
     
     // For EMS users, verify they own the unit before deletion
-    if (user.userType === 'ORGANIZATION_USER') {
+    if (user.userType === 'EMS_ORGANIZATION_USER') {
       const agencyId = user.organizationId || user.id;
       
       // Get the unit to verify ownership

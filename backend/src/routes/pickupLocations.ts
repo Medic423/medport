@@ -179,8 +179,8 @@ router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
       });
     }
 
-    // For ORGANIZATION_USER, use their organization's facility
-    if (req.user && req.user.userType === 'ORGANIZATION_USER' && req.user.organizationId) {
+    // For HEALTHCARE_ORGANIZATION_USER, use their organization's facility
+    if (req.user && req.user.userType === 'HEALTHCARE_ORGANIZATION_USER' && req.user.organizationId) {
       const userFacility = await databaseManager.getPrismaClient().facility.findFirst({
         where: { organizationId: req.user.organizationId }
       });

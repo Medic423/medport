@@ -136,7 +136,7 @@ router.get('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
     // For organization users, automatically filter by their organizationId
     let agencyId = req.query.agencyId as string | undefined;
     
-    if (req.user?.userType === 'ORGANIZATION_USER') {
+    if (req.user?.userType === 'EMS_ORGANIZATION_USER') {
       // Use organizationId directly from user token
       if (!agencyId) {
         agencyId = req.user.organizationId;

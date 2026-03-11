@@ -1429,7 +1429,7 @@ async function resolveEMSAgencyContext(req: AuthenticatedRequest): Promise<{ age
 
   try {
     // If user is EMS type, id should be agencyId
-    if (req.user?.userType === 'ORGANIZATION_USER') {
+    if (req.user?.userType === 'EMS_ORGANIZATION_USER') {
       agencyId = req.user.id || req.user.organizationId || null;
     } else if (!agencyId && req.user?.email) {
       // Fallback: find EMS user by email

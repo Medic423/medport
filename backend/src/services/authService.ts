@@ -9,6 +9,7 @@ export interface User {
   name: string;
   userType: UserType;
   organizationId?: string;
+  orgAdmin?: boolean;
 }
 
 export interface LoginCredentials {
@@ -52,6 +53,7 @@ export class AuthService {
           isActive: true,
           isDeleted: true,
           mustChangePassword: true,
+          userRoles: { select: { role: { select: { name: true } } } },
         }
       });
 
@@ -86,12 +88,15 @@ export class AuthService {
         { expiresIn: '24h' }
       );
 
+      const isOrgAdmin = foundUser.userRoles.some((ur: any) => ur.role?.name === 'ADMIN');
+
       const userData: User = {
         id: foundUser.id,
         email: foundUser.email,
         name: foundUser.name,
         userType: foundUser.userType,
         organizationId: foundUser.organizationId ?? undefined,
+        orgAdmin: isOrgAdmin,
       };
 
       return { success: true, user: userData, token, mustChangePassword: foundUser.mustChangePassword };

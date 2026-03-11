@@ -22,12 +22,15 @@ function generateTempPassword(): string {
 router.get('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     if (!req.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
-    if (!(req.user.userType === 'ORGANIZATION_USER' || req.user.userType === 'SYSTEM_ADMIN')) {
+    if (!(req.user.userType === 'HEALTHCARE_ORGANIZATION_USER' || req.user.userType === 'SYSTEM_ADMIN')) {
       return res.status(403).json({ success: false, error: 'Forbidden' });
     }
     const db = databaseManager.getPrismaClient();
-    const whereClause: any = { userType: 'FACILITY_USER' };
-    if (req.user.userType === 'ORGANIZATION_USER') {
+    const whereClause: any = {
+      userType: 'HEALTHCARE_ORGANIZATION_USER',
+      userRoles: { some: { role: { name: 'FACILITY_USER' } } }
+    };
+    if (req.user.userType === 'HEALTHCARE_ORGANIZATION_USER') {
       whereClause.organizationId = req.user.organizationId;
     }
     const users = await db.user.findMany({
@@ -42,11 +45,11 @@ router.get('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   }
 });
 
-// Create healthcare sub-user (FACILITY_USER within the same organization)
+// Create healthcare sub-user (HEALTHCARE_ORGANIZATION_USER with FACILITY_USER role within the same organization)
 router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     if (!req.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
-    if (!(req.user.userType === 'ORGANIZATION_USER' || req.user.userType === 'SYSTEM_ADMIN')) {
+    if (!(req.user.userType === 'HEALTHCARE_ORGANIZATION_USER' || req.user.userType === 'SYSTEM_ADMIN')) {
       return res.status(403).json({ success: false, error: 'Forbidden' });
     }
     const { email, name, organizationId: bodyOrgId } = req.body || {};
@@ -54,7 +57,7 @@ router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
       return res.status(400).json({ success: false, error: 'email and name are required' });
     }
     let orgId: string | undefined;
-    if (req.user.userType === 'ORGANIZATION_USER') {
+    if (req.user.userType === 'HEALTHCARE_ORGANIZATION_USER') {
       orgId = req.user.organizationId;
     } else {
       orgId = bodyOrgId;
@@ -64,10 +67,23 @@ router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
     const db = databaseManager.getPrismaClient();
     const existing = await db.user.findUnique({ where: { email } });
     if (existing) return res.status(400).json({ success: false, error: 'Email already in use' });
+    const facilityUserRole = await db.role.findUnique({ where: { name: 'FACILITY_USER' } });
+    if (!facilityUserRole) {
+      return res.status(500).json({ success: false, error: 'FACILITY_USER role not found — run database seed' });
+    }
     const tempPassword = generateTempPassword();
     const hash = await bcrypt.hash(tempPassword, 12);
     const created = await db.user.create({
-      data: { email, password: hash, name, userType: 'FACILITY_USER', organizationId: orgId, isActive: true, mustChangePassword: true }
+      data: {
+        email,
+        password: hash,
+        name,
+        userType: 'HEALTHCARE_ORGANIZATION_USER',
+        organizationId: orgId,
+        isActive: true,
+        mustChangePassword: true,
+        userRoles: { create: { roleId: facilityUserRole.id, organizationId: orgId } }
+      }
     });
     res.json({ success: true, data: { id: created.id, email: created.email, name: created.name, tempPassword } });
   } catch (e) {
@@ -80,15 +96,15 @@ router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
 router.patch('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     if (!req.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
-    if (!(req.user.userType === 'ORGANIZATION_USER' || req.user.userType === 'SYSTEM_ADMIN')) {
+    if (!(req.user.userType === 'HEALTHCARE_ORGANIZATION_USER' || req.user.userType === 'SYSTEM_ADMIN')) {
       return res.status(403).json({ success: false, error: 'Forbidden' });
     }
     const { id } = req.params;
     const { name, isActive } = req.body || {};
     const db = databaseManager.getPrismaClient();
-    const sub = await db.user.findUnique({ where: { id } });
-    if (!sub || sub.userType !== 'FACILITY_USER') return res.status(404).json({ success: false, error: 'Sub-user not found' });
-    if (req.user.userType === 'ORGANIZATION_USER' && sub.organizationId !== req.user.organizationId) {
+    const sub = await db.user.findFirst({ where: { id, userRoles: { some: { role: { name: 'FACILITY_USER' } } } } });
+    if (!sub) return res.status(404).json({ success: false, error: 'Sub-user not found' });
+    if (req.user.userType === 'HEALTHCARE_ORGANIZATION_USER' && sub.organizationId !== req.user.organizationId) {
       return res.status(403).json({ success: false, error: 'Forbidden: You can only update your own sub-users' });
     }
     const updated = await db.user.update({
@@ -107,14 +123,14 @@ router.patch('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) =
 router.post('/:id/reset-temp-password', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     if (!req.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
-    if (!(req.user.userType === 'ORGANIZATION_USER' || req.user.userType === 'SYSTEM_ADMIN')) {
+    if (!(req.user.userType === 'HEALTHCARE_ORGANIZATION_USER' || req.user.userType === 'SYSTEM_ADMIN')) {
       return res.status(403).json({ success: false, error: 'Forbidden' });
     }
     const { id } = req.params;
     const db = databaseManager.getPrismaClient();
-    const sub = await db.user.findUnique({ where: { id } });
-    if (!sub || sub.userType !== 'FACILITY_USER') return res.status(404).json({ success: false, error: 'Sub-user not found' });
-    if (req.user.userType === 'ORGANIZATION_USER' && sub.organizationId !== req.user.organizationId) {
+    const sub = await db.user.findFirst({ where: { id, userRoles: { some: { role: { name: 'FACILITY_USER' } } } } });
+    if (!sub) return res.status(404).json({ success: false, error: 'Sub-user not found' });
+    if (req.user.userType === 'HEALTHCARE_ORGANIZATION_USER' && sub.organizationId !== req.user.organizationId) {
       return res.status(403).json({ success: false, error: 'Forbidden: You can only reset passwords for your own sub-users' });
     }
     const tempPassword = generateTempPassword();
@@ -131,14 +147,14 @@ router.post('/:id/reset-temp-password', authenticateAdmin, async (req: Authentic
 router.delete('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     if (!req.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
-    if (!(req.user.userType === 'ORGANIZATION_USER' || req.user.userType === 'SYSTEM_ADMIN')) {
+    if (!(req.user.userType === 'HEALTHCARE_ORGANIZATION_USER' || req.user.userType === 'SYSTEM_ADMIN')) {
       return res.status(403).json({ success: false, error: 'Forbidden' });
     }
     const { id } = req.params;
     const db = databaseManager.getPrismaClient();
-    const sub = await db.user.findUnique({ where: { id } });
-    if (!sub || sub.userType !== 'FACILITY_USER') return res.status(404).json({ success: false, error: 'Sub-user not found' });
-    if (req.user.userType === 'ORGANIZATION_USER' && sub.organizationId !== req.user.organizationId) {
+    const sub = await db.user.findFirst({ where: { id, userRoles: { some: { role: { name: 'FACILITY_USER' } } } } });
+    if (!sub) return res.status(404).json({ success: false, error: 'Sub-user not found' });
+    if (req.user.userType === 'HEALTHCARE_ORGANIZATION_USER' && sub.organizationId !== req.user.organizationId) {
       return res.status(403).json({ success: false, error: 'Forbidden: You can only delete your own sub-users' });
     }
     await db.user.delete({ where: { id } });

@@ -22,14 +22,17 @@ function generateTempPassword(): string {
 router.get('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     if (!req.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
-    if (!(req.user.userType === 'ORGANIZATION_USER' || req.user.userType === 'SYSTEM_ADMIN')) {
+    if (!(req.user.userType === 'EMS_ORGANIZATION_USER' || req.user.userType === 'SYSTEM_ADMIN')) {
       return res.status(403).json({ success: false, error: 'Forbidden' });
     }
 
     const db = databaseManager.getPrismaClient();
 
-    const whereClause: any = { userType: 'FACILITY_USER' };
-    if (req.user.userType === 'ORGANIZATION_USER') {
+    const whereClause: any = {
+      userType: 'EMS_ORGANIZATION_USER',
+      userRoles: { some: { role: { name: 'EMS_SUBUSER' } } }
+    };
+    if (req.user.userType === 'EMS_ORGANIZATION_USER') {
       whereClause.organizationId = req.user.organizationId;
     }
 
@@ -45,11 +48,11 @@ router.get('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   }
 });
 
-// Create EMS sub-user (FACILITY_USER within the same organization)
+// Create EMS sub-user (EMS_ORGANIZATION_USER with EMS_SUBUSER role within the same organization)
 router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     if (!req.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
-    if (!(req.user.userType === 'ORGANIZATION_USER' || req.user.userType === 'SYSTEM_ADMIN')) {
+    if (!(req.user.userType === 'EMS_ORGANIZATION_USER' || req.user.userType === 'SYSTEM_ADMIN')) {
       return res.status(403).json({ success: false, error: 'Forbidden' });
     }
     const { email, name, organizationId: bodyOrgId } = req.body || {};
@@ -58,7 +61,7 @@ router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
     }
 
     let orgId: string | undefined;
-    if (req.user.userType === 'ORGANIZATION_USER') {
+    if (req.user.userType === 'EMS_ORGANIZATION_USER') {
       orgId = req.user.organizationId;
     } else {
       orgId = bodyOrgId;
@@ -77,6 +80,11 @@ router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
       return res.status(400).json({ success: false, error: 'Email already in use' });
     }
 
+    const emsSubuserRole = await db.role.findUnique({ where: { name: 'EMS_SUBUSER' } });
+    if (!emsSubuserRole) {
+      return res.status(500).json({ success: false, error: 'EMS_SUBUSER role not found — run database seed' });
+    }
+
     const tempPassword = generateTempPassword();
     const hash = await bcrypt.hash(tempPassword, 12);
 
@@ -85,10 +93,11 @@ router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
         email,
         password: hash,
         name,
-        userType: 'FACILITY_USER',
+        userType: 'EMS_ORGANIZATION_USER',
         organizationId: orgId,
         isActive: true,
         mustChangePassword: true,
+        userRoles: { create: { roleId: emsSubuserRole.id, organizationId: orgId } }
       }
     });
 
@@ -103,19 +112,19 @@ router.post('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
 router.patch('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     if (!req.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
-    if (!(req.user.userType === 'ORGANIZATION_USER' || req.user.userType === 'SYSTEM_ADMIN')) {
+    if (!(req.user.userType === 'EMS_ORGANIZATION_USER' || req.user.userType === 'SYSTEM_ADMIN')) {
       return res.status(403).json({ success: false, error: 'Forbidden' });
     }
     const { id } = req.params;
     const { name, isActive } = req.body || {};
 
     const db = databaseManager.getPrismaClient();
-    const sub = await db.user.findUnique({ where: { id } });
-    if (!sub || sub.userType !== 'FACILITY_USER') {
+    const sub = await db.user.findFirst({ where: { id, userRoles: { some: { role: { name: 'EMS_SUBUSER' } } } } });
+    if (!sub) {
       return res.status(404).json({ success: false, error: 'Sub-user not found' });
     }
 
-    if (req.user.userType === 'ORGANIZATION_USER' && sub.organizationId !== req.user.organizationId) {
+    if (req.user.userType === 'EMS_ORGANIZATION_USER' && sub.organizationId !== req.user.organizationId) {
       return res.status(403).json({ success: false, error: 'Forbidden: You can only update your own sub-users' });
     }
 
@@ -139,18 +148,18 @@ router.patch('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) =
 router.post('/:id/reset-temp-password', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     if (!req.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
-    if (!(req.user.userType === 'ORGANIZATION_USER' || req.user.userType === 'SYSTEM_ADMIN')) {
+    if (!(req.user.userType === 'EMS_ORGANIZATION_USER' || req.user.userType === 'SYSTEM_ADMIN')) {
       return res.status(403).json({ success: false, error: 'Forbidden' });
     }
     const { id } = req.params;
 
     const db = databaseManager.getPrismaClient();
-    const sub = await db.user.findUnique({ where: { id } });
-    if (!sub || sub.userType !== 'FACILITY_USER') {
+    const sub = await db.user.findFirst({ where: { id, userRoles: { some: { role: { name: 'EMS_SUBUSER' } } } } });
+    if (!sub) {
       return res.status(404).json({ success: false, error: 'Sub-user not found' });
     }
 
-    if (req.user.userType === 'ORGANIZATION_USER' && sub.organizationId !== req.user.organizationId) {
+    if (req.user.userType === 'EMS_ORGANIZATION_USER' && sub.organizationId !== req.user.organizationId) {
       return res.status(403).json({ success: false, error: 'Forbidden: You can only reset passwords for your own sub-users' });
     }
 
@@ -169,17 +178,17 @@ router.post('/:id/reset-temp-password', authenticateAdmin, async (req: Authentic
 router.delete('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     if (!req.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
-    if (!(req.user.userType === 'ORGANIZATION_USER' || req.user.userType === 'SYSTEM_ADMIN')) {
+    if (!(req.user.userType === 'EMS_ORGANIZATION_USER' || req.user.userType === 'SYSTEM_ADMIN')) {
       return res.status(403).json({ success: false, error: 'Forbidden' });
     }
     const { id } = req.params;
     const db = databaseManager.getPrismaClient();
-    const sub = await db.user.findUnique({ where: { id } });
-    if (!sub || sub.userType !== 'FACILITY_USER') {
+    const sub = await db.user.findFirst({ where: { id, userRoles: { some: { role: { name: 'EMS_SUBUSER' } } } } });
+    if (!sub) {
       return res.status(404).json({ success: false, error: 'Sub-user not found' });
     }
 
-    if (req.user.userType === 'ORGANIZATION_USER' && sub.organizationId !== req.user.organizationId) {
+    if (req.user.userType === 'EMS_ORGANIZATION_USER' && sub.organizationId !== req.user.organizationId) {
       return res.status(403).json({ success: false, error: 'Forbidden: You can only delete your own sub-users' });
     }
 

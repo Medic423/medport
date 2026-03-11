@@ -14,10 +14,23 @@ async function main() {
     await prisma.dropdownOption.deleteMany();
     await prisma.organizationPreference.deleteMany();
     await prisma.userPreference.deleteMany();
+    await prisma.userRole.deleteMany();
     await prisma.facility.deleteMany();
     await prisma.user.deleteMany();
     await prisma.organization.deleteMany();
+    await prisma.role.deleteMany();
     console.log('✅ Cleanup complete');
+
+    // Seed roles
+    console.log('🌱 Seeding roles...');
+    const roles = await Promise.all([
+      prisma.role.create({ data: { name: 'ADMIN', description: 'Organization-level administrator' } }),
+      prisma.role.create({ data: { name: 'DISPATCHER', description: 'Dispatcher with trip management access' } }),
+      prisma.role.create({ data: { name: 'FACILITY_USER', description: 'Healthcare facility sub-user' } }),
+      prisma.role.create({ data: { name: 'EMS_SUBUSER', description: 'EMS agency sub-user' } }),
+    ]);
+    const roleMap = Object.fromEntries(roles.map(r => [r.name, r]));
+    console.log('✅ Roles seeded:', roles.map(r => r.name).join(', '));
 
     // Create admin user
     const hashedPassword = await bcrypt.hash('admin123', 12);
@@ -145,11 +158,12 @@ async function main() {
         email: 'doe@elkcoems.com',
         password: await bcrypt.hash('password', 12),
         name: 'John Doer',
-        userType: 'ORGANIZATION_USER',
+        userType: 'EMS_ORGANIZATION_USER',
         organizationId: agency3.id,
         isActive: true,
       },
     });
+    await prisma.userRole.create({ data: { userId: emsUser1.id, roleId: roleMap['ADMIN'].id, organizationId: agency3.id } });
     console.log('✅ EMS User created:', emsUser1.email);
 
     const emsUser2 = await prisma.user.upsert({
@@ -159,11 +173,12 @@ async function main() {
         email: 'test@ems.com',
         password: await bcrypt.hash('testpassword', 12),
         name: 'Test EMS User',
-        userType: 'ORGANIZATION_USER',
+        userType: 'EMS_ORGANIZATION_USER',
         organizationId: agency1.id,
         isActive: true,
       },
     });
+    await prisma.userRole.create({ data: { userId: emsUser2.id, roleId: roleMap['ADMIN'].id, organizationId: agency1.id } });
     console.log('✅ EMS User created:', emsUser2.email);
 
     const emsUser3 = await prisma.user.upsert({
@@ -173,11 +188,12 @@ async function main() {
         email: 'fferguson@movalleyems.com',
         password: await bcrypt.hash('movalley123', 12),
         name: 'Frank Ferguson',
-        userType: 'ORGANIZATION_USER',
+        userType: 'EMS_ORGANIZATION_USER',
         organizationId: agency1.id,
         isActive: true,
       },
     });
+    await prisma.userRole.create({ data: { userId: emsUser3.id, roleId: roleMap['ADMIN'].id, organizationId: agency1.id } });
     console.log('✅ EMS User created:', emsUser3.email);
 
     const emsUser4 = await prisma.user.upsert({
@@ -187,11 +203,12 @@ async function main() {
         email: 'test@duncansvilleems.org',
         password: await bcrypt.hash('duncansville123', 12),
         name: 'Test Duncansville User',
-        userType: 'ORGANIZATION_USER',
+        userType: 'EMS_ORGANIZATION_USER',
         organizationId: agency4.id,
         isActive: true,
       },
     });
+    await prisma.userRole.create({ data: { userId: emsUser4.id, roleId: roleMap['ADMIN'].id, organizationId: agency4.id } });
     console.log('✅ EMS User created:', emsUser4.email);
 
     // Create healthcare organizations
@@ -229,11 +246,12 @@ async function main() {
         email: 'nurse@altoonaregional.org',
         password: await bcrypt.hash('nurse123', 12),
         name: 'Sarah Johnson',
-        userType: 'ORGANIZATION_USER',
+        userType: 'HEALTHCARE_ORGANIZATION_USER',
         organizationId: altoonaOrg.id,
         isActive: true,
       },
     });
+    await prisma.userRole.create({ data: { userId: healthcareUser.id, roleId: roleMap['ADMIN'].id, organizationId: altoonaOrg.id } });
     console.log('✅ Healthcare user created:', healthcareUser.email);
 
     const chuckUser = await prisma.user.upsert({
@@ -243,11 +261,12 @@ async function main() {
         email: 'chuck@ferrellhospitals.com',
         password: await bcrypt.hash('testpassword', 12),
         name: 'Chuck Ferrell',
-        userType: 'ORGANIZATION_USER',
+        userType: 'HEALTHCARE_ORGANIZATION_USER',
         organizationId: ferrellOrg.id,
         isActive: true,
       },
     });
+    await prisma.userRole.create({ data: { userId: chuckUser.id, roleId: roleMap['ADMIN'].id, organizationId: ferrellOrg.id } });
     console.log('✅ Multi-location healthcare user created:', chuckUser.email);
 
     // Create facilities for Altoona Regional (replaces hospital + old facility records)

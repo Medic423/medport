@@ -21,7 +21,7 @@ interface User {
   id: string;
   email: string;
   name: string;
-  userType: 'ADMIN' | 'USER' | 'HEALTHCARE' | 'EMS';
+  userType: 'SYSTEM_ADMIN' | 'HEALTHCARE_ORGANIZATION_USER' | 'EMS_ORGANIZATION_USER';
   facilityName?: string;
   facilityType?: string;
   agencyName?: string;
@@ -82,8 +82,8 @@ function AppContent() {
     console.log('TCC_DEBUG: User state set, localStorage updated');
     
     // Use React Router navigation instead of window.location
-    if (userData.userType === 'ADMIN' || userData.userType === 'USER') {
-      console.log('TCC_DEBUG: Redirecting to root for admin/user');
+    if (userData.userType === 'SYSTEM_ADMIN') {
+      console.log('TCC_DEBUG: Redirecting to root for system admin');
       navigate('/', { replace: true });
     } else {
       console.log('TCC_DEBUG: No redirect needed for healthcare/EMS - component should re-render');
@@ -174,9 +174,9 @@ function AppContent() {
   // If user is logged in, show appropriate dashboard based on user type
   if (user) {
     // Show different dashboards based on user type
-    if (user.userType === 'HEALTHCARE') {
+    if (user.userType === 'HEALTHCARE_ORGANIZATION_USER') {
       return <HealthcareDashboard user={user} onLogout={handleLogout} />;
-    } else if (user.userType === 'EMS') {
+    } else if (user.userType === 'EMS_ORGANIZATION_USER') {
       return <EMSDashboard user={user as any} onLogout={handleLogout} onUserUpdate={handleUserUpdate as any} />;
     } else {
       // ADMIN and USER types go to TCC Dashboard

@@ -294,7 +294,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
     // Note: loadHealthcareLocations is now handled within loadFormOptions
     
     // TCC Command: Load all healthcare facilities for admin/user
-    if (user.userType === 'ADMIN' || user.userType === 'USER') {
+    if (user.userType === 'SYSTEM_ADMIN') {
       loadTCCHealthcareFacilities();
     }
   }, [user.id]); // Re-run if user changes (e.g., switching accounts/tabs)
@@ -359,7 +359,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
 
   // Load pickup locations when TCC facility is selected
   useEffect(() => {
-    if (selectedTCCFacilityId && (user.userType === 'ADMIN' || user.userType === 'USER')) {
+    if (selectedTCCFacilityId && (user.userType === 'SYSTEM_ADMIN')) {
       console.log('TCC_COMMAND: Loading pickup locations for selected TCC facility:', selectedTCCFacilityId);
       loadPickupLocationsForHospital(selectedTCCFacilityId);
     }
@@ -490,7 +490,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
             }
           }
         }
-      } else if (user.userType === 'ADMIN' || user.userType === 'USER') {
+      } else if (user.userType === 'SYSTEM_ADMIN') {
         // ✅ TCC Command: Load ALL facilities and healthcare locations for destination selection
         console.log('TCC_COMMAND: Loading all facilities and healthcare locations for destination options');
         
@@ -593,7 +593,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
         // Load healthcare locations
         // For TCC Command, load ALL locations; for others, load active locations
         const cacheBuster2 = `_t=${Date.now()}`;
-        const locationsEndpoint = (user.userType === 'ADMIN' || user.userType === 'USER') 
+        const locationsEndpoint = (user.userType === 'SYSTEM_ADMIN') 
           ? `/api/healthcare/locations/all?${cacheBuster2}` 
           : `/api/healthcare/locations/active?${cacheBuster2}`;
         
@@ -1170,7 +1170,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
       // Find the selected facility for fromLocation
       // For TCC Command users, check tccHealthcareFacilities first; for multi-location users, search in healthcareLocations; otherwise use facilities
       let selectedFacility;
-      if (user.userType === 'ADMIN' || user.userType === 'USER') {
+      if (user.userType === 'SYSTEM_ADMIN') {
         // ✅ TCC Command: Check tccHealthcareFacilities first (the facility they selected)
         if (selectedTCCFacilityId) {
           selectedFacility = tccHealthcareFacilities.find(f => f.id === selectedTCCFacilityId);
@@ -1249,14 +1249,14 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
         notes: formData.notes || '',
         // ✅ Multi-location support for healthcare users
         // ✅ TCC Command: Use selectedTCCFacilityId (the healthcare location ID) if available
-        fromLocationId: (user.userType === 'ADMIN' || user.userType === 'USER') ? 
+        fromLocationId: (user.userType === 'SYSTEM_ADMIN') ? 
                        (selectedTCCFacilityId || selectedFacility?.id || formData.fromLocationId) :
                        (user.manageMultipleLocations ? formData.fromLocationId : undefined),
         healthcareUserId: user.manageMultipleLocations ? user.id : undefined,
         // ✅ TCC Command: Audit trail for trips created by admin/user
-        createdByTCCUserId: (user.userType === 'ADMIN' || user.userType === 'USER') ? user.id : undefined,
-        createdByTCCUserEmail: (user.userType === 'ADMIN' || user.userType === 'USER') ? user.email : undefined,
-        createdVia: (user.userType === 'ADMIN' || user.userType === 'USER') ? 'TCC_ADMIN_PORTAL' : 'HEALTHCARE_PORTAL',
+        createdByTCCUserId: (user.userType === 'SYSTEM_ADMIN') ? user.id : undefined,
+        createdByTCCUserEmail: (user.userType === 'SYSTEM_ADMIN') ? user.email : undefined,
+        createdVia: (user.userType === 'SYSTEM_ADMIN') ? 'TCC_ADMIN_PORTAL' : 'HEALTHCARE_PORTAL',
         assignedUnitId: formData.assignedUnitId // Optional unit assignment
       };
 
@@ -1274,7 +1274,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
             patientAgeCategory: ageCategory as any,
             patientAgeYears: ageYears,
             fromLocation: formData.fromLocation,
-            fromLocationId: (user.userType === 'ADMIN' || user.userType === 'USER') ? 
+            fromLocationId: (user.userType === 'SYSTEM_ADMIN') ? 
                            (selectedTCCFacilityId || selectedFacility?.id || formData.fromLocationId) :
                            (formData.fromLocationId || undefined),
             originFacilityId: selectedFacility?.id || undefined,
@@ -1295,9 +1295,9 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
             priority: (tripData as any).priority,
             status: 'PENDING_DISPATCH', // Phase 3: Set status to PENDING_DISPATCH for dispatch workflow
             // ✅ TCC Command: Audit trail
-            createdByTCCUserId: (user.userType === 'ADMIN' || user.userType === 'USER') ? user.id : undefined,
-            createdByTCCUserEmail: (user.userType === 'ADMIN' || user.userType === 'USER') ? user.email : undefined,
-            createdVia: (user.userType === 'ADMIN' || user.userType === 'USER') ? 'TCC_ADMIN_PORTAL' : 'HEALTHCARE_PORTAL'
+            createdByTCCUserId: (user.userType === 'SYSTEM_ADMIN') ? user.id : undefined,
+            createdByTCCUserEmail: (user.userType === 'SYSTEM_ADMIN') ? user.email : undefined,
+            createdVia: (user.userType === 'SYSTEM_ADMIN') ? 'TCC_ADMIN_PORTAL' : 'HEALTHCARE_PORTAL'
           };
       
       console.log('TCC_DEBUG: Enhanced payload being sent:', enhancedPayload);
@@ -1956,7 +1956,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
   return (
     <div className="max-w-4xl mx-auto">
       {/* TCC Command: Facility Context Selector */}
-      {(user.userType === 'ADMIN' || user.userType === 'USER') && (
+      {(user.userType === 'SYSTEM_ADMIN') && (
         <div className="mb-6 bg-blue-50 border-2 border-blue-300 rounded-lg p-5 shadow-sm">
           <div className="flex items-center mb-3">
             <div className="flex-shrink-0">

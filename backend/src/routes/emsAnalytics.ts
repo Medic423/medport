@@ -10,7 +10,7 @@ router.use(authenticateAdmin);
 
 // Restrict to organization users only (EMS type)
 router.use(async (req: AuthenticatedRequest, res, next) => {
-  if (!req.user || req.user.userType !== 'ORGANIZATION_USER') {
+  if (!req.user || req.user.userType !== 'EMS_ORGANIZATION_USER') {
     return res.status(403).json({ success: false, error: 'EMS access required' });
   }
   next();

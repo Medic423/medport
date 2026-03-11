@@ -26,7 +26,7 @@ router.get('/all', async (req, res) => {
     const db = databaseManager.getPrismaClient();
 
     // SYSTEM_ADMIN: see all facilities across all orgs
-    // ORGANIZATION_USER (healthcare): see only their org's facilities
+    // HEALTHCARE_ORGANIZATION_USER: see only their org's facilities
     if (user?.userType === 'SYSTEM_ADMIN') {
       console.log('TCC_COMMAND: Fetching all facilities for SYSTEM_ADMIN:', user.email);
 
@@ -57,8 +57,8 @@ router.get('/all', async (req, res) => {
       });
     }
 
-    if (user?.userType === 'ORGANIZATION_USER' && user?.organizationId) {
-      console.log('TCC_COMMAND: Fetching facilities for ORGANIZATION_USER:', user.email, 'org:', user.organizationId);
+    if (user?.userType === 'HEALTHCARE_ORGANIZATION_USER' && user?.organizationId) {
+      console.log('TCC_COMMAND: Fetching facilities for HEALTHCARE_ORGANIZATION_USER:', user.email, 'org:', user.organizationId);
 
       const locations = await db.facility.findMany({
         where: { organizationId: user.organizationId },
@@ -129,7 +129,7 @@ router.put('/:id/admin', async (req, res) => {
     const user = (req as any).user;
     
     // Only TCC command staff can update any location
-    if (user?.userType !== 'ADMIN' && user?.userType !== 'USER') {
+    if (user?.userType !== 'SYSTEM_ADMIN') {
       return res.status(403).json({ 
         success: false,
         error: 'Access denied. TCC command staff only.' 

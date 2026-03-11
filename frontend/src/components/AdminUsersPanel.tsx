@@ -51,7 +51,7 @@ const AdminUsersPanel: React.FC = () => {
       const token = localStorage.getItem('token');
       const raw = localStorage.getItem('user');
       const u = raw ? JSON.parse(raw) : null;
-      if (!token || u?.userType !== 'ADMIN') return;
+      if (!token || u?.userType !== 'SYSTEM_ADMIN') return;
     } catch {}
     load();
   }, [includeSub, onlySub]);

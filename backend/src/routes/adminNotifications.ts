@@ -1,4 +1,4 @@
-﻿import express from 'express';
+import express from 'express';
 import { databaseManager } from '../services/databaseManager';
 import { authenticateAdmin, AuthenticatedRequest } from '../middleware/authenticateAdmin';
 import enhancedEmailService from '../services/enhancedEmailService';
@@ -61,7 +61,7 @@ router.post('/broadcast', authenticateAdmin, async (req: AuthenticatedRequest, r
       notificationType, 
       emailData, 
       smsData, 
-      userTypes = ['SYSTEM_ADMIN', 'ORGANIZATION_USER', 'FACILITY_USER'] 
+      userTypes = ['SYSTEM_ADMIN', 'HEALTHCARE_ORGANIZATION_USER', 'EMS_ORGANIZATION_USER'] 
     } = req.body;
 
     if (!notificationType) {
@@ -141,17 +141,17 @@ router.get('/templates', authenticateAdmin, async (req: AuthenticatedRequest, re
       newTripRequest: {
         name: 'New Trip Request',
         description: 'Notification sent to EMS agencies for new transport requests',
-        subject: 'ðŸš‘ New Transport Request - Action Required'
+        subject: '🚑 New Transport Request - Action Required'
       },
       tripAccepted: {
         name: 'Trip Accepted',
         description: 'Notification sent to hospitals when trip is accepted',
-        subject: 'âœ… Transport Request Accepted'
+        subject: '✅ Transport Request Accepted'
       },
       tripStatusUpdate: {
         name: 'Trip Status Update',
         description: 'Notification sent for trip status changes',
-        subject: 'ðŸ“‹ Transport Status Update'
+        subject: '📋 Transport Status Update'
       }
     };
 

@@ -198,7 +198,7 @@ router.post('/healthcare/register', async (req, res) => {
           email,
           password: await bcrypt.hash(password, 10),
           name,
-          userType: 'ORGANIZATION_USER',
+          userType: 'HEALTHCARE_ORGANIZATION_USER',
           organizationId: org.id,
           isActive: true,
           mustChangePassword: false,
@@ -214,6 +214,12 @@ router.post('/healthcare/register', async (req, res) => {
             value: { enabled: true },
           }
         });
+      }
+
+      // Assign ADMIN role to the primary org user
+      const adminRole = await tx.role.findUnique({ where: { name: 'ADMIN' } });
+      if (adminRole) {
+        await tx.userRole.create({ data: { userId: user.id, roleId: adminRole.id, organizationId: org.id } });
       }
 
       return { org, facility, user };
@@ -521,7 +527,7 @@ router.post('/ems/register', async (req, res) => {
           email,
           password: hashedPassword,
           name,
-          userType: 'ORGANIZATION_USER',
+          userType: 'EMS_ORGANIZATION_USER',
           organizationId: organization.id,
           isActive: true,
           mustChangePassword: false
@@ -532,6 +538,12 @@ router.post('/ems/register', async (req, res) => {
         await tx.userPreference.create({
           data: { userId: user.id, preferenceType: 'NOTIFICATION_SMS', value: { enabled: true } }
         });
+      }
+
+      // Assign ADMIN role to the primary org user
+      const adminRole = await tx.role.findUnique({ where: { name: 'ADMIN' } });
+      if (adminRole) {
+        await tx.userRole.create({ data: { userId: user.id, roleId: adminRole.id, organizationId: organization.id } });
       }
 
       return { organization, user };
@@ -573,7 +585,7 @@ router.post('/register', authenticateAdmin, async (req: AuthenticatedRequest, re
       return res.status(400).json({ success: false, error: 'Email, password, name, and userType are required' });
     }
 
-    const validTypes = ['SYSTEM_ADMIN', 'ORGANIZATION_USER', 'FACILITY_USER'];
+    const validTypes = ['SYSTEM_ADMIN', 'HEALTHCARE_ORGANIZATION_USER', 'EMS_ORGANIZATION_USER'];
     if (!validTypes.includes(userType)) {
       return res.status(400).json({ success: false, error: `userType must be one of: ${validTypes.join(', ')}` });
     }
@@ -636,7 +648,7 @@ router.patch('/admin/users/:domain/:id', authenticateAdmin, async (req: Authenti
 
     const data: any = {};
     if (typeof isActive === 'boolean') data.isActive = isActive;
-    if (typeof userType === 'string' && ['SYSTEM_ADMIN', 'ORGANIZATION_USER', 'FACILITY_USER'].includes(userType)) {
+    if (typeof userType === 'string' && ['SYSTEM_ADMIN', 'HEALTHCARE_ORGANIZATION_USER', 'EMS_ORGANIZATION_USER'].includes(userType)) {
       data.userType = userType;
     }
 

@@ -11,8 +11,15 @@ datasource db {
 
 enum UserType {
   SYSTEM_ADMIN
-  ORGANIZATION_USER
+  HEALTHCARE_ORGANIZATION_USER
+  EMS_ORGANIZATION_USER
+}
+
+enum RoleName {
+  ADMIN
+  DISPATCHER
   FACILITY_USER
+  EMS_SUBUSER
 }
 
 enum OrganizationType {
@@ -60,6 +67,7 @@ model User {
   preferences        UserPreference[]
   notificationLogs   NotificationLog[]
   createdTrips       TransportRequest[]
+  userRoles          UserRole[]
 
   @@index([email])
   @@index([organizationId])
@@ -81,6 +89,37 @@ model UserPreference {
   @@unique([userId, preferenceType])
   @@index([userId])
   @@map("user_preferences")
+}
+
+// ─── Roles ─────────────────────────────────────────────────────────────────────
+
+model Role {
+  id          String     @id @default(cuid())
+  name        RoleName   @unique
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  userRoles   UserRole[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  id             String        @id @default(cuid())
+  userId         String
+  roleId         String
+  organizationId String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           Role          @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+  @@index([organizationId])
+  @@map("user_roles")
 }
 
 // ─── Organization (was: Facility + EMSAgency) ─────────────────────────────────
@@ -124,6 +163,7 @@ model Organization {
   units                Unit[]
   preferences          OrganizationPreference[]     @relation("OrganizationPreferences")
   incomingPreferences  OrganizationPreference[]     @relation("TargetOrganizationPreferences")
+  userRoles            UserRole[]
 
   @@index([organizationType])
   @@index([isActive])
