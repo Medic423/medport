@@ -1,0 +1,824 @@
+-- ============================================================================
+-- MedPort EMS Seed Data
+-- Target: SQL Server (EF Core schema)
+-- ============================================================================
+-- Run order respects FK constraints. All IDs are deterministic GUIDs.
+-- Default password for every user: Password123!
+-- BCrypt hash: $2a$10$rQnMvZFHNHEF7xMHX8AkuO5N1GmKkKQBGN.KPBV7x3V5qR8TqKwG
+-- ============================================================================
+
+SET NOCOUNT ON;
+BEGIN TRANSACTION;
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 1. Roles
+-- ────────────────────────────────────────────────────────────────────────────
+PRINT 'Seeding Roles...';
+
+INSERT INTO [Role] ([Id], [Name], [Description], [CreatedAt], [UpdatedAt]) VALUES
+('00000000-0000-0000-0000-000000000001', 'ADMIN',         'Full system administrator',            GETUTCDATE(), GETUTCDATE()),
+('00000000-0000-0000-0000-000000000002', 'DISPATCHER',    'Dispatch and trip management',         GETUTCDATE(), GETUTCDATE()),
+('00000000-0000-0000-0000-000000000003', 'FACILITY_USER', 'Healthcare facility staff',            GETUTCDATE(), GETUTCDATE()),
+('00000000-0000-0000-0000-000000000004', 'EMS_SUBUSER',   'EMS organization crew / sub-user',     GETUTCDATE(), GETUTCDATE());
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 2. Organizations (2 Healthcare + 3 EMS)
+-- ────────────────────────────────────────────────────────────────────────────
+PRINT 'Seeding Organizations...';
+
+INSERT INTO [Organization]
+    ([Id],[Name],[OrganizationType],[ContactName],[Phone],[Email],[Address],[City],[State],[ZipCode],
+     [ServiceArea],[OperatingHours],[Capabilities],[PricingStructure],
+     [IsActive],[Status],[AddedBy],[AddedAt],[AcceptsNotifications],[ApprovedAt],[ApprovedBy],
+     [AvailableUnits],[TotalUnits],[LastUpdated],[Latitude],[Longitude],[Coordinates],
+     [NotificationMethods],[RequiresReview],[ServiceRadius],[AvailabilityStatus],[CreatedAt],[UpdatedAt])
+VALUES
+-- Healthcare Org 1
+('10000000-0000-0000-0000-000000000001',
+ 'Metro General Healthcare','HEALTHCARE','Dr. Sarah Johnson','555-100-1000','admin@metrogeneral.org',
+ '100 Medical Center Dr','Baltimore','MD','21201',
+ 'Baltimore,Towson,Columbia','{"weekdays":"06:00-22:00","weekends":"08:00-20:00"}','EMERGENCY,ICU,SURGERY','',
+ 1,'ACTIVE',NULL,GETUTCDATE(),1,GETUTCDATE(),'SYSTEM',
+ 0,0,GETUTCDATE(),39.2904,-76.6122,'{"lat":39.2904,"lng":-76.6122}',
+ 'EMAIL,SMS',0,NULL,'{"isAvailable":false,"availableLevels":[]}',GETUTCDATE(),GETUTCDATE()),
+
+-- Healthcare Org 2
+('10000000-0000-0000-0000-000000000002',
+ 'Sunrise Health Network','HEALTHCARE','Dr. Michael Chen','555-200-2000','info@sunrisehealth.org',
+ '250 Sunrise Blvd','Annapolis','MD','21401',
+ 'Annapolis,Severna Park','{"weekdays":"07:00-21:00","weekends":"09:00-17:00"}','REHAB,LONG_TERM_CARE','',
+ 1,'ACTIVE',NULL,GETUTCDATE(),1,GETUTCDATE(),'SYSTEM',
+ 0,0,GETUTCDATE(),38.9784,-76.4922,'{"lat":38.9784,"lng":-76.4922}',
+ 'EMAIL',0,NULL,'{"isAvailable":false,"availableLevels":[]}',GETUTCDATE(),GETUTCDATE()),
+
+-- EMS Org 1
+('10000000-0000-0000-0000-000000000003',
+ 'RapidCare EMS','EMS','James Carter','555-300-3000','dispatch@rapidcare-ems.com',
+ '500 Response Way','Baltimore','MD','21230',
+ 'Baltimore,Glen Burnie,Towson,Columbia','{"weekdays":"00:00-23:59","weekends":"00:00-23:59"}',
+ 'BLS,ALS,CCT,NEONATAL','{"baseBLS":250,"baseALS":450,"baseCCT":700}',
+ 1,'ACTIVE',NULL,GETUTCDATE(),1,GETUTCDATE(),'SYSTEM',
+ 2,3,GETUTCDATE(),39.2690,-76.6133,'{"lat":39.2690,"lng":-76.6133}',
+ 'EMAIL,SMS,PUSH',0,50,'{"isAvailable":true,"availableLevels":["BLS","ALS","CCT"]}',GETUTCDATE(),GETUTCDATE()),
+
+-- EMS Org 2
+('10000000-0000-0000-0000-000000000004',
+ 'LifeLine Ambulance','EMS','Maria Rodriguez','555-400-4000','ops@lifeline-ambulance.com',
+ '820 Transport Ave','Towson','MD','21204',
+ 'Towson,Lutherville,Cockeysville','{"weekdays":"06:00-22:00","weekends":"08:00-20:00"}',
+ 'BLS,ALS','{"baseBLS":225,"baseALS":425}',
+ 1,'ACTIVE',NULL,GETUTCDATE(),1,GETUTCDATE(),'SYSTEM',
+ 1,2,GETUTCDATE(),39.4015,-76.6019,'{"lat":39.4015,"lng":-76.6019}',
+ 'EMAIL,SMS',0,30,'{"isAvailable":true,"availableLevels":["BLS","ALS"]}',GETUTCDATE(),GETUTCDATE()),
+
+-- EMS Org 3 (inactive / pending review)
+('10000000-0000-0000-0000-000000000005',
+ 'CityMed Transport','EMS','Robert Kim','555-500-5000','info@citymed.com',
+ '15 Commerce St','Columbia','MD','21044',
+ 'Columbia,Ellicott City','{"weekdays":"08:00-18:00"}','BLS','{"baseBLS":200}',
+ 1,'PENDING_REVIEW',NULL,GETUTCDATE(),0,NULL,NULL,
+ 1,1,GETUTCDATE(),39.2037,-76.8611,'{"lat":39.2037,"lng":-76.8611}',
+ 'EMAIL',1,20,'{"isAvailable":false,"availableLevels":[]}',GETUTCDATE(),GETUTCDATE());
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 3. Users (one per archetype)
+-- ────────────────────────────────────────────────────────────────────────────
+PRINT 'Seeding Users...';
+
+DECLARE @pwHash NVARCHAR(200) = '$2a$10$rQnMvZFHNHEF7xMHX8AkuO5N1GmKkKQBGN.KPBV7x3V5qR8TqKwG';
+
+INSERT INTO [User]
+    ([Id],[Email],[Password],[Name],[UserType],[OrganizationId],
+     [MustChangePassword],[IsActive],[IsDeleted],[DeletedAt],[LastLogin],[LastActivity],[CreatedAt],[UpdatedAt])
+VALUES
+-- 1. System Admin (no org)
+('20000000-0000-0000-0000-000000000001','sysadmin@medport.io',@pwHash,
+ 'System Administrator','SYSTEM_ADMIN',NULL,
+ 0,1,0,NULL,DATEADD(HOUR,-1,GETUTCDATE()),DATEADD(MINUTE,-10,GETUTCDATE()),GETUTCDATE(),GETUTCDATE()),
+
+-- 2. Healthcare Admin
+('20000000-0000-0000-0000-000000000002','sarah.johnson@metrogeneral.org',@pwHash,
+ 'Dr. Sarah Johnson','HEALTHCARE_ORGANIZATION_USER','10000000-0000-0000-0000-000000000001',
+ 0,1,0,NULL,DATEADD(HOUR,-2,GETUTCDATE()),DATEADD(MINUTE,-30,GETUTCDATE()),GETUTCDATE(),GETUTCDATE()),
+
+-- 3. Healthcare Dispatcher
+('20000000-0000-0000-0000-000000000003','dispatch@metrogeneral.org',@pwHash,
+ 'Tom Reynolds','HEALTHCARE_ORGANIZATION_USER','10000000-0000-0000-0000-000000000001',
+ 0,1,0,NULL,DATEADD(MINUTE,-45,GETUTCDATE()),DATEADD(MINUTE,-5,GETUTCDATE()),GETUTCDATE(),GETUTCDATE()),
+
+-- 4. Healthcare Facility User (Sunrise)
+('20000000-0000-0000-0000-000000000004','nurse.chen@sunrisehealth.org',@pwHash,
+ 'Lisa Chen','HEALTHCARE_ORGANIZATION_USER','10000000-0000-0000-0000-000000000002',
+ 0,1,0,NULL,DATEADD(DAY,-1,GETUTCDATE()),DATEADD(DAY,-1,GETUTCDATE()),GETUTCDATE(),GETUTCDATE()),
+
+-- 5. EMS Admin (RapidCare)
+('20000000-0000-0000-0000-000000000005','james.carter@rapidcare-ems.com',@pwHash,
+ 'James Carter','EMS_ORGANIZATION_USER','10000000-0000-0000-0000-000000000003',
+ 0,1,0,NULL,DATEADD(HOUR,-3,GETUTCDATE()),DATEADD(MINUTE,-15,GETUTCDATE()),GETUTCDATE(),GETUTCDATE()),
+
+-- 6. EMS Dispatcher (RapidCare)
+('20000000-0000-0000-0000-000000000006','dispatch@rapidcare-ems.com',@pwHash,
+ 'Angela Brooks','EMS_ORGANIZATION_USER','10000000-0000-0000-0000-000000000003',
+ 0,1,0,NULL,DATEADD(MINUTE,-20,GETUTCDATE()),DATEADD(MINUTE,-3,GETUTCDATE()),GETUTCDATE(),GETUTCDATE()),
+
+-- 7. EMS Subuser (LifeLine)
+('20000000-0000-0000-0000-000000000007','maria.r@lifeline-ambulance.com',@pwHash,
+ 'Maria Rodriguez','EMS_ORGANIZATION_USER','10000000-0000-0000-0000-000000000004',
+ 0,1,0,NULL,DATEADD(DAY,-2,GETUTCDATE()),DATEADD(DAY,-2,GETUTCDATE()),GETUTCDATE(),GETUTCDATE()),
+
+-- 8. EMS Subuser crew (RapidCare)
+('20000000-0000-0000-0000-000000000008','crew1@rapidcare-ems.com',@pwHash,
+ 'Derek Miles','EMS_ORGANIZATION_USER','10000000-0000-0000-0000-000000000003',
+ 0,1,0,NULL,NULL,NULL,GETUTCDATE(),GETUTCDATE()),
+
+-- 9. Inactive Healthcare user
+('20000000-0000-0000-0000-000000000009','inactive@metrogeneral.org',@pwHash,
+ 'Inactive User','HEALTHCARE_ORGANIZATION_USER','10000000-0000-0000-0000-000000000001',
+ 0,0,0,NULL,DATEADD(MONTH,-3,GETUTCDATE()),DATEADD(MONTH,-3,GETUTCDATE()),GETUTCDATE(),GETUTCDATE()),
+
+-- 10. Soft-deleted user
+('20000000-0000-0000-0000-000000000010','deleted@rapidcare-ems.com',@pwHash,
+ 'Deleted User','EMS_ORGANIZATION_USER','10000000-0000-0000-0000-000000000003',
+ 0,0,1,DATEADD(WEEK,-2,GETUTCDATE()),DATEADD(MONTH,-1,GETUTCDATE()),DATEADD(MONTH,-1,GETUTCDATE()),GETUTCDATE(),GETUTCDATE()),
+
+-- 11. Must-change-password new hire
+('20000000-0000-0000-0000-000000000011','newhire@lifeline-ambulance.com',@pwHash,
+ 'New Hire','EMS_ORGANIZATION_USER','10000000-0000-0000-0000-000000000004',
+ 1,1,0,NULL,NULL,NULL,GETUTCDATE(),GETUTCDATE()),
+
+-- 12. CityMed admin (pending-review org)
+('20000000-0000-0000-0000-000000000012','robert.kim@citymed.com',@pwHash,
+ 'Robert Kim','EMS_ORGANIZATION_USER','10000000-0000-0000-0000-000000000005',
+ 0,1,0,NULL,DATEADD(DAY,-5,GETUTCDATE()),DATEADD(DAY,-5,GETUTCDATE()),GETUTCDATE(),GETUTCDATE());
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 4. User Roles
+-- ────────────────────────────────────────────────────────────────────────────
+PRINT 'Seeding UserRoles...';
+
+INSERT INTO [UserRole] ([Id],[UserId],[RoleId],[OrganizationId],[CreatedAt],[UpdatedAt]) VALUES
+('A0000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000001',NULL,GETUTCDATE(),GETUTCDATE()),                                      -- SysAdmin → ADMIN
+('A0000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001',GETUTCDATE(),GETUTCDATE()),       -- Sarah → ADMIN @ Metro
+('A0000000-0000-0000-0000-000000000003','20000000-0000-0000-0000-000000000003','00000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000001',GETUTCDATE(),GETUTCDATE()),       -- Tom → DISPATCHER @ Metro
+('A0000000-0000-0000-0000-000000000004','20000000-0000-0000-0000-000000000004','00000000-0000-0000-0000-000000000003','10000000-0000-0000-0000-000000000002',GETUTCDATE(),GETUTCDATE()),       -- Lisa → FACILITY_USER @ Sunrise
+('A0000000-0000-0000-0000-000000000005','20000000-0000-0000-0000-000000000005','00000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000003',GETUTCDATE(),GETUTCDATE()),       -- James → ADMIN @ RapidCare
+('A0000000-0000-0000-0000-000000000006','20000000-0000-0000-0000-000000000006','00000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000003',GETUTCDATE(),GETUTCDATE()),       -- Angela → DISPATCHER @ RapidCare
+('A0000000-0000-0000-0000-000000000007','20000000-0000-0000-0000-000000000007','00000000-0000-0000-0000-000000000004','10000000-0000-0000-0000-000000000004',GETUTCDATE(),GETUTCDATE()),       -- Maria → EMS_SUBUSER @ LifeLine
+('A0000000-0000-0000-0000-000000000008','20000000-0000-0000-0000-000000000008','00000000-0000-0000-0000-000000000004','10000000-0000-0000-0000-000000000003',GETUTCDATE(),GETUTCDATE()),       -- Derek → EMS_SUBUSER @ RapidCare
+('A0000000-0000-0000-0000-000000000009','20000000-0000-0000-0000-000000000011','00000000-0000-0000-0000-000000000004','10000000-0000-0000-0000-000000000004',GETUTCDATE(),GETUTCDATE()),       -- NewHire → EMS_SUBUSER @ LifeLine
+('A0000000-0000-0000-0000-000000000010','20000000-0000-0000-0000-000000000012','00000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000005',GETUTCDATE(),GETUTCDATE());       -- Robert → ADMIN @ CityMed
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 5. User Preferences
+-- ────────────────────────────────────────────────────────────────────────────
+PRINT 'Seeding UserPreferences...';
+
+INSERT INTO [UserPreference] ([Id],[UserId],[PreferenceType],[Value],[CreatedAt],[UpdatedAt]) VALUES
+('B0000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','NOTIFICATION_EMAIL','{"enabled":true}',GETUTCDATE(),GETUTCDATE()),
+('B0000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000002','NOTIFICATION_EMAIL','{"enabled":true}',GETUTCDATE(),GETUTCDATE()),
+('B0000000-0000-0000-0000-000000000003','20000000-0000-0000-0000-000000000002','NOTIFICATION_SMS','{"enabled":true,"phone":"555-100-1000"}',GETUTCDATE(),GETUTCDATE()),
+('B0000000-0000-0000-0000-000000000004','20000000-0000-0000-0000-000000000005','NOTIFICATION_EMAIL','{"enabled":true}',GETUTCDATE(),GETUTCDATE()),
+('B0000000-0000-0000-0000-000000000005','20000000-0000-0000-0000-000000000005','NOTIFICATION_PUSH','{"enabled":true}',GETUTCDATE(),GETUTCDATE()),
+('B0000000-0000-0000-0000-000000000006','20000000-0000-0000-0000-000000000006','NOTIFICATION_SMS','{"enabled":true,"phone":"555-300-3001"}',GETUTCDATE(),GETUTCDATE()),
+('B0000000-0000-0000-0000-000000000007','20000000-0000-0000-0000-000000000003','NOTIFICATION_PUSH','{"enabled":false}',GETUTCDATE(),GETUTCDATE());
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 6. Organization Preferences (preferred EMS agencies)
+-- ────────────────────────────────────────────────────────────────────────────
+PRINT 'Seeding OrganizationPreferences...';
+
+INSERT INTO [OrganizationPreference] ([Id],[OrganizationId],[PreferenceType],[TargetOrganizationId],[Value],[CreatedAt],[UpdatedAt]) VALUES
+('B1000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001','PREFERRED_EMS_AGENCY','10000000-0000-0000-0000-000000000003','{"priority":1,"notes":"Primary agency for metro area"}',GETUTCDATE(),GETUTCDATE()),
+('B1000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000001','PREFERRED_EMS_AGENCY','10000000-0000-0000-0000-000000000004','{"priority":2,"notes":"Backup for Towson region"}',GETUTCDATE(),GETUTCDATE()),
+('B1000000-0000-0000-0000-000000000003','10000000-0000-0000-0000-000000000002','PREFERRED_EMS_AGENCY','10000000-0000-0000-0000-000000000004','{"priority":1,"notes":"Preferred for Annapolis area"}',GETUTCDATE(),GETUTCDATE());
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 7. Facilities
+-- ────────────────────────────────────────────────────────────────────────────
+PRINT 'Seeding Facilities...';
+
+INSERT INTO [Facility]
+    ([Id],[Name],[OrganizationId],[FacilityType],[Address],[City],[State],[ZipCode],
+     [Phone],[Email],[ContactName],[Capabilities],[Region],[Coordinates],[Latitude],[Longitude],
+     [OperatingHours],[IsPrimary],[IsActive],[RequiresReview],[ApprovedAt],[ApprovedBy],[Notes],[CreatedAt],[UpdatedAt])
+VALUES
+('30000000-0000-0000-0000-000000000001',
+ 'Metro General Hospital','10000000-0000-0000-0000-000000000001','HOSPITAL',
+ '100 Medical Center Dr','Baltimore','MD','21201',
+ '555-100-1001','er@metrogeneral.org','Dr. Johnson','EMERGENCY,ICU,SURGERY,NICU',
+ 'Baltimore Metro','{"lat":39.2904,"lng":-76.6122}',39.2904,-76.6122,
+ '24/7',1,1,0,GETUTCDATE(),'SYSTEM','Level I Trauma Center',GETUTCDATE(),GETUTCDATE()),
+
+('30000000-0000-0000-0000-000000000002',
+ 'Metro Downtown Clinic','10000000-0000-0000-0000-000000000001','CLINIC',
+ '200 Charles St','Baltimore','MD','21201',
+ '555-100-1002','clinic@metrogeneral.org','Nancy Price','PRIMARY_CARE,LAB',
+ 'Baltimore Metro','{"lat":39.2888,"lng":-76.6155}',39.2888,-76.6155,
+ 'Mon-Fri 08:00-17:00',0,1,0,GETUTCDATE(),'SYSTEM',NULL,GETUTCDATE(),GETUTCDATE()),
+
+('30000000-0000-0000-0000-000000000003',
+ 'Sunrise Nursing Home','10000000-0000-0000-0000-000000000002','NURSING_HOME',
+ '50 Elder Care Ln','Annapolis','MD','21401',
+ '555-200-2001','care@sunrisehealth.org','Helen Park','LONG_TERM_CARE',
+ 'Annapolis','{"lat":38.9800,"lng":-76.4900}',38.9800,-76.4900,
+ '24/7',1,1,0,GETUTCDATE(),'SYSTEM',NULL,GETUTCDATE(),GETUTCDATE()),
+
+('30000000-0000-0000-0000-000000000004',
+ 'Sunrise Rehabilitation Center','10000000-0000-0000-0000-000000000002','REHAB_FACILITY',
+ '55 Recovery Blvd','Annapolis','MD','21401',
+ '555-200-2002','rehab@sunrisehealth.org','Dr. Chen','PHYSICAL_THERAPY,OCCUPATIONAL_THERAPY',
+ 'Annapolis','{"lat":38.9770,"lng":-76.4950}',38.9770,-76.4950,
+ 'Mon-Sat 07:00-19:00',0,1,0,GETUTCDATE(),'SYSTEM',NULL,GETUTCDATE(),GETUTCDATE()),
+
+('30000000-0000-0000-0000-000000000005',
+ 'Metro Urgent Care','10000000-0000-0000-0000-000000000001','URGENT_CARE',
+ '789 Quick Care Pkwy','Towson','MD','21204',
+ '555-100-1003','urgentcare@metrogeneral.org','Amy Tran','URGENT_CARE,X_RAY',
+ 'Towson','{"lat":39.4015,"lng":-76.6019}',39.4015,-76.6019,
+ '08:00-22:00',0,1,0,GETUTCDATE(),'SYSTEM',NULL,GETUTCDATE(),GETUTCDATE()),
+
+-- Inactive facility awaiting review
+('30000000-0000-0000-0000-000000000006',
+ 'Sunrise Outpatient Center','10000000-0000-0000-0000-000000000002','OTHER',
+ '120 Outpatient Way','Severna Park','MD','21146',
+ '555-200-2003',NULL,NULL,'',
+ 'Severna Park',NULL,NULL,NULL,
+ 'Mon-Fri 09:00-17:00',0,0,1,NULL,NULL,'Pending accreditation',GETUTCDATE(),GETUTCDATE());
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 8. Pickup Locations
+-- ────────────────────────────────────────────────────────────────────────────
+PRINT 'Seeding PickupLocations...';
+
+INSERT INTO [PickupLocation]
+    ([Id],[FacilityId],[Name],[Description],[ContactPhone],[ContactEmail],[Floor],[Room],[IsActive],[CreatedAt],[UpdatedAt])
+VALUES
+('40000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000001','ER Bay 1','Emergency room ambulance bay','555-100-1001','er@metrogeneral.org','1','ER-B1',1,GETUTCDATE(),GETUTCDATE()),
+('40000000-0000-0000-0000-000000000002','30000000-0000-0000-0000-000000000001','Main Lobby Entrance','Front lobby pickup area','555-100-1001',NULL,'1','LOBBY',1,GETUTCDATE(),GETUTCDATE()),
+('40000000-0000-0000-0000-000000000003','30000000-0000-0000-0000-000000000001','ICU Wing - 3rd Floor','Intensive care unit transfer point','555-100-1010','icu@metrogeneral.org','3','ICU-301',1,GETUTCDATE(),GETUTCDATE()),
+('40000000-0000-0000-0000-000000000004','30000000-0000-0000-0000-000000000001','Maternity Ward','Labor & delivery entrance','555-100-1020',NULL,'2','MAT-200',1,GETUTCDATE(),GETUTCDATE()),
+('40000000-0000-0000-0000-000000000005','30000000-0000-0000-0000-000000000002','Front Entrance','Clinic main door','555-100-1002',NULL,'1',NULL,1,GETUTCDATE(),GETUTCDATE()),
+('40000000-0000-0000-0000-000000000006','30000000-0000-0000-0000-000000000003','Loading Dock','Rear access for stretcher transport','555-200-2001',NULL,'1','DOCK',1,GETUTCDATE(),GETUTCDATE()),
+('40000000-0000-0000-0000-000000000007','30000000-0000-0000-0000-000000000003','Room Wing A','Resident rooms wing A','555-200-2001',NULL,'2','A-200',1,GETUTCDATE(),GETUTCDATE()),
+('40000000-0000-0000-0000-000000000008','30000000-0000-0000-0000-000000000004','Therapy Entrance','Physical therapy building entrance','555-200-2002',NULL,'1',NULL,1,GETUTCDATE(),GETUTCDATE()),
+-- Inactive location
+('40000000-0000-0000-0000-000000000009','30000000-0000-0000-0000-000000000001','Old Helipad','Decommissioned helipad','555-100-1001',NULL,'R','HELI',0,GETUTCDATE(),GETUTCDATE());
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 9. Units (EMS vehicles)
+-- ────────────────────────────────────────────────────────────────────────────
+PRINT 'Seeding Units...';
+
+INSERT INTO [Unit]
+    ([Id],[AgencyId],[UnitNumber],[Type],[Status],[CurrentStatus],[CurrentLocation],
+     [Capabilities],[CrewSize],[Equipment],[Location],[Latitude],[Longitude],
+     [LastMaintenance],[NextMaintenance],[IsActive],[CreatedAt],[UpdatedAt],[LastStatusUpdate])
+VALUES
+-- RapidCare units
+('50000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000003',
+ 'RC-101','BLS','AVAILABLE','AVAILABLE','Station 1',
+ 'BLS,WHEELCHAIR',2,'STRETCHER,WHEELCHAIR,OXYGEN','{"lat":39.2690,"lng":-76.6133}',39.2690,-76.6133,
+ DATEADD(WEEK,-2,GETUTCDATE()),DATEADD(MONTH,1,GETUTCDATE()),1,GETUTCDATE(),GETUTCDATE(),GETUTCDATE()),
+
+('50000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000003',
+ 'RC-102','ALS','ON_CALL','ON_CALL','En route - I-95',
+ 'BLS,ALS,CARDIAC',2,'STRETCHER,CARDIAC_MONITOR,IV_PUMP,DEFIBRILLATOR','{"lat":39.2750,"lng":-76.6200}',39.2750,-76.6200,
+ DATEADD(WEEK,-1,GETUTCDATE()),DATEADD(MONTH,2,GETUTCDATE()),1,GETUTCDATE(),GETUTCDATE(),GETUTCDATE()),
+
+('50000000-0000-0000-0000-000000000003','10000000-0000-0000-0000-000000000003',
+ 'RC-103','CCT','AVAILABLE','AVAILABLE','Station 1',
+ 'BLS,ALS,CCT,NEONATAL,VENTILATOR',3,'STRETCHER,VENTILATOR,CARDIAC_MONITOR,IV_PUMP,ISOLETTE','{"lat":39.2690,"lng":-76.6133}',39.2690,-76.6133,
+ DATEADD(DAY,-3,GETUTCDATE()),DATEADD(MONTH,3,GETUTCDATE()),1,GETUTCDATE(),GETUTCDATE(),GETUTCDATE()),
+
+-- LifeLine units
+('50000000-0000-0000-0000-000000000004','10000000-0000-0000-0000-000000000004',
+ 'LL-201','BLS','AVAILABLE','AVAILABLE','LifeLine HQ',
+ 'BLS,WHEELCHAIR',2,'STRETCHER,WHEELCHAIR,OXYGEN','{"lat":39.4015,"lng":-76.6019}',39.4015,-76.6019,
+ DATEADD(MONTH,-1,GETUTCDATE()),DATEADD(MONTH,2,GETUTCDATE()),1,GETUTCDATE(),GETUTCDATE(),GETUTCDATE()),
+
+('50000000-0000-0000-0000-000000000005','10000000-0000-0000-0000-000000000004',
+ 'LL-202','ALS','OUT_OF_SERVICE','OUT_OF_SERVICE',NULL,
+ 'BLS,ALS,CARDIAC',2,'STRETCHER,CARDIAC_MONITOR,IV_PUMP','{"lat":39.4015,"lng":-76.6019}',39.4015,-76.6019,
+ DATEADD(DAY,-1,GETUTCDATE()),DATEADD(DAY,7,GETUTCDATE()),1,GETUTCDATE(),GETUTCDATE(),GETUTCDATE()),
+
+-- CityMed unit
+('50000000-0000-0000-0000-000000000006','10000000-0000-0000-0000-000000000005',
+ 'CM-301','BLS','AVAILABLE','AVAILABLE','CityMed Base',
+ 'BLS',2,'STRETCHER,WHEELCHAIR','{"lat":39.2037,"lng":-76.8611}',39.2037,-76.8611,
+ DATEADD(MONTH,-2,GETUTCDATE()),DATEADD(MONTH,1,GETUTCDATE()),1,GETUTCDATE(),GETUTCDATE(),GETUTCDATE());
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 10. Unit Analytics
+-- ────────────────────────────────────────────────────────────────────────────
+PRINT 'Seeding UnitAnalytics...';
+
+INSERT INTO [UnitAnalytics]
+    ([Id],[UnitId],[PerformanceScore],[Efficiency],[TotalTrips],[TotalTripsCompleted],[AverageResponseTime],[LastUpdated])
+VALUES
+('51000000-0000-0000-0000-000000000001','50000000-0000-0000-0000-000000000001',92.50,88.30,145,140,8.50,GETUTCDATE()),
+('51000000-0000-0000-0000-000000000002','50000000-0000-0000-0000-000000000002',95.00,91.70,210,205,7.20,GETUTCDATE()),
+('51000000-0000-0000-0000-000000000003','50000000-0000-0000-0000-000000000003',88.75,85.10,78,75,10.30,GETUTCDATE()),
+('51000000-0000-0000-0000-000000000004','50000000-0000-0000-0000-000000000004',85.20,82.00,95,90,11.00,GETUTCDATE()),
+('51000000-0000-0000-0000-000000000005','50000000-0000-0000-0000-000000000005',78.00,70.50,60,52,14.50,GETUTCDATE()),
+('51000000-0000-0000-0000-000000000006','50000000-0000-0000-0000-000000000006',80.00,76.20,30,28,12.00,GETUTCDATE());
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 11. Transport Requests (various statuses & scenarios)
+-- ────────────────────────────────────────────────────────────────────────────
+PRINT 'Seeding TransportRequests...';
+
+INSERT INTO [TransportRequest]
+    ([Id],[TripNumber],[PatientId],[PatientWeight],[SpecialNeeds],
+     [OriginFacilityId],[DestinationFacilityId],[FromLocation],[ToLocation],[FromLocationId],
+     [IsMultiLocationFacility],[ScheduledTime],[TransportLevel],[UrgencyLevel],[Priority],[Status],
+     [SpecialRequirements],[Diagnosis],[MobilityLevel],[OxygenRequired],[MonitoringRequired],
+     [GenerateQRCode],[QrCodeData],[SelectedAgencies],[NotificationRadius],
+     [RequestTimestamp],[AcceptedTimestamp],[PickupTimestamp],[ArrivalTimestamp],[DepartureTimestamp],
+     [CompletionTimestamp],[HealthcareCompletionTimestamp],[EmsCompletionTimestamp],
+     [PickupLocationId],[AssignedAgencyId],[AssignedUnitId],[CreatedByUserId],
+     [Isolation],[Bariatric],[Notes],[PatientAgeYears],[PatientAgeCategory],[CreatedAt],[UpdatedAt])
+VALUES
+
+-- TR-1: PENDING – routine BLS scheduled for tomorrow
+('60000000-0000-0000-0000-000000000001','TR-2025-0001','AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA',
+ '180 lbs',NULL,
+ '30000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000004',
+ 'Metro General Hospital','Sunrise Rehabilitation Center','30000000-0000-0000-0000-000000000001',
+ 1,DATEADD(DAY,1,GETUTCDATE()),'BLS','ROUTINE','LOW','PENDING',
+ NULL,'Post-surgical follow-up','WHEELCHAIR',0,0,
+ 0,NULL,'10000000-0000-0000-0000-000000000003,10000000-0000-0000-0000-000000000004',25,
+ GETUTCDATE(),NULL,NULL,NULL,NULL,
+ NULL,NULL,NULL,
+ '40000000-0000-0000-0000-000000000002',NULL,NULL,'20000000-0000-0000-0000-000000000003',
+ 0,0,'Patient needs wheelchair at destination',65,'ADULT',GETUTCDATE(),GETUTCDATE()),
+
+-- TR-2: ACCEPTED – ALS transport, agency accepted
+('60000000-0000-0000-0000-000000000002','TR-2025-0002','BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB',
+ '200 lbs','Requires cardiac monitoring',
+ '30000000-0000-0000-0000-000000000001',NULL,
+ 'Metro General Hospital','Johns Hopkins Bayview',NULL,
+ 0,DATEADD(HOUR,2,GETUTCDATE()),'ALS','URGENT','HIGH','ACCEPTED',
+ 'Cardiac monitoring required','Acute MI','STRETCHER',1,1,
+ 1,'QR-TR2025-0002','10000000-0000-0000-0000-000000000003',NULL,
+ DATEADD(MINUTE,-30,GETUTCDATE()),DATEADD(MINUTE,-10,GETUTCDATE()),NULL,NULL,NULL,
+ NULL,NULL,NULL,
+ '40000000-0000-0000-0000-000000000003','10000000-0000-0000-0000-000000000003','50000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000003',
+ 0,0,'Critical cardiac patient – keep monitoring active',58,'ADULT',GETUTCDATE(),GETUTCDATE()),
+
+-- TR-3: IN_TRANSIT – BLS, EMS en route
+('60000000-0000-0000-0000-000000000003','TR-2025-0003','CCCCCCCC-CCCC-CCCC-CCCC-CCCCCCCCCCCC',
+ '150 lbs',NULL,
+ '30000000-0000-0000-0000-000000000003','30000000-0000-0000-0000-000000000001',
+ 'Sunrise Nursing Home','Metro General Hospital','30000000-0000-0000-0000-000000000003',
+ 0,DATEADD(MINUTE,-15,GETUTCDATE()),'BLS','ROUTINE','MEDIUM','IN_TRANSIT',
+ NULL,'Fall – possible hip fracture','STRETCHER',0,0,
+ 0,NULL,'10000000-0000-0000-0000-000000000004',NULL,
+ DATEADD(HOUR,-1,GETUTCDATE()),DATEADD(MINUTE,-40,GETUTCDATE()),DATEADD(MINUTE,-20,GETUTCDATE()),NULL,DATEADD(MINUTE,-15,GETUTCDATE()),
+ NULL,NULL,NULL,
+ '40000000-0000-0000-0000-000000000006','10000000-0000-0000-0000-000000000004','50000000-0000-0000-0000-000000000004','20000000-0000-0000-0000-000000000004',
+ 0,0,'Patient is alert and oriented',82,'GERIATRIC',GETUTCDATE(),GETUTCDATE()),
+
+-- TR-4: COMPLETED – full lifecycle, all timestamps populated
+('60000000-0000-0000-0000-000000000004','TR-2025-0004','DDDDDDDD-DDDD-DDDD-DDDD-DDDDDDDDDDDD',
+ '170 lbs',NULL,
+ '30000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000003',
+ 'Metro General Hospital','Sunrise Nursing Home',NULL,
+ 0,DATEADD(DAY,-1,GETUTCDATE()),'BLS','ROUTINE','LOW','COMPLETED',
+ NULL,'Discharge – stable condition','AMBULATORY',0,0,
+ 0,NULL,'10000000-0000-0000-0000-000000000003',NULL,
+ DATEADD(DAY,-1,DATEADD(HOUR,-4,GETUTCDATE())),
+ DATEADD(DAY,-1,DATEADD(HOUR,-3,GETUTCDATE())),
+ DATEADD(DAY,-1,DATEADD(HOUR,-2,GETUTCDATE())),
+ DATEADD(DAY,-1,DATEADD(MINUTE,-110,GETUTCDATE())),
+ DATEADD(DAY,-1,DATEADD(MINUTE,-100,GETUTCDATE())),
+ DATEADD(DAY,-1,DATEADD(MINUTE,-60,GETUTCDATE())),
+ DATEADD(DAY,-1,DATEADD(MINUTE,-65,GETUTCDATE())),
+ DATEADD(DAY,-1,DATEADD(MINUTE,-60,GETUTCDATE())),
+ '40000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000003','50000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000003',
+ 0,0,'Smooth transport, no incidents',75,'ADULT',
+ DATEADD(DAY,-1,DATEADD(HOUR,-4,GETUTCDATE())),DATEADD(DAY,-1,DATEADD(MINUTE,-60,GETUTCDATE()))),
+
+-- TR-5: CANCELLED
+('60000000-0000-0000-0000-000000000005','TR-2025-0005','EEEEEEEE-EEEE-EEEE-EEEE-EEEEEEEEEEEE',
+ '160 lbs',NULL,
+ '30000000-0000-0000-0000-000000000001',NULL,
+ 'Metro General Hospital','University of MD Medical Center',NULL,
+ 0,DATEADD(DAY,-2,GETUTCDATE()),'BLS','ROUTINE','LOW','CANCELLED',
+ NULL,'Transfer for specialist consult','AMBULATORY',0,0,
+ 0,NULL,'10000000-0000-0000-0000-000000000003',NULL,
+ DATEADD(DAY,-2,GETUTCDATE()),NULL,NULL,NULL,NULL,
+ NULL,NULL,NULL,
+ NULL,NULL,NULL,'20000000-0000-0000-0000-000000000002',
+ 0,0,'Cancelled by physician – patient condition changed',45,'ADULT',
+ DATEADD(DAY,-2,GETUTCDATE()),DATEADD(DAY,-2,GETUTCDATE())),
+
+-- TR-6: PENDING – HIGH priority emergency, CCT with isolation & bariatric
+('60000000-0000-0000-0000-000000000006','TR-2025-0006','FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF',
+ '350 lbs','Bariatric stretcher required, airborne isolation',
+ '30000000-0000-0000-0000-000000000001',NULL,
+ 'Metro General Hospital','Shock Trauma Center',NULL,
+ 0,DATEADD(MINUTE,30,GETUTCDATE()),'CCT','EMERGENCY','CRITICAL','PENDING',
+ 'Bariatric + Airborne Isolation','Septic shock – MRSA positive','STRETCHER',1,1,
+ 1,'QR-TR2025-0006','10000000-0000-0000-0000-000000000003',50,
+ GETUTCDATE(),NULL,NULL,NULL,NULL,
+ NULL,NULL,NULL,
+ '40000000-0000-0000-0000-000000000003',NULL,NULL,'20000000-0000-0000-0000-000000000002',
+ 1,1,'CRITICAL: Full isolation gear required. Bariatric patient.',55,'ADULT',GETUTCDATE(),GETUTCDATE()),
+
+-- TR-7: COMPLETED – pediatric transport
+('60000000-0000-0000-0000-000000000007','TR-2025-0007','77777777-7777-7777-7777-777777777777',
+ '45 lbs',NULL,
+ '30000000-0000-0000-0000-000000000005','30000000-0000-0000-0000-000000000001',
+ 'Metro Urgent Care','Metro General Hospital',NULL,
+ 0,DATEADD(DAY,-3,GETUTCDATE()),'ALS','URGENT','HIGH','COMPLETED',
+ 'Pediatric transport','Severe asthma exacerbation','STRETCHER',1,1,
+ 0,NULL,'10000000-0000-0000-0000-000000000003',NULL,
+ DATEADD(DAY,-3,DATEADD(HOUR,-2,GETUTCDATE())),
+ DATEADD(DAY,-3,DATEADD(MINUTE,-100,GETUTCDATE())),
+ DATEADD(DAY,-3,DATEADD(MINUTE,-80,GETUTCDATE())),
+ DATEADD(DAY,-3,DATEADD(MINUTE,-75,GETUTCDATE())),
+ DATEADD(DAY,-3,DATEADD(MINUTE,-70,GETUTCDATE())),
+ DATEADD(DAY,-3,DATEADD(MINUTE,-50,GETUTCDATE())),
+ DATEADD(DAY,-3,DATEADD(MINUTE,-55,GETUTCDATE())),
+ DATEADD(DAY,-3,DATEADD(MINUTE,-50,GETUTCDATE())),
+ NULL,'10000000-0000-0000-0000-000000000003','50000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000003',
+ 0,0,'Pediatric patient – parent accompanying',8,'PEDIATRIC',
+ DATEADD(DAY,-3,DATEADD(HOUR,-2,GETUTCDATE())),DATEADD(DAY,-3,DATEADD(MINUTE,-50,GETUTCDATE()))),
+
+-- TR-8: IN_TRANSIT – neonatal CCT
+('60000000-0000-0000-0000-000000000008','TR-2025-0008','88888888-8888-8888-8888-888888888888',
+ '6 lbs','Neonatal isolette required',
+ '30000000-0000-0000-0000-000000000001',NULL,
+ 'Metro General Hospital','Children''s National Medical Center',NULL,
+ 0,DATEADD(MINUTE,-30,GETUTCDATE()),'CCT','EMERGENCY','CRITICAL','IN_TRANSIT',
+ 'Neonatal isolette, ventilator support','Premature infant – respiratory distress','STRETCHER',1,1,
+ 1,'QR-TR2025-0008','10000000-0000-0000-0000-000000000003',NULL,
+ DATEADD(HOUR,-1,GETUTCDATE()),
+ DATEADD(MINUTE,-50,GETUTCDATE()),
+ DATEADD(MINUTE,-35,GETUTCDATE()),
+ DATEADD(MINUTE,-32,GETUTCDATE()),
+ DATEADD(MINUTE,-30,GETUTCDATE()),
+ NULL,NULL,NULL,
+ '40000000-0000-0000-0000-000000000004','10000000-0000-0000-0000-000000000003','50000000-0000-0000-0000-000000000003','20000000-0000-0000-0000-000000000002',
+ 0,0,'Neonatal team on board. ETA 20 min.',0,'NEONATAL',GETUTCDATE(),GETUTCDATE());
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 12. Trips (legacy table)
+-- ────────────────────────────────────────────────────────────────────────────
+PRINT 'Seeding Trips (legacy)...';
+
+INSERT INTO [Trip]
+    ([Id],[TripNumber],[PatientId],[PatientWeight],[SpecialNeeds],[FromLocation],[ToLocation],
+     [ScheduledTime],[TransportLevel],[UrgencyLevel],[Diagnosis],[MobilityLevel],
+     [OxygenRequired],[MonitoringRequired],[GenerateQRCode],[QrCodeData],[SelectedAgencies],
+     [NotificationRadius],[TransferRequestTime],[TransferAcceptedTime],[EmsArrivalTime],[EmsDepartureTime],
+     [ActualStartTime],[ActualEndTime],[Status],[Priority],[Notes],[AssignedTo],[AssignedAgencyId],[AssignedUnitId],
+     [AcceptedTimestamp],[PickupTimestamp],[CompletionTimestamp],[CreatedAt],[UpdatedAt],
+     [ActualTripTimeMinutes],[BackhaulOpportunity],[CompletionTimeMinutes],[CustomerSatisfaction],
+     [DeadheadMiles],[DestinationLatitude],[DestinationLongitude],[DistanceMiles],
+     [Efficiency],[EstimatedTripTimeMinutes],[InsuranceCompany],[InsurancePayRate],
+     [LoadedMiles],[OriginLatitude],[OriginLongitude],[PerMileRate],[PerformanceScore],
+     [RequestTimestamp],[ResponseTimeMinutes],[RevenuePerHour],[TripCost],
+     [PickupLocationId],[PatientAgeYears],[PatientAgeCategory],
+     [MaxResponses],[ResponseDeadline],[ResponseStatus],[SelectionMode])
+VALUES
+('65000000-0000-0000-0000-000000000001','LT-2024-0001','AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA',
+ '180 lbs',NULL,'Metro General Hospital','Sunrise Nursing Home',
+ DATEADD(MONTH,-2,GETUTCDATE()),'BLS','ROUTINE','Hip replacement recovery','WHEELCHAIR',
+ 0,0,0,NULL,'10000000-0000-0000-0000-000000000003',
+ NULL,DATEADD(MONTH,-2,DATEADD(HOUR,-3,GETUTCDATE())),DATEADD(MONTH,-2,DATEADD(HOUR,-2,GETUTCDATE())),
+ DATEADD(MONTH,-2,DATEADD(MINUTE,-90,GETUTCDATE())),DATEADD(MONTH,-2,DATEADD(MINUTE,-85,GETUTCDATE())),
+ DATEADD(MONTH,-2,DATEADD(MINUTE,-85,GETUTCDATE())),DATEADD(MONTH,-2,DATEADD(MINUTE,-45,GETUTCDATE())),
+ 'COMPLETED','LOW','Legacy trip – completed without issues','James Carter',
+ '10000000-0000-0000-0000-000000000003','50000000-0000-0000-0000-000000000001',
+ DATEADD(MONTH,-2,DATEADD(HOUR,-2,GETUTCDATE())),DATEADD(MONTH,-2,DATEADD(MINUTE,-85,GETUTCDATE())),
+ DATEADD(MONTH,-2,DATEADD(MINUTE,-45,GETUTCDATE())),DATEADD(MONTH,-2,DATEADD(HOUR,-3,GETUTCDATE())),DATEADD(MONTH,-2,DATEADD(MINUTE,-45,GETUTCDATE())),
+ 40,0,40,5,
+ 8.2,38.9800,-76.4900,22.5,
+ 0.88,35,'BlueCross BlueShield',280.00,
+ 22.50,39.2904,-76.6122,3.50,92.00,
+ DATEADD(MONTH,-2,DATEADD(HOUR,-3,GETUTCDATE())),8,320.00,275.00,
+ '40000000-0000-0000-0000-000000000002',65,'ADULT',
+ 5,DATEADD(MONTH,-2,DATEADD(MINUTE,-150,GETUTCDATE())),'COMPLETED','SPECIFIC_AGENCIES'),
+
+('65000000-0000-0000-0000-000000000002','LT-2024-0002','CCCCCCCC-CCCC-CCCC-CCCC-CCCCCCCCCCCC',
+ '150 lbs',NULL,'Sunrise Nursing Home','Metro General Hospital',
+ DATEADD(MONTH,-1,GETUTCDATE()),'ALS','URGENT','Chest pain – rule out MI','STRETCHER',
+ 1,1,0,NULL,'10000000-0000-0000-0000-000000000003',
+ NULL,DATEADD(MONTH,-1,DATEADD(HOUR,-2,GETUTCDATE())),DATEADD(MONTH,-1,DATEADD(MINUTE,-110,GETUTCDATE())),
+ DATEADD(MONTH,-1,DATEADD(MINUTE,-100,GETUTCDATE())),DATEADD(MONTH,-1,DATEADD(MINUTE,-95,GETUTCDATE())),
+ DATEADD(MONTH,-1,DATEADD(MINUTE,-95,GETUTCDATE())),DATEADD(MONTH,-1,DATEADD(MINUTE,-70,GETUTCDATE())),
+ 'COMPLETED','HIGH',NULL,'Angela Brooks',
+ '10000000-0000-0000-0000-000000000003','50000000-0000-0000-0000-000000000002',
+ DATEADD(MONTH,-1,DATEADD(MINUTE,-110,GETUTCDATE())),DATEADD(MONTH,-1,DATEADD(MINUTE,-95,GETUTCDATE())),
+ DATEADD(MONTH,-1,DATEADD(MINUTE,-70,GETUTCDATE())),DATEADD(MONTH,-1,DATEADD(HOUR,-2,GETUTCDATE())),DATEADD(MONTH,-1,DATEADD(MINUTE,-70,GETUTCDATE())),
+ 25,0,25,4,
+ 5.0,39.2904,-76.6122,18.3,
+ 0.91,20,'Aetna',350.00,
+ 18.30,38.9800,-76.4900,4.80,95.00,
+ DATEADD(MONTH,-1,DATEADD(HOUR,-2,GETUTCDATE())),6,480.00,385.00,
+ '40000000-0000-0000-0000-000000000006',82,'GERIATRIC',
+ 5,DATEADD(MONTH,-1,DATEADD(MINUTE,-100,GETUTCDATE())),'COMPLETED','SPECIFIC_AGENCIES');
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 13. Agency Responses
+-- ────────────────────────────────────────────────────────────────────────────
+PRINT 'Seeding AgencyResponses...';
+
+INSERT INTO [AgencyResponse]
+    ([Id],[TripId],[AgencyId],[Response],[ResponseTimestamp],[ResponseNotes],[EstimatedArrival],[IsSelected],[AssignedUnitId],[CreatedAt],[UpdatedAt])
+VALUES
+-- Responses for TR-2 (Accepted)
+('70000000-0000-0000-0000-000000000001','60000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000003',
+ 'ACCEPTED',DATEADD(MINUTE,-10,GETUTCDATE()),'Unit RC-102 dispatched',DATEADD(MINUTE,15,GETUTCDATE()),1,'50000000-0000-0000-0000-000000000002',GETUTCDATE(),GETUTCDATE()),
+
+-- Responses for TR-3 (In Transit - LifeLine accepted)
+('70000000-0000-0000-0000-000000000002','60000000-0000-0000-0000-000000000003','10000000-0000-0000-0000-000000000004',
+ 'ACCEPTED',DATEADD(MINUTE,-40,GETUTCDATE()),'En route with Unit LL-201',DATEADD(MINUTE,-20,GETUTCDATE()),1,'50000000-0000-0000-0000-000000000004',GETUTCDATE(),GETUTCDATE()),
+
+-- Responses for TR-4 (Completed - RapidCare handled it)
+('70000000-0000-0000-0000-000000000003','60000000-0000-0000-0000-000000000004','10000000-0000-0000-0000-000000000003',
+ 'ACCEPTED',DATEADD(DAY,-1,DATEADD(HOUR,-3,GETUTCDATE())),'Dispatching RC-101',DATEADD(DAY,-1,DATEADD(HOUR,-2,GETUTCDATE())),1,'50000000-0000-0000-0000-000000000001',GETUTCDATE(),GETUTCDATE()),
+
+-- Responses for TR-7 (Completed pediatric)
+('70000000-0000-0000-0000-000000000004','60000000-0000-0000-0000-000000000007','10000000-0000-0000-0000-000000000003',
+ 'ACCEPTED',DATEADD(DAY,-3,DATEADD(MINUTE,-100,GETUTCDATE())),'ALS unit with pediatric crew available',DATEADD(DAY,-3,DATEADD(MINUTE,-80,GETUTCDATE())),1,'50000000-0000-0000-0000-000000000002',GETUTCDATE(),GETUTCDATE()),
+
+-- Responses for TR-8 (In Transit neonatal - accepted)
+('70000000-0000-0000-0000-000000000005','60000000-0000-0000-0000-000000000008','10000000-0000-0000-0000-000000000003',
+ 'ACCEPTED',DATEADD(MINUTE,-50,GETUTCDATE()),'CCT unit with isolette en route',DATEADD(MINUTE,-30,GETUTCDATE()),1,'50000000-0000-0000-0000-000000000003',GETUTCDATE(),GETUTCDATE()),
+
+-- Declined response for TR-1 (pending – CityMed not yet approved)
+('70000000-0000-0000-0000-000000000006','60000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000005',
+ 'DECLINED',GETUTCDATE(),'Unable to service – pending org review',NULL,0,NULL,GETUTCDATE(),GETUTCDATE()),
+
+-- Pending response for TR-1
+('70000000-0000-0000-0000-000000000007','60000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000003',
+ 'PENDING',GETUTCDATE(),NULL,NULL,0,NULL,GETUTCDATE(),GETUTCDATE()),
+
+-- Pending response for TR-6 (critical)
+('70000000-0000-0000-0000-000000000008','60000000-0000-0000-0000-000000000006','10000000-0000-0000-0000-000000000003',
+ 'PENDING',GETUTCDATE(),NULL,NULL,0,NULL,GETUTCDATE(),GETUTCDATE());
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 14. Notification Logs
+-- ────────────────────────────────────────────────────────────────────────────
+PRINT 'Seeding NotificationLogs...';
+
+INSERT INTO [NotificationLog]
+    ([Id],[UserId],[NotificationType],[Channel],[Status],[SentAt],[DeliveredAt],[ErrorMessage])
+VALUES
+('80000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000005','TRANSPORT_REQUEST','EMAIL','DELIVERED',DATEADD(HOUR,-1,GETUTCDATE()),DATEADD(MINUTE,-59,GETUTCDATE()),NULL),
+('80000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000005','TRANSPORT_REQUEST','PUSH','DELIVERED',DATEADD(HOUR,-1,GETUTCDATE()),DATEADD(MINUTE,-59,GETUTCDATE()),NULL),
+('80000000-0000-0000-0000-000000000003','20000000-0000-0000-0000-000000000006','TRANSPORT_REQUEST','SMS','DELIVERED',DATEADD(HOUR,-1,GETUTCDATE()),DATEADD(MINUTE,-58,GETUTCDATE()),NULL),
+('80000000-0000-0000-0000-000000000004','20000000-0000-0000-0000-000000000007','TRANSPORT_REQUEST','EMAIL','DELIVERED',DATEADD(MINUTE,-40,GETUTCDATE()),DATEADD(MINUTE,-39,GETUTCDATE()),NULL),
+('80000000-0000-0000-0000-000000000005','20000000-0000-0000-0000-000000000003','TRIP_ACCEPTED','EMAIL','DELIVERED',DATEADD(MINUTE,-10,GETUTCDATE()),DATEADD(MINUTE,-9,GETUTCDATE()),NULL),
+('80000000-0000-0000-0000-000000000006','20000000-0000-0000-0000-000000000002','TRIP_COMPLETED','EMAIL','DELIVERED',DATEADD(DAY,-1,GETUTCDATE()),DATEADD(DAY,-1,DATEADD(MINUTE,1,GETUTCDATE())),NULL),
+('80000000-0000-0000-0000-000000000007','20000000-0000-0000-0000-000000000012','TRANSPORT_REQUEST','EMAIL','FAILED',DATEADD(DAY,-5,GETUTCDATE()),NULL,'SMTP connection timeout'),
+('80000000-0000-0000-0000-000000000008','20000000-0000-0000-0000-000000000002','EMERGENCY_ALERT','EMAIL','DELIVERED',GETUTCDATE(),GETUTCDATE(),NULL),
+('80000000-0000-0000-0000-000000000009','20000000-0000-0000-0000-000000000002','EMERGENCY_ALERT','SMS','PENDING',GETUTCDATE(),NULL,NULL);
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 15. Dropdown Categories & Options (reference data)
+-- ────────────────────────────────────────────────────────────────────────────
+PRINT 'Seeding DropdownCategories...';
+
+INSERT INTO [DropdownCategory] ([Id],[Slug],[DisplayName],[DisplayOrder],[IsActive],[CreatedAt],[UpdatedAt]) VALUES
+('C0000000-0000-0000-0000-000000000001','transport-level','Transport Level',1,1,GETUTCDATE(),GETUTCDATE()),
+('C0000000-0000-0000-0000-000000000002','urgency-level','Urgency Level',2,1,GETUTCDATE(),GETUTCDATE()),
+('C0000000-0000-0000-0000-000000000003','mobility-level','Mobility Level',3,1,GETUTCDATE(),GETUTCDATE()),
+('C0000000-0000-0000-0000-000000000004','priority','Priority',4,1,GETUTCDATE(),GETUTCDATE()),
+('C0000000-0000-0000-0000-000000000005','facility-type','Facility Type',5,1,GETUTCDATE(),GETUTCDATE()),
+('C0000000-0000-0000-0000-000000000006','unit-type','Unit Type',6,1,GETUTCDATE(),GETUTCDATE()),
+('C0000000-0000-0000-0000-000000000007','insurance-company','Insurance Company',7,1,GETUTCDATE(),GETUTCDATE()),
+('C0000000-0000-0000-0000-000000000008','patient-age-category','Patient Age Category',8,1,GETUTCDATE(),GETUTCDATE());
+
+PRINT 'Seeding DropdownOptions...';
+
+INSERT INTO [DropdownOption] ([Id],[Category],[CategoryId],[Value],[IsActive],[CreatedAt],[UpdatedAt]) VALUES
+-- Transport Level
+('D0000000-0000-0000-0000-000000000001','transport-level','C0000000-0000-0000-0000-000000000001','BLS',1,GETUTCDATE(),GETUTCDATE()),
+('D0000000-0000-0000-0000-000000000002','transport-level','C0000000-0000-0000-0000-000000000001','ALS',1,GETUTCDATE(),GETUTCDATE()),
+('D0000000-0000-0000-0000-000000000003','transport-level','C0000000-0000-0000-0000-000000000001','CCT',1,GETUTCDATE(),GETUTCDATE()),
+('D0000000-0000-0000-0000-000000000004','transport-level','C0000000-0000-0000-0000-000000000001','NEONATAL',1,GETUTCDATE(),GETUTCDATE()),
+-- Urgency Level
+('D0000000-0000-0000-0000-000000000005','urgency-level','C0000000-0000-0000-0000-000000000002','ROUTINE',1,GETUTCDATE(),GETUTCDATE()),
+('D0000000-0000-0000-0000-000000000006','urgency-level','C0000000-0000-0000-0000-000000000002','URGENT',1,GETUTCDATE(),GETUTCDATE()),
+('D0000000-0000-0000-0000-000000000007','urgency-level','C0000000-0000-0000-0000-000000000002','EMERGENCY',1,GETUTCDATE(),GETUTCDATE()),
+-- Mobility Level
+('D0000000-0000-0000-0000-000000000008','mobility-level','C0000000-0000-0000-0000-000000000003','AMBULATORY',1,GETUTCDATE(),GETUTCDATE()),
+('D0000000-0000-0000-0000-000000000009','mobility-level','C0000000-0000-0000-0000-000000000003','WHEELCHAIR',1,GETUTCDATE(),GETUTCDATE()),
+('D0000000-0000-0000-0000-000000000010','mobility-level','C0000000-0000-0000-0000-000000000003','STRETCHER',1,GETUTCDATE(),GETUTCDATE()),
+-- Priority
+('D0000000-0000-0000-0000-000000000011','priority','C0000000-0000-0000-0000-000000000004','LOW',1,GETUTCDATE(),GETUTCDATE()),
+('D0000000-0000-0000-0000-000000000012','priority','C0000000-0000-0000-0000-000000000004','MEDIUM',1,GETUTCDATE(),GETUTCDATE()),
+('D0000000-0000-0000-0000-000000000013','priority','C0000000-0000-0000-0000-000000000004','HIGH',1,GETUTCDATE(),GETUTCDATE()),
+('D0000000-0000-0000-0000-000000000014','priority','C0000000-0000-0000-0000-000000000004','CRITICAL',1,GETUTCDATE(),GETUTCDATE()),
+-- Facility Type
+('D0000000-0000-0000-0000-000000000015','facility-type','C0000000-0000-0000-0000-000000000005','HOSPITAL',1,GETUTCDATE(),GETUTCDATE()),
+('D0000000-0000-0000-0000-000000000016','facility-type','C0000000-0000-0000-0000-000000000005','CLINIC',1,GETUTCDATE(),GETUTCDATE()),
+('D0000000-0000-0000-0000-000000000017','facility-type','C0000000-0000-0000-0000-000000000005','NURSING_HOME',1,GETUTCDATE(),GETUTCDATE()),
+('D0000000-0000-0000-0000-000000000018','facility-type','C0000000-0000-0000-0000-000000000005','REHAB_FACILITY',1,GETUTCDATE(),GETUTCDATE()),
+('D0000000-0000-0000-0000-000000000019','facility-type','C0000000-0000-0000-0000-000000000005','URGENT_CARE',1,GETUTCDATE(),GETUTCDATE()),
+('D0000000-0000-0000-0000-000000000020','facility-type','C0000000-0000-0000-0000-000000000005','OTHER',1,GETUTCDATE(),GETUTCDATE()),
+-- Unit Type
+('D0000000-0000-0000-0000-000000000021','unit-type','C0000000-0000-0000-0000-000000000006','BLS',1,GETUTCDATE(),GETUTCDATE()),
+('D0000000-0000-0000-0000-000000000022','unit-type','C0000000-0000-0000-0000-000000000006','ALS',1,GETUTCDATE(),GETUTCDATE()),
+('D0000000-0000-0000-0000-000000000023','unit-type','C0000000-0000-0000-0000-000000000006','CCT',1,GETUTCDATE(),GETUTCDATE()),
+-- Insurance Company
+('D0000000-0000-0000-0000-000000000024','insurance-company','C0000000-0000-0000-0000-000000000007','BlueCross BlueShield',1,GETUTCDATE(),GETUTCDATE()),
+('D0000000-0000-0000-0000-000000000025','insurance-company','C0000000-0000-0000-0000-000000000007','Aetna',1,GETUTCDATE(),GETUTCDATE()),
+('D0000000-0000-0000-0000-000000000026','insurance-company','C0000000-0000-0000-0000-000000000007','UnitedHealthcare',1,GETUTCDATE(),GETUTCDATE()),
+('D0000000-0000-0000-0000-000000000027','insurance-company','C0000000-0000-0000-0000-000000000007','Cigna',1,GETUTCDATE(),GETUTCDATE()),
+('D0000000-0000-0000-0000-000000000028','insurance-company','C0000000-0000-0000-0000-000000000007','Medicare',1,GETUTCDATE(),GETUTCDATE()),
+('D0000000-0000-0000-0000-000000000029','insurance-company','C0000000-0000-0000-0000-000000000007','Medicaid',1,GETUTCDATE(),GETUTCDATE()),
+-- Patient Age Category
+('D0000000-0000-0000-0000-000000000030','patient-age-category','C0000000-0000-0000-0000-000000000008','NEONATAL',1,GETUTCDATE(),GETUTCDATE()),
+('D0000000-0000-0000-0000-000000000031','patient-age-category','C0000000-0000-0000-0000-000000000008','PEDIATRIC',1,GETUTCDATE(),GETUTCDATE()),
+('D0000000-0000-0000-0000-000000000032','patient-age-category','C0000000-0000-0000-0000-000000000008','ADULT',1,GETUTCDATE(),GETUTCDATE()),
+('D0000000-0000-0000-0000-000000000033','patient-age-category','C0000000-0000-0000-0000-000000000008','GERIATRIC',1,GETUTCDATE(),GETUTCDATE());
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 16. Category Defaults
+-- ────────────────────────────────────────────────────────────────────────────
+PRINT 'Seeding CategoryDefaults...';
+
+INSERT INTO [CategoryDefault] ([Id],[Category],[OptionId],[CreatedAt],[UpdatedAt]) VALUES
+('C1000000-0000-0000-0000-000000000001','transport-level','D0000000-0000-0000-0000-000000000001',GETUTCDATE(),GETUTCDATE()),  -- BLS
+('C1000000-0000-0000-0000-000000000002','urgency-level','D0000000-0000-0000-0000-000000000005',GETUTCDATE(),GETUTCDATE()),    -- ROUTINE
+('C1000000-0000-0000-0000-000000000003','mobility-level','D0000000-0000-0000-0000-000000000008',GETUTCDATE(),GETUTCDATE()),   -- AMBULATORY
+('C1000000-0000-0000-0000-000000000004','priority','D0000000-0000-0000-0000-000000000012',GETUTCDATE(),GETUTCDATE()),          -- MEDIUM
+('C1000000-0000-0000-0000-000000000005','facility-type','D0000000-0000-0000-0000-000000000015',GETUTCDATE(),GETUTCDATE()),    -- HOSPITAL
+('C1000000-0000-0000-0000-000000000006','unit-type','D0000000-0000-0000-0000-000000000021',GETUTCDATE(),GETUTCDATE()),         -- BLS
+('C1000000-0000-0000-0000-000000000007','patient-age-category','D0000000-0000-0000-0000-000000000032',GETUTCDATE(),GETUTCDATE()); -- ADULT
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 17. Cost Centers
+-- ────────────────────────────────────────────────────────────────────────────
+PRINT 'Seeding CostCenters...';
+
+INSERT INTO [CostCenter]
+    ([Id],[Name],[Description],[Code],[OverheadRate],[FixedCosts],[VariableCosts],[AllocationMethod],[IsActive],[CreatedAt],[UpdatedAt])
+VALUES
+('E0000000-0000-0000-0000-000000000001','EMS Operations','Primary EMS transport operations','EMS-OPS-001',15.00,12000.00,8500.00,'TRIP_COUNT',1,GETUTCDATE(),GETUTCDATE()),
+('E0000000-0000-0000-0000-000000000002','Critical Care Transport','CCT / neonatal specialized transport','CCT-OPS-001',22.50,18000.00,14000.00,'REVENUE',1,GETUTCDATE(),GETUTCDATE()),
+('E0000000-0000-0000-0000-000000000003','Fleet Maintenance','Vehicle maintenance and fuel','FLEET-001',10.00,9000.00,6000.00,'MILEAGE',1,GETUTCDATE(),GETUTCDATE()),
+('E0000000-0000-0000-0000-000000000004','Administrative','Back-office and dispatch overhead','ADMIN-001',8.00,5000.00,2000.00,'TRIP_COUNT',1,GETUTCDATE(),GETUTCDATE());
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 18. Trip Cost Breakdowns (for completed trips)
+-- ────────────────────────────────────────────────────────────────────────────
+PRINT 'Seeding TripCostBreakdowns...';
+
+INSERT INTO [TripCostBreakdown]
+    ([Id],[TripId],[BaseRevenue],[MileageRevenue],[PriorityRevenue],[SpecialRequirementsRevenue],
+     [InsuranceAdjustment],[TotalRevenue],[CrewLaborCost],[VehicleCost],[FuelCost],
+     [MaintenanceCost],[OverheadCost],[TotalCost],[GrossProfit],[ProfitMargin],
+     [RevenuePerMile],[CostPerMile],[LoadedMileRatio],[DeadheadMileRatio],[UtilizationRate],
+     [TripDistance],[LoadedMiles],[DeadheadMiles],[TripDurationHours],
+     [TransportLevel],[PriorityLevel],[CostCenterId],[CostCenterName],[CalculatedAt],[CreatedAt],[UpdatedAt])
+VALUES
+-- Cost breakdown for TR-4 (completed BLS)
+('F0000000-0000-0000-0000-000000000001','60000000-0000-0000-0000-000000000004',
+ 250.00,78.75,0.00,0.00,
+ -25.00,303.75,85.00,22.00,18.50,
+ 8.00,15.00,148.50,155.25,51.11,
+ 13.50,6.60,0.88,0.12,0.85,
+ 22.50,22.50,3.20,0.67,
+ 'BLS','LOW','E0000000-0000-0000-0000-000000000001','EMS Operations',GETUTCDATE(),GETUTCDATE(),GETUTCDATE()),
+
+-- Cost breakdown for TR-7 (completed ALS pediatric)
+('F0000000-0000-0000-0000-000000000002','60000000-0000-0000-0000-000000000007',
+ 450.00,65.00,100.00,50.00,
+ -30.00,635.00,120.00,28.00,15.00,
+ 10.00,22.00,195.00,440.00,69.29,
+ 34.67,10.65,0.91,0.09,0.88,
+ 18.30,18.30,1.80,0.50,
+ 'ALS','HIGH','E0000000-0000-0000-0000-000000000001','EMS Operations',GETUTCDATE(),GETUTCDATE(),GETUTCDATE());
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 19. Pricing Model (RapidCare default)
+-- ────────────────────────────────────────────────────────────────────────────
+PRINT 'Seeding PricingModels...';
+
+INSERT INTO [PricingModel]
+    ([Id],[AgencyId],[Name],[IsActive],
+     [BaseRates],[PerMileRates],[PriorityMultipliers],[PeakHourMultipliers],
+     [WeekendMultipliers],[SeasonalMultipliers],[ZoneMultipliers],[DistanceTiers],
+     [SpecialRequirements],[IsolationPricing],[BariatricPricing],[OxygenPricing],[MonitoringPricing],
+     [InsuranceRates],[CreatedAt],[UpdatedAt])
+VALUES
+('F1000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000003',
+ 'RapidCare Standard Pricing',1,
+ '{"BLS":250,"ALS":450,"CCT":700,"NEONATAL":900}',
+ '{"BLS":3.50,"ALS":4.80,"CCT":6.50,"NEONATAL":8.00}',
+ '{"LOW":1.0,"MEDIUM":1.0,"HIGH":1.25,"CRITICAL":1.5}',
+ '{"06-09":1.15,"16-19":1.15,"default":1.0}',
+ '{"saturday":1.10,"sunday":1.15,"default":1.0}',
+ '{"winter":1.05,"default":1.0}',
+ '{"urban":1.0,"suburban":1.05,"rural":1.15}',
+ '{"0-10":1.0,"10-25":0.95,"25-50":0.90,"50+":0.85}',
+ '{"isolation":150,"bariatric":200,"ventilator":250}',
+ 150.00,200.00,75.00,100.00,
+ '{"BlueCross":0.92,"Aetna":0.90,"UnitedHealthcare":0.88,"Medicare":0.80,"Medicaid":0.75,"default":1.0}',
+ GETUTCDATE(),GETUTCDATE()),
+
+('F1000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000004',
+ 'LifeLine Standard Pricing',1,
+ '{"BLS":225,"ALS":425}',
+ '{"BLS":3.25,"ALS":4.50}',
+ '{"LOW":1.0,"MEDIUM":1.0,"HIGH":1.20,"CRITICAL":1.45}',
+ '{"06-09":1.10,"16-19":1.10,"default":1.0}',
+ '{"saturday":1.08,"sunday":1.12,"default":1.0}',
+ '{"default":1.0}',
+ '{"urban":1.0,"suburban":1.0,"rural":1.10}',
+ '{"0-10":1.0,"10-25":0.95,"25+":0.90}',
+ '{"isolation":125}',
+ 125.00,175.00,60.00,85.00,
+ '{"BlueCross":0.93,"Aetna":0.91,"Medicare":0.78,"Medicaid":0.73,"default":1.0}',
+ GETUTCDATE(),GETUTCDATE());
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 20. Route Optimization Settings
+-- ────────────────────────────────────────────────────────────────────────────
+PRINT 'Seeding RouteOptimizationSettings...';
+
+INSERT INTO [RouteOptimizationSettings]
+    ([Id],[AgencyId],[DeadheadMileWeight],[WaitTimeWeight],[BackhaulBonusWeight],[OvertimeRiskWeight],[RevenueWeight],
+     [MaxDeadheadMiles],[MaxWaitTimeMinutes],[MaxOvertimeHours],[MaxResponseTimeMinutes],[MaxServiceDistance],
+     [BackhaulTimeWindow],[BackhaulDistanceLimit],[BackhaulRevenueBonus],[EnableBackhaulOptimization],
+     [TargetLoadedMileRatio],[TargetRevenuePerHour],[TargetResponseTime],[TargetEfficiency],
+     [OptimizationAlgorithm],[MaxOptimizationTime],[EnableRealTimeOptimization],
+     [CrewAvailabilityWeight],[EquipmentCompatibilityWeight],[PatientPriorityWeight],
+     [IsActive],[CreatedAt],[UpdatedAt])
+VALUES
+-- RapidCare settings (tuned for high performance)
+('F2000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000003',
+ 1.20,1.10,1.30,0.90,1.15,
+ 45.00,25,3.50,12,80.00,
+ 55,22.00,60.00,1,
+ 0.80,250.00,10,0.88,
+ 'HYBRID',25,1,
+ 1.10,1.05,1.20,
+ 1,GETUTCDATE(),GETUTCDATE()),
+
+-- LifeLine settings (defaults)
+('F2000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000004',
+ 1.00,1.00,1.00,1.00,1.00,
+ 50.00,30,4.00,15,100.00,
+ 60,25.00,50.00,1,
+ 0.75,200.00,12,0.85,
+ 'HYBRID',30,1,
+ 1.00,1.00,1.00,
+ 1,GETUTCDATE(),GETUTCDATE());
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 21. System Analytics (sample metrics)
+-- ────────────────────────────────────────────────────────────────────────────
+PRINT 'Seeding SystemAnalytics...';
+
+INSERT INTO [SystemAnalytics] ([Id],[MetricName],[MetricValue],[Timestamp],[UserId],[CreatedAt]) VALUES
+('90000000-0000-0000-0000-000000000001','daily_trip_count','{"date":"2025-06-12","count":42,"bls":28,"als":10,"cct":4}',DATEADD(DAY,-1,GETUTCDATE()),NULL,DATEADD(DAY,-1,GETUTCDATE())),
+('90000000-0000-0000-0000-000000000002','daily_trip_count','{"date":"2025-06-13","count":38,"bls":24,"als":9,"cct":5}',GETUTCDATE(),NULL,GETUTCDATE()),
+('90000000-0000-0000-0000-000000000003','avg_response_time','{"minutes":9.5,"period":"last_7_days"}',GETUTCDATE(),NULL,GETUTCDATE()),
+('90000000-0000-0000-0000-000000000004','fleet_utilization','{"rate":0.82,"availableUnits":4,"totalUnits":6,"onCall":1,"outOfService":1}',GETUTCDATE(),NULL,GETUTCDATE()),
+('90000000-0000-0000-0000-000000000005','revenue_summary','{"daily":12500.00,"weekly":78200.00,"monthly":310000.00,"currency":"USD"}',GETUTCDATE(),NULL,GETUTCDATE()),
+('90000000-0000-0000-0000-000000000006','user_login','{"action":"LOGIN","ip":"192.168.1.50"}',DATEADD(HOUR,-1,GETUTCDATE()),'20000000-0000-0000-0000-000000000001',DATEADD(HOUR,-1,GETUTCDATE())),
+('90000000-0000-0000-0000-000000000007','patient_satisfaction','{"average":4.3,"responses":156,"period":"last_30_days"}',GETUTCDATE(),NULL,GETUTCDATE()),
+('90000000-0000-0000-0000-000000000008','cancel_rate','{"rate":0.05,"cancelled":8,"total":160,"period":"last_30_days"}',GETUTCDATE(),NULL,GETUTCDATE());
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 22. Backhaul Opportunities
+-- ────────────────────────────────────────────────────────────────────────────
+PRINT 'Seeding BackhaulOpportunities...';
+
+INSERT INTO [BackhaulOpportunity] ([Id],[TripId1],[TripId2],[RevenueBonus],[Efficiency],[CreatedAt],[IsActive]) VALUES
+('F3000000-0000-0000-0000-000000000001','60000000-0000-0000-0000-000000000004','60000000-0000-0000-0000-000000000003',55.00,0.92,GETUTCDATE(),1),
+('F3000000-0000-0000-0000-000000000002','65000000-0000-0000-0000-000000000001','65000000-0000-0000-0000-000000000002',48.00,0.87,DATEADD(MONTH,-1,GETUTCDATE()),1);
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- Done
+-- ────────────────────────────────────────────────────────────────────────────
+COMMIT TRANSACTION;
+PRINT '';
+PRINT '========================================================';
+PRINT '  Seed data loaded successfully!';
+PRINT '========================================================';
+PRINT '  Users seeded:    12   (pw: Password123!)';
+PRINT '  Organizations:    5   (2 Healthcare, 3 EMS)';
+PRINT '  Facilities:       6   (various types)';
+PRINT '  Pickup Locations: 9';
+PRINT '  Units:            6   (across 3 EMS orgs)';
+PRINT '  Transport Reqs:   8   (PENDING/ACCEPTED/IN_TRANSIT/COMPLETED/CANCELLED)';
+PRINT '  Legacy Trips:     2';
+PRINT '  Agency Responses: 8';
+PRINT '  Notifications:    9';
+PRINT '  Dropdown Cats:    8   with 33 options + 7 defaults';
+PRINT '  Cost Centers:     4';
+PRINT '  Pricing Models:   2';
+PRINT '  Optimization:     2';
+PRINT '  Analytics:        8';
+PRINT '  Backhauls:        2';
+PRINT '  Cost Breakdowns:  2';
+PRINT '========================================================';
+GO

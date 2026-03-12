@@ -1,6 +1,8 @@
 ﻿using FluentValidation;
 using MediatR;
 using Medport.Application.Common.Common.Behaviours;
+using Medport.Application.Tracc.Features.Auth.Helpers;
+using Medport.Application.Tracc.Features.Auth.Helpers.Intefaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics.CodeAnalysis;
@@ -21,6 +23,8 @@ public static class ConfigureServices
             cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(PerformanceBehaviour<,>));
         });
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly(), includeInternalTypes: true);
+
+        services.AddScoped<IAuthenticationHelper, AuthenticationHelper>();
 
         return services;
     }

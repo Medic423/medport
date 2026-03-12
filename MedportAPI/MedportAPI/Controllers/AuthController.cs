@@ -6,7 +6,6 @@ using System.Diagnostics.CodeAnalysis;
 using Medport.Application.Tracc.Features.Auth.Commands.Requests;
 using Medport.Application.Tracc.Features.Auth.Queries.Dtos;
 using MediatR;
-using System.Threading;
 using Medport.Application.Tracc.Common.DTOs;
 
 namespace Medport.API.Tracc.Controllers;
@@ -28,7 +27,9 @@ public class AuthController(IMediator mediator) : ApiControllerBase
     {
         var data = await _mediator.Send(command, cancellationToken);
 
-        if (data == null) return Unauthorized(ApiResponse<object>.Fail("Invalid credentials"));
+        if (data == null) 
+            return Unauthorized(ApiResponse<object>.Fail("Invalid credentials"));
+
         return Ok(ApiResponse<AuthResultDto>.Ok(data, "Login successful"));
     }
 

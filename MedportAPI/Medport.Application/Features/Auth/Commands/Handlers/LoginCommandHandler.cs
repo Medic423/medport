@@ -1,5 +1,6 @@
 using MediatR;
 using Medport.Application.Tracc.Features.Auth.Commands.Requests;
+using Medport.Application.Tracc.Features.Auth.Helpers.Intefaces;
 using Medport.Application.Tracc.Features.Auth.Queries.Dtos;
 using Medport.Domain.Entities;
 using Medport.Domain.Interfaces;
@@ -13,15 +14,19 @@ using System.Text;
 
 namespace Medport.Application.Tracc.Features.Auth.Commands.Handlers;
 
-public class LoginCommandHandler(IApplicationDbContext context, IConfiguration configuration) : IRequestHandler<LoginCommand, AuthResultDto>
+public class LoginCommandHandler(
+    IApplicationDbContext context, 
+    IConfiguration configuration,
+    IAuthenticationHelper authenticationHelper
+) : IRequestHandler<LoginCommand, AuthResultDto>
 {
     private readonly IApplicationDbContext _context = context;
     private readonly IConfiguration _configuration = configuration;
+    private readonly IAuthenticationHelper _authenticationHelper = authenticationHelper;
 
     public async Task<AuthResultDto> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
-        var email = request.Email?.Trim();
-        var password = request.Password;
+        (string email, string password) = _authenticationHelper.DecodeAuth(request.EncodedAuth);
 
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
             return Fail("Must enter Email and Password");
@@ -46,100 +51,43 @@ public class LoginCommandHandler(IApplicationDbContext context, IConfiguration c
 
     private async Task<LoginResult> TryLogin(string email, string password, CancellationToken cancellationToken)
     {
-        //var centerUser = await _context.CenterUsers
-        //    .FirstOrDefaultAsync(x => x.Email == email, cancellationToken);
+        var foundUser = await _context.Users
+            .FirstOrDefaultAsync(x => x.Email == email, cancellationToken);
 
-        //if (centerUser != null)
-        //    return await ValidateCenterUser(centerUser, password, cancellationToken);
-
-        //var healthcareUser = await _context.HealthcareUsers
-        //    .FirstOrDefaultAsync(x => x.Email == email, cancellationToken);
-
-        //if (healthcareUser != null)
-        //    return await ValidateHealthcareUser(healthcareUser, password, cancellationToken);
-
-        //var emsUser = await _context.EmsUsers
-        //    .FirstOrDefaultAsync(x => x.Email == email, cancellationToken);
-
-        //if (emsUser != null)
-        //    return await ValidateEmsUser(emsUser, password, cancellationToken);
+        if (foundUser != null)
+            return await ValidateUser(foundUser, password, cancellationToken);
 
         return LoginResult.Fail("No account found with this email address.");
     }
 
-    //private async Task<LoginResult> ValidateCenterUser(
-    //    CenterUser user,
-    //    string password,
-    //    CancellationToken cancellationToken)
-    //{
-    //    if (!VerifyPassword(user.Password, password))
-    //        return LoginResult.Fail("Invalid password.");
+    private async Task<LoginResult> ValidateUser(
+        User user,
+        string password,
+        CancellationToken cancellationToken
+    )
+    {
+        if (!VerifyPassword(user,user.Password, password))
+            return LoginResult.Fail("Invalid password.");
 
-    //    if (user.IsDeleted)
-    //        return LoginResult.Fail("This account has been deleted.");
+        if (user.IsDeleted)
+            return LoginResult.Fail("This account has been deleted.");
 
-    //    if (!user.IsActive)
-    //        return LoginResult.Fail("This account has been deactivated.");
+        if (!user.IsActive)
+            return LoginResult.Fail("This account has been deactivated.");
 
-    //    user.LastLogin = DateTime.UtcNow;
-    //    user.LastActivity = DateTime.UtcNow;
+        user.LastLogin = DateTime.UtcNow;
+        user.LastActivity = DateTime.UtcNow;
 
-    //    _context.CenterUsers.Update(user);
-    //    await _context.SaveChangesAsync(cancellationToken);
+        _context.Users.Update(user);
+        await _context.SaveChangesAsync(cancellationToken);
 
-    //    return LoginResult.Success(user, user.Id, user.UserType, false);
-    //}
+        return LoginResult.Success(user, user.Id, user.UserType, false);
+    }
 
-    //private async Task<LoginResult> ValidateHealthcareUser(
-    //    HealthcareUser user,
-    //    string password,
-    //    CancellationToken cancellationToken)
-    //{
-    //    if (!VerifyPassword(user.Password, password))
-    //        return LoginResult.Fail("Invalid password.");
-
-    //    if (user.IsDeleted)
-    //        return LoginResult.Fail("This account has been deleted.");
-
-    //    if (!user.IsActive)
-    //        return LoginResult.Fail("This account has been deactivated.");
-
-    //    user.LastLogin = DateTime.UtcNow;
-    //    user.LastActivity = DateTime.UtcNow;
-
-    //    _context.HealthcareUsers.Update(user);
-    //    await _context.SaveChangesAsync(cancellationToken);
-
-    //    return LoginResult.Success(user, user.Id, "HEALTHCARE", user.MustChangePassword);
-    //}
-
-    //private async Task<LoginResult> ValidateEmsUser(
-    //    EmsUser user,
-    //    string password,
-    //    CancellationToken cancellationToken)
-    //{
-    //    if (!VerifyPassword(user.Password, password))
-    //        return LoginResult.Fail("Invalid password.");
-
-    //    if (user.IsDeleted)
-    //        return LoginResult.Fail("This account has been deleted.");
-
-    //    if (!user.IsActive)
-    //        return LoginResult.Fail("This account has been deactivated.");
-
-    //    user.LastLogin = DateTime.UtcNow;
-    //    user.LastActivity = DateTime.UtcNow;
-
-    //    _context.EmsUsers.Update(user);
-    //    await _context.SaveChangesAsync(cancellationToken);
-
-    //    return LoginResult.Success(user, user.Id, "EMS", user.MustChangePassword);
-    //}
-
-    private static bool VerifyPassword(string hashedPassword, string password)
+    private static bool VerifyPassword(User user,string hashedPassword, string password)
     {
         var hasher = new PasswordHasher<object>();
-        var result = hasher.VerifyHashedPassword(null, hashedPassword, password);
+        var result = hasher.VerifyHashedPassword(user, hashedPassword, password);
 
         return result != PasswordVerificationResult.Failed;
     }
@@ -172,37 +120,16 @@ public class LoginCommandHandler(IApplicationDbContext context, IConfiguration c
         return handler.WriteToken(handler.CreateToken(descriptor));
     }
 
-    private static UserDto BuildUserDto(object user, string email, string userType)
+    private static UserDto BuildUserDto(User user, string email, string userType)
     {
         var dto = new UserDto
         {
+            Id = user.Id,
             Email = email,
-            UserType = userType
+            UserType = userType,
+            Name = user.Name,
+            OrganizationId = user.OrganizationId
         };
-
-        //switch (user)
-        //{
-        //    case HealthcareUser healthcare:
-        //        dto.Id = healthcare.Id;
-        //        dto.Name = healthcare.Name;
-        //        dto.FacilityName = healthcare.FacilityName;
-        //        dto.ManageMultipleLocations = healthcare.ManageMultipleLocations;
-        //        dto.OrgAdmin = healthcare.OrgAdmin;
-        //        break;
-
-        //    case EmsUser ems:
-        //        dto.Id = ems.Id;
-        //        dto.Name = ems.Name;
-        //        dto.AgencyName = ems.AgencyName;
-        //        dto.AgencyId = ems.AgencyId;
-        //        dto.OrgAdmin = ems.OrgAdmin;
-        //        break;
-
-        //    case CenterUser center:
-        //        dto.Id = center.Id;
-        //        dto.Name = center.Name;
-        //        break;
-        //}
 
         return dto;
     }
@@ -223,7 +150,7 @@ public class LoginResult
 {
     public bool Succeed { get; private set; }
     public string Message { get; private set; } = "";
-    public object? User { get; private set; }
+    public User? User { get; private set; }
     public Guid UserId { get; private set; }
     public string UserType { get; private set; } = "";
     public bool MustChangePassword { get; private set; }
@@ -231,7 +158,7 @@ public class LoginResult
     public static LoginResult Fail(string message)
         => new() { Succeed = false, Message = message };
 
-    public static LoginResult Success(object user, Guid id, string type, bool mustChange)
+    public static LoginResult Success(User user, Guid id, string type, bool mustChange)
         => new()
         {
             Succeed = true,
