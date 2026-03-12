@@ -35,11 +35,16 @@ public class AuthController(IMediator mediator) : ApiControllerBase
 
     [Authorize]
     [HttpPut("password/change")]
-    public async Task<ActionResult> ChangePassword([FromBody] ChangePasswordCommand command, CancellationToken cancellationToken)
+    public async Task<ActionResult> ChangePassword(
+        [FromBody] ChangePasswordCommand command, 
+        CancellationToken cancellationToken
+    )
     {
         var success = await _mediator.Send(command, cancellationToken);
 
-        if (!success) return BadRequest(ApiResponse<object>.Fail("Password change failed"));
+        if (!success) 
+            return BadRequest(ApiResponse<object>.Fail("Password change failed"));
+
         return Ok(ApiResponse<object>.Ok(null, "Password updated successfully"));
     }
 

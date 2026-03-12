@@ -11,14 +11,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Medport.Application.Tracc.Features.Auth.Commands.Handlers;
 
-public class CreateEmsCommandHandler : IRequestHandler<CreateEmsCommand, UserDto>
+public class CreateUserCommandHandler(IApplicationDbContext context) : IRequestHandler<CreateEmsCommand, UserDto>
 {
-    private readonly IApplicationDbContext _context;
-
-    public CreateEmsCommandHandler(IApplicationDbContext context)
-    {
-        _context = context;
-    }
+    private readonly IApplicationDbContext _context = context;
 
     public async Task<UserDto> Handle(CreateEmsCommand request, CancellationToken cancellationToken)
     {
