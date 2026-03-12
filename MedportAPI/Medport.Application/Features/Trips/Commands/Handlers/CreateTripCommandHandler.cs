@@ -19,35 +19,36 @@ public class CreateTripCommandHandler : IRequestHandler<CreateTripCommand, Trans
 
     public async Task<TransportRequestDto> Handle(CreateTripCommand request, CancellationToken cancellationToken)
     {
-        var entity = new TransportRequest
-        {
-            PatientId = request.PatientId,
-            OriginFacilityId = request.OriginFacilityId,
-            DestinationFacilityId = request.DestinationFacilityId,
-            TransportLevel = request.TransportLevel,
-            Priority = request.Priority,
-            SpecialRequirements = request.SpecialRequirements,
-            ReadyStart = request.ReadyStart,
-            ReadyEnd = request.ReadyEnd,
-            HealthcareCreatedById = request.HealthcareCreatedById ?? default
-        };
+        //var entity = new TransportRequest
+        //{
+        //    PatientId = request.PatientId,
+        //    OriginFacilityId = request.OriginFacilityId,
+        //    DestinationFacilityId = request.DestinationFacilityId,
+        //    TransportLevel = request.TransportLevel,
+        //    Priority = request.Priority,
+        //    SpecialRequirements = request.SpecialRequirements,
+        //    ReadyStart = request.ReadyStart,
+        //    ReadyEnd = request.ReadyEnd,
+        //    HealthcareCreatedById = request.HealthcareCreatedById ?? default
+        //};
 
-        _context.TransportRequests.Add(entity);
-        await _context.SaveChangesAsync(cancellationToken);
+        //_context.TransportRequests.Add(entity);
+        //await _context.SaveChangesAsync(cancellationToken);
 
-        return new TransportRequestDto
-        {
-            Id = entity.Id,
-            PatientId = entity.PatientId,
-            OriginFacilityId = entity.OriginFacilityId,
-            DestinationFacilityId = entity.DestinationFacilityId,
-            TransportLevel = entity.TransportLevel,
-            Priority = entity.Priority,
-            Status = entity.Status,
-            SpecialRequirements = entity.SpecialRequirements,
-            RequestTimestamp = entity.RequestTimestamp,
-            ReadyStart = entity.ReadyStart,
-            ReadyEnd = entity.ReadyEnd
-        };
+        //return new TransportRequestDto
+        //{
+        //    Id = entity.Id,
+        //    PatientId = entity.PatientId,
+        //    OriginFacilityId = entity.OriginFacilityId,
+        //    DestinationFacilityId = entity.DestinationFacilityId,
+        //    TransportLevel = entity.TransportLevel,
+        //    Priority = entity.Priority,
+        //    Status = entity.Status,
+        //    SpecialRequirements = entity.SpecialRequirements,
+        //    RequestTimestamp = entity.RequestTimestamp,
+        //    ReadyStart = entity.ReadyStart,
+        //    ReadyEnd = entity.ReadyEnd
+        //};
+        return null;
     }
 }

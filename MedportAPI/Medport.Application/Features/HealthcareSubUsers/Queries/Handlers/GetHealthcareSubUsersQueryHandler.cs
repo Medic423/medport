@@ -22,28 +22,30 @@ public class GetHealthcareSubUsersQueryHandler : IRequestHandler<GetHealthcareSu
 
     public async Task<IEnumerable<HealthcareSubUserDto>> Handle(GetHealthcareSubUsersQuery request, CancellationToken cancellationToken)
     {
-        if (request.CallerUserType != "HEALTHCARE" && request.CallerUserType != "ADMIN")
-            throw new UnauthorizedAccessException("Forbidden");
+        //if (request.CallerUserType != "HEALTHCARE" && request.CallerUserType != "ADMIN")
+        //    throw new UnauthorizedAccessException("Forbidden");
 
-        var query = _context.HealthcareUsers.AsQueryable().Where(u => u.IsSubUser);
+        //var query = _context.HealthcareUsers.AsQueryable().Where(u => u.IsSubUser);
 
-        if (request.CallerUserType == "HEALTHCARE")
-        {
-            var parent = await _context.HealthcareUsers.FirstOrDefaultAsync(u => u.Email == request.CallerEmail && !u.IsSubUser, cancellationToken);
-            if (parent == null) throw new UnauthorizedAccessException("Parent healthcare user not found");
-            query = query.Where(u => u.ParentUserId == parent.Id);
-        }
+        //if (request.CallerUserType == "HEALTHCARE")
+        //{
+        //    var parent = await _context.HealthcareUsers.FirstOrDefaultAsync(u => u.Email == request.CallerEmail && !u.IsSubUser, cancellationToken);
+        //    if (parent == null) throw new UnauthorizedAccessException("Parent healthcare user not found");
+        //    query = query.Where(u => u.ParentUserId == parent.Id);
+        //}
 
-        var list = await query.OrderByDescending(u => u.CreatedAt).Select(u => new HealthcareSubUserDto
-        {
-            Id = u.Id,
-            Email = u.Email,
-            Name = u.Name,
-            IsActive = u.IsActive,
-            CreatedAt = u.CreatedAt,
-            UpdatedAt = u.UpdatedAt
-        }).ToListAsync(cancellationToken);
+        //var list = await query.OrderByDescending(u => u.CreatedAt).Select(u => new HealthcareSubUserDto
+        //{
+        //    Id = u.Id,
+        //    Email = u.Email,
+        //    Name = u.Name,
+        //    IsActive = u.IsActive,
+        //    CreatedAt = u.CreatedAt,
+        //    UpdatedAt = u.UpdatedAt
+        //}).ToListAsync(cancellationToken);
 
-        return list;
+        //return list;
+
+        return null;
     }
 }

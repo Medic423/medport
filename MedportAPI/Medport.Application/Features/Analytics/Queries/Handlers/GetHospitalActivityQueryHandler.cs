@@ -19,10 +19,12 @@ public class GetHospitalActivityQueryHandler : IRequestHandler<GetHospitalActivi
 
     public async Task<object> Handle(GetHospitalActivityQuery request, CancellationToken cancellationToken)
     {
-        var list = await _context.Hospitals.AsNoTracking()
-            .Select(h => new { h.Id, h.Name, h.IsActive })
-            .ToListAsync(cancellationToken);
+        //var list = await _context.Hospitals.AsNoTracking()
+        //    .Select(h => new { h.Id, h.Name, h.IsActive })
+        //    .ToListAsync(cancellationToken);
 
-        return list;
+        //return list;
+
+        return null;
     }
 }

@@ -20,29 +20,31 @@ public class GetFacilityByIdQueryHandler : IRequestHandler<GetFacilityByIdQuery,
 
     public async Task<FacilityDto> Handle(GetFacilityByIdQuery request, CancellationToken cancellationToken)
     {
-        var facility = await _context.HealthcareLocations
-            .AsNoTracking()
-            .Where(h => h.Id == request.Id)
-            .Select(h => new FacilityDto
-            {
-                Id = h.Id,
-                HealthcareUserId = h.HealthcareUserId,
-                LocationName = h.LocationName,
-                Address = h.Address,
-                City = h.City,
-                State = h.State,
-                ZipCode = h.ZipCode,
-                Phone = h.Phone,
-                FacilityType = h.FacilityType,
-                IsPrimary = h.IsPrimary,
-                IsActive = h.IsActive,
-                Latitude = h.Latitude,
-                Longitude = h.Longitude,
-                CreatedAt = h.CreatedAt,
-                UpdatedAt = h.UpdatedAt
-            })
-            .FirstOrDefaultAsync(cancellationToken);
+        //var facility = await _context.HealthcareLocations
+        //    .AsNoTracking()
+        //    .Where(h => h.Id == request.Id)
+        //    .Select(h => new FacilityDto
+        //    {
+        //        Id = h.Id,
+        //        HealthcareUserId = h.HealthcareUserId,
+        //        LocationName = h.LocationName,
+        //        Address = h.Address,
+        //        City = h.City,
+        //        State = h.State,
+        //        ZipCode = h.ZipCode,
+        //        Phone = h.Phone,
+        //        FacilityType = h.FacilityType,
+        //        IsPrimary = h.IsPrimary,
+        //        IsActive = h.IsActive,
+        //        Latitude = h.Latitude,
+        //        Longitude = h.Longitude,
+        //        CreatedAt = h.CreatedAt,
+        //        UpdatedAt = h.UpdatedAt
+        //    })
+        //    .FirstOrDefaultAsync(cancellationToken);
 
-        return facility;
+        //return facility;
+
+        return null;
     }
 }

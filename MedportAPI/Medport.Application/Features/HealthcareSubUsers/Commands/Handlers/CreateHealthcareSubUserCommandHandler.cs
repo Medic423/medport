@@ -36,51 +36,53 @@ public class CreateHealthcareSubUserCommandHandler : IRequestHandler<CreateHealt
 
     public async Task<CreateHealthcareSubUserResultDto> Handle(CreateHealthcareSubUserCommand request, CancellationToken cancellationToken)
     {
-        if (request.CallerUserType != "HEALTHCARE" && request.CallerUserType != "ADMIN")
-            throw new UnauthorizedAccessException("Forbidden");
+        //if (request.CallerUserType != "HEALTHCARE" && request.CallerUserType != "ADMIN")
+        //    throw new UnauthorizedAccessException("Forbidden");
 
-        HealthcareUser parent = null;
-        if (request.CallerUserType == "HEALTHCARE")
-        {
-            parent = await _context.HealthcareUsers.FirstOrDefaultAsync(u => u.Email == request.CallerEmail && !u.IsSubUser, cancellationToken);
-            if (parent == null) throw new UnauthorizedAccessException("Parent healthcare user not found");
-        }
-        else if (request.CallerUserType == "ADMIN")
-        {
-            if (string.IsNullOrEmpty(request.FacilityName)) throw new ArgumentException("facilityName is required when admin creates sub-user");
-            parent = await _context.HealthcareUsers.FirstOrDefaultAsync(u => u.FacilityName == request.FacilityName && !u.IsSubUser, cancellationToken);
-            if (parent == null) throw new InvalidOperationException($"No healthcare parent found with facility name: {request.FacilityName}");
-        }
+        //HealthcareUser parent = null;
+        //if (request.CallerUserType == "HEALTHCARE")
+        //{
+        //    parent = await _context.HealthcareUsers.FirstOrDefaultAsync(u => u.Email == request.CallerEmail && !u.IsSubUser, cancellationToken);
+        //    if (parent == null) throw new UnauthorizedAccessException("Parent healthcare user not found");
+        //}
+        //else if (request.CallerUserType == "ADMIN")
+        //{
+        //    if (string.IsNullOrEmpty(request.FacilityName)) throw new ArgumentException("facilityName is required when admin creates sub-user");
+        //    parent = await _context.HealthcareUsers.FirstOrDefaultAsync(u => u.FacilityName == request.FacilityName && !u.IsSubUser, cancellationToken);
+        //    if (parent == null) throw new InvalidOperationException($"No healthcare parent found with facility name: {request.FacilityName}");
+        //}
 
-        var existing = await _context.HealthcareUsers.FirstOrDefaultAsync(u => u.Email == request.Email, cancellationToken);
-        if (existing != null) throw new InvalidOperationException("Email already in use");
+        //var existing = await _context.HealthcareUsers.FirstOrDefaultAsync(u => u.Email == request.Email, cancellationToken);
+        //if (existing != null) throw new InvalidOperationException("Email already in use");
 
-        var tempPassword = GenerateTempPassword();
-        var hash = BCrypt.Net.BCrypt.HashPassword(tempPassword);
+        //var tempPassword = GenerateTempPassword();
+        //var hash = BCrypt.Net.BCrypt.HashPassword(tempPassword);
 
-        var created = new HealthcareUser
-        {
-            Email = request.Email,
-            Password = hash,
-            Name = request.Name,
-            FacilityName = parent?.FacilityName ?? "",
-            FacilityType = parent?.FacilityType ?? "Healthcare",
-            UserType = "HEALTHCARE",
-            IsActive = true,
-            IsSubUser = true,
-            ParentUserId = parent?.Id,
-            MustChangePassword = true
-        };
+        //var created = new HealthcareUser
+        //{
+        //    Email = request.Email,
+        //    Password = hash,
+        //    Name = request.Name,
+        //    FacilityName = parent?.FacilityName ?? "",
+        //    FacilityType = parent?.FacilityType ?? "Healthcare",
+        //    UserType = "HEALTHCARE",
+        //    IsActive = true,
+        //    IsSubUser = true,
+        //    ParentUserId = parent?.Id,
+        //    MustChangePassword = true
+        //};
 
-        _context.HealthcareUsers.Add(created);
-        await _context.SaveChangesAsync(cancellationToken);
+        //_context.HealthcareUsers.Add(created);
+        //await _context.SaveChangesAsync(cancellationToken);
 
-        return new CreateHealthcareSubUserResultDto
-        {
-            Id = created.Id,
-            Email = created.Email,
-            Name = created.Name,
-            TempPassword = tempPassword
-        };
+        //return new CreateHealthcareSubUserResultDto
+        //{
+        //    Id = created.Id,
+        //    Email = created.Email,
+        //    Name = created.Name,
+        //    TempPassword = tempPassword
+        //};
+
+        return null;
     }
 }

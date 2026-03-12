@@ -20,21 +20,22 @@ public class AdminCreateUserCommandHandler : IRequestHandler<AdminCreateUserComm
 
     public async Task<UserDto> Handle(AdminCreateUserCommand request, CancellationToken cancellationToken)
     {
-        var hasher = new PasswordHasher<object>();
-        var hashed = hasher.HashPassword(null, request.Password);
+        //var hasher = new PasswordHasher<object>();
+        //var hashed = hasher.HashPassword(null, request.Password);
 
-        var user = new CenterUser
-        {
-            Email = request.Email,
-            Password = hashed,
-            Name = request.Name,
-            UserType = request.UserType,
-            IsActive = true
-        };
+        //var user = new CenterUser
+        //{
+        //    Email = request.Email,
+        //    Password = hashed,
+        //    Name = request.Name,
+        //    UserType = request.UserType,
+        //    IsActive = true
+        //};
 
-        _context.CenterUsers.Add(user);
-        await _context.SaveChangesAsync(cancellationToken);
+        //_context.CenterUsers.Add(user);
+        //await _context.SaveChangesAsync(cancellationToken);
 
-        return new UserDto { Id = user.Id, Email = user.Email, Name = user.Name, UserType = user.UserType };
+        //return new UserDto { Id = user.Id, Email = user.Email, Name = user.Name, UserType = user.UserType };
+        return null;
     }
 }

@@ -11,15 +11,17 @@ public class DeleteAgencyForHealthcareUserCommandHandler(IApplicationDbContext c
 
     public async Task Handle(DeleteAgencyForHealthcareUserCommand request, CancellationToken cancellationToken)
     {
-        var entity = await _context.EmsAgencies.FirstOrDefaultAsync(a => a.Id == request.Id && a.AddedBy == request.HealthcareUserId, cancellationToken);
-        if (entity == null)
-        {
+        //var entity = await _context.EmsAgencies.FirstOrDefaultAsync(a => a.Id == request.Id && a.AddedBy == request.HealthcareUserId, cancellationToken);
+        //if (entity == null)
+        //{
 
-        }
+        //}
 
-        // Soft delete
-        entity.IsActive = false;
-        await _context.SaveChangesAsync(cancellationToken);
+        //// Soft delete
+        //entity.IsActive = false;
+        //await _context.SaveChangesAsync(cancellationToken);
+
+        return;
 
     }
 }

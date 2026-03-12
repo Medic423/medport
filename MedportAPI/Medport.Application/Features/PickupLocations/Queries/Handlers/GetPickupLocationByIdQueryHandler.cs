@@ -19,22 +19,24 @@ public class GetPickupLocationByIdQueryHandler : IRequestHandler<GetPickupLocati
 
     public async Task<PickupLocationDto> Handle(GetPickupLocationByIdQuery request, CancellationToken cancellationToken)
     {
-        var p = await _context.PickupLocations.AsNoTracking().FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
-        if (p == null) return null;
+        //var p = await _context.PickupLocations.AsNoTracking().FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
+        //if (p == null) return null;
 
-        return new PickupLocationDto
-        {
-            Id = p.Id,
-            HospitalId = p.HospitalId,
-            Name = p.Name,
-            Description = p.Description,
-            ContactPhone = p.ContactPhone,
-            ContactEmail = p.ContactEmail,
-            Floor = p.Floor,
-            Room = p.Room,
-            IsActive = p.IsActive,
-            CreatedAt = p.CreatedAt,
-            UpdatedAt = p.UpdatedAt
-        };
+        //return new PickupLocationDto
+        //{
+        //    Id = p.Id,
+        //    HospitalId = p.HospitalId,
+        //    Name = p.Name,
+        //    Description = p.Description,
+        //    ContactPhone = p.ContactPhone,
+        //    ContactEmail = p.ContactEmail,
+        //    Floor = p.Floor,
+        //    Room = p.Room,
+        //    IsActive = p.IsActive,
+        //    CreatedAt = p.CreatedAt,
+        //    UpdatedAt = p.UpdatedAt
+        //};
+
+        return null;
     }
 }

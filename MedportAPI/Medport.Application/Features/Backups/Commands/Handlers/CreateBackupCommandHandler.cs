@@ -36,14 +36,14 @@ public class CreateBackupCommandHandler : IRequestHandler<CreateBackupCommand, C
         {
             // Query core tables
             var trips = await _context.TransportRequests.ToListAsync(cancellationToken);
-            var hospitals = await _context.Hospitals.ToListAsync(cancellationToken);
+            //var hospitals = await _context.Hospitals.ToListAsync(cancellationToken);
             var facilities = new List<object>();
-            var centerUsers = await _context.CenterUsers.ToListAsync(cancellationToken);
-            var healthcareUsers = await _context.HealthcareUsers.ToListAsync(cancellationToken);
-            var emsUsers = await _context.EmsUsers.ToListAsync(cancellationToken);
-            var agencies = await _context.EmsAgencies.ToListAsync(cancellationToken);
+            //var centerUsers = await _context.CenterUsers.ToListAsync(cancellationToken);
+            //var healthcareUsers = await _context.HealthcareUsers.ToListAsync(cancellationToken);
+            //var emsUsers = await _context.EmsUsers.ToListAsync(cancellationToken);
+            //var agencies = await _context.EmsAgencies.ToListAsync(cancellationToken);
             var units = await _context.Units.ToListAsync(cancellationToken);
-            var healthcareLocations = await _context.HealthcareLocations.ToListAsync(cancellationToken);
+            //var healthcareLocations = await _context.HealthcareLocations.ToListAsync(cancellationToken);
             var pickupLocations = await _context.PickupLocations.ToListAsync(cancellationToken);
 
             List<object> systemAnalytics = new();
@@ -83,14 +83,14 @@ public class CreateBackupCommandHandler : IRequestHandler<CreateBackupCommand, C
 
             backupData["database"] = new
             {
-                centerUsers,
-                healthcareUsers,
-                emsUsers,
-                hospitals,
+                //centerUsers,
+                //healthcareUsers,
+                //emsUsers,
+                //hospitals,
                 facilities,
-                healthcareLocations,
+                //healthcareLocations,
                 pickupLocations,
-                agencies,
+                //agencies,
                 units,
                 trips,
                 agencyResponses,

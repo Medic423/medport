@@ -13,11 +13,13 @@ public class DeleteDestinationForHealthcareUserCommandHandler(IApplicationDbCont
 
     public async Task Handle(DeleteDestinationForHealthcareUserCommand request, CancellationToken cancellationToken)
     {
-        var entity = await _context.HealthcareDestinations.FirstOrDefaultAsync(h => h.Id == request.Id && h.HealthcareUserId == request.HealthcareUserId, cancellationToken);
-        if (entity != null)
-        {
-            entity.IsActive = false;
-            await _context.SaveChangesAsync(cancellationToken);
-        }
+        //var entity = await _context.HealthcareDestinations.FirstOrDefaultAsync(h => h.Id == request.Id && h.HealthcareUserId == request.HealthcareUserId, cancellationToken);
+        //if (entity != null)
+        //{
+        //    entity.IsActive = false;
+        //    await _context.SaveChangesAsync(cancellationToken);
+        //}
+        return;
+
     }
 }

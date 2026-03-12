@@ -46,95 +46,95 @@ public class LoginCommandHandler(IApplicationDbContext context, IConfiguration c
 
     private async Task<LoginResult> TryLogin(string email, string password, CancellationToken cancellationToken)
     {
-        var centerUser = await _context.CenterUsers
-            .FirstOrDefaultAsync(x => x.Email == email, cancellationToken);
+        //var centerUser = await _context.CenterUsers
+        //    .FirstOrDefaultAsync(x => x.Email == email, cancellationToken);
 
-        if (centerUser != null)
-            return await ValidateCenterUser(centerUser, password, cancellationToken);
+        //if (centerUser != null)
+        //    return await ValidateCenterUser(centerUser, password, cancellationToken);
 
-        var healthcareUser = await _context.HealthcareUsers
-            .FirstOrDefaultAsync(x => x.Email == email, cancellationToken);
+        //var healthcareUser = await _context.HealthcareUsers
+        //    .FirstOrDefaultAsync(x => x.Email == email, cancellationToken);
 
-        if (healthcareUser != null)
-            return await ValidateHealthcareUser(healthcareUser, password, cancellationToken);
+        //if (healthcareUser != null)
+        //    return await ValidateHealthcareUser(healthcareUser, password, cancellationToken);
 
-        var emsUser = await _context.EmsUsers
-            .FirstOrDefaultAsync(x => x.Email == email, cancellationToken);
+        //var emsUser = await _context.EmsUsers
+        //    .FirstOrDefaultAsync(x => x.Email == email, cancellationToken);
 
-        if (emsUser != null)
-            return await ValidateEmsUser(emsUser, password, cancellationToken);
+        //if (emsUser != null)
+        //    return await ValidateEmsUser(emsUser, password, cancellationToken);
 
         return LoginResult.Fail("No account found with this email address.");
     }
 
-    private async Task<LoginResult> ValidateCenterUser(
-        CenterUser user,
-        string password,
-        CancellationToken cancellationToken)
-    {
-        if (!VerifyPassword(user.Password, password))
-            return LoginResult.Fail("Invalid password.");
+    //private async Task<LoginResult> ValidateCenterUser(
+    //    CenterUser user,
+    //    string password,
+    //    CancellationToken cancellationToken)
+    //{
+    //    if (!VerifyPassword(user.Password, password))
+    //        return LoginResult.Fail("Invalid password.");
 
-        if (user.IsDeleted)
-            return LoginResult.Fail("This account has been deleted.");
+    //    if (user.IsDeleted)
+    //        return LoginResult.Fail("This account has been deleted.");
 
-        if (!user.IsActive)
-            return LoginResult.Fail("This account has been deactivated.");
+    //    if (!user.IsActive)
+    //        return LoginResult.Fail("This account has been deactivated.");
 
-        user.LastLogin = DateTime.UtcNow;
-        user.LastActivity = DateTime.UtcNow;
+    //    user.LastLogin = DateTime.UtcNow;
+    //    user.LastActivity = DateTime.UtcNow;
 
-        _context.CenterUsers.Update(user);
-        await _context.SaveChangesAsync(cancellationToken);
+    //    _context.CenterUsers.Update(user);
+    //    await _context.SaveChangesAsync(cancellationToken);
 
-        return LoginResult.Success(user, user.Id, user.UserType, false);
-    }
+    //    return LoginResult.Success(user, user.Id, user.UserType, false);
+    //}
 
-    private async Task<LoginResult> ValidateHealthcareUser(
-        HealthcareUser user,
-        string password,
-        CancellationToken cancellationToken)
-    {
-        if (!VerifyPassword(user.Password, password))
-            return LoginResult.Fail("Invalid password.");
+    //private async Task<LoginResult> ValidateHealthcareUser(
+    //    HealthcareUser user,
+    //    string password,
+    //    CancellationToken cancellationToken)
+    //{
+    //    if (!VerifyPassword(user.Password, password))
+    //        return LoginResult.Fail("Invalid password.");
 
-        if (user.IsDeleted)
-            return LoginResult.Fail("This account has been deleted.");
+    //    if (user.IsDeleted)
+    //        return LoginResult.Fail("This account has been deleted.");
 
-        if (!user.IsActive)
-            return LoginResult.Fail("This account has been deactivated.");
+    //    if (!user.IsActive)
+    //        return LoginResult.Fail("This account has been deactivated.");
 
-        user.LastLogin = DateTime.UtcNow;
-        user.LastActivity = DateTime.UtcNow;
+    //    user.LastLogin = DateTime.UtcNow;
+    //    user.LastActivity = DateTime.UtcNow;
 
-        _context.HealthcareUsers.Update(user);
-        await _context.SaveChangesAsync(cancellationToken);
+    //    _context.HealthcareUsers.Update(user);
+    //    await _context.SaveChangesAsync(cancellationToken);
 
-        return LoginResult.Success(user, user.Id, "HEALTHCARE", user.MustChangePassword);
-    }
+    //    return LoginResult.Success(user, user.Id, "HEALTHCARE", user.MustChangePassword);
+    //}
 
-    private async Task<LoginResult> ValidateEmsUser(
-        EmsUser user,
-        string password,
-        CancellationToken cancellationToken)
-    {
-        if (!VerifyPassword(user.Password, password))
-            return LoginResult.Fail("Invalid password.");
+    //private async Task<LoginResult> ValidateEmsUser(
+    //    EmsUser user,
+    //    string password,
+    //    CancellationToken cancellationToken)
+    //{
+    //    if (!VerifyPassword(user.Password, password))
+    //        return LoginResult.Fail("Invalid password.");
 
-        if (user.IsDeleted)
-            return LoginResult.Fail("This account has been deleted.");
+    //    if (user.IsDeleted)
+    //        return LoginResult.Fail("This account has been deleted.");
 
-        if (!user.IsActive)
-            return LoginResult.Fail("This account has been deactivated.");
+    //    if (!user.IsActive)
+    //        return LoginResult.Fail("This account has been deactivated.");
 
-        user.LastLogin = DateTime.UtcNow;
-        user.LastActivity = DateTime.UtcNow;
+    //    user.LastLogin = DateTime.UtcNow;
+    //    user.LastActivity = DateTime.UtcNow;
 
-        _context.EmsUsers.Update(user);
-        await _context.SaveChangesAsync(cancellationToken);
+    //    _context.EmsUsers.Update(user);
+    //    await _context.SaveChangesAsync(cancellationToken);
 
-        return LoginResult.Success(user, user.Id, "EMS", user.MustChangePassword);
-    }
+    //    return LoginResult.Success(user, user.Id, "EMS", user.MustChangePassword);
+    //}
 
     private static bool VerifyPassword(string hashedPassword, string password)
     {
@@ -180,29 +180,29 @@ public class LoginCommandHandler(IApplicationDbContext context, IConfiguration c
             UserType = userType
         };
 
-        switch (user)
-        {
-            case HealthcareUser healthcare:
-                dto.Id = healthcare.Id;
-                dto.Name = healthcare.Name;
-                dto.FacilityName = healthcare.FacilityName;
-                dto.ManageMultipleLocations = healthcare.ManageMultipleLocations;
-                dto.OrgAdmin = healthcare.OrgAdmin;
-                break;
+        //switch (user)
+        //{
+        //    case HealthcareUser healthcare:
+        //        dto.Id = healthcare.Id;
+        //        dto.Name = healthcare.Name;
+        //        dto.FacilityName = healthcare.FacilityName;
+        //        dto.ManageMultipleLocations = healthcare.ManageMultipleLocations;
+        //        dto.OrgAdmin = healthcare.OrgAdmin;
+        //        break;
 
-            case EmsUser ems:
-                dto.Id = ems.Id;
-                dto.Name = ems.Name;
-                dto.AgencyName = ems.AgencyName;
-                dto.AgencyId = ems.AgencyId;
-                dto.OrgAdmin = ems.OrgAdmin;
-                break;
+        //    case EmsUser ems:
+        //        dto.Id = ems.Id;
+        //        dto.Name = ems.Name;
+        //        dto.AgencyName = ems.AgencyName;
+        //        dto.AgencyId = ems.AgencyId;
+        //        dto.OrgAdmin = ems.OrgAdmin;
+        //        break;
 
-            case CenterUser center:
-                dto.Id = center.Id;
-                dto.Name = center.Name;
-                break;
-        }
+        //    case CenterUser center:
+        //        dto.Id = center.Id;
+        //        dto.Name = center.Name;
+        //        break;
+        //}
 
         return dto;
     }

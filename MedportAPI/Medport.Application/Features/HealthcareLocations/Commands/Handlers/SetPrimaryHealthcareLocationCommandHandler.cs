@@ -12,52 +12,54 @@ public class SetPrimaryHealthcareLocationCommandHandler(IApplicationDbContext co
 
     public async Task<HealthcareLocationDto> Handle(SetPrimaryHealthcareLocationCommand request, CancellationToken cancellationToken)
     {
-        var entity = await _context.HealthcareLocations.FirstOrDefaultAsync(h => h.Id == request.Id, cancellationToken);
-        
-        if (entity == null)
-        {
-            throw new KeyNotFoundException($"Location with id {request.Id} not found");
-        }
+        //var entity = await _context.HealthcareLocations.FirstOrDefaultAsync(h => h.Id == request.Id, cancellationToken);
 
-        // Verify ownership
-        if (entity.HealthcareUserId != request.HealthcareUserId)
-        {
-            throw new UnauthorizedAccessException("You are not authorized to modify this location");
-        }
+        //if (entity == null)
+        //{
+        //    throw new KeyNotFoundException($"Location with id {request.Id} not found");
+        //}
 
-        // Unset other primary locations for this user
-        var others = await _context.HealthcareLocations
-            .Where(h => h.HealthcareUserId == entity.HealthcareUserId && h.Id != entity.Id && h.IsPrimary)
-            .ToListAsync(cancellationToken);
+        //// Verify ownership
+        //if (entity.HealthcareUserId != request.HealthcareUserId)
+        //{
+        //    throw new UnauthorizedAccessException("You are not authorized to modify this location");
+        //}
 
-        foreach (var o in others)
-        {
-            o.IsPrimary = false;
-            o.UpdatedAt = DateTime.UtcNow;
-        }
+        //// Unset other primary locations for this user
+        //var others = await _context.HealthcareLocations
+        //    .Where(h => h.HealthcareUserId == entity.HealthcareUserId && h.Id != entity.Id && h.IsPrimary)
+        //    .ToListAsync(cancellationToken);
 
-        entity.IsPrimary = true;
-        entity.UpdatedAt = DateTime.UtcNow;
+        //foreach (var o in others)
+        //{
+        //    o.IsPrimary = false;
+        //    o.UpdatedAt = DateTime.UtcNow;
+        //}
 
-        await _context.SaveChangesAsync(cancellationToken);
+        //entity.IsPrimary = true;
+        //entity.UpdatedAt = DateTime.UtcNow;
 
-        return new HealthcareLocationDto
-        {
-            Id = entity.Id,
-            LocationName = entity.LocationName,
-            Address = entity.Address,
-            City = entity.City,
-            State = entity.State,
-            ZipCode = entity.ZipCode,
-            Phone = entity.Phone,
-            FacilityType = entity.FacilityType,
-            IsPrimary = entity.IsPrimary,
-            IsActive = entity.IsActive,
-            Latitude = entity.Latitude,
-            Longitude = entity.Longitude,
-            CreatedAt = entity.CreatedAt,
-            UpdatedAt = entity.UpdatedAt,
-            HealthcareUserId = entity.HealthcareUserId
-        };
+        //await _context.SaveChangesAsync(cancellationToken);
+
+        //return new HealthcareLocationDto
+        //{
+        //    Id = entity.Id,
+        //    LocationName = entity.LocationName,
+        //    Address = entity.Address,
+        //    City = entity.City,
+        //    State = entity.State,
+        //    ZipCode = entity.ZipCode,
+        //    Phone = entity.Phone,
+        //    FacilityType = entity.FacilityType,
+        //    IsPrimary = entity.IsPrimary,
+        //    IsActive = entity.IsActive,
+        //    Latitude = entity.Latitude,
+        //    Longitude = entity.Longitude,
+        //    CreatedAt = entity.CreatedAt,
+        //    UpdatedAt = entity.UpdatedAt,
+        //    HealthcareUserId = entity.HealthcareUserId
+        //};
+
+        return null;
     }
 }

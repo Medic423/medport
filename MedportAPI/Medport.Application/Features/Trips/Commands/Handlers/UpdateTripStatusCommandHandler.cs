@@ -19,37 +19,39 @@ public class UpdateTripStatusCommandHandler : IRequestHandler<UpdateTripStatusCo
 
     public async Task<TransportRequestDto> Handle(UpdateTripStatusCommand request, CancellationToken cancellationToken)
     {
-        var entity = await _context.TransportRequests.FirstOrDefaultAsync(t => t.Id == request.Id, cancellationToken);
-        if (entity == null) return null;
+        //var entity = await _context.TransportRequests.FirstOrDefaultAsync(t => t.Id == request.Id, cancellationToken);
+        //if (entity == null) return null;
 
-        entity.Status = request.Status ?? entity.Status;
-        entity.AssignedAgencyId = request.AssignedAgencyId ?? entity.AssignedAgencyId;
-        entity.AssignedUnitId = request.AssignedUnitId ?? entity.AssignedUnitId;
-        entity.AcceptedTimestamp = request.AcceptedTimestamp ?? entity.AcceptedTimestamp;
-        entity.PickupTimestamp = request.PickupTimestamp ?? entity.PickupTimestamp;
-        entity.CompletionTimestamp = request.CompletionTimestamp ?? entity.CompletionTimestamp;
-        entity.UpdatedAt = System.DateTime.UtcNow;
+        //entity.Status = request.Status ?? entity.Status;
+        //entity.AssignedAgencyId = request.AssignedAgencyId ?? entity.AssignedAgencyId;
+        //entity.AssignedUnitId = request.AssignedUnitId ?? entity.AssignedUnitId;
+        //entity.AcceptedTimestamp = request.AcceptedTimestamp ?? entity.AcceptedTimestamp;
+        //entity.PickupTimestamp = request.PickupTimestamp ?? entity.PickupTimestamp;
+        //entity.CompletionTimestamp = request.CompletionTimestamp ?? entity.CompletionTimestamp;
+        //entity.UpdatedAt = System.DateTime.UtcNow;
 
-        await _context.SaveChangesAsync(cancellationToken);
+        //await _context.SaveChangesAsync(cancellationToken);
 
-        return new TransportRequestDto
-        {
-            Id = entity.Id,
-            PatientId = entity.PatientId,
-            OriginFacilityId = entity.OriginFacilityId,
-            DestinationFacilityId = entity.DestinationFacilityId,
-            TransportLevel = entity.TransportLevel,
-            Priority = entity.Priority,
-            Status = entity.Status,
-            SpecialRequirements = entity.SpecialRequirements,
-            RequestTimestamp = entity.RequestTimestamp,
-            ReadyStart = entity.ReadyStart,
-            ReadyEnd = entity.ReadyEnd,
-            AssignedAgencyId = entity.AssignedAgencyId,
-            AssignedUnitId = entity.AssignedUnitId,
-            AcceptedTimestamp = entity.AcceptedTimestamp,
-            PickupTimestamp = entity.PickupTimestamp,
-            CompletionTimestamp = entity.CompletionTimestamp
-        };
+        //return new TransportRequestDto
+        //{
+        //    Id = entity.Id,
+        //    PatientId = entity.PatientId,
+        //    OriginFacilityId = entity.OriginFacilityId,
+        //    DestinationFacilityId = entity.DestinationFacilityId,
+        //    TransportLevel = entity.TransportLevel,
+        //    Priority = entity.Priority,
+        //    Status = entity.Status,
+        //    SpecialRequirements = entity.SpecialRequirements,
+        //    RequestTimestamp = entity.RequestTimestamp,
+        //    ReadyStart = entity.ReadyStart,
+        //    ReadyEnd = entity.ReadyEnd,
+        //    AssignedAgencyId = entity.AssignedAgencyId,
+        //    AssignedUnitId = entity.AssignedUnitId,
+        //    AcceptedTimestamp = entity.AcceptedTimestamp,
+        //    PickupTimestamp = entity.PickupTimestamp,
+        //    CompletionTimestamp = entity.CompletionTimestamp
+        //};
+
+        return null;
     }
 }

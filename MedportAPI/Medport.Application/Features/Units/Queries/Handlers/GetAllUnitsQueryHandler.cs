@@ -37,7 +37,7 @@ public class GetAllUnitsQueryHandler(IApplicationDbContext context, IMapper mapp
         // Apply filters
         if (request.AgencyId != Guid.Empty)
         {
-            query = query.Where(u => u.AgencyId == request.AgencyId);
+            //query = query.Where(u => u.AgencyId == request.AgencyId);
         }
 
         //if (!string.IsNullOrWhiteSpace(request.UnitType))

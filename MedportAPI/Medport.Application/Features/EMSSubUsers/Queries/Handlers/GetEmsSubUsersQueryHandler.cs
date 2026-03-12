@@ -21,28 +21,30 @@ public class GetEmsSubUsersQueryHandler : IRequestHandler<GetEmsSubUsersQuery, I
 
     public async Task<IEnumerable<EmsSubUserDto>> Handle(GetEmsSubUsersQuery request, CancellationToken cancellationToken)
     {
-        if (request.CallerUserType != "EMS" && request.CallerUserType != "ADMIN")
-            throw new UnauthorizedAccessException("Forbidden");
+        //if (request.CallerUserType != "EMS" && request.CallerUserType != "ADMIN")
+        //    throw new UnauthorizedAccessException("Forbidden");
 
-        var query = _context.EmsUsers.AsQueryable().Where(u => u.IsSubUser);
+        //var query = _context.EmsUsers.AsQueryable().Where(u => u.IsSubUser);
 
-        if (request.CallerUserType == "EMS")
-        {
-            var parent = await _context.EmsUsers.FirstOrDefaultAsync(u => u.Email == request.CallerEmail && !u.IsSubUser, cancellationToken);
-            if (parent == null) throw new UnauthorizedAccessException("Parent EMS user not found");
-            query = query.Where(u => u.ParentUserId == parent.Id);
-        }
+        //if (request.CallerUserType == "EMS")
+        //{
+        //    var parent = await _context.EmsUsers.FirstOrDefaultAsync(u => u.Email == request.CallerEmail && !u.IsSubUser, cancellationToken);
+        //    if (parent == null) throw new UnauthorizedAccessException("Parent EMS user not found");
+        //    query = query.Where(u => u.ParentUserId == parent.Id);
+        //}
 
-        var list = await query.OrderByDescending(u => u.CreatedAt).Select(u => new EmsSubUserDto
-        {
-            Id = u.Id,
-            Email = u.Email,
-            Name = u.Name,
-            IsActive = u.IsActive,
-            CreatedAt = u.CreatedAt,
-            UpdatedAt = u.UpdatedAt
-        }).ToListAsync(cancellationToken);
+        //var list = await query.OrderByDescending(u => u.CreatedAt).Select(u => new EmsSubUserDto
+        //{
+        //    Id = u.Id,
+        //    Email = u.Email,
+        //    Name = u.Name,
+        //    IsActive = u.IsActive,
+        //    CreatedAt = u.CreatedAt,
+        //    UpdatedAt = u.UpdatedAt
+        //}).ToListAsync(cancellationToken);
 
-        return list;
+        //return list;
+
+        return null;
     }
 }

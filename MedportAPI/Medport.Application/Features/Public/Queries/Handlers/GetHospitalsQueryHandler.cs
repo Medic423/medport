@@ -21,28 +21,30 @@ public class GetHospitalsQueryHandler : IRequestHandler<GetHospitalsQuery, IEnum
 
     public async Task<IEnumerable<HospitalPublicDto>> Handle(GetHospitalsQuery request, CancellationToken cancellationToken)
     {
-        var hospitals = await _context.Hospitals
-            .AsNoTracking()
-            .Where(h => h.IsActive)
-            .Select(h => new HospitalPublicDto
-            {
-                Id = h.Id,
-                Name = h.Name,
-                Address = h.Address,
-                City = h.City,
-                State = h.State,
-                ZipCode = h.ZipCode,
-                Phone = h.Phone,
-                Email = h.Email,
-                Type = h.Type,
-                Latitude = h.Latitude,
-                Longitude = h.Longitude
-            })
-            .ToListAsync(cancellationToken);
+        //var hospitals = await _context.Hospitals
+        //    .AsNoTracking()
+        //    .Where(h => h.IsActive)
+        //    .Select(h => new HospitalPublicDto
+        //    {
+        //        Id = h.Id,
+        //        Name = h.Name,
+        //        Address = h.Address,
+        //        City = h.City,
+        //        State = h.State,
+        //        ZipCode = h.ZipCode,
+        //        Phone = h.Phone,
+        //        Email = h.Email,
+        //        Type = h.Type,
+        //        Latitude = h.Latitude,
+        //        Longitude = h.Longitude
+        //    })
+        //    .ToListAsync(cancellationToken);
 
-        // Sort by name
-        hospitals = hospitals.OrderBy(h => h.Name).ToList();
+        //// Sort by name
+        //hospitals = hospitals.OrderBy(h => h.Name).ToList();
 
-        return hospitals;
+        //return hospitals;
+
+        return null;
     }
 }

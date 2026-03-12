@@ -21,34 +21,36 @@ public class SearchRegisteredAgenciesQueryHandler : IRequestHandler<SearchRegist
 
     public async Task<IEnumerable<EmsAgencyDto>> Handle(SearchRegisteredAgenciesQuery request, CancellationToken cancellationToken)
     {
-        var q = request.Query?.Trim();
-        if (string.IsNullOrEmpty(q)) return new List<EmsAgencyDto>();
+        //var q = request.Query?.Trim();
+        //if (string.IsNullOrEmpty(q)) return new List<EmsAgencyDto>();
 
-        var agencies = await _context.EmsAgencies.AsNoTracking()
-            .Where(a => a.Name.Contains(q))
-            .Take(50)
-            .ToListAsync(cancellationToken);
+        //var agencies = await _context.EmsAgencies.AsNoTracking()
+        //    .Where(a => a.Name.Contains(q))
+        //    .Take(50)
+        //    .ToListAsync(cancellationToken);
 
-        return agencies.Select(a => new EmsAgencyDto
-        {
-            Id = a.Id,
-            Name = a.Name,
-            ContactName = a.ContactName,
-            Phone = a.Phone,
-            Email = a.Email,
-            Address = a.Address,
-            City = a.City,
-            State = a.State,
-            ZipCode = a.ZipCode,
-            ServiceArea = a.ServiceArea,
-            Capabilities = a.Capabilities,
-            IsActive = a.IsActive,
-            Status = a.Status,
-            AddedBy = a.AddedBy,
-            Latitude = a.Latitude,
-            Longitude = a.Longitude,
-            AcceptsNotifications = a.AcceptsNotifications,
-            IsPreferred = false
-        }).ToList();
+        //return agencies.Select(a => new EmsAgencyDto
+        //{
+        //    Id = a.Id,
+        //    Name = a.Name,
+        //    ContactName = a.ContactName,
+        //    Phone = a.Phone,
+        //    Email = a.Email,
+        //    Address = a.Address,
+        //    City = a.City,
+        //    State = a.State,
+        //    ZipCode = a.ZipCode,
+        //    ServiceArea = a.ServiceArea,
+        //    Capabilities = a.Capabilities,
+        //    IsActive = a.IsActive,
+        //    Status = a.Status,
+        //    AddedBy = a.AddedBy,
+        //    Latitude = a.Latitude,
+        //    Longitude = a.Longitude,
+        //    AcceptsNotifications = a.AcceptsNotifications,
+        //    IsPreferred = false
+        //}).ToList();
+
+        return null;
     }
 }

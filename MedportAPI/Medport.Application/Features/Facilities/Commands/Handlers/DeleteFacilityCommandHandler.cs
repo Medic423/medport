@@ -13,11 +13,13 @@ public class DeleteFacilityCommandHandler(IApplicationDbContext context) : IRequ
 
     public async Task Handle(DeleteFacilityCommand request, CancellationToken cancellationToken)
     {
-        var entity = await _context.HealthcareLocations.FirstOrDefaultAsync(h => h.Id == request.Id, cancellationToken);
-        if (entity != null)
-        {
-            _context.HealthcareLocations.Remove(entity);
-            await _context.SaveChangesAsync(cancellationToken);
-        }
+        //var entity = await _context.HealthcareLocations.FirstOrDefaultAsync(h => h.Id == request.Id, cancellationToken);
+        //if (entity != null)
+        //{
+        //    _context.HealthcareLocations.Remove(entity);
+        //    await _context.SaveChangesAsync(cancellationToken);
+        //}
+
+        return;
     }
 }

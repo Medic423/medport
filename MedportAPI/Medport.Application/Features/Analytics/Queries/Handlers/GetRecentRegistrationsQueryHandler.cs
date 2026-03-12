@@ -20,16 +20,18 @@ public class GetRecentRegistrationsQueryHandler : IRequestHandler<GetRecentRegis
 
     public async Task<IEnumerable<object>> Handle(GetRecentRegistrationsQuery request, CancellationToken cancellationToken)
     {
-        var since = System.DateTime.UtcNow.AddDays(-request.Days);
-        if (request.Type == "facilities")
-        {
-            var list = await _context.HealthcareLocations.AsNoTracking().Where(h => h.CreatedAt >= since).Select(h => new { h.Id, h.LocationName, h.CreatedAt }).ToListAsync(cancellationToken);
-            return list.Cast<object>();
-        }
-        else
-        {
-            var list = await _context.EmsAgencies.AsNoTracking().Where(a => a.CreatedAt >= since).Select(a => new { a.Id, a.Name, a.CreatedAt }).ToListAsync(cancellationToken);
-            return list.Cast<object>();
-        }
+        //var since = System.DateTime.UtcNow.AddDays(-request.Days);
+        //if (request.Type == "facilities")
+        //{
+        //    var list = await _context.HealthcareLocations.AsNoTracking().Where(h => h.CreatedAt >= since).Select(h => new { h.Id, h.LocationName, h.CreatedAt }).ToListAsync(cancellationToken);
+        //    return list.Cast<object>();
+        //}
+        //else
+        //{
+        //    var list = await _context.EmsAgencies.AsNoTracking().Where(a => a.CreatedAt >= since).Select(a => new { a.Id, a.Name, a.CreatedAt }).ToListAsync(cancellationToken);
+        //    return list.Cast<object>();
+        //}
+
+        return null;
     }
 }

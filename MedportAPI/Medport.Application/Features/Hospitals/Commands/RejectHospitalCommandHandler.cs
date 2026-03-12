@@ -17,24 +17,26 @@ public class RejectHospitalCommandHandler(IApplicationDbContext context, IMapper
 
     public async Task<HospitalDto> Handle(RejectHospitalCommand request, CancellationToken cancellationToken)
     {
-        Hospital? updatedHospital = await _context.Hospitals
-            .FindAsync([request.Id], cancellationToken);
+        //Hospital? updatedHospital = await _context.Hospitals
+        //    .FindAsync([request.Id], cancellationToken);
 
-        if (updatedHospital == null)
-        {
-            throw new ErrorException(ErrorResult.Failure([HospitalErrors.NotFound(
-                HospitalConstants.Error.UpdateHospitalCommandHandlerNotFound,
-                request.Id)]));
-        }
+        //if (updatedHospital == null)
+        //{
+        //    throw new ErrorException(ErrorResult.Failure([HospitalErrors.NotFound(
+        //        HospitalConstants.Error.UpdateHospitalCommandHandlerNotFound,
+        //        request.Id)]));
+        //}
 
-        updatedHospital.ApprovedBy = request.ApprovedBy;
+        //updatedHospital.ApprovedBy = request.ApprovedBy;
 
-        _mapper.Map(request, updatedHospital);
+        //_mapper.Map(request, updatedHospital);
 
-        await _context.SaveChangesAsync(cancellationToken);
+        //await _context.SaveChangesAsync(cancellationToken);
 
-        HospitalDto hospital = _mapper.Map<HospitalDto>(updatedHospital);
+        //HospitalDto hospital = _mapper.Map<HospitalDto>(updatedHospital);
 
-        return hospital;
+        //return hospital;
+
+        return null;
     }
 }

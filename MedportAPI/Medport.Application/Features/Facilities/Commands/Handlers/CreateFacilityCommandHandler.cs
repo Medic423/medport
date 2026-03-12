@@ -19,42 +19,44 @@ public class CreateFacilityCommandHandler : IRequestHandler<CreateFacilityComman
 
     public async Task<FacilityDto> Handle(CreateFacilityCommand request, CancellationToken cancellationToken)
     {
-        var entity = new HealthcareLocation
-        {
-            HealthcareUserId = request.HealthcareUserId,
-            LocationName = request.LocationName,
-            Address = request.Address,
-            City = request.City,
-            State = request.State,
-            ZipCode = request.ZipCode,
-            Phone = request.Phone,
-            FacilityType = request.FacilityType,
-            IsPrimary = request.IsPrimary,
-            IsActive = request.IsActive,
-            Latitude = request.Latitude,
-            Longitude = request.Longitude
-        };
+        //var entity = new HealthcareLocation
+        //{
+        //    HealthcareUserId = request.HealthcareUserId,
+        //    LocationName = request.LocationName,
+        //    Address = request.Address,
+        //    City = request.City,
+        //    State = request.State,
+        //    ZipCode = request.ZipCode,
+        //    Phone = request.Phone,
+        //    FacilityType = request.FacilityType,
+        //    IsPrimary = request.IsPrimary,
+        //    IsActive = request.IsActive,
+        //    Latitude = request.Latitude,
+        //    Longitude = request.Longitude
+        //};
 
-        _context.HealthcareLocations.Add(entity);
-        await _context.SaveChangesAsync(cancellationToken);
+        //_context.HealthcareLocations.Add(entity);
+        //await _context.SaveChangesAsync(cancellationToken);
 
-        return new FacilityDto
-        {
-            Id = entity.Id,
-            HealthcareUserId = entity.HealthcareUserId,
-            LocationName = entity.LocationName,
-            Address = entity.Address,
-            City = entity.City,
-            State = entity.State,
-            ZipCode = entity.ZipCode,
-            Phone = entity.Phone,
-            FacilityType = entity.FacilityType,
-            IsPrimary = entity.IsPrimary,
-            IsActive = entity.IsActive,
-            Latitude = entity.Latitude,
-            Longitude = entity.Longitude,
-            CreatedAt = entity.CreatedAt,
-            UpdatedAt = entity.UpdatedAt
-        };
+        //return new FacilityDto
+        //{
+        //    Id = entity.Id,
+        //    HealthcareUserId = entity.HealthcareUserId,
+        //    LocationName = entity.LocationName,
+        //    Address = entity.Address,
+        //    City = entity.City,
+        //    State = entity.State,
+        //    ZipCode = entity.ZipCode,
+        //    Phone = entity.Phone,
+        //    FacilityType = entity.FacilityType,
+        //    IsPrimary = entity.IsPrimary,
+        //    IsActive = entity.IsActive,
+        //    Latitude = entity.Latitude,
+        //    Longitude = entity.Longitude,
+        //    CreatedAt = entity.CreatedAt,
+        //    UpdatedAt = entity.UpdatedAt
+        //};
+
+        return null;
     }
 }

@@ -20,61 +20,62 @@ public class GetAllFacilitiesWithPaginationQueryHandler : IRequestHandler<GetAll
         _context = context;
     }
 
-    public static IQueryable<HealthcareLocation> ParameterLogic(IQueryable<HealthcareLocation> query, GetAllFacilitiesWithPaginationQuery parameters)
-    {
-        if (!string.IsNullOrEmpty(parameters.Name))
-        {
-            query = query.Where(_ => !string.IsNullOrWhiteSpace(_.LocationName) && _.LocationName.Contains(parameters.Name, System.StringComparison.OrdinalIgnoreCase));
-        }
+    //public static IQueryable<HealthcareLocation> ParameterLogic(IQueryable<HealthcareLocation> query, GetAllFacilitiesWithPaginationQuery parameters)
+    //{
+    //    if (!string.IsNullOrEmpty(parameters.Name))
+    //    {
+    //        query = query.Where(_ => !string.IsNullOrWhiteSpace(_.LocationName) && _.LocationName.Contains(parameters.Name, System.StringComparison.OrdinalIgnoreCase));
+    //    }
 
-        if (!string.IsNullOrEmpty(parameters.City))
-        {
-            query = query.Where(_ => !string.IsNullOrWhiteSpace(_.City) && _.City.Contains(parameters.City, System.StringComparison.OrdinalIgnoreCase));
-        }
+    //    if (!string.IsNullOrEmpty(parameters.City))
+    //    {
+    //        query = query.Where(_ => !string.IsNullOrWhiteSpace(_.City) && _.City.Contains(parameters.City, System.StringComparison.OrdinalIgnoreCase));
+    //    }
 
-        if (!string.IsNullOrWhiteSpace(parameters.State))
-        {
-            query = query.Where(_ => !string.IsNullOrWhiteSpace(_.State) && _.State.Contains(parameters.State, System.StringComparison.OrdinalIgnoreCase));
-        }
+    //    if (!string.IsNullOrWhiteSpace(parameters.State))
+    //    {
+    //        query = query.Where(_ => !string.IsNullOrWhiteSpace(_.State) && _.State.Contains(parameters.State, System.StringComparison.OrdinalIgnoreCase));
+    //    }
 
-        if (!string.IsNullOrWhiteSpace(parameters.Type))
-        {
-            query = query.Where(_ => _.FacilityType == parameters.Type);
-        }
+    //    if (!string.IsNullOrWhiteSpace(parameters.Type))
+    //    {
+    //        query = query.Where(_ => _.FacilityType == parameters.Type);
+    //    }
 
-        if (parameters.IsActive != null)
-        {
-            query = query.Where(_ => _.IsActive == parameters.IsActive);
-        }
+    //    if (parameters.IsActive != null)
+    //    {
+    //        query = query.Where(_ => _.IsActive == parameters.IsActive);
+    //    }
 
-        return query;
-    }
+    //    return query;
+    //}
 
     public async Task<PaginatedList<FacilityDto>> Handle(GetAllFacilitiesWithPaginationQuery request, CancellationToken cancellationToken)
     {
-        IQueryable<HealthcareLocation> query = _context.HealthcareLocations.AsNoTracking();
+        return null;
+        //IQueryable<HealthcareLocation> query = _context.HealthcareLocations.AsNoTracking();
 
-        query = ParameterLogic(query, request);
+        //query = ParameterLogic(query, request);
 
-        var projected = query.Select(h => new FacilityDto
-        {
-            Id = h.Id,
-            HealthcareUserId = h.HealthcareUserId,
-            LocationName = h.LocationName,
-            Address = h.Address,
-            City = h.City,
-            State = h.State,
-            ZipCode = h.ZipCode,
-            Phone = h.Phone,
-            FacilityType = h.FacilityType,
-            IsPrimary = h.IsPrimary,
-            IsActive = h.IsActive,
-            Latitude = h.Latitude,
-            Longitude = h.Longitude,
-            CreatedAt = h.CreatedAt,
-            UpdatedAt = h.UpdatedAt
-        });
+        //var projected = query.Select(h => new FacilityDto
+        //{
+        //    Id = h.Id,
+        //    HealthcareUserId = h.HealthcareUserId,
+        //    LocationName = h.LocationName,
+        //    Address = h.Address,
+        //    City = h.City,
+        //    State = h.State,
+        //    ZipCode = h.ZipCode,
+        //    Phone = h.Phone,
+        //    FacilityType = h.FacilityType,
+        //    IsPrimary = h.IsPrimary,
+        //    IsActive = h.IsActive,
+        //    Latitude = h.Latitude,
+        //    Longitude = h.Longitude,
+        //    CreatedAt = h.CreatedAt,
+        //    UpdatedAt = h.UpdatedAt
+        //});
 
-        return await PaginatedList<FacilityDto>.CreateAsync(projected, request.Page, request.Limit, cancellationToken);
+        //return await PaginatedList<FacilityDto>.CreateAsync(projected, request.Page, request.Limit, cancellationToken);
     }
 }

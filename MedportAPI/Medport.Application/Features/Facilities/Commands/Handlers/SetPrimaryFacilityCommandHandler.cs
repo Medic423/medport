@@ -11,18 +11,19 @@ public class SetPrimaryFacilityCommandHandler(IApplicationDbContext context) : I
 
     public async Task Handle(SetPrimaryFacilityCommand request, CancellationToken cancellationToken)
     {
-        var facility = await _context.HealthcareLocations.FirstOrDefaultAsync(h => h.Id == request.Id, cancellationToken);
-        if (facility == null)
-        {
+        //var facility = await _context.HealthcareLocations.FirstOrDefaultAsync(h => h.Id == request.Id, cancellationToken);
+        //if (facility == null)
+        //{
 
-        }
+        //}
 
-        // Unset other primary locations for same healthcare user
-        var others = _context.HealthcareLocations.Where(h => h.HealthcareUserId == facility.HealthcareUserId && h.Id != facility.Id && h.IsPrimary);
-        await others.ForEachAsync(h => h.IsPrimary = false, cancellationToken);
+        //// Unset other primary locations for same healthcare user
+        //var others = _context.HealthcareLocations.Where(h => h.HealthcareUserId == facility.HealthcareUserId && h.Id != facility.Id && h.IsPrimary);
+        //await others.ForEachAsync(h => h.IsPrimary = false, cancellationToken);
 
-        facility.IsPrimary = true;
-        await _context.SaveChangesAsync(cancellationToken);
+        //facility.IsPrimary = true;
+        //await _context.SaveChangesAsync(cancellationToken);
+        return;
 
     }
 }

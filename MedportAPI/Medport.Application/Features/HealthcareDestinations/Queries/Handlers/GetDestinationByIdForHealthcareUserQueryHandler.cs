@@ -20,28 +20,30 @@ public class GetDestinationByIdForHealthcareUserQueryHandler : IRequestHandler<G
 
     public async Task<HealthcareDestinationDto> Handle(GetDestinationByIdForHealthcareUserQuery request, CancellationToken cancellationToken)
     {
-        var destination = await _context.HealthcareDestinations
-            .AsNoTracking()
-            .Where(h => h.Id == request.Id && h.HealthcareUserId == request.HealthcareUserId)
-            .Select(h => new HealthcareDestinationDto
-            {
-                Id = h.Id,
-                HealthcareUserId = h.HealthcareUserId,
-                DestinationName = h.DestinationName,
-                Address = h.Address,
-                City = h.City,
-                State = h.State,
-                ZipCode = h.ZipCode,
-                Phone = h.Phone,
-                Latitude = h.Latitude,
-                Longitude = h.Longitude,
-                FacilityType = h.FacilityType,
-                IsActive = h.IsActive,
-                CreatedAt = h.CreatedAt,
-                UpdatedAt = h.UpdatedAt
-            })
-            .FirstOrDefaultAsync(cancellationToken);
+        //var destination = await _context.HealthcareDestinations
+        //    .AsNoTracking()
+        //    .Where(h => h.Id == request.Id && h.HealthcareUserId == request.HealthcareUserId)
+        //    .Select(h => new HealthcareDestinationDto
+        //    {
+        //        Id = h.Id,
+        //        HealthcareUserId = h.HealthcareUserId,
+        //        DestinationName = h.DestinationName,
+        //        Address = h.Address,
+        //        City = h.City,
+        //        State = h.State,
+        //        ZipCode = h.ZipCode,
+        //        Phone = h.Phone,
+        //        Latitude = h.Latitude,
+        //        Longitude = h.Longitude,
+        //        FacilityType = h.FacilityType,
+        //        IsActive = h.IsActive,
+        //        CreatedAt = h.CreatedAt,
+        //        UpdatedAt = h.UpdatedAt
+        //    })
+        //    .FirstOrDefaultAsync(cancellationToken);
 
-        return destination;
+        //return destination;
+
+        return null;
     }
 }

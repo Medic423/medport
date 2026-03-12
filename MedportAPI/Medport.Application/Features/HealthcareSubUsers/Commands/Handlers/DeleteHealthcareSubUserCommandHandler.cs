@@ -11,19 +11,21 @@ public class DeleteHealthcareSubUserCommandHandler(IApplicationDbContext context
 
     public async Task Handle(DeleteHealthcareSubUserCommand request, CancellationToken cancellationToken)
     {
-        if (request.CallerUserType != "HEALTHCARE" && request.CallerUserType != "ADMIN")
-            throw new UnauthorizedAccessException("Forbidden");
+        //if (request.CallerUserType != "HEALTHCARE" && request.CallerUserType != "ADMIN")
+        //    throw new UnauthorizedAccessException("Forbidden");
 
-        var sub = await _context.HealthcareUsers.FirstOrDefaultAsync(u => u.Id == request.Id, cancellationToken);
-        if (sub == null) throw new InvalidOperationException("Sub-user not found");
+        //var sub = await _context.HealthcareUsers.FirstOrDefaultAsync(u => u.Id == request.Id, cancellationToken);
+        //if (sub == null) throw new InvalidOperationException("Sub-user not found");
 
-        if (request.CallerUserType == "HEALTHCARE")
-        {
-            var parent = await _context.HealthcareUsers.FirstOrDefaultAsync(u => u.Email == request.CallerEmail && !u.IsSubUser, cancellationToken);
-            if (parent == null || sub.ParentUserId != parent.Id) throw new UnauthorizedAccessException("Forbidden");
-        }
+        //if (request.CallerUserType == "HEALTHCARE")
+        //{
+        //    var parent = await _context.HealthcareUsers.FirstOrDefaultAsync(u => u.Email == request.CallerEmail && !u.IsSubUser, cancellationToken);
+        //    if (parent == null || sub.ParentUserId != parent.Id) throw new UnauthorizedAccessException("Forbidden");
+        //}
 
-        _context.HealthcareUsers.Remove(sub);
-        await _context.SaveChangesAsync(cancellationToken);
+        //_context.HealthcareUsers.Remove(sub);
+        //await _context.SaveChangesAsync(cancellationToken);
+
+        return;
     }
 }

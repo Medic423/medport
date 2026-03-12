@@ -12,8 +12,8 @@ public class AgencyResponsesMappingProfile : Profile
         CreateMap<CreateAgencyResponseCommand, AgencyResponse>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
-            .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
-            .ForMember(dest => dest.RespondedAt, opt => opt.Ignore());
+            .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore());
+            //.ForMember(dest => dest.RespondedAt, opt => opt.Ignore());
 
         CreateMap<AgencyResponse, AgencyResponseDto>();
         CreateMap<AgencyResponseDto, AgencyResponse>();

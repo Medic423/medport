@@ -26,23 +26,25 @@ public class GetHealthcareLocationsByIdQueryHandler(
         CancellationToken cancellationToken
     )
     {
-        // Setup Query
-        IQueryable<HealthcareLocation> query = _context.HealthcareLocations;
+        //// Setup Query
+        //IQueryable<HealthcareLocation> query = _context.HealthcareLocations;
 
-        // Build ID Where
-        query = query.Where(x => x.Id == request.HealthcareLocationId);
+        //// Build ID Where
+        //query = query.Where(x => x.Id == request.HealthcareLocationId);
 
-        // Execute 
-        HealthcareLocationDto? healthcareLocation = await _mapper.ProjectTo<HealthcareLocationDto>(query)
-            .FirstOrDefaultAsync(cancellationToken);
+        //// Execute 
+        //HealthcareLocationDto? healthcareLocation = await _mapper.ProjectTo<HealthcareLocationDto>(query)
+        //    .FirstOrDefaultAsync(cancellationToken);
 
-        if (healthcareLocation is null)
-        {
-            throw new ErrorException(ErrorResult.Failure([HealthcareLocationErrors.NotFound(
-                HospitalConstants.Error.GetHospitalByIdQueryHandlerNotFound,
-                request.HealthcareLocationId)]));
-        }
+        //if (healthcareLocation is null)
+        //{
+        //    throw new ErrorException(ErrorResult.Failure([HealthcareLocationErrors.NotFound(
+        //        HospitalConstants.Error.GetHospitalByIdQueryHandlerNotFound,
+        //        request.HealthcareLocationId)]));
+        //}
 
-        return healthcareLocation;
+        //return healthcareLocation;
+
+        return null;
     }
 }

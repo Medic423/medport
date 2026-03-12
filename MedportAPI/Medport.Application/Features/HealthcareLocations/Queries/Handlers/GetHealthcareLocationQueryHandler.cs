@@ -22,14 +22,16 @@ public class GetHealthcareLocationQueryHandler(
         CancellationToken cancellationToken
     )
     {
-        IQueryable<HealthcareLocation> query = _context.HealthcareLocations.AsNoTracking();
+        //IQueryable<HealthcareLocation> query = _context.HealthcareLocations.AsNoTracking();
 
-        query = query.Where(x => x.HealthcareUserId == request.HealthcareUserId && x.IsActive == request.IsActive);
+        //query = query.Where(x => x.HealthcareUserId == request.HealthcareUserId && x.IsActive == request.IsActive);
 
-        List<HealthcareLocationDto> healthcareLocations = await _mapper
-            .ProjectTo<HealthcareLocationDto>(query)
-            .ToListAsync(cancellationToken);
+        //List<HealthcareLocationDto> healthcareLocations = await _mapper
+        //    .ProjectTo<HealthcareLocationDto>(query)
+        //    .ToListAsync(cancellationToken);
 
-        return healthcareLocations;
+        //return healthcareLocations;
+
+        return null;
     }
 }

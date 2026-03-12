@@ -19,11 +19,12 @@ public class GetAllAgencyResponsesQueryHandler(IApplicationDbContext context, IM
 
         if (request.TransportRequestId.HasValue)
         {
-            query = query.Where(a => a.TransportRequestId == request.TransportRequestId.Value);
+            //query = query.Where(a => a.TransportRequestId == request.TransportRequestId.Value);
         }
 
-        var list = await query.OrderByDescending(a => a.RespondedAt).ToListAsync(cancellationToken);
+        //var list = await query.OrderByDescending(a => a.RespondedAt).ToListAsync(cancellationToken);
 
-        return list.Select(a => _mapper.Map<AgencyResponseDto>(a)).ToList();
+        //return list.Select(a => _mapper.Map<AgencyResponseDto>(a)).ToList();
+        return null;
     }
 }

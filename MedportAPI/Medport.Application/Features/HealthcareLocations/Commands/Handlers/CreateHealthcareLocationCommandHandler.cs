@@ -15,14 +15,16 @@ public class CreateHealthcareLocationCommandHandler(IApplicationDbContext contex
 
     public async Task<HealthcareLocationDto> Handle(CreateHealthcareLocationCommand request, CancellationToken cancellationToken)
     {
-        HealthcareLocation newHealthcareLocation = _mapper.Map<HealthcareLocation>(request);
+        //HealthcareLocation newHealthcareLocation = _mapper.Map<HealthcareLocation>(request);
 
-        await _context.HealthcareLocations.AddAsync(newHealthcareLocation, cancellationToken);
+        //await _context.HealthcareLocations.AddAsync(newHealthcareLocation, cancellationToken);
 
-        await _context.SaveChangesAsync(cancellationToken);
+        //await _context.SaveChangesAsync(cancellationToken);
 
-        HealthcareLocationDto healthcareLocation = _mapper.Map<HealthcareLocationDto>(newHealthcareLocation);
+        //HealthcareLocationDto healthcareLocation = _mapper.Map<HealthcareLocationDto>(newHealthcareLocation);
 
-        return healthcareLocation;
+        //return healthcareLocation;
+
+        return null;
     }
 }

@@ -12,16 +12,18 @@ public class GetAccountStatisticsQueryHandler(IApplicationDbContext context) : I
 
     public async Task<AnalyticsDto> Handle(GetAccountStatisticsQuery request, CancellationToken cancellationToken)
     {
-        var totalHealthcare = await _context.HealthcareUsers.CountAsync(cancellationToken);
-        var totalEms = await _context.EmsAgencies.CountAsync(cancellationToken);
-        var totalCenter = await _context.CenterUsers.CountAsync(cancellationToken);
+        //var totalHealthcare = await _context.HealthcareUsers.CountAsync(cancellationToken);
+        //var totalEms = await _context.EmsAgencies.CountAsync(cancellationToken);
+        //var totalCenter = await _context.CenterUsers.CountAsync(cancellationToken);
 
-        return new AnalyticsDto
-        {
-            TotalHospitals = totalHealthcare,
-            TotalEmsAgencies = totalEms,
-            TotalCenterUsers = totalCenter,
-            TotalDropdownCategories = totalHealthcare + totalEms + totalCenter
-        };
+        //return new AnalyticsDto
+        //{
+        //    TotalHospitals = totalHealthcare,
+        //    TotalEmsAgencies = totalEms,
+        //    TotalCenterUsers = totalCenter,
+        //    TotalDropdownCategories = totalHealthcare + totalEms + totalCenter
+        //};
+
+        return null;
     }
 }

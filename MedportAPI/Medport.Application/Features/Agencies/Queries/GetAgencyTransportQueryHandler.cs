@@ -47,24 +47,25 @@ public class GetAgencyTransportQueryHandler(IApplicationDbContext context, IMapp
         //    City = "",
         //    State = ""
         //},
-        var requests = await _context.TransportRequests
-            .Where(x => x.Status == "PENDING")
-            .OrderByDescending(x => x.CreatedAt)
-            .Select(x => new TransportRequestDto
-            {
-                Id = x.Id,
-                PatientId = x.PatientId,
-                TransportLevel = x.TransportLevel,
-                Priority = x.Priority,
-                SpecialRequirements = x.SpecialRequirements,
-                EstimatedDistance = 0,
-                EstimatedDuration = 0,
-                RevenuePotential = 0,
-                Status = x.Status,
-                CreatedAt = x.CreatedAt
-            })
-            .ToListAsync();
+        //var requests = await _context.TransportRequests
+        //    .Where(x => x.Status == "PENDING")
+        //    .OrderByDescending(x => x.CreatedAt)
+        //    .Select(x => new TransportRequestDto
+        //    {
+        //        Id = x.Id,
+        //        PatientId = x.PatientId,
+        //        TransportLevel = x.TransportLevel,
+        //        Priority = x.Priority,
+        //        SpecialRequirements = x.SpecialRequirements,
+        //        EstimatedDistance = 0,
+        //        EstimatedDuration = 0,
+        //        RevenuePotential = 0,
+        //        Status = x.Status,
+        //        CreatedAt = x.CreatedAt
+        //    })
+        //    .ToListAsync();
 
-        return requests;
+        //return requests;
+        return null;
     }
 }

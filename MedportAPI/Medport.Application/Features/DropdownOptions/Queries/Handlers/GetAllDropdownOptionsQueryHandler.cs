@@ -15,14 +15,16 @@ public class GetAllDropdownOptionsQueryHandler(IApplicationDbContext context, IM
 
     public async Task<List<DropdownOptionDto>> Handle(GetAllDropdownOptionsQuery request, CancellationToken cancellationToken)
     {
-        var query = _context.DropdownOptions.AsQueryable();
+        var query = _context.DropdownOptions.AsQueryable()
+            .Include(o => o.DropdownCategory)
+            .AsNoTracking();
 
         if (request.CategoryId.HasValue)
         {
             query = query.Where(o => o.CategoryId == request.CategoryId.Value);
         }
 
-        var list = await query.OrderBy(o => o.DisplayOrder).ToListAsync(cancellationToken);
+        var list = await query.OrderBy(o => o.DropdownCategory.DisplayOrder).ToListAsync(cancellationToken);
 
         return list.Select(o => _mapper.Map<DropdownOptionDto>(o)).ToList();
     }

@@ -1,36 +1,34 @@
-using System;
+using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Medport.Domain.Entities
+namespace Medport.Domain.Entities;
+
+[Table("AgencyResponse")]
+public class AgencyResponse
 {
-    public class AgencyResponse
-    {
-        public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid Id { get; set; } = Guid.NewGuid();
 
-        public Guid TransportRequestId { get; set; }
+    public Guid TripId { get; set; }
 
-        public Guid AgencyId { get; set; }
+    public Guid AgencyId { get; set; }
 
-        public Guid EmsUserId { get; set; }
+    public string Response { get; set; } // ACCEPTED, DECLINED, PENDING
 
-        public string Response { get; set; } // ACCEPTED, DECLINED, PENDING
+    public DateTime ResponseTimestamp { get; set; } = DateTime.UtcNow;
 
-        public string ResponseNotes { get; set; }
+    public string? ResponseNotes { get; set; }
 
-        public double? EstimatedEta { get; set; }
+    public DateTime? EstimatedArrival { get; set; }
 
-        public string Status { get; set; } = "PENDING";
+    public bool IsSelected { get; set; }
 
-        public DateTime RespondedAt { get; set; } = DateTime.UtcNow;
+    public Guid? AssignedUnitId { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        // Navigation properties
-        public virtual TransportRequest TransportRequest { get; set; }
+    // Navigation properties
+    public virtual TransportRequest TransportRequest { get; set; }
 
-        public virtual EmsAgency Agency { get; set; }
-
-        public virtual EmsUser EmsUser { get; set; }
-    }
+    public virtual Unit? AssignedUnit { get; set; }
 }

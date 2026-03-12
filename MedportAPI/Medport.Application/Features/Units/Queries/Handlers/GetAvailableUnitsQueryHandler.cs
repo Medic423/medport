@@ -20,17 +20,19 @@ public class GetAvailableUnitsQueryHandler(IApplicationDbContext context, IMappe
 
     public async Task<List<UnitDto>> Handle(GetAvailableUnitsQuery request, CancellationToken cancellationToken)
     {
-        // Query for available units matching the criteria
-        var units = await _context.Units
-            .Where(u => u.AgencyId == request.AgencyId 
-                && u.IsActive 
-                && u.CurrentStatus == UnitStatuses.Available)
-            .OrderBy(u => u.UnitNumber)
-            .ToListAsync(cancellationToken);
+        //// Query for available units matching the criteria
+        //var units = await _context.Units
+        //    .Where(u => u.AgencyId == request.AgencyId 
+        //        && u.IsActive 
+        //        && u.CurrentStatus == UnitStatuses.Available)
+        //    .OrderBy(u => u.UnitNumber)
+        //    .ToListAsync(cancellationToken);
 
-        // Map to DTOs
-        var unitDtos = _mapper.Map<List<UnitDto>>(units);
+        //// Map to DTOs
+        //var unitDtos = _mapper.Map<List<UnitDto>>(units);
 
-        return unitDtos;
+        //return unitDtos;
+
+        return null;
     }
 }

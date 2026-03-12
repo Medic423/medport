@@ -19,19 +19,21 @@ public class GetTccOverviewQueryHandler : IRequestHandler<GetTccOverviewQuery, T
 
     public async Task<TccOverviewDto> Handle(GetTccOverviewQuery request, CancellationToken cancellationToken)
     {
-        var total = await _context.TransportRequests.CountAsync(cancellationToken);
-        var pending = await _context.TransportRequests.CountAsync(t => t.Status == "PENDING" || t.Status == "PENDING_DISPATCH", cancellationToken);
-        var completed = await _context.TransportRequests.CountAsync(t => t.Status == "COMPLETED", cancellationToken);
-        var activeAgencies = await _context.EmsAgencies.CountAsync(a => a.IsActive, cancellationToken);
-        var activeHospitals = await _context.Hospitals.CountAsync(h => h.IsActive, cancellationToken);
+        //var total = await _context.TransportRequests.CountAsync(cancellationToken);
+        //var pending = await _context.TransportRequests.CountAsync(t => t.Status == "PENDING" || t.Status == "PENDING_DISPATCH", cancellationToken);
+        //var completed = await _context.TransportRequests.CountAsync(t => t.Status == "COMPLETED", cancellationToken);
+        ////var activeAgencies = await _context.EmsAgencies.CountAsync(a => a.IsActive, cancellationToken);
+        ////var activeHospitals = await _context.Hospitals.CountAsync(h => h.IsActive, cancellationToken);
 
-        return new TccOverviewDto
-        {
-            TotalTrips = total,
-            PendingTrips = pending,
-            CompletedTrips = completed,
-            ActiveAgencies = activeAgencies,
-            ActiveHospitals = activeHospitals
-        };
+        //return new TccOverviewDto
+        //{
+        //    TotalTrips = total,
+        //    PendingTrips = pending,
+        //    CompletedTrips = completed,
+        //    ActiveAgencies = activeAgencies,
+        //    ActiveHospitals = activeHospitals
+        //};
+
+        return null;
     }
 }

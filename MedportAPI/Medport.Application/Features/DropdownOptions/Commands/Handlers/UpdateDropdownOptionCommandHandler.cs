@@ -30,7 +30,7 @@ public class UpdateDropdownOptionCommandHandler(IApplicationDbContext context, I
         }
         if (request.DisplayOrder.HasValue)
         {
-            option.DisplayOrder = request.DisplayOrder.Value;
+            option.DropdownCategory.DisplayOrder = request.DisplayOrder.Value;
         }
         if (request.IsActive.HasValue)
         {

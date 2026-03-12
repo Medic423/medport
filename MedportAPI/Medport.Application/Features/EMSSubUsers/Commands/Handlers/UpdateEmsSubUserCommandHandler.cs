@@ -21,31 +21,33 @@ public class UpdateEmsSubUserCommandHandler : IRequestHandler<UpdateEmsSubUserCo
 
     public async Task<EmsSubUserDto> Handle(UpdateEmsSubUserCommand request, CancellationToken cancellationToken)
     {
-        if (request.CallerUserType != "EMS" && request.CallerUserType != "ADMIN")
-            throw new UnauthorizedAccessException("Forbidden");
+        //if (request.CallerUserType != "EMS" && request.CallerUserType != "ADMIN")
+        //    throw new UnauthorizedAccessException("Forbidden");
 
-        var sub = await _context.EmsUsers.FirstOrDefaultAsync(u => u.Id == request.Id, cancellationToken);
-        if (sub == null) throw new InvalidOperationException("Sub-user not found");
+        //var sub = await _context.EmsUsers.FirstOrDefaultAsync(u => u.Id == request.Id, cancellationToken);
+        //if (sub == null) throw new InvalidOperationException("Sub-user not found");
 
-        if (request.CallerUserType == "EMS")
-        {
-            var parent = await _context.EmsUsers.FirstOrDefaultAsync(u => u.Email == request.CallerEmail && !u.IsSubUser, cancellationToken);
-            if (parent == null || sub.ParentUserId != parent.Id) throw new UnauthorizedAccessException("Forbidden");
-        }
+        //if (request.CallerUserType == "EMS")
+        //{
+        //    var parent = await _context.EmsUsers.FirstOrDefaultAsync(u => u.Email == request.CallerEmail && !u.IsSubUser, cancellationToken);
+        //    if (parent == null || sub.ParentUserId != parent.Id) throw new UnauthorizedAccessException("Forbidden");
+        //}
 
-        if (request.Name != null) sub.Name = request.Name;
-        if (request.IsActive.HasValue) sub.IsActive = request.IsActive.Value;
+        //if (request.Name != null) sub.Name = request.Name;
+        //if (request.IsActive.HasValue) sub.IsActive = request.IsActive.Value;
 
-        await _context.SaveChangesAsync(cancellationToken);
+        //await _context.SaveChangesAsync(cancellationToken);
 
-        return new EmsSubUserDto
-        {
-            Id = sub.Id,
-            Email = sub.Email,
-            Name = sub.Name,
-            IsActive = sub.IsActive,
-            CreatedAt = sub.CreatedAt,
-            UpdatedAt = sub.UpdatedAt
-        };
+        //return new EmsSubUserDto
+        //{
+        //    Id = sub.Id,
+        //    Email = sub.Email,
+        //    Name = sub.Name,
+        //    IsActive = sub.IsActive,
+        //    CreatedAt = sub.CreatedAt,
+        //    UpdatedAt = sub.UpdatedAt
+        //};
+
+        return null;
     }
 }

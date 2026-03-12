@@ -16,19 +16,21 @@ public class DeleteHealthcareLocationCommandHandler(IApplicationDbContext contex
 
     public async Task Handle(DeleteHealthcareLocationCommand request, CancellationToken cancellationToken)
     {
-        HealthcareLocation? entity = await _context.HealthcareLocations
-           .FindAsync([request.Id], cancellationToken);
+        //HealthcareLocation? entity = await _context.HealthcareLocations
+        //   .FindAsync([request.Id], cancellationToken);
 
-        if (entity == null)
-        {
-            // TODO FIx
-            //throw new ErrorException(ErrorResult.Failure([HealthcareLocationErrors.NotFound(
-            //    Constants.HospitalConstants.Error.DeleteHospitalCommandHandlerNotFound,
-            //    request.Id)]));
-        }
+        //if (entity == null)
+        //{
+        //    // TODO FIx
+        //    //throw new ErrorException(ErrorResult.Failure([HealthcareLocationErrors.NotFound(
+        //    //    Constants.HospitalConstants.Error.DeleteHospitalCommandHandlerNotFound,
+        //    //    request.Id)]));
+        //}
 
-        _context.HealthcareLocations.Remove(entity);
+        //_context.HealthcareLocations.Remove(entity);
 
-        await _context.SaveChangesAsync(cancellationToken);
+        //await _context.SaveChangesAsync(cancellationToken);
+
+        return;
     }
 }

@@ -19,38 +19,40 @@ public class GetAgencyByIdForHealthcareUserQueryHandler : IRequestHandler<GetAge
 
     public async Task<EmsAgencyDto> Handle(GetAgencyByIdForHealthcareUserQuery request, CancellationToken cancellationToken)
     {
-        var agency = await _context.EmsAgencies
-            .AsNoTracking()
-            .Where(a => a.Id == request.AgencyId && a.IsActive)
-            .FirstOrDefaultAsync(cancellationToken);
+        //var agency = await _context.EmsAgencies
+        //    .AsNoTracking()
+        //    .Where(a => a.Id == request.AgencyId && a.IsActive)
+        //    .FirstOrDefaultAsync(cancellationToken);
 
-        if (agency == null) return null;
+        //if (agency == null) return null;
 
-        var pref = await _context.HealthcareAgencyPreferences
-            .AsNoTracking()
-            .Where(p => p.HealthcareUserId == request.HealthcareUserId && p.PreferredAgencyId == agency.Id && p.IsActive)
-            .FirstOrDefaultAsync(cancellationToken);
+        //var pref = await _context.HealthcareAgencyPreferences
+        //    .AsNoTracking()
+        //    .Where(p => p.HealthcareUserId == request.HealthcareUserId && p.PreferredAgencyId == agency.Id && p.IsActive)
+        //    .FirstOrDefaultAsync(cancellationToken);
 
-        return new EmsAgencyDto
-        {
-            Id = agency.Id,
-            Name = agency.Name,
-            ContactName = agency.ContactName,
-            Phone = agency.Phone,
-            Email = agency.Email,
-            Address = agency.Address,
-            City = agency.City,
-            State = agency.State,
-            ZipCode = agency.ZipCode,
-            ServiceArea = agency.ServiceArea,
-            Capabilities = agency.Capabilities,
-            IsActive = agency.IsActive,
-            Status = agency.Status,
-            AddedBy = agency.AddedBy,
-            Latitude = agency.Latitude,
-            Longitude = agency.Longitude,
-            AcceptsNotifications = agency.AcceptsNotifications,
-            IsPreferred = pref != null
-        };
+        //return new EmsAgencyDto
+        //{
+        //    Id = agency.Id,
+        //    Name = agency.Name,
+        //    ContactName = agency.ContactName,
+        //    Phone = agency.Phone,
+        //    Email = agency.Email,
+        //    Address = agency.Address,
+        //    City = agency.City,
+        //    State = agency.State,
+        //    ZipCode = agency.ZipCode,
+        //    ServiceArea = agency.ServiceArea,
+        //    Capabilities = agency.Capabilities,
+        //    IsActive = agency.IsActive,
+        //    Status = agency.Status,
+        //    AddedBy = agency.AddedBy,
+        //    Latitude = agency.Latitude,
+        //    Longitude = agency.Longitude,
+        //    AcceptsNotifications = agency.AcceptsNotifications,
+        //    IsPreferred = pref != null
+        //};
+
+        return null;
     }
 }

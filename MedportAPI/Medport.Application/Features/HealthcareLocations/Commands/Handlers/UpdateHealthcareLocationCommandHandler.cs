@@ -19,22 +19,24 @@ public class UpdateHealthcareLocationCommandHandler(IApplicationDbContext contex
 
     public async Task<HealthcareLocationDto> Handle(UpdateHealthcareLocationCommand request, CancellationToken cancellationToken)
     {
-        HealthcareLocation? updatedHealthcareLocation = await _context.HealthcareLocations
-            .FindAsync([request.Id], cancellationToken);
+        //HealthcareLocation? updatedHealthcareLocation = await _context.HealthcareLocations
+        //    .FindAsync([request.Id], cancellationToken);
 
-        if (updatedHealthcareLocation == null)
-        {
-            throw new ErrorException(ErrorResult.Failure([HealthcareLocationErrors.NotFound(
-                HospitalConstants.Error.UpdateHospitalCommandHandlerNotFound,
-                request.Id)]));
-        }
+        //if (updatedHealthcareLocation == null)
+        //{
+        //    throw new ErrorException(ErrorResult.Failure([HealthcareLocationErrors.NotFound(
+        //        HospitalConstants.Error.UpdateHospitalCommandHandlerNotFound,
+        //        request.Id)]));
+        //}
 
-        _mapper.Map(request, updatedHealthcareLocation);
+        //_mapper.Map(request, updatedHealthcareLocation);
 
-        await _context.SaveChangesAsync(cancellationToken);
+        //await _context.SaveChangesAsync(cancellationToken);
 
-        HealthcareLocationDto healthcareLocation = _mapper.Map<HealthcareLocationDto>(updatedHealthcareLocation);
+        //HealthcareLocationDto healthcareLocation = _mapper.Map<HealthcareLocationDto>(updatedHealthcareLocation);
 
-        return healthcareLocation;
+        //return healthcareLocation;
+
+        return null;
     }
 }

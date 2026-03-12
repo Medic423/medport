@@ -19,47 +19,48 @@ public class SendBroadcastCommandHandler(IApplicationDbContext context)
         CancellationToken cancellationToken
     )
     {
-        var query = _context.CenterUsers
-            .AsNoTracking()
-            .Where(u => u.IsActive);
+        return null;
+        //var query = _context.CenterUsers
+        //    .AsNoTracking()
+        //    .Where(u => u.IsActive);
 
-        if (request.UserTypes is { Count: > 0 })
-        {
-            query = query.Where(u => request.UserTypes.Contains(u.UserType));
-        }
+        //if (request.UserTypes is { Count: > 0 })
+        //{
+        //    query = query.Where(u => request.UserTypes.Contains(u.UserType));
+        //}
 
-        var users = await query
-            .Select(u => new ShallowBroadcastUser
-            {
-                Id = u.Id,
-                Email = u.Email,
-                Name = u.Name,
-                UserType = u.UserType
-            })
-            .ToListAsync(cancellationToken);
+        //var users = await query
+        //    .Select(u => new ShallowBroadcastUser
+        //    {
+        //        Id = u.Id,
+        //        Email = u.Email,
+        //        Name = u.Name,
+        //        UserType = u.UserType
+        //    })
+        //    .ToListAsync(cancellationToken);
 
-        if (users.Count == 0)
-        {
-            return ReturnNoUsersResponse();
-        }
+        //if (users.Count == 0)
+        //{
+        //    return ReturnNoUsersResponse();
+        //}
 
-        var finalResult = AddResultsToList(request, users);
+        //var finalResult = AddResultsToList(request, users);
 
-        if (finalResult.Logs.Count != 0)
-        {
-            await _context.NotificationLogs
-                .AddRangeAsync(finalResult.Logs, cancellationToken);
+        //if (finalResult.Logs.Count != 0)
+        //{
+        //    await _context.NotificationLogs
+        //        .AddRangeAsync(finalResult.Logs, cancellationToken);
 
-            await _context.SaveChangesAsync(cancellationToken);
-        }
+        //    await _context.SaveChangesAsync(cancellationToken);
+        //}
 
-        return new BroadcastResultDto
-        {
-            TotalSent = finalResult.Successful + finalResult.Failed,
-            Successful = finalResult.Successful,
-            Failed = finalResult.Failed,
-            Results = finalResult.Results
-        };
+        //return new BroadcastResultDto
+        //{
+        //    TotalSent = finalResult.Successful + finalResult.Failed,
+        //    Successful = finalResult.Successful,
+        //    Failed = finalResult.Failed,
+        //    Results = finalResult.Results
+        //};
     }
 
     private static BroadcastFinalResult AddResultsToList(

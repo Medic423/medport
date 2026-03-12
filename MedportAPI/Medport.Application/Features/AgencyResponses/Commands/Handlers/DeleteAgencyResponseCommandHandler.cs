@@ -22,7 +22,7 @@ public class DeleteAgencyResponseCommandHandler(IApplicationDbContext context) :
         }
 
         // Soft-delete by setting status
-        entity.Status = "DELETED";
+        //entity.Status = "DELETED";
         entity.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync(cancellationToken);

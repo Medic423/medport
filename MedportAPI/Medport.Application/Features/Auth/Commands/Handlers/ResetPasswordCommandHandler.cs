@@ -38,34 +38,34 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
         var hasher = new PasswordHasher<object>();
         var hashed = hasher.HashPassword(null, temp);
 
-        if (request.Domain == "CENTER")
-        {
-            var user = await _context.CenterUsers.FindAsync(new object[] { request.Id }, cancellationToken);
-            if (user == null) return null;
-            user.Password = hashed;
-            await _context.SaveChangesAsync(cancellationToken);
-            return temp;
-        }
-        else if (request.Domain == "HEALTHCARE")
-        {
-            var user = await _context.HealthcareUsers.FindAsync(new object[] { request.Id }, cancellationToken);
-            if (user == null) return null;
-            user.Password = hashed;
-            user.MustChangePassword = true;
-            user.IsActive = true;
-            await _context.SaveChangesAsync(cancellationToken);
-            return temp;
-        }
-        else if (request.Domain == "EMS")
-        {
-            var user = await _context.EmsUsers.FindAsync(new object[] { request.Id }, cancellationToken);
-            if (user == null) return null;
-            user.Password = hashed;
-            user.MustChangePassword = true;
-            user.IsActive = true;
-            await _context.SaveChangesAsync(cancellationToken);
-            return temp;
-        }
+        //if (request.Domain == "CENTER")
+        //{
+        //    var user = await _context.CenterUsers.FindAsync(new object[] { request.Id }, cancellationToken);
+        //    if (user == null) return null;
+        //    user.Password = hashed;
+        //    await _context.SaveChangesAsync(cancellationToken);
+        //    return temp;
+        //}
+        //else if (request.Domain == "HEALTHCARE")
+        //{
+        //    var user = await _context.HealthcareUsers.FindAsync(new object[] { request.Id }, cancellationToken);
+        //    if (user == null) return null;
+        //    user.Password = hashed;
+        //    user.MustChangePassword = true;
+        //    user.IsActive = true;
+        //    await _context.SaveChangesAsync(cancellationToken);
+        //    return temp;
+        //}
+        //else if (request.Domain == "EMS")
+        //{
+        //    var user = await _context.EmsUsers.FindAsync(new object[] { request.Id }, cancellationToken);
+        //    if (user == null) return null;
+        //    user.Password = hashed;
+        //    user.MustChangePassword = true;
+        //    user.IsActive = true;
+        //    await _context.SaveChangesAsync(cancellationToken);
+        //    return temp;
+        //}
 
         return null;
     }

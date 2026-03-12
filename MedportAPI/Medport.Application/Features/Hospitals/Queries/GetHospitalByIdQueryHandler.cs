@@ -20,23 +20,25 @@ public class GetHospitalByIdQueryHandler(IApplicationDbContext context, IMapper 
 
     public async Task<HospitalDto> Handle(GetHospitalByIdQuery request, CancellationToken cancellationToken)
     {
-        // Setup Query
-        IQueryable<Hospital> query = _context.Hospitals;
+        //// Setup Query
+        //IQueryable<Hospital> query = _context.Hospitals;
 
-        // Build ID Where
-        query = query.Where(x => x.Id == request.HospitalId);
+        //// Build ID Where
+        //query = query.Where(x => x.Id == request.HospitalId);
 
-        // Execute 
-        HospitalDto? hospital = await _mapper.ProjectTo<HospitalDto>(query)
-            .FirstOrDefaultAsync(cancellationToken);
+        //// Execute 
+        //HospitalDto? hospital = await _mapper.ProjectTo<HospitalDto>(query)
+        //    .FirstOrDefaultAsync(cancellationToken);
 
-        if (hospital is null)
-        {
-            throw new ErrorException(ErrorResult.Failure([HospitalErrors.NotFound(
-                HospitalConstants.Error.GetHospitalByIdQueryHandlerNotFound,
-                request.HospitalId)]));
-        }
+        //if (hospital is null)
+        //{
+        //    throw new ErrorException(ErrorResult.Failure([HospitalErrors.NotFound(
+        //        HospitalConstants.Error.GetHospitalByIdQueryHandlerNotFound,
+        //        request.HospitalId)]));
+        //}
 
-        return hospital;
+        //return hospital;
+
+        return null;
     }
 }

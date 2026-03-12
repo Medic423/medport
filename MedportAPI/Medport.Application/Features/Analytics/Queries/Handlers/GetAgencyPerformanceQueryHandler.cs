@@ -19,10 +19,12 @@ public class GetAgencyPerformanceQueryHandler : IRequestHandler<GetAgencyPerform
 
     public async Task<object> Handle(GetAgencyPerformanceQuery request, CancellationToken cancellationToken)
     {
-        var list = await _context.EmsAgencies.AsNoTracking()
-            .Select(a => new { a.Id, a.Name, a.IsActive })
-            .ToListAsync(cancellationToken);
+        //var list = await _context.EmsAgencies.AsNoTracking()
+        //    .Select(a => new { a.Id, a.Name, a.IsActive })
+        //    .ToListAsync(cancellationToken);
 
-        return list;
+        //return list;
+
+        return null;
     }
 }

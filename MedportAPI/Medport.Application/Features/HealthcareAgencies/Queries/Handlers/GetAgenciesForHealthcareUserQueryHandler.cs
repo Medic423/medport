@@ -22,67 +22,69 @@ public class GetAgenciesForHealthcareUserQueryHandler : IRequestHandler<GetAgenc
 
     public async Task<PaginatedList<EmsAgencyDto>> Handle(GetAgenciesForHealthcareUserQuery request, CancellationToken cancellationToken)
     {
-        IQueryable<EmsAgency> query = _context.EmsAgencies.AsNoTracking();
+        //IQueryable<EmsAgency> query = _context.EmsAgencies.AsNoTracking();
 
-        if (!string.IsNullOrWhiteSpace(request.Name))
-        {
-            query = query.Where(a => a.Name.Contains(request.Name));
-        }
+        //if (!string.IsNullOrWhiteSpace(request.Name))
+        //{
+        //    query = query.Where(a => a.Name.Contains(request.Name));
+        //}
 
-        if (!string.IsNullOrWhiteSpace(request.City))
-        {
-            query = query.Where(a => a.City.Contains(request.City));
-        }
+        //if (!string.IsNullOrWhiteSpace(request.City))
+        //{
+        //    query = query.Where(a => a.City.Contains(request.City));
+        //}
 
-        if (!string.IsNullOrWhiteSpace(request.State))
-        {
-            query = query.Where(a => a.State.Contains(request.State));
-        }
+        //if (!string.IsNullOrWhiteSpace(request.State))
+        //{
+        //    query = query.Where(a => a.State.Contains(request.State));
+        //}
 
-        if (request.IsActive != null)
-        {
-            query = query.Where(a => a.IsActive == request.IsActive);
-        }
+        //if (request.IsActive != null)
+        //{
+        //    query = query.Where(a => a.IsActive == request.IsActive);
+        //}
 
-        var projected = query.Select(a => new EmsAgencyDto
-        {
-            Id = a.Id,
-            Name = a.Name,
-            ContactName = a.ContactName,
-            Phone = a.Phone,
-            Email = a.Email,
-            Address = a.Address,
-            City = a.City,
-            State = a.State,
-            ZipCode = a.ZipCode,
-            ServiceArea = a.ServiceArea,
-            Capabilities = a.Capabilities,
-            IsActive = a.IsActive,
-            Status = a.Status,
-            AddedBy = a.AddedBy,
-            Latitude = a.Latitude,
-            Longitude = a.Longitude,
-            AcceptsNotifications = a.AcceptsNotifications,
-            IsPreferred = false
-        });
+        //var projected = query.Select(a => new EmsAgencyDto
+        //{
+        //    Id = a.Id,
+        //    Name = a.Name,
+        //    ContactName = a.ContactName,
+        //    Phone = a.Phone,
+        //    Email = a.Email,
+        //    Address = a.Address,
+        //    City = a.City,
+        //    State = a.State,
+        //    ZipCode = a.ZipCode,
+        //    ServiceArea = a.ServiceArea,
+        //    Capabilities = a.Capabilities,
+        //    IsActive = a.IsActive,
+        //    Status = a.Status,
+        //    AddedBy = a.AddedBy,
+        //    Latitude = a.Latitude,
+        //    Longitude = a.Longitude,
+        //    AcceptsNotifications = a.AcceptsNotifications,
+        //    IsPreferred = false
+        //});
 
-        var list = await PaginatedList<EmsAgencyDto>.CreateAsync(projected, request.Page, request.Limit, cancellationToken);
+        //var list = await PaginatedList<EmsAgencyDto>.CreateAsync(projected, request.Page, request.Limit, cancellationToken);
 
-        // annotate preferred statuses
-        var prefIds = await _context.HealthcareAgencyPreferences
-            .Where(p => p.HealthcareUserId == request.HealthcareUserId && p.IsActive)
-            .Select(p => p.PreferredAgencyId)
-            .ToListAsync(cancellationToken);
+        //// annotate preferred statuses
+        //var prefIds = await _context.HealthcareAgencyPreferences
+        //    .Where(p => p.HealthcareUserId == request.HealthcareUserId && p.IsActive)
+        //    .Select(p => p.PreferredAgencyId)
+        //    .ToListAsync(cancellationToken);
 
-        foreach (var item in list.Items)
-        {
-            if (prefIds.Contains(item.Id))
-            {
-                // Reflection not needed, set property directly
-                item.IsPreferred = true;
-            }
-        }
+        //foreach (var item in list.Items)
+        //{
+        //    if (prefIds.Contains(item.Id))
+        //    {
+        //        // Reflection not needed, set property directly
+        //        item.IsPreferred = true;
+        //    }
+        //}
 
-        return list;
+        //return list;
+
+        return null;
     }
 }

@@ -9,11 +9,11 @@ public class HospitalMappingProfile : Profile
 {
     public HospitalMappingProfile()
     {
-        CreateMap<HealthcareLocation, HealthcareLocationDto>();
+        //CreateMap<HealthcareLocation, HealthcareLocationDto>();
 
-        CreateMap<CreateHealthcareLocationCommand, HealthcareLocation>();
+        //CreateMap<CreateHealthcareLocationCommand, HealthcareLocation>();
 
-        CreateMap<UpdateHealthcareLocationCommand, HealthcareLocation>();
+        //CreateMap<UpdateHealthcareLocationCommand, HealthcareLocation>();
     }
 }
 

@@ -13,14 +13,16 @@ public class CreateHospitalCommandHandler(IApplicationDbContext context, IMapper
 
     public async Task<HospitalDto> Handle(CreateHospitalCommand request, CancellationToken cancellationToken)
     {
-        Hospital newHospital = _mapper.Map<Hospital>(request);
+        //Hospital newHospital = _mapper.Map<Hospital>(request);
 
-        await _context.Hospitals.AddAsync(newHospital, cancellationToken);
+        //await _context.Hospitals.AddAsync(newHospital, cancellationToken);
 
-        await _context.SaveChangesAsync(cancellationToken);
+        //await _context.SaveChangesAsync(cancellationToken);
 
-        HospitalDto hospital = _mapper.Map<HospitalDto>(newHospital);
+        //HospitalDto hospital = _mapper.Map<HospitalDto>(newHospital);
 
-        return hospital;
+        //return hospital;
+
+        return null;
     }
 }

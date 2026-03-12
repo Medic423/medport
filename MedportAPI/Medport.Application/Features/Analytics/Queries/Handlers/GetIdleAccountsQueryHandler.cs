@@ -19,8 +19,10 @@ public class GetIdleAccountsQueryHandler : IRequestHandler<GetIdleAccountsQuery,
 
     public async Task<object> Handle(GetIdleAccountsQuery request, CancellationToken cancellationToken)
     {
-        var since = System.DateTime.UtcNow.AddDays(-request.Days);
-        var idleHealthcare = await _context.HealthcareUsers.AsNoTracking().Where(h => h.LastActivity == null || h.LastActivity <= since).Select(h => new { h.Id, h.Email, h.FacilityName, h.LastActivity }).ToListAsync(cancellationToken);
-        return new { idleHealthcareCount = idleHealthcare.Count, idleHealthcare };
+        //var since = System.DateTime.UtcNow.AddDays(-request.Days);
+        //var idleHealthcare = await _context.HealthcareUsers.AsNoTracking().Where(h => h.LastActivity == null || h.LastActivity <= since).Select(h => new { h.Id, h.Email, h.FacilityName, h.LastActivity }).ToListAsync(cancellationToken);
+        //return new { idleHealthcareCount = idleHealthcare.Count, idleHealthcare };
+
+        return null;
     }
 }

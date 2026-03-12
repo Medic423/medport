@@ -14,18 +14,20 @@ public class DeleteHospitalCommandHandler(IApplicationDbContext context) : IRequ
 
     public async Task Handle(DeleteHospitalCommand request, CancellationToken cancellationToken)
     {
-        Hospital? entity = await _context.Hospitals
-           .FindAsync([request.Id], cancellationToken);
+        //Hospital? entity = await _context.Hospitals
+        //   .FindAsync([request.Id], cancellationToken);
 
-        if (entity == null)
-        {
-            throw new ErrorException(ErrorResult.Failure([HospitalErrors.NotFound(
-                Constants.HospitalConstants.Error.DeleteHospitalCommandHandlerNotFound,
-                request.Id)]));
-        }
+        //if (entity == null)
+        //{
+        //    throw new ErrorException(ErrorResult.Failure([HospitalErrors.NotFound(
+        //        Constants.HospitalConstants.Error.DeleteHospitalCommandHandlerNotFound,
+        //        request.Id)]));
+        //}
 
-        _context.Hospitals.Remove(entity);
+        //_context.Hospitals.Remove(entity);
 
-        await _context.SaveChangesAsync(cancellationToken);
+        //await _context.SaveChangesAsync(cancellationToken);
+
+        return;
     }
 }

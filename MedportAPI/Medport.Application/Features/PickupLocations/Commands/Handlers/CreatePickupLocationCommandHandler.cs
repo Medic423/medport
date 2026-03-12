@@ -19,34 +19,36 @@ public class CreatePickupLocationCommandHandler : IRequestHandler<CreatePickupLo
 
     public async Task<PickupLocationDto> Handle(CreatePickupLocationCommand request, CancellationToken cancellationToken)
     {
-        var entity = new PickupLocation
-        {
-            HospitalId = request.HospitalId,
-            Name = request.Name?.Trim(),
-            Description = request.Description?.Trim(),
-            ContactPhone = request.ContactPhone?.Trim(),
-            ContactEmail = request.ContactEmail?.Trim(),
-            Floor = request.Floor?.Trim(),
-            Room = request.Room?.Trim(),
-            IsActive = true
-        };
+        //var entity = new PickupLocation
+        //{
+        //    HospitalId = request.HospitalId,
+        //    Name = request.Name?.Trim(),
+        //    Description = request.Description?.Trim(),
+        //    ContactPhone = request.ContactPhone?.Trim(),
+        //    ContactEmail = request.ContactEmail?.Trim(),
+        //    Floor = request.Floor?.Trim(),
+        //    Room = request.Room?.Trim(),
+        //    IsActive = true
+        //};
 
-        _context.PickupLocations.Add(entity);
-        await _context.SaveChangesAsync(cancellationToken);
+        //_context.PickupLocations.Add(entity);
+        //await _context.SaveChangesAsync(cancellationToken);
 
-        return new PickupLocationDto
-        {
-            Id = entity.Id,
-            HospitalId = entity.HospitalId,
-            Name = entity.Name,
-            Description = entity.Description,
-            ContactPhone = entity.ContactPhone,
-            ContactEmail = entity.ContactEmail,
-            Floor = entity.Floor,
-            Room = entity.Room,
-            IsActive = entity.IsActive,
-            CreatedAt = entity.CreatedAt,
-            UpdatedAt = entity.UpdatedAt
-        };
+        //return new PickupLocationDto
+        //{
+        //    Id = entity.Id,
+        //    HospitalId = entity.HospitalId,
+        //    Name = entity.Name,
+        //    Description = entity.Description,
+        //    ContactPhone = entity.ContactPhone,
+        //    ContactEmail = entity.ContactEmail,
+        //    Floor = entity.Floor,
+        //    Room = entity.Room,
+        //    IsActive = entity.IsActive,
+        //    CreatedAt = entity.CreatedAt,
+        //    UpdatedAt = entity.UpdatedAt
+        //};
+
+        return null;
     }
 }

@@ -36,27 +36,29 @@ public class ResetEmsSubUserPasswordCommandHandler : IRequestHandler<ResetEmsSub
 
     public async Task<ResetEmsSubUserResultDto> Handle(ResetEmsSubUserPasswordCommand request, CancellationToken cancellationToken)
     {
-        if (request.CallerUserType != "EMS" && request.CallerUserType != "ADMIN")
-            throw new UnauthorizedAccessException("Forbidden");
+        //if (request.CallerUserType != "EMS" && request.CallerUserType != "ADMIN")
+        //    throw new UnauthorizedAccessException("Forbidden");
 
-        var sub = await _context.EmsUsers.FirstOrDefaultAsync(u => u.Id == request.Id, cancellationToken);
-        if (sub == null) throw new InvalidOperationException("Sub-user not found");
+        //var sub = await _context.EmsUsers.FirstOrDefaultAsync(u => u.Id == request.Id, cancellationToken);
+        //if (sub == null) throw new InvalidOperationException("Sub-user not found");
 
-        if (request.CallerUserType == "EMS")
-        {
-            var parent = await _context.EmsUsers.FirstOrDefaultAsync(u => u.Email == request.CallerEmail && !u.IsSubUser, cancellationToken);
-            if (parent == null || sub.ParentUserId != parent.Id) throw new UnauthorizedAccessException("Forbidden");
-        }
+        //if (request.CallerUserType == "EMS")
+        //{
+        //    var parent = await _context.EmsUsers.FirstOrDefaultAsync(u => u.Email == request.CallerEmail && !u.IsSubUser, cancellationToken);
+        //    if (parent == null || sub.ParentUserId != parent.Id) throw new UnauthorizedAccessException("Forbidden");
+        //}
 
-        var tempPassword = GenerateTempPassword();
-        var hash = BCrypt.Net.BCrypt.HashPassword(tempPassword);
+        //var tempPassword = GenerateTempPassword();
+        //var hash = BCrypt.Net.BCrypt.HashPassword(tempPassword);
 
-        sub.Password = hash;
-        sub.MustChangePassword = true;
-        sub.IsActive = true;
+        //sub.Password = hash;
+        //sub.MustChangePassword = true;
+        //sub.IsActive = true;
 
-        await _context.SaveChangesAsync(cancellationToken);
+        //await _context.SaveChangesAsync(cancellationToken);
 
-        return new ResetEmsSubUserResultDto { Id = sub.Id, TempPassword = tempPassword };
+        //return new ResetEmsSubUserResultDto { Id = sub.Id, TempPassword = tempPassword };
+
+        return null;
     }
 }

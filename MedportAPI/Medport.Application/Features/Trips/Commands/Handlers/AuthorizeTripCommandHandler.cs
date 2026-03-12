@@ -14,34 +14,36 @@ public class AuthorizeTripCommandHandler(IApplicationDbContext context) : IReque
 
     public async Task<TransportRequestDto> Handle(AuthorizeTripCommand request, CancellationToken cancellationToken)
     {
-        var entity = await _context.TransportRequests.FirstOrDefaultAsync(t => t.Id == request.Id, cancellationToken);
-        if (entity == null) return null;
+        //var entity = await _context.TransportRequests.FirstOrDefaultAsync(t => t.Id == request.Id, cancellationToken);
+        //if (entity == null) return null;
 
-        // Set the ready window start to the authorized time and mark as pending dispatch
-        entity.ReadyStart = request.AuthorizedTime;
-        entity.Status = "PENDING_DISPATCH";
-        entity.UpdatedAt = System.DateTime.UtcNow;
+        //// Set the ready window start to the authorized time and mark as pending dispatch
+        //entity.ReadyStart = request.AuthorizedTime;
+        //entity.Status = "PENDING_DISPATCH";
+        //entity.UpdatedAt = System.DateTime.UtcNow;
 
-        await _context.SaveChangesAsync(cancellationToken);
+        //await _context.SaveChangesAsync(cancellationToken);
 
-        return new TransportRequestDto
-        {
-            Id = entity.Id,
-            PatientId = entity.PatientId,
-            OriginFacilityId = entity.OriginFacilityId,
-            DestinationFacilityId = entity.DestinationFacilityId,
-            TransportLevel = entity.TransportLevel,
-            Priority = entity.Priority,
-            Status = entity.Status,
-            SpecialRequirements = entity.SpecialRequirements,
-            RequestTimestamp = entity.RequestTimestamp,
-            ReadyStart = entity.ReadyStart,
-            ReadyEnd = entity.ReadyEnd,
-            AssignedAgencyId = entity.AssignedAgencyId,
-            AssignedUnitId = entity.AssignedUnitId,
-            AcceptedTimestamp = entity.AcceptedTimestamp,
-            PickupTimestamp = entity.PickupTimestamp,
-            CompletionTimestamp = entity.CompletionTimestamp
-        };
+        //return new TransportRequestDto
+        //{
+        //    Id = entity.Id,
+        //    PatientId = entity.PatientId,
+        //    OriginFacilityId = entity.OriginFacilityId,
+        //    DestinationFacilityId = entity.DestinationFacilityId,
+        //    TransportLevel = entity.TransportLevel,
+        //    Priority = entity.Priority,
+        //    Status = entity.Status,
+        //    SpecialRequirements = entity.SpecialRequirements,
+        //    RequestTimestamp = entity.RequestTimestamp,
+        //    ReadyStart = entity.ReadyStart,
+        //    ReadyEnd = entity.ReadyEnd,
+        //    AssignedAgencyId = entity.AssignedAgencyId,
+        //    AssignedUnitId = entity.AssignedUnitId,
+        //    AcceptedTimestamp = entity.AcceptedTimestamp,
+        //    PickupTimestamp = entity.PickupTimestamp,
+        //    CompletionTimestamp = entity.CompletionTimestamp
+        //};
+
+        return null;
     }
 }
