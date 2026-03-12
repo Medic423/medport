@@ -87,4 +87,7 @@ public class Organization
 
     [JsonIgnore]
     public virtual ICollection<OrganizationPreference> IncomingPreferences { get; set; } = new List<OrganizationPreference>();
+
+    [JsonIgnore]
+    public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
 }

@@ -9,6 +9,8 @@ public interface IApplicationDbContext
     #region User DbSets
     DbSet<User> Users { get; set; }
     DbSet<UserPreference> UserPreferences { get; set; }
+    DbSet<Role> Roles { get; set; }
+    DbSet<UserRole> UserRoles { get; set; }
     #endregion
 
     #region Organization DbSets

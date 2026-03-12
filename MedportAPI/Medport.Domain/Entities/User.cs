@@ -13,7 +13,7 @@ public class User
 
     public string Name { get; set; }
 
-    public string UserType { get; set; } // SYSTEM_ADMIN, ORGANIZATION_USER, FACILITY_USER
+    public string UserType { get; set; } // SYSTEM_ADMIN, HEALTHCARE_ORGANIZATION_USER, EMS_ORGANIZATION_USER
 
     public Guid? OrganizationId { get; set; }
 
@@ -41,4 +41,6 @@ public class User
     public virtual ICollection<NotificationLog> NotificationLogs { get; set; } = new List<NotificationLog>();
 
     public virtual ICollection<TransportRequest> CreatedTrips { get; set; } = new List<TransportRequest>();
+
+    public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
 }
