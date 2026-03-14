@@ -77,7 +77,7 @@ router.post('/create', authenticateAdmin, async (req, res) => {
       console.log('TCC_DEBUG: Exporting consolidated medport_ems database...');
       
       // Get all tables from the consolidated database
-      const trips = await prisma.$queryRaw`SELECT * FROM trips` as any[];
+      const transportRequests = await prisma.$queryRaw`SELECT * FROM transport_requests` as any[];
       const hospitals = await prisma.$queryRaw`SELECT * FROM hospitals` as any[];
       const facilities = await prisma.$queryRaw`SELECT * FROM facilities` as any[];
       const centerUsers = await prisma.$queryRaw`SELECT * FROM center_users` as any[];
@@ -135,7 +135,7 @@ router.post('/create', authenticateAdmin, async (req, res) => {
         units,
         
         // Trip tables
-        trips,
+        transportRequests,
         agencyResponses,
         
         // System tables
@@ -146,7 +146,7 @@ router.post('/create', authenticateAdmin, async (req, res) => {
       
       console.log('TCC_DEBUG: Consolidated database exported successfully');
       console.log('TCC_DEBUG: Exported counts:', {
-        trips: trips.length,
+        transportRequests: transportRequests.length,
         hospitals: hospitals.length,
         facilities: facilities.length,
         agencies: agencies.length,

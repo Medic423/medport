@@ -1848,7 +1848,7 @@ export class TripService {
       // Get unique trip IDs to fetch trip details
       const tripIds = [...new Set(agencyResponses.map(r => r.tripId))];
       
-      // Fetch trip details - check both transport_requests and trips tables
+      // Fetch trip details from transport_requests
       const transportRequests = await prisma.transportRequest.findMany({
         where: { id: { in: tripIds } },
         include: {
@@ -1858,11 +1858,7 @@ export class TripService {
         }
       });
       
-      const tripsData = await prisma.trip.findMany({
-        where: { id: { in: tripIds } }
-      });
-      
-      // Combine both sources into a single map
+      // Build trip map from transport requests
       const tripMap = new Map<string, any>();
       
       transportRequests.forEach(trip => {
@@ -1875,20 +1871,6 @@ export class TripService {
           urgencyLevel: trip.urgencyLevel,
           assignedUnit: trip.assignedUnit
         });
-      });
-      
-      tripsData.forEach(trip => {
-        if (!tripMap.has(trip.id)) {
-          tripMap.set(trip.id, {
-            id: trip.id,
-            patientId: trip.patientId,
-            fromLocation: trip.fromLocation,
-            toLocation: trip.toLocation,
-            transportLevel: trip.transportLevel,
-            urgencyLevel: trip.urgencyLevel,
-            assignedUnit: null
-          });
-        }
       });
       
       // Get agency names for all agencies in responses
@@ -1997,16 +1979,6 @@ export class TripService {
           status: 'ACCEPTED',
           acceptedTimestamp: new Date()
         }
-      }).catch(() => {
-        // If transportRequest doesn't exist, try updating Trip table
-        return prisma.trip.update({
-          where: { id: tripId },
-          data: {
-            assignedAgencyId: agencyResponse.agencyId,
-            status: 'ACCEPTED',
-            acceptedTimestamp: new Date()
-          }
-        });
       });
       
       console.log('TCC_DEBUG: Agency selected successfully for trip:', tripId);

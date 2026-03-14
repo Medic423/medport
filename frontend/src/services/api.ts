@@ -190,15 +190,6 @@ export const tccAnalyticsAPI = {
   
   getTrips: () =>
     api.get('/api/tcc/analytics/trips'),
-  
-  getCostAnalysis: (params?: any) =>
-    api.get('/api/tcc/analytics/cost-analysis', { params }),
-  
-  getProfitability: (params?: any) =>
-    api.get('/api/tcc/analytics/profitability', { params }),
-  
-  getCostBreakdowns: (params?: any) =>
-    api.get('/api/tcc/analytics/cost-breakdowns', { params }),
 };
 
 // Analytics API (legacy export for compatibility)
@@ -217,12 +208,6 @@ export const analyticsAPI = {
   
   getIdleAccountsList: (days: 30 | 60 | 90) =>
     api.get('/api/tcc/analytics/idle-accounts', { params: { days } }),
-  
-  getCostAnalysis: (params?: any) =>
-    api.get('/api/tcc/analytics/cost-analysis', { params }),
-  
-  getProfitability: (params?: any) =>
-    api.get('/api/tcc/analytics/profitability', { params }),
   
   getActiveUsers: (threshold?: number, excludeCurrent?: boolean) =>
     api.get('/api/tcc/analytics/active-users', { 

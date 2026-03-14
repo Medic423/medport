@@ -51,20 +51,11 @@ router.get('/overview', async (req: AuthenticatedRequest, res) => {
       totalTrips,
       completedTrips,
       pendingTrips,
-      responseTimes
     ] = await Promise.all([
-      centerPrisma.trip.count({ where: { assignedAgencyId: agencyId } }),
-      centerPrisma.trip.count({ where: { assignedAgencyId: agencyId, status: 'COMPLETED' } }),
-      centerPrisma.trip.count({ where: { assignedAgencyId: agencyId, status: 'PENDING' } }),
-      centerPrisma.trip.findMany({
-        where: { assignedAgencyId: agencyId, responseTimeMinutes: { not: null } },
-        select: { responseTimeMinutes: true }
-      })
+      centerPrisma.transportRequest.count({ where: { assignedAgencyId: agencyId } }),
+      centerPrisma.transportRequest.count({ where: { assignedAgencyId: agencyId, status: 'COMPLETED' } }),
+      centerPrisma.transportRequest.count({ where: { assignedAgencyId: agencyId, status: 'PENDING' } }),
     ]);
-
-    const avgResponse = responseTimes.length > 0
-      ? responseTimes.reduce((sum, t) => sum + (t.responseTimeMinutes || 0), 0) / responseTimes.length
-      : 0;
 
     const efficiency = totalTrips > 0 ? completedTrips / totalTrips : 0;
 
@@ -75,7 +66,7 @@ router.get('/overview', async (req: AuthenticatedRequest, res) => {
         completedTrips,
         pendingTrips,
         efficiency,
-        averageResponseTime: avgResponse,
+        averageResponseTime: 0,
         agencyName: agencyName || 'Agency'
       }
     });

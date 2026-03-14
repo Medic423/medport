@@ -243,81 +243,10 @@ model PickupLocation {
   updatedAt    DateTime           @updatedAt
   facility     Facility           @relation(fields: [facilityId], references: [id], onDelete: Cascade)
   trips        TransportRequest[]
-  legacyTrips  Trip[]
 
   @@index([facilityId])
   @@index([isActive])
   @@map("pickup_locations")
-}
-
-model Trip {
-  id                       String            @id @default(cuid())
-  tripNumber               String            @unique
-  patientId                String
-  patientWeight            String?
-  specialNeeds             String?
-  fromLocation             String
-  toLocation               String
-  scheduledTime            DateTime
-  transportLevel           String
-  urgencyLevel             String
-  diagnosis                String?
-  mobilityLevel            String?
-  oxygenRequired           Boolean           @default(false)
-  monitoringRequired       Boolean           @default(false)
-  generateQRCode           Boolean           @default(false)
-  qrCodeData               String?
-  selectedAgencies         String[]
-  notificationRadius       Int?
-  transferRequestTime      DateTime?
-  transferAcceptedTime     DateTime?
-  emsArrivalTime           DateTime?
-  emsDepartureTime         DateTime?
-  actualStartTime          DateTime?
-  actualEndTime            DateTime?
-  status                   String
-  priority                 String
-  notes                    String?
-  assignedTo               String?
-  assignedAgencyId         String?
-  assignedUnitId           String?
-  acceptedTimestamp        DateTime?
-  pickupTimestamp          DateTime?
-  completionTimestamp      DateTime?
-  createdAt                DateTime          @default(now())
-  updatedAt                DateTime          @updatedAt
-  actualTripTimeMinutes    Int?
-  backhaulOpportunity      Boolean           @default(false)
-  completionTimeMinutes    Int?
-  customerSatisfaction     Int?
-  deadheadMiles            Float?
-  destinationLatitude      Float?
-  destinationLongitude     Float?
-  distanceMiles            Float?
-  efficiency               Decimal?          @db.Decimal(5, 2)
-  estimatedTripTimeMinutes Int?
-  insuranceCompany         String?
-  insurancePayRate         Decimal?          @db.Decimal(10, 2)
-  loadedMiles              Decimal?          @db.Decimal(10, 2)
-  originLatitude           Float?
-  originLongitude          Float?
-  perMileRate              Decimal?          @db.Decimal(8, 2)
-  performanceScore         Decimal?          @db.Decimal(5, 2)
-  requestTimestamp         DateTime?         @default(now())
-  responseTimeMinutes      Int?
-  revenuePerHour           Decimal?          @db.Decimal(10, 2)
-  tripCost                 Decimal?          @db.Decimal(10, 2)
-  pickupLocationId         String?
-  // Patient age fields (optional)
-  patientAgeYears          Int?
-  patientAgeCategory       String?
-  maxResponses             Int               @default(5)
-  responseDeadline         DateTime?
-  responseStatus           String            @default("PENDING")
-  selectionMode            String            @default("SPECIFIC_AGENCIES")
-  pickupLocation           PickupLocation?   @relation(fields: [pickupLocationId], references: [id])
-
-  @@map("trips")
 }
 
 model AgencyResponse {
@@ -347,43 +276,6 @@ model SystemAnalytics {
   createdAt   DateTime @default(now())
 
   @@map("system_analytics")
-}
-
-model TripCostBreakdown {
-  id                         String   @id @default(cuid())
-  tripId                     String
-  baseRevenue                Decimal  @db.Decimal(10, 2)
-  mileageRevenue             Decimal  @db.Decimal(10, 2)
-  priorityRevenue            Decimal  @db.Decimal(10, 2)
-  specialRequirementsRevenue Decimal  @db.Decimal(10, 2)
-  insuranceAdjustment        Decimal  @db.Decimal(10, 2)
-  totalRevenue               Decimal  @db.Decimal(10, 2)
-  crewLaborCost              Decimal  @db.Decimal(10, 2)
-  vehicleCost                Decimal  @db.Decimal(10, 2)
-  fuelCost                   Decimal  @db.Decimal(10, 2)
-  maintenanceCost            Decimal  @db.Decimal(10, 2)
-  overheadCost               Decimal  @db.Decimal(10, 2)
-  totalCost                  Decimal  @db.Decimal(10, 2)
-  grossProfit                Decimal  @db.Decimal(10, 2)
-  profitMargin               Decimal  @db.Decimal(5, 2)
-  revenuePerMile             Decimal  @db.Decimal(8, 2)
-  costPerMile                Decimal  @db.Decimal(8, 2)
-  loadedMileRatio            Decimal  @db.Decimal(3, 2)
-  deadheadMileRatio          Decimal  @db.Decimal(3, 2)
-  utilizationRate            Decimal  @db.Decimal(3, 2)
-  tripDistance               Decimal  @db.Decimal(6, 2)
-  loadedMiles                Decimal  @db.Decimal(6, 2)
-  deadheadMiles              Decimal  @db.Decimal(6, 2)
-  tripDurationHours          Decimal  @db.Decimal(4, 2)
-  transportLevel             String
-  priorityLevel              String
-  costCenterId               String?
-  costCenterName             String?
-  calculatedAt               DateTime @default(now())
-  createdAt                  DateTime @default(now())
-  updatedAt                  DateTime @updatedAt
-
-  @@map("trip_cost_breakdowns")
 }
 
 model CostCenter {

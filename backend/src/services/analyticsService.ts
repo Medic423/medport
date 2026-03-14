@@ -257,52 +257,6 @@ export class AnalyticsService {
     }
   }
 
-  // SIMPLIFIED: Commented out complex cost analysis methods for Phase 3
-  /*
-  async getTripCostBreakdowns(tripId?: string, limit: number = 100): Promise<any[]> {
-    // Complex cost breakdown analysis - disabled for Phase 3
-  }
-
-  async getCostAnalysisSummary(startDate?: Date, endDate?: Date): Promise<any> {
-    // Complex cost analysis - disabled for Phase 3
-  }
-
-  async getProfitabilityAnalysis(period: string = 'month'): Promise<any> {
-    // Complex profitability analysis - disabled for Phase 3
-  }
-  */
-
-  // SIMPLIFIED: Basic methods that return minimal data
-  async getTripCostBreakdowns(tripId?: string, limit: number = 100): Promise<any[]> {
-    console.log('TCC_DEBUG: Simplified getTripCostBreakdowns called - complex cost analysis disabled for Phase 3');
-    return [];
-  }
-
-  async getCostAnalysisSummary(startDate?: Date, endDate?: Date): Promise<any> {
-    console.log('TCC_DEBUG: Simplified getCostAnalysisSummary called - complex cost analysis disabled for Phase 3');
-    return {
-      totalTrips: 0,
-      message: 'Simplified cost analysis - complex calculations removed for Phase 3'
-    };
-  }
-
-  async getProfitabilityAnalysis(period: string = 'month'): Promise<any> {
-    console.log('TCC_DEBUG: Simplified getProfitabilityAnalysis called - complex profitability analysis disabled for Phase 3');
-    return {
-      period,
-      message: 'Simplified profitability analysis - complex calculations removed for Phase 3'
-    };
-  }
-
-  // SIMPLIFIED: Basic trip cost breakdown creation
-  async createTripCostBreakdown(tripId: string, breakdownData: any): Promise<any> {
-    console.log('TCC_DEBUG: Simplified createTripCostBreakdown called - complex cost analysis disabled for Phase 3');
-    return {
-      tripId,
-      message: 'Simplified cost breakdown creation - complex calculations removed for Phase 3'
-    };
-  }
-
   /**
    * Get idle account counts for a given number of days
    * Accounts with no lastLogin in the specified period (or NULL lastLogin)
