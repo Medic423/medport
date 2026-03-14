@@ -338,8 +338,8 @@ const TripCard: React.FC<TripCardProps> = ({ trip, user, onRefresh, onEdit, onDi
           </div>
         )}
 
-        {/* Agency Selection Card - for healthcare users when agencies have accepted */}
-        {user.userType !== 'EMS_ORGANIZATION_USER' && acceptedAgenciesCount > 0 && (
+        {/* Agency Selection Card - for healthcare users when agencies have accepted and none selected yet */}
+        {user.userType !== 'EMS_ORGANIZATION_USER' && acceptedAgenciesCount > 0 && !hasSelectedAgency && (
           <div className="mt-2 border border-gray-300 rounded-lg p-3 bg-white">
             <p className="text-xs font-medium text-gray-700 mb-2">Select Agency:</p>
             {trip.agencyResponses!
@@ -610,7 +610,7 @@ const TripMapListItem: React.FC<TripMapListItemProps> = ({ trip, user, onRefresh
         )}
 
         {/* Agency Selection Card */}
-        {user.userType !== 'EMS_ORGANIZATION_USER' && acceptedAgenciesCount > 0 && (
+        {user.userType !== 'EMS_ORGANIZATION_USER' && acceptedAgenciesCount > 0 && !hasSelectedAgency && (
           <div className="mt-1.5 border border-gray-300 rounded-md p-2 bg-white">
             <p className="text-xs font-medium text-gray-700 mb-1">Select Agency:</p>
             {trip.agencyResponses!
