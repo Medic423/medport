@@ -9,7 +9,7 @@ async function main() {
   try {
     // Clean up existing test data (idempotent seeding)
     console.log('🧹 Cleaning up existing test data...');
-    await prisma.transportRequest.deleteMany({ where: { patientId: 'PAT-001' } });
+    await prisma.transportRequest.deleteMany({ where: { patientId: 'PAT-001' } }); // TODO Consider removig WHERE - SDO
     await prisma.pickupLocation.deleteMany();
     await prisma.dropdownOption.deleteMany();
     await prisma.organizationPreference.deleteMany();
@@ -517,6 +517,8 @@ async function main() {
     console.log(`✅ ${pickupCount} pickup locations created`);
 
     // Create sample transport request
+
+    // TODO Let's remove this - SDO
     const transportRequest = await prisma.transportRequest.create({
       data: {
         patientId: 'PAT-001',

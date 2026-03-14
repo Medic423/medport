@@ -150,39 +150,12 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
 
   const loadTrips = async () => {
     try {
-      // Load trips
+      // Load trips (agencyResponses are now embedded in the trips API response)
       console.log('TCC_DEBUG: HealthcareDashboard - Loading trips...');
       const response = await api.get('/api/trips');
       
-      // Also load agency responses
-      console.log('TCC_DEBUG: HealthcareDashboard - Loading agency responses...');
-      const responsesResponse = await api.get('/api/agency-responses');
-      
       if (response.data) {
         const data = response.data;
-        const agencyResponses = responsesResponse.data?.data || [];
-        
-        console.log('TCC_DEBUG: HealthcareDashboard - Loaded agency responses:', {
-          count: agencyResponses.length,
-          responses: agencyResponses.map((r: any) => ({
-            id: r.id,
-            tripId: r.tripId,
-            agencyId: r.agencyId,
-            response: r.response,
-            isSelected: r.isSelected
-          }))
-        });
-        
-        // Group agency responses by trip ID
-        const responsesByTrip = new Map();
-        agencyResponses.forEach((response: any) => {
-          if (!responsesByTrip.has(response.tripId)) {
-            responsesByTrip.set(response.tripId, []);
-          }
-          responsesByTrip.get(response.tripId).push(response);
-        });
-        
-        console.log('TCC_DEBUG: HealthcareDashboard - Grouped responses by trip:', Array.from(responsesByTrip.entries()).map(([tripId, responses]) => ({ tripId, responseCount: (responses as any[]).length })));
         
         if (data.success && data.data) {
           // Debug: Check for specific patient
@@ -219,17 +192,25 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
             pickupTime: trip.pickupTimestamp ? new Date(trip.pickupTimestamp).toLocaleString() : (trip.scheduledTime ? new Date(trip.scheduledTime).toLocaleString() : null),
             pickupTimeISO: trip.pickupTimestamp || trip.scheduledTime,
             scheduledTime: trip.scheduledTime ? new Date(trip.scheduledTime).toLocaleString() : null,
-            scheduledTimeISO: trip.scheduledTime || null, // Raw ISO for categorization
+            scheduledTimeISO: trip.scheduledTime || null,
             assignedUnitId: trip.assignedUnitId || null,
             assignedUnitNumber: trip.assignedUnit?.unitNumber || null,
             assignedUnitType: trip.assignedUnit?.type || null,
             arrivalTime: trip.arrivalTimestamp ? new Date(trip.arrivalTimestamp).toLocaleString() : null,
             arrivalTimestampISO: trip.arrivalTimestamp || null,
-            agencyResponses: (() => {
-              const responses = responsesByTrip.get(trip.id) || [];
-              console.log(`TCC_DEBUG: HealthcareDashboard - Trip ${trip.id} has ${responses.length} agency responses`);
-              return responses;
-            })(),
+            // agencyResponses come embedded from the API; enrich each with the trip's own location + assignedUnit
+            agencyResponses: (trip.agencyResponses || []).map((r: any) => ({
+              ...r,
+              trip: {
+                id: trip.id,
+                patientId: trip.patientId,
+                fromLocation: trip.fromLocation || null,
+                toLocation: trip.toLocation || null,
+                transportLevel: trip.transportLevel || null,
+                urgencyLevel: trip.urgencyLevel || null,
+              },
+              assignedUnit: r.assignedUnit || (r.assignedUnitId && trip.assignedUnit?.id === r.assignedUnitId ? trip.assignedUnit : null),
+            })),
             departureTime: trip.departureTimestamp ? new Date(trip.departureTimestamp).toLocaleString() : null,
             departureTimestampISO: trip.departureTimestamp || null,
             assignedAgencyId: trip.assignedAgencyId || null,
@@ -724,10 +705,10 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
       let agencyName = 'No Agency';
       const selectedResponse = trip.agencyResponses?.find((r: any) => r.isSelected === true && r.response === 'ACCEPTED');
       if (selectedResponse) {
-        agencyName = selectedResponse.agency?.name || 'Unknown Agency';
+        agencyName = selectedResponse.agencyName || 'Unknown Agency';
       } else if (trip.assignedAgencyId) {
         const agencyResponse = trip.agencyResponses?.find((r: any) => r.agencyId === trip.assignedAgencyId);
-        agencyName = agencyResponse?.agency?.name || 'Agency Assigned';
+        agencyName = agencyResponse?.agencyName || 'Agency Assigned';
       }
 
       return [
@@ -1087,7 +1068,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                                               <div key={response.id} className="flex items-center justify-between py-2 border-b border-gray-200 last:border-b-0">
                                                 <div>
                                                   <div className="flex items-center space-x-2">
-                                                    <p className="text-sm font-medium text-gray-900">{response.agency?.name || 'Unknown Agency'}</p>
+                                                    <p className="text-sm font-medium text-gray-900">{response.agencyName || 'Unknown Agency'}</p>
                                                     {response.acceptanceTime && (
                                                       <span className={`text-xs font-semibold ${index === 0 && fastestTime !== null ? 'text-green-600' : 'text-gray-600'}`}>
                                                         Accepted in: {response.acceptanceTime}
@@ -1111,7 +1092,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                                                     Select
                                                   </button>
                                                   <button
-                                                    onClick={() => handleRejectAgency(trip.id, response.id, response.agency?.name || 'this agency')}
+                                                    onClick={() => handleRejectAgency(trip.id, response.id, response.agencyName || 'this agency')}
                                                     className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700"
                                                   >
                                                     Reject
@@ -1349,13 +1330,13 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                                     // Find the selected agency response
                                     const selectedResponse = trip.agencyResponses?.find((r: any) => r.isSelected === true && r.response === 'ACCEPTED');
                                     if (selectedResponse) {
-                                      return selectedResponse.agency?.name || 'Unknown Agency';
+                                      return selectedResponse.agencyName || 'Unknown Agency';
                                     }
                                     // Fallback: check if there's an assigned agency ID
                                     if (trip.assignedAgencyId) {
                                       // Try to find agency name from responses
                                       const agencyResponse = trip.agencyResponses?.find((r: any) => r.agencyId === trip.assignedAgencyId);
-                                      return agencyResponse?.agency?.name || 'Agency Assigned';
+                                      return agencyResponse?.agencyName || 'Agency Assigned';
                                     }
                                     return trip.status === 'ACCEPTED' ? 'Awaiting agency selection' : '—';
                                   })()}
@@ -1452,13 +1433,13 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                                     // Find the selected agency response
                                     const selectedResponse = trip.agencyResponses?.find((r: any) => r.isSelected === true && r.response === 'ACCEPTED');
                                     if (selectedResponse) {
-                                      return selectedResponse.agency?.name || 'Unknown Agency';
+                                      return selectedResponse.agencyName || 'Unknown Agency';
                                     }
                                     // Fallback: check if there's an assigned agency ID
                                     if (trip.assignedAgencyId) {
                                       // Try to find agency name from responses
                                       const agencyResponse = trip.agencyResponses?.find((r: any) => r.agencyId === trip.assignedAgencyId);
-                                      return agencyResponse?.agency?.name || 'Agency Assigned';
+                                      return agencyResponse?.agencyName || 'Agency Assigned';
                                     }
                                     return 'No Agency';
                                   })()} - Urgency: {trip.urgencyLevel || 'Routine'} - {trip.transportLevel}
