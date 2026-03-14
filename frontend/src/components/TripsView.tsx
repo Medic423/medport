@@ -592,7 +592,7 @@ const TripMapListItem: React.FC<TripMapListItemProps> = ({ trip, user, onRefresh
           {trip.fromLocation} → {trip.toLocation}
         </p>
         <p className="text-xs text-gray-500 mt-0.5">
-          {trip.transportLevel} · Created {new Date(trip.createdAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })}
+          {trip.transportLevel} · Created {formatDateTime(trip.createdAt)}
         </p>
 
         {/* Agency Responses */}
