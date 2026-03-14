@@ -1733,20 +1733,40 @@ export class TripService {
     console.log('TCC_DEBUG: Creating agency response:', data);
     
     try {
-      // Create the agency response record
-      const agencyResponse = await prisma.agencyResponse.create({
-        data: {
-          tripId: data.tripId,
-          agencyId: data.agencyId,
-          response: data.response, // ACCEPTED or DECLINED
-          responseNotes: data.responseNotes || null,
-          estimatedArrival: data.estimatedArrival ? new Date(data.estimatedArrival) : null,
-          responseTimestamp: new Date(),
-          isSelected: false // Will be set to true when healthcare provider selects this agency
-        }
+      // If a record already exists for this (tripId, agencyId) pair (e.g. a PENDING created at dispatch),
+      // update it instead of creating a duplicate.
+      const existing = await prisma.agencyResponse.findFirst({
+        where: { tripId: data.tripId, agencyId: data.agencyId }
       });
+
+      let agencyResponse;
+      if (existing) {
+        console.log('TCC_DEBUG: Updating existing agency response:', existing.id);
+        agencyResponse = await prisma.agencyResponse.update({
+          where: { id: existing.id },
+          data: {
+            response: data.response,
+            responseNotes: data.responseNotes || existing.responseNotes,
+            estimatedArrival: data.estimatedArrival ? new Date(data.estimatedArrival) : existing.estimatedArrival,
+            responseTimestamp: new Date(),
+          }
+        });
+      } else {
+        console.log('TCC_DEBUG: No existing record found, creating new agency response');
+        agencyResponse = await prisma.agencyResponse.create({
+          data: {
+            tripId: data.tripId,
+            agencyId: data.agencyId,
+            response: data.response,
+            responseNotes: data.responseNotes || null,
+            estimatedArrival: data.estimatedArrival ? new Date(data.estimatedArrival) : null,
+            responseTimestamp: new Date(),
+            isSelected: false
+          }
+        });
+      }
       
-      console.log('TCC_DEBUG: Agency response created successfully:', agencyResponse.id);
+      console.log('TCC_DEBUG: Agency response saved successfully:', agencyResponse.id);
       
       // DO NOT update trip status here - leave it as PENDING
       // Only update status when healthcare provider selects an agency
