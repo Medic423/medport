@@ -150,39 +150,12 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
 
   const loadTrips = async () => {
     try {
-      // Load trips
+      // Load trips (agencyResponses are now embedded in the trips API response)
       console.log('TCC_DEBUG: HealthcareDashboard - Loading trips...');
       const response = await api.get('/api/trips');
       
-      // Also load agency responses
-      console.log('TCC_DEBUG: HealthcareDashboard - Loading agency responses...');
-      const responsesResponse = await api.get('/api/agency-responses');
-      
       if (response.data) {
         const data = response.data;
-        const agencyResponses = responsesResponse.data?.data || [];
-        
-        console.log('TCC_DEBUG: HealthcareDashboard - Loaded agency responses:', {
-          count: agencyResponses.length,
-          responses: agencyResponses.map((r: any) => ({
-            id: r.id,
-            tripId: r.tripId,
-            agencyId: r.agencyId,
-            response: r.response,
-            isSelected: r.isSelected
-          }))
-        });
-        
-        // Group agency responses by trip ID
-        const responsesByTrip = new Map();
-        agencyResponses.forEach((response: any) => {
-          if (!responsesByTrip.has(response.tripId)) {
-            responsesByTrip.set(response.tripId, []);
-          }
-          responsesByTrip.get(response.tripId).push(response);
-        });
-        
-        console.log('TCC_DEBUG: HealthcareDashboard - Grouped responses by trip:', Array.from(responsesByTrip.entries()).map(([tripId, responses]) => ({ tripId, responseCount: (responses as any[]).length })));
         
         if (data.success && data.data) {
           // Debug: Check for specific patient
@@ -219,17 +192,25 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
             pickupTime: trip.pickupTimestamp ? new Date(trip.pickupTimestamp).toLocaleString() : (trip.scheduledTime ? new Date(trip.scheduledTime).toLocaleString() : null),
             pickupTimeISO: trip.pickupTimestamp || trip.scheduledTime,
             scheduledTime: trip.scheduledTime ? new Date(trip.scheduledTime).toLocaleString() : null,
-            scheduledTimeISO: trip.scheduledTime || null, // Raw ISO for categorization
+            scheduledTimeISO: trip.scheduledTime || null,
             assignedUnitId: trip.assignedUnitId || null,
             assignedUnitNumber: trip.assignedUnit?.unitNumber || null,
             assignedUnitType: trip.assignedUnit?.type || null,
             arrivalTime: trip.arrivalTimestamp ? new Date(trip.arrivalTimestamp).toLocaleString() : null,
             arrivalTimestampISO: trip.arrivalTimestamp || null,
-            agencyResponses: (() => {
-              const responses = responsesByTrip.get(trip.id) || [];
-              console.log(`TCC_DEBUG: HealthcareDashboard - Trip ${trip.id} has ${responses.length} agency responses`);
-              return responses;
-            })(),
+            // agencyResponses come embedded from the API; enrich each with the trip's own location + assignedUnit
+            agencyResponses: (trip.agencyResponses || []).map((r: any) => ({
+              ...r,
+              trip: {
+                id: trip.id,
+                patientId: trip.patientId,
+                fromLocation: trip.fromLocation || null,
+                toLocation: trip.toLocation || null,
+                transportLevel: trip.transportLevel || null,
+                urgencyLevel: trip.urgencyLevel || null,
+              },
+              assignedUnit: r.assignedUnit || (r.assignedUnitId && trip.assignedUnit?.id === r.assignedUnitId ? trip.assignedUnit : null),
+            })),
             departureTime: trip.departureTimestamp ? new Date(trip.departureTimestamp).toLocaleString() : null,
             departureTimestampISO: trip.departureTimestamp || null,
             assignedAgencyId: trip.assignedAgencyId || null,
@@ -724,10 +705,10 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
       let agencyName = 'No Agency';
       const selectedResponse = trip.agencyResponses?.find((r: any) => r.isSelected === true && r.response === 'ACCEPTED');
       if (selectedResponse) {
-        agencyName = selectedResponse.agency?.name || 'Unknown Agency';
+        agencyName = selectedResponse.agencyName || 'Unknown Agency';
       } else if (trip.assignedAgencyId) {
         const agencyResponse = trip.agencyResponses?.find((r: any) => r.agencyId === trip.assignedAgencyId);
-        agencyName = agencyResponse?.agency?.name || 'Agency Assigned';
+        agencyName = agencyResponse?.agencyName || 'Agency Assigned';
       }
 
       return [
@@ -901,371 +882,6 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
           <TripsView user={{ id: user.id, userType: user.userType as 'HEALTHCARE_ORGANIZATION_USER' }} />
         )}
 
-        {false && activeTab === 'trips-legacy' && (
-          <div className="space-y-6">
-            {/* Summary Tiles */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white overflow-hidden shadow rounded-lg">
-                <div className="p-5">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <div className="p-3 rounded-md bg-yellow-500">
-                        <Clock className="h-6 w-6 text-white" />
-                      </div>
-                    </div>
-                    <div className="ml-5 w-0 flex-1">
-                      <dl>
-                        <dt className="text-sm font-medium text-gray-500 truncate">
-                          Pending Requests
-                        </dt>
-                        <dd className="text-lg font-medium text-gray-900">
-                          {trips.filter(trip => trip.status === 'PENDING').length}
-                        </dd>
-                      </dl>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white overflow-hidden shadow rounded-lg">
-                <div className="p-5">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <div className="p-3 rounded-md bg-green-500">
-                        <CheckCircle className="h-6 w-6 text-white" />
-                      </div>
-                    </div>
-                    <div className="ml-5 w-0 flex-1">
-                      <dl>
-                        <dt className="text-sm font-medium text-gray-500 truncate">
-                          Completed Today
-                        </dt>
-                        <dd className="text-lg font-medium text-gray-900">
-                          {completedTrips.length}
-                        </dd>
-                      </dl>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white overflow-hidden shadow rounded-lg">
-                <div className="p-5">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <div className="p-3 rounded-md bg-red-500">
-                        <AlertTriangle className="h-6 w-6 text-white" />
-                      </div>
-                    </div>
-                    <div className="ml-5 w-0 flex-1">
-                      <dl>
-                        <dt className="text-sm font-medium text-gray-500 truncate">
-                          Emergent Trips
-                        </dt>
-                        <dd className="text-lg font-medium text-gray-900">
-                          {trips.filter(trip => 
-                            (trip.status === 'PENDING' || trip.status === 'ACCEPTED' || trip.status === 'IN_PROGRESS') && 
-                            (trip.urgencyLevel === 'Emergent')
-                          ).length}
-                        </dd>
-                      </dl>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Transport Requests List */}
-            <div className="bg-white rounded-lg shadow">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-medium text-gray-900">Transport Requests</h3>
-                  <div className="flex items-center space-x-4">
-                    <label htmlFor="status-filter" className="text-sm font-medium text-gray-700">
-                      Filter by status:
-                    </label>
-                    <select
-                      id="status-filter"
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="block w-40 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    >
-                      <option value="ALL">All Status</option>
-                      <option value="PENDING">Pending</option>
-                      <option value="ACCEPTED">Accepted</option>
-                      <option value="DECLINED">Declined</option>
-                      <option value="IN_PROGRESS">In Progress</option>
-                      <option value="CANCELLED">Cancelled</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-              <div className="p-6">
-              {(() => {
-                // Filter trips by status for each section independently
-                const filteredToday = statusFilter === 'ALL' ? todayTrips : todayTrips.filter(t => t.status === statusFilter);
-                const filteredFuture = statusFilter === 'ALL' ? futureTrips : futureTrips.filter(t => t.status === statusFilter);
-                const filteredUnscheduled = statusFilter === 'ALL' ? unscheduledTrips : unscheduledTrips.filter(t => t.status === statusFilter);
-                const filteredPast = statusFilter === 'ALL' ? pastTrips : pastTrips.filter(t => t.status === statusFilter);
-
-                const renderTripSection = (trips: any[], title: string, category: DateCategory) => {
-                  if (trips.length === 0) return null;
-                  
-                  return (
-                    <div key={category} className="mb-8">
-                      <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                        {title} ({trips.length})
-                      </h4>
-                      <div className="space-y-4">
-                        {trips.map((trip) => {
-                          const category_actual = categorizeTripByDate(trip);
-                          return (
-                            <div key={trip.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                              <div className="flex items-center space-x-4">
-                                <div>
-                                  <h4 className="text-lg font-medium text-gray-900">
-                                    Patient {trip.patientId} - Requested Pickup Time: {trip.scheduledTime || 'Not scheduled'}
-                                  </h4>
-                                  <p className="text-base text-gray-600">
-                                    {trip.origin} → {trip.destination}
-                                  </p>
-                                  {trip.createdBy && (
-                                    <p className="text-xs text-gray-500">Created by: {trip.createdBy.name} ({trip.createdBy.email})</p>
-                                  )}
-                                  {trip.pickupLocation && (
-                                    <p className="text-xs text-blue-600">
-                                      Pickup: {trip.pickupLocation.name}{trip.pickupLocation.floor || trip.pickupLocation.room ? ': ' : ''}{trip.pickupLocation.floor && trip.pickupLocation.floor}{trip.pickupLocation.room && `${trip.pickupLocation.floor ? ' ' : ''}Room ${trip.pickupLocation.room}`}{trip.pickupLocation.contactPhone && ` Phone: ${trip.pickupLocation.contactPhone}`}{trip.pickupLocation.contactEmail && ` Email: ${trip.pickupLocation.contactEmail}`}
-                                    </p>
-                                  )}
-                                  <p className="text-sm text-gray-500 mt-1">
-                                    {trip.transportLevel} - Ticket Created At: {trip.requestTime}
-                                  </p>
-                                  {/* Agency Responses Display */}
-                                  {trip.agencyResponses && trip.agencyResponses.length > 0 && (
-                                    <div className="mt-2 space-y-2">
-                                      <div className="flex items-center space-x-2">
-                                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                          {(() => {
-                                            const acceptedCount = trip.agencyResponses.filter((r: any) => r.response === 'ACCEPTED').length;
-                                            return `${acceptedCount} ${acceptedCount === 1 ? 'Agency' : 'Agencies'} Accepted`;
-                                          })()}
-                                        </span>
-                                        {trip.agencyResponses.filter((r: any) => r.isSelected).length > 0 && (
-                                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                            Selected
-                                          </span>
-                                        )}
-                                      </div>
-                                      
-                                      {trip.agencyResponses.filter((r: any) => r.response === 'ACCEPTED').length > 0 && 
-                                       trip.agencyResponses.filter((r: any) => r.isSelected).length === 0 && (
-                                        <div className="mt-2 border border-gray-300 rounded-lg p-3 bg-white">
-                                          <p className="text-xs font-medium text-gray-700 mb-2">Select Agency:</p>
-                                          {(() => {
-                                            // Get accepted responses and calculate acceptance times
-                                            const acceptedResponses = trip.agencyResponses
-                                              .filter((r: any) => r.response === 'ACCEPTED')
-                                              .map((response: any) => {
-                                                const responseTime = response.responseTimestamp || response.createdAt;
-                                                const acceptanceTime = calculateAcceptanceTime(trip.requestTimeISO, responseTime);
-                                                // Calculate minutes for sorting (convert to number)
-                                                const responseTimeMs = responseTime ? new Date(responseTime).getTime() : 0;
-                                                const tripTimeMs = trip.requestTimeISO ? new Date(trip.requestTimeISO).getTime() : 0;
-                                                const minutesDiff = responseTimeMs && tripTimeMs ? (responseTimeMs - tripTimeMs) / (1000 * 60) : Infinity;
-                                                return {
-                                                  ...response,
-                                                  acceptanceTime,
-                                                  minutesDiff
-                                                };
-                                              })
-                                              // Sort by acceptance time (fastest first)
-                                              .sort((a: any, b: any) => a.minutesDiff - b.minutesDiff);
-                                            
-                                            const fastestTime = acceptedResponses.length > 0 ? acceptedResponses[0].minutesDiff : null;
-                                            
-                                            return acceptedResponses.map((response: any, index: number) => (
-                                              <div key={response.id} className="flex items-center justify-between py-2 border-b border-gray-200 last:border-b-0">
-                                                <div>
-                                                  <div className="flex items-center space-x-2">
-                                                    <p className="text-sm font-medium text-gray-900">{response.agency?.name || 'Unknown Agency'}</p>
-                                                    {response.acceptanceTime && (
-                                                      <span className={`text-xs font-semibold ${index === 0 && fastestTime !== null ? 'text-green-600' : 'text-gray-600'}`}>
-                                                        Accepted in: {response.acceptanceTime}
-                                                      </span>
-                                                    )}
-                                                  </div>
-                                                  <p className="text-xs text-gray-500">
-                                                    Route: {response.trip?.fromLocation || 'N/A'} → {response.trip?.toLocation || 'N/A'}
-                                                  </p>
-                                                  {response.assignedUnit && (
-                                                    <p className="text-xs text-green-600">
-                                                      Assigned Unit: {response.assignedUnit.unitNumber} ({response.assignedUnit.type})
-                                                    </p>
-                                                  )}
-                                                </div>
-                                                <div className="flex items-center space-x-2">
-                                                  <button
-                                                    onClick={() => handleSelectAgency(trip.id, response.id)}
-                                                    className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-md hover:bg-green-700"
-                                                  >
-                                                    Select
-                                                  </button>
-                                                  <button
-                                                    onClick={() => handleRejectAgency(trip.id, response.id, response.agency?.name || 'this agency')}
-                                                    className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700"
-                                                  >
-                                                    Reject
-                                                  </button>
-                                                </div>
-                                              </div>
-                                            ));
-                                          })()}
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                  (trip.urgencyLevel || 'Routine') === 'Emergent' 
-                                    ? 'bg-red-100 text-red-800' 
-                                    : (trip.urgencyLevel || 'Routine') === 'Urgent'
-                                    ? 'bg-yellow-100 text-yellow-800'
-                                    : 'bg-green-100 text-green-800'
-                                }`}>
-                                  {trip.urgencyLevel || 'Routine'}
-                                </span>
-                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(trip.status)}`}>
-                                  {formatStatus(trip.status)}
-                                </span>
-                                <div className="flex space-x-2 ml-4">
-                                  {/* Show Dispatch button for PENDING_DISPATCH trips */}
-                                  {trip.status === 'PENDING_DISPATCH' && (
-                                    <button
-                                      title="Dispatch to Agencies"
-                                      onClick={async () => {
-                                        // Fetch full trip details to ensure we have all location data
-                                        try {
-                                          const response = await tripsAPI.getAll();
-                                          const fullTrip = response.data?.data?.find((t: any) => t.id === trip.id);
-                                          if (fullTrip) {
-                                            // Ensure trip has fromLocation/toLocation for dispatch screen
-                                            const tripForDispatch = {
-                                              ...fullTrip,
-                                              fromLocation: fullTrip.fromLocation || trip.origin || 'Unknown Origin',
-                                              toLocation: fullTrip.toLocation || trip.destination || 'Unknown Destination',
-                                              origin: trip.origin,
-                                              destination: trip.destination
-                                            };
-                                            setDispatchTrip(tripForDispatch);
-                                            setShowDispatchScreen(true);
-                                          } else {
-                                            // Fallback: use trip with mapped fields
-                                            setDispatchTrip({
-                                              ...trip,
-                                              fromLocation: trip.origin || 'Unknown Origin',
-                                              toLocation: trip.destination || 'Unknown Destination'
-                                            });
-                                            setShowDispatchScreen(true);
-                                          }
-                                        } catch (error) {
-                                          console.error('Error loading trip details:', error);
-                                          // Fallback: use trip with mapped fields
-                                          setDispatchTrip({
-                                            ...trip,
-                                            fromLocation: trip.origin || 'Unknown Origin',
-                                            toLocation: trip.destination || 'Unknown Destination'
-                                          });
-                                          setShowDispatchScreen(true);
-                                        }
-                                      }}
-                                      className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-purple-100 text-purple-800 hover:bg-purple-200"
-                                      disabled={updating}
-                                    >
-                                      <Send className="h-4 w-4" />
-                                    </button>
-                                  )}
-                                  {/* Show Authorize button for future trips */}
-                                  {category_actual === 'future' && (
-                                    <button
-                                      title="Authorize Trip"
-                                      onClick={() => handleAuthorizeTrip(trip.id)}
-                                      className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-purple-100 text-purple-800 hover:bg-purple-200"
-                                      disabled={updating}
-                                    >
-                                      <Shield className="h-4 w-4" />
-                                    </button>
-                                  )}
-                                  <button
-                                    title="Edit"
-                                    onClick={() => handleEditTrip(trip)}
-                                    className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200"
-                                    disabled={updating}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </button>
-                                  {trip.status !== 'COMPLETED' && (
-                                    <button
-                                      title="Complete"
-                                      onClick={() => handleCompleteTrip(trip.id)}
-                                      className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-green-100 text-green-800 hover:bg-green-200"
-                                      disabled={updating}
-                                    >
-                                      <CheckCircle className="h-4 w-4" />
-                                    </button>
-                                  )}
-                                  <button
-                                    title="Delete"
-                                    onClick={() => handleDeleteTrip(trip.id)}
-                                    className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-red-100 text-red-800 hover:bg-red-200"
-                                    disabled={updating}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                };
-
-                const hasAnyTrips = filteredToday.length > 0 || filteredFuture.length > 0 || filteredUnscheduled.length > 0 || filteredPast.length > 0;
-
-                if (!hasAnyTrips) {
-                  return (
-                    <div className="text-center py-12">
-                      <Clock className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-sm font-medium text-gray-900">
-                        {statusFilter === 'ALL' ? 'No transport requests' : `No ${statusFilter.toLowerCase()} requests`}
-                      </h3>
-                      <p className="mt-1 text-sm text-gray-500">
-                        {statusFilter === 'ALL' 
-                          ? 'Create your first transport request to get started.'
-                          : 'Try selecting a different status filter or create a new request.'
-                        }
-                      </p>
-                    </div>
-                  );
-                }
-
-                return (
-                  <div className="space-y-8">
-                    {renderTripSection(filteredToday, formatSectionHeader('today'), 'today')}
-                    {renderTripSection(filteredFuture, formatSectionHeader('future'), 'future')}
-                    {renderTripSection(filteredUnscheduled, formatSectionHeader('unscheduled'), 'unscheduled')}
-                    {renderTripSection(filteredPast, formatSectionHeader('past'), 'past')}
-                  </div>
-                );
-              })()}
-              </div>
-            </div>
-          </div>
-        )}
-
         {activeTab === 'create' && (
           <div>
             <EnhancedTripForm 
@@ -1349,13 +965,13 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                                     // Find the selected agency response
                                     const selectedResponse = trip.agencyResponses?.find((r: any) => r.isSelected === true && r.response === 'ACCEPTED');
                                     if (selectedResponse) {
-                                      return selectedResponse.agency?.name || 'Unknown Agency';
+                                      return selectedResponse.agencyName || 'Unknown Agency';
                                     }
                                     // Fallback: check if there's an assigned agency ID
                                     if (trip.assignedAgencyId) {
                                       // Try to find agency name from responses
                                       const agencyResponse = trip.agencyResponses?.find((r: any) => r.agencyId === trip.assignedAgencyId);
-                                      return agencyResponse?.agency?.name || 'Agency Assigned';
+                                      return agencyResponse?.agencyName || 'Agency Assigned';
                                     }
                                     return trip.status === 'ACCEPTED' ? 'Awaiting agency selection' : '—';
                                   })()}
@@ -1452,13 +1068,13 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                                     // Find the selected agency response
                                     const selectedResponse = trip.agencyResponses?.find((r: any) => r.isSelected === true && r.response === 'ACCEPTED');
                                     if (selectedResponse) {
-                                      return selectedResponse.agency?.name || 'Unknown Agency';
+                                      return selectedResponse.agencyName || 'Unknown Agency';
                                     }
                                     // Fallback: check if there's an assigned agency ID
                                     if (trip.assignedAgencyId) {
                                       // Try to find agency name from responses
                                       const agencyResponse = trip.agencyResponses?.find((r: any) => r.agencyId === trip.assignedAgencyId);
-                                      return agencyResponse?.agency?.name || 'Agency Assigned';
+                                      return agencyResponse?.agencyName || 'Agency Assigned';
                                     }
                                     return 'No Agency';
                                   })()} - Urgency: {trip.urgencyLevel || 'Routine'} - {trip.transportLevel}

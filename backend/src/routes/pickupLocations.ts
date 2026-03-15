@@ -353,8 +353,8 @@ router.delete('/:id', authenticateAdmin, async (req: AuthenticatedRequest, res) 
       });
     }
 
-    // Check if pickup location is being used by any trips
-    const tripsUsingLocation = await databaseManager.getPrismaClient().trip.findFirst({
+    // Check if pickup location is being used by any transport requests
+    const tripsUsingLocation = await databaseManager.getPrismaClient().transportRequest.findFirst({
       where: {
         pickupLocationId: id
       }
@@ -403,8 +403,8 @@ router.delete('/:id/hard', authenticateAdmin, async (req: AuthenticatedRequest, 
       });
     }
 
-    // Check if pickup location is being used by any trips
-    const tripsUsingLocation = await databaseManager.getPrismaClient().trip.findFirst({
+    // Check if pickup location is being used by any transport requests
+    const tripsUsingLocation = await databaseManager.getPrismaClient().transportRequest.findFirst({
       where: {
         pickupLocationId: id
       }

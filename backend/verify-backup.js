@@ -44,7 +44,6 @@ const checks = {
     'ems_users': backupContent.includes('COPY public.ems_users'),
     'healthcare_destinations': backupContent.includes('COPY public.healthcare_destinations'),
     'transport_requests': backupContent.includes('COPY public.transport_requests'),
-    'trips': backupContent.includes('CREATE TABLE public.trips'),
   },
   'Has data rows': backupContent.match(/COPY public\.\w+.*FROM stdin;/g) !== null,
   'Backup complete marker': backupContent.includes('\\.') || backupContent.includes('COMMIT'),

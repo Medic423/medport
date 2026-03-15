@@ -246,48 +246,12 @@ router.get('/', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
     console.log('TCC_DEBUG: Get trips request with query:', req.query);
     console.log('TCC_DEBUG: Authenticated user:', req.user);
     
-    // Resolve agencyId for EMS users
-    let agencyId: string | undefined = req.query.organizationId as string | undefined;
-    
-    if (req.user?.userType === 'EMS_ORGANIZATION_USER' && !agencyId) {
-      // For EMS users, resolve their agencyId
-      agencyId = req.user.organizationId;
-      
-      if (!agencyId && req.user.email) {
-        try {
-          const db = databaseManager.getPrismaClient();
-          const emsUser = await db.user.findUnique({
-            where: { email: req.user.email },
-            select: { organizationId: true }
-          });
-          if (emsUser?.organizationId) {
-            agencyId = emsUser.organizationId;
-            console.log('TCC_DEBUG: Resolved EMS agencyId from database:', agencyId);
-          }
-        } catch (lookupError: any) {
-          console.error('TCC_DEBUG: Error looking up EMS user for trips:', lookupError.message);
-        }
-      }
-    }
-    
-    const healthcareUserId = req.user?.userType === 'HEALTHCARE_ORGANIZATION_USER' ? req.user.id : undefined;
-    
-    // ✅ DIAGNOSTIC: Log user info for healthcare users
-    if (req.user?.userType === 'HEALTHCARE_ORGANIZATION_USER') {
-      console.log('TCC_DEBUG: Healthcare user requesting trips:', {
-        userId: req.user.id,
-        email: req.user.email,
-        userType: req.user.userType,
-        healthcareUserId: healthcareUserId
-      });
-    }
-    
     const filters = {
       status: req.query.status as string,
       transportLevel: req.query.transportLevel as string,
       priority: req.query.priority as string,
-      agencyId: agencyId,
-      healthcareUserId: healthcareUserId, // ✅ NEW: Filter by healthcare user
+      userId: req.user?.id,
+      fromLocationId: req.query.fromLocationId as string | undefined,
     };
 
     console.log('TCC_DEBUG: Filters being passed to getTrips:', filters);

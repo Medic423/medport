@@ -132,8 +132,38 @@ interface TripCardProps {
   onDispatch?: (trip: Trip) => void;
 }
 
-const TripCard: React.FC<TripCardProps> = ({ trip, onRefresh, onEdit, onDispatch }) => {
+const TripCard: React.FC<TripCardProps> = ({ trip, user, onRefresh, onEdit, onDispatch }) => {
   const [loading, setLoading] = useState(false);
+
+  const handleSelectAgency = async (responseId: string) => {
+    try {
+      const response = await api.post(`/api/agency-responses/${responseId}/select`);
+      if (response.data?.success) {
+        onRefresh();
+      } else {
+        alert(response.data?.error || 'Failed to select agency');
+      }
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Failed to select agency');
+    }
+  };
+
+  const handleRejectAgency = async (responseId: string, agencyName: string) => {
+    if (!confirm(`Reject ${agencyName}? They will be removed from consideration for this trip.`)) return;
+    try {
+      const response = await api.put(`/api/agency-responses/${responseId}`, {
+        response: 'DECLINED',
+        responseNotes: 'Rejected by healthcare provider'
+      });
+      if (response.data?.success) {
+        onRefresh();
+      } else {
+        alert(response.data?.error || 'Failed to reject agency');
+      }
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Failed to reject agency');
+    }
+  };
 
   const formatDateTime = (dateString: string) => {
     if (!dateString) return 'Not scheduled';
@@ -272,6 +302,15 @@ const TripCard: React.FC<TripCardProps> = ({ trip, onRefresh, onEdit, onDispatch
   const acceptedAgenciesCount = trip.agencyResponses?.filter((r: any) => r.response === 'ACCEPTED').length || 0;
   const hasSelectedAgency = trip.agencyResponses?.some((r: any) => r.isSelected === true && r.response === 'ACCEPTED') || false;
 
+  if (trip.id === 'cmmpcdhi200024lcaxk2lxtel') {
+    console.log('TCC_DEBUG: TripCard render for target trip:', {
+      tripId: trip.id,
+      userType: user.userType,
+      agencyResponses: trip.agencyResponses,
+      acceptedAgenciesCount
+    });
+  }
+
   return (
     <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
       <div className="flex-1">
@@ -296,6 +335,36 @@ const TripCard: React.FC<TripCardProps> = ({ trip, onRefresh, onEdit, onDispatch
                 Selected
               </span>
             )}
+          </div>
+        )}
+
+        {/* Agency Selection Card - for healthcare users when agencies have accepted and none selected yet */}
+        {user.userType !== 'EMS_ORGANIZATION_USER' && acceptedAgenciesCount > 0 && !hasSelectedAgency && (
+          <div className="mt-2 border border-gray-300 rounded-lg p-3 bg-white">
+            <p className="text-xs font-medium text-gray-700 mb-2">Select Agency:</p>
+            {trip.agencyResponses!
+              .filter((r: any) => r.response === 'ACCEPTED')
+              .map((response: any) => (
+                <div key={response.id} className="flex items-center justify-between py-2 border-b border-gray-200 last:border-b-0">
+                  <p className="text-sm font-medium text-gray-900">{response.agencyName || 'Unknown Agency'}</p>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => handleSelectAgency(response.id)}
+                      disabled={loading}
+                      className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-md hover:bg-green-700 disabled:opacity-50"
+                    >
+                      Select
+                    </button>
+                    <button
+                      onClick={() => handleRejectAgency(response.id, response.agencyName || 'this agency')}
+                      disabled={loading}
+                      className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 disabled:opacity-50"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              ))}
           </div>
         )}
         
@@ -401,8 +470,38 @@ interface TripMapListItemProps {
   onDispatch?: (trip: Trip) => void;
 }
 
-const TripMapListItem: React.FC<TripMapListItemProps> = ({ trip, onRefresh, onEdit, onDispatch }) => {
+const TripMapListItem: React.FC<TripMapListItemProps> = ({ trip, user, onRefresh, onEdit, onDispatch }) => {
   const [loading, setLoading] = useState(false);
+
+  const handleSelectAgency = async (responseId: string) => {
+    try {
+      const response = await api.post(`/api/agency-responses/${responseId}/select`);
+      if (response.data?.success) {
+        onRefresh();
+      } else {
+        alert(response.data?.error || 'Failed to select agency');
+      }
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Failed to select agency');
+    }
+  };
+
+  const handleRejectAgency = async (responseId: string, agencyName: string) => {
+    if (!confirm(`Reject ${agencyName}? They will be removed from consideration for this trip.`)) return;
+    try {
+      const response = await api.put(`/api/agency-responses/${responseId}`, {
+        response: 'DECLINED',
+        responseNotes: 'Rejected by healthcare provider'
+      });
+      if (response.data?.success) {
+        onRefresh();
+      } else {
+        alert(response.data?.error || 'Failed to reject agency');
+      }
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Failed to reject agency');
+    }
+  };
 
   const formatDateTime = (dateString: string) => {
     if (!dateString) return 'Not scheduled';
@@ -493,7 +592,7 @@ const TripMapListItem: React.FC<TripMapListItemProps> = ({ trip, onRefresh, onEd
           {trip.fromLocation} → {trip.toLocation}
         </p>
         <p className="text-xs text-gray-500 mt-0.5">
-          {trip.transportLevel} · Created {new Date(trip.createdAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })}
+          {trip.transportLevel} · Created {formatDateTime(trip.createdAt)}
         </p>
 
         {/* Agency Responses */}
@@ -507,6 +606,36 @@ const TripMapListItem: React.FC<TripMapListItemProps> = ({ trip, onRefresh, onEd
                 Selected
               </span>
             )}
+          </div>
+        )}
+
+        {/* Agency Selection Card */}
+        {user.userType !== 'EMS_ORGANIZATION_USER' && acceptedAgenciesCount > 0 && !hasSelectedAgency && (
+          <div className="mt-1.5 border border-gray-300 rounded-md p-2 bg-white">
+            <p className="text-xs font-medium text-gray-700 mb-1">Select Agency:</p>
+            {trip.agencyResponses!
+              .filter((r: any) => r.response === 'ACCEPTED')
+              .map((response: any) => (
+                <div key={response.id} className="flex items-center justify-between py-1.5 border-b border-gray-200 last:border-b-0">
+                  <p className="text-xs font-medium text-gray-900">{response.agencyName || 'Unknown Agency'}</p>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleSelectAgency(response.id)}
+                      disabled={loading}
+                      className="px-2 py-1 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 disabled:opacity-50"
+                    >
+                      Select
+                    </button>
+                    <button
+                      onClick={() => handleRejectAgency(response.id, response.agencyName || 'this agency')}
+                      disabled={loading}
+                      className="px-2 py-1 bg-red-600 text-white text-xs font-medium rounded hover:bg-red-700 disabled:opacity-50"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              ))}
           </div>
         )}
 
@@ -623,38 +752,10 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
       });
       if (response.data.success) {
         const tripsData = response.data.data || [];
-        
-        // Fetch agency responses for all trips
-        try {
-          // Fetch all agency responses (API doesn't support multiple tripIds, so we fetch all and filter)
-          const responsesResponse = await api.get('/api/agency-responses');
-          const allResponses = responsesResponse.data?.data || [];
-          
-          // Create a set of trip IDs for quick lookup
-          const tripIdSet = new Set(tripsData.map((t: any) => t.id));
-          
-          // Group responses by trip ID (only for trips we're displaying)
-          // @ts-ignore - Map constructor type issue
-          const responsesByTrip = new Map<string, any[]>();
-          allResponses.forEach((response: any) => {
-            if (tripIdSet.has(response.tripId)) {
-              if (!responsesByTrip.has(response.tripId)) {
-                responsesByTrip.set(response.tripId, []);
-              }
-              responsesByTrip.get(response.tripId)!.push(response);
-            }
-          });
-          
-          // Attach agency responses to trips
-          tripsData.forEach((trip: any) => {
-            trip.agencyResponses = responsesByTrip.get(trip.id) || [];
-          });
-          
-          console.log('TCC_DEBUG: TripsView - Loaded agency responses for', responsesByTrip.size, 'trips');
-        } catch (responsesError: any) {
-          console.warn('TCC_DEBUG: Failed to load agency responses:', responsesError);
-          // Continue without agency responses - not critical
-        }
+
+        // agencyResponses are now included directly in the trips API response
+        const targetTripCheck = tripsData.find((t: any) => t.id === 'cmmpcdhi200024lcaxk2lxtel');
+        console.log('TCC_DEBUG: TripsView - Target trip agencyResponses from API:', targetTripCheck?.agencyResponses);
         
         // Separate active and completed trips
         // Active trips: exclude COMPLETED, HEALTHCARE_COMPLETED, CANCELLED, and trips with completion timestamps
@@ -1020,10 +1121,10 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
       let agencyName = 'No Agency';
       const selectedResponse = trip.agencyResponses?.find((r: any) => r.isSelected === true && r.response === 'ACCEPTED');
       if (selectedResponse) {
-        agencyName = selectedResponse.agency?.name || 'Unknown Agency';
+        agencyName = selectedResponse.agencyName || 'Unknown Agency';
       } else if (trip.assignedAgencyId) {
         const agencyResponse = trip.agencyResponses?.find((r: any) => r.agencyId === trip.assignedAgencyId);
-        agencyName = agencyResponse?.agency?.name || 'Agency Assigned';
+        agencyName = agencyResponse?.agencyName || 'Agency Assigned';
       }
 
       return [
@@ -1538,13 +1639,13 @@ const TripsView: React.FC<TripsViewProps> = ({ user }) => {
                                   // Find the selected agency response
                                   const selectedResponse = trip.agencyResponses?.find((r: any) => r.isSelected === true && r.response === 'ACCEPTED');
                                   if (selectedResponse) {
-                                    return selectedResponse.agency?.name || 'Unknown Agency';
+                                    return selectedResponse.agencyName || 'Unknown Agency';
                                   }
                                   // Fallback: check if there's an assigned agency ID
                                   if (trip.assignedAgencyId) {
                                     // Try to find agency name from responses
                                     const agencyResponse = trip.agencyResponses?.find((r: any) => r.agencyId === trip.assignedAgencyId);
-                                    return agencyResponse?.agency?.name || 'Agency Assigned';
+                                    return agencyResponse?.agencyName || 'Agency Assigned';
                                   }
                                   return 'No Agency';
                                 })()} - Urgency: {trip.urgencyLevel || 'Routine'} - {trip.transportLevel}

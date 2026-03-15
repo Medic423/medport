@@ -27,7 +27,7 @@ async function checkProductionTables() {
     const tablesToDrop = ['ems_users', 'transport_requests', 'units', 'crew_roles'];
     
     // Tables that will be CREATED by the migration
-    const tablesToCreate = ['center_users', 'hospitals', 'agencies', 'facilities', 'trips', 'system_analytics'];
+    const tablesToCreate = ['center_users', 'hospitals', 'agencies', 'facilities', 'system_analytics'];
     
     // Check tables that will be dropped
     console.log('📋 Tables that migration will DROP:');

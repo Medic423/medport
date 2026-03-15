@@ -9,7 +9,7 @@ async function main() {
   try {
     // Clean up existing test data (idempotent seeding)
     console.log('🧹 Cleaning up existing test data...');
-    await prisma.transportRequest.deleteMany({ where: { patientId: 'PAT-001' } });
+    await prisma.transportRequest.deleteMany();
     await prisma.pickupLocation.deleteMany();
     await prisma.dropdownOption.deleteMany();
     await prisma.organizationPreference.deleteMany();
@@ -515,21 +515,6 @@ async function main() {
       pickupCount++;
     }
     console.log(`✅ ${pickupCount} pickup locations created`);
-
-    // Create sample transport request
-    const transportRequest = await prisma.transportRequest.create({
-      data: {
-        patientId: 'PAT-001',
-        originFacilityId: facility1.id,
-        destinationFacilityId: facility2.id,
-        transportLevel: 'ALS',
-        priority: 'MEDIUM',
-        status: 'PENDING',
-        specialRequirements: 'Oxygen required',
-        createdByUserId: healthcareUser.id,
-      },
-    });
-    console.log('✅ Transport request created:', transportRequest.id);
 
     console.log('🎉 Database seeding completed successfully!');
   } catch (error) {

@@ -38,6 +38,7 @@ interface EMSUser {
   userType: string;
   agencyName?: string;
   agencyId?: string;
+  organizationId?: string;
   orgAdmin?: boolean;
 }
 
@@ -207,8 +208,8 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
       // Load available trips (PENDING status)
       const availableResponse = await api.get('/api/trips?status=PENDING');
       
-      // Get current agency ID (use agencyId if available, otherwise user.id)
-      const currentAgencyId = user.agencyId || user.id;
+      // Get current agency ID (use organizationId which is the org's ID, not the personal user ID)
+      const currentAgencyId = user.organizationId || user.agencyId || user.id;
       
       // Load agency responses for this agency to check if we've already responded to each trip
       // Filter by agencyId on the backend for better performance
@@ -685,7 +686,7 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
       // First, create an agency response (accept the trip)
       const payload = {
         tripId,
-        agencyId: user.agencyId || user.id, // Use agencyId when available
+        agencyId: user.organizationId || user.agencyId || user.id,
         response: 'ACCEPTED',
         responseNotes: 'Accepted by EMS agency'
       };
@@ -710,7 +711,7 @@ const EMSDashboard: React.FC<EMSDashboardProps> = ({ user, onLogout, onUserUpdat
       // Create a declined agency response
       const response = await api.post('/api/agency-responses', {
         tripId,
-        agencyId: user.agencyId || user.id, // Use agencyId when available
+        agencyId: user.organizationId || user.agencyId || user.id,
         response: 'DECLINED',
         responseNotes: 'Declined by EMS agency'
       });

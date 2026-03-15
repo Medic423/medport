@@ -25,6 +25,11 @@ router.get('/available', async (req: AuthenticatedRequest, res) => {
       });
     }
 
+    const orgId = req.user!.organizationId;
+    if (!orgId) {
+      return res.status(400).json({ success: false, error: 'User is not associated with an organization' });
+    }
+
     // Parse radius parameter (default: 50 miles, null means show all)
     let radiusMiles: number | null = 50; // Default radius
     if (req.query.radius !== undefined) {
@@ -39,7 +44,7 @@ router.get('/available', async (req: AuthenticatedRequest, res) => {
     }
 
     const agencies = await healthcareAgencyService.getAvailableAgenciesForHealthcareUser(
-      req.user!.id,
+      orgId,
       radiusMiles
     );
 
@@ -79,6 +84,11 @@ router.get('/', async (req: AuthenticatedRequest, res) => {
       });
     }
 
+    const orgId = req.user!.organizationId;
+    if (!orgId) {
+      return res.status(400).json({ success: false, error: 'User is not associated with an organization' });
+    }
+
     const filters = {
       name: req.query.search as string,
       city: req.query.city as string,
@@ -91,7 +101,7 @@ router.get('/', async (req: AuthenticatedRequest, res) => {
     };
 
     const result = await healthcareAgencyService.getAgenciesForHealthcareUser(
-      req.user!.id,
+      orgId,
       filters
     );
 
@@ -128,6 +138,11 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
       });
     }
 
+    const orgId = req.user!.organizationId;
+    if (!orgId) {
+      return res.status(400).json({ success: false, error: 'User is not associated with an organization' });
+    }
+
     const agencyData = req.body;
 
     // Validate required fields
@@ -142,7 +157,7 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
     }
 
     const agency = await healthcareAgencyService.createAgencyForHealthcareUser(
-      req.user!.id,
+      orgId,
       agencyData
     );
 
@@ -220,7 +235,7 @@ router.get('/trip-agencies', authenticateAdmin, async (req: AuthenticatedRequest
           select: { organizationId: true }
         });
         if (location?.organizationId) {
-          // organizationId is on the facility, not a user id — skip and fall through
+          // organizationId is on the facility, not a user id ï¿½ skip and fall through
           console.log('Non-HEALTHCARE user accessing old trip, facility organizationId:', location.organizationId);
         }
         return res.status(400).json({
@@ -277,6 +292,11 @@ router.get('/search/:query', async (req: AuthenticatedRequest, res) => {
       });
     }
 
+    const orgId = req.user!.organizationId;
+    if (!orgId) {
+      return res.status(400).json({ success: false, error: 'User is not associated with an organization' });
+    }
+
     const { query } = req.params;
 
     if (!query) {
@@ -287,7 +307,7 @@ router.get('/search/:query', async (req: AuthenticatedRequest, res) => {
     }
 
     const agencies = await healthcareAgencyService.searchAgenciesForHealthcareUser(
-      req.user!.id,
+      orgId,
       query
     );
 
@@ -317,6 +337,11 @@ router.get('/registered/search', async (req: AuthenticatedRequest, res) => {
       });
     }
 
+    const orgId = req.user!.organizationId;
+    if (!orgId) {
+      return res.status(400).json({ success: false, error: 'User is not associated with an organization' });
+    }
+
     const q = (req.query.q as string) || '';
     const query = q.trim();
     if (!query) {
@@ -324,7 +349,7 @@ router.get('/registered/search', async (req: AuthenticatedRequest, res) => {
     }
 
     const agencies = await healthcareAgencyService.searchRegisteredAgenciesForHealthcareUser(
-      req.user!.id,
+      orgId,
       query
     );
 
@@ -355,6 +380,11 @@ router.post('/add-existing', async (req: AuthenticatedRequest, res) => {
       });
     }
 
+    const orgId = req.user!.organizationId;
+    if (!orgId) {
+      return res.status(400).json({ success: false, error: 'User is not associated with an organization' });
+    }
+
     const { agencyId, isPreferred = false } = req.body;
 
     if (!agencyId) {
@@ -365,7 +395,7 @@ router.post('/add-existing', async (req: AuthenticatedRequest, res) => {
     }
 
     const agency = await healthcareAgencyService.addExistingAgencyToHealthcareUser(
-      req.user!.id,
+      orgId,
       agencyId,
       isPreferred
     );
@@ -404,10 +434,15 @@ router.get('/:id', async (req: AuthenticatedRequest, res) => {
       });
     }
 
+    const orgId = req.user!.organizationId;
+    if (!orgId) {
+      return res.status(400).json({ success: false, error: 'User is not associated with an organization' });
+    }
+
     const { id } = req.params;
     const agency = await healthcareAgencyService.getAgencyByIdForHealthcareUser(
       id,
-      req.user!.id
+      orgId
     );
 
     if (!agency) {
@@ -451,12 +486,17 @@ router.put('/:id', async (req: AuthenticatedRequest, res) => {
       });
     }
 
+    const orgId = req.user!.organizationId;
+    if (!orgId) {
+      return res.status(400).json({ success: false, error: 'User is not associated with an organization' });
+    }
+
     const { id } = req.params;
     const updateData = req.body;
 
     const agency = await healthcareAgencyService.updateAgencyForHealthcareUser(
       id,
-      req.user!.id,
+      orgId,
       updateData
     );
 
@@ -497,6 +537,11 @@ router.patch('/:id/preferred', async (req: AuthenticatedRequest, res) => {
       });
     }
 
+    const orgId = req.user!.organizationId;
+    if (!orgId) {
+      return res.status(400).json({ success: false, error: 'User is not associated with an organization' });
+    }
+
     const { id } = req.params;
     const { isPreferred } = req.body;
 
@@ -508,7 +553,7 @@ router.patch('/:id/preferred', async (req: AuthenticatedRequest, res) => {
     }
 
     const preference = await healthcareAgencyService.togglePreferredStatus(
-      req.user!.id,
+      orgId,
       id,
       isPreferred
     );
@@ -550,8 +595,13 @@ router.delete('/:id', async (req: AuthenticatedRequest, res) => {
       });
     }
 
+    const orgId = req.user!.organizationId;
+    if (!orgId) {
+      return res.status(400).json({ success: false, error: 'User is not associated with an organization' });
+    }
+
     const { id } = req.params;
-    await healthcareAgencyService.deleteAgencyForHealthcareUser(id, req.user!.id);
+    await healthcareAgencyService.deleteAgencyForHealthcareUser(id, orgId);
 
     res.json({
       success: true,

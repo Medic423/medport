@@ -153,14 +153,28 @@ export class TripService {
     status?: string;
     transportLevel?: string;
     priority?: string;
-    agencyId?: string;
-    fromLocationId?: string; // ✅ NEW: Filter by healthcare location
-    healthcareUserId?: string; // ✅ NEW: Filter by healthcare user's locations
+    userId?: string;
+    fromLocationId?: string; // Filter by specific healthcare facility (dropdown selection)
   }) {
     console.log('TCC_DEBUG: Getting trips with filters:', filters);
-    console.log('MULTI_LOC: Location filters - fromLocationId:', filters?.fromLocationId, 'healthcareUserId:', filters?.healthcareUserId);
     
     try {
+      // Resolve caller's user scope from userId — derive healthcareUserId or agencyId internally
+      let healthcareUserId: string | undefined;
+      let agencyId: string | undefined;
+      if (filters?.userId) {
+        const callingUser = await prisma.user.findUnique({
+          where: { id: filters.userId },
+          select: { id: true, userType: true, organizationId: true }
+        });
+        if (callingUser?.userType === 'HEALTHCARE_ORGANIZATION_USER') {
+          healthcareUserId = callingUser.id;
+        } else if (callingUser?.userType === 'EMS_ORGANIZATION_USER') {
+          agencyId = callingUser.organizationId ?? undefined;
+        }
+        console.log('TCC_DEBUG: Resolved user scope:', { userId: filters.userId, userType: callingUser?.userType, healthcareUserId, agencyId });
+      }
+
       const where: any = {};
       
       if (filters?.status) {
@@ -182,17 +196,17 @@ export class TripService {
       }
       
       // ✅ NEW: Filter by all locations for a healthcare user
-      if (filters?.healthcareUserId && !filters?.fromLocationId) {
-        console.log('TCC_FILTER_DEBUG: Filtering trips for healthcareUserId:', filters.healthcareUserId);
+      if (healthcareUserId && !filters?.fromLocationId) {
+        console.log('TCC_FILTER_DEBUG: Filtering trips for healthcareUserId:', healthcareUserId);
         
         try {
-          // Look up the user's organizationId first, then query facilities for that org
+          // Look up the user's organizationId to find all org facilities
           const user = await prisma.user.findUnique({
-            where: { id: filters.healthcareUserId },
+            where: { id: healthcareUserId },
             select: { id: true, organizationId: true }
           });
           const organizationId = user?.organizationId ?? null;
-          console.log('TCC_FILTER_DEBUG: Resolved organizationId:', organizationId, 'for userId:', filters.healthcareUserId);
+          console.log('TCC_FILTER_DEBUG: Resolved organizationId:', organizationId, 'for userId:', healthcareUserId);
 
           // Get all facility IDs for this user's organization
           const locations = organizationId
@@ -209,14 +223,14 @@ export class TripService {
           const healthcareUserConditions: any[] = [];
           
           // Always include trips created by this user (even if fromLocationId doesn't match)
-          healthcareUserConditions.push({ createdByUserId: filters.healthcareUserId });
+          healthcareUserConditions.push({ createdByUserId: healthcareUserId });
           
           // If user has locations, also include trips from those locations
           if (locationIds.length > 0) {
             healthcareUserConditions.push({ fromLocationId: { in: locationIds } });
             console.log('MULTI_LOC: Filtering by user locations OR created trips:', locationIds.length, 'locations');
           } else {
-            console.log('SINGLE_LOC: Filtering by created user ID only:', filters.healthcareUserId);
+            console.log('SINGLE_LOC: Filtering by created user ID only:', healthcareUserId);
           }
           
           // Combine with existing filters properly
@@ -240,11 +254,11 @@ export class TripService {
           if (where.OR && Array.isArray(where.OR)) {
             where.AND = [
               { OR: where.OR },
-              { createdByUserId: filters.healthcareUserId }
+              { createdByUserId: healthcareUserId }
             ];
             delete where.OR;
           } else {
-            where.createdByUserId = filters.healthcareUserId;
+            where.createdByUserId = healthcareUserId;
           }
           console.log('TCC_DEBUG: Fallback to createdByUserId filter due to location query error');
         }
@@ -256,9 +270,9 @@ export class TripService {
         where.priority = filters.priority;
       }
       
-      // ✅ NEW: Filter trips for EMS users by agency
-      if (filters?.agencyId && !filters?.healthcareUserId) {
-        console.log('TCC_DEBUG: Filtering trips for EMS agencyId:', filters.agencyId);
+      // Filter trips for EMS users by agency
+      if (agencyId && !healthcareUserId) {
+        console.log('TCC_DEBUG: Filtering trips for EMS agencyId:', agencyId);
         
         // EMS users should see:
         // 1. PENDING trips (available for acceptance)
@@ -267,7 +281,7 @@ export class TripService {
           // Get trip IDs where this agency has responded
           const agencyResponses = await prisma.agencyResponse.findMany({
             where: {
-              agencyId: filters.agencyId
+              agencyId: agencyId
             },
             select: {
               tripId: true
@@ -290,7 +304,7 @@ export class TripService {
           agencyFilter.push({ 
             AND: [
               { emsCompletionTimestamp: { not: null } },
-              { assignedAgencyId: filters.agencyId }
+              { assignedAgencyId: agencyId }
             ]
           });
           
@@ -385,11 +399,29 @@ export class TripService {
       } catch (e) {
         console.warn('TCC_DEBUG: assignedUnit relation might not be available');
       }
+
+      // Include agency responses with agency name
+      include.agencyResponses = {
+        select: {
+          id: true,
+          agencyId: true,
+          response: true,
+          responseTimestamp: true,
+          responseNotes: true,
+          estimatedArrival: true,
+          isSelected: true,
+          assignedUnitId: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      };
       
       // ✅ DIAGNOSTIC: Log the complete where clause before querying
       console.log('TCC_DEBUG: Final where clause:', JSON.stringify(where, null, 2));
       console.log('TCC_DEBUG: Querying transport_requests with filters:', {
-        healthcareUserId: filters?.healthcareUserId,
+        userId: filters?.userId,
+        healthcareUserId,
+        agencyId,
         fromLocationId: filters?.fromLocationId,
         status: filters?.status,
         whereClause: where
@@ -472,8 +504,8 @@ export class TripService {
         });
       }
       
-      // ✅ DIAGNOSTIC: If no trips found and healthcareUserId filter is active, check what trips exist
-      if (trips.length === 0 && filters?.healthcareUserId) {
+      // DIAGNOSTIC: If no trips found and healthcareUserId filter is active, check what trips exist
+      if (trips.length === 0 && healthcareUserId) {
         console.log('TCC_DEBUG: No trips found with healthcareUserId filter. Checking database...');
         try {
           // Check recent trips without filter to see what exists
@@ -504,7 +536,7 @@ export class TripService {
           
           // Check if user has facilities
           const diagUser = await prisma.user.findUnique({
-            where: { id: filters.healthcareUserId },
+            where: { id: healthcareUserId },
             select: { organizationId: true }
           });
           const userLocations = await prisma.facility.findMany({
@@ -516,7 +548,7 @@ export class TripService {
           // Check trips created by this user
           const userCreatedTrips = await prisma.transportRequest.findMany({
             where: {
-              createdByUserId: filters.healthcareUserId,
+              createdByUserId: healthcareUserId,
               createdAt: {
                 gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
               }
@@ -779,6 +811,30 @@ export class TripService {
       }
       console.log('TCC_DEBUG: Facility coordinates populated from coordinates JSON');
 
+      // Enrich agencyResponses with flat agencyName property
+      try {
+        const allAgencyIds = Array.from(new Set(
+          (tripsWithDistance as any[]).flatMap(t => (t.agencyResponses || []).map((r: any) => r.agencyId))
+        )).filter(Boolean);
+        if (allAgencyIds.length > 0) {
+          const agencies = await prisma.organization.findMany({
+            where: { id: { in: allAgencyIds } },
+            select: { id: true, name: true }
+          });
+          const agencyMap = new Map(agencies.map(a => [a.id, a.name]));
+          for (const trip of tripsWithDistance as any[]) {
+            if (trip.agencyResponses) {
+              trip.agencyResponses = trip.agencyResponses.map((r: any) => ({
+                ...r,
+                agencyName: agencyMap.get(r.agencyId) || `Agency ${r.agencyId}`
+              }));
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('TCC_DEBUG: Agency name enrichment skipped', e);
+      }
+
       // Enrich with creator info for healthcare-created trips (including facility name)
       try {
         const creatorIds = Array.from(new Set(tripsWithDistance
@@ -832,6 +888,17 @@ export class TripService {
             serialized[field] = serialized[field].toISOString();
           }
         });
+
+        // Serialize Date fields inside agencyResponses
+        if (serialized.agencyResponses) {
+          serialized.agencyResponses = serialized.agencyResponses.map((r: any) => ({
+            ...r,
+            responseTimestamp: r.responseTimestamp instanceof Date ? r.responseTimestamp.toISOString() : r.responseTimestamp,
+            estimatedArrival: r.estimatedArrival instanceof Date ? r.estimatedArrival.toISOString() : r.estimatedArrival,
+            createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : r.createdAt,
+            updatedAt: r.updatedAt instanceof Date ? r.updatedAt.toISOString() : r.updatedAt,
+          }));
+        }
 
         return serialized;
       });
@@ -1666,20 +1733,40 @@ export class TripService {
     console.log('TCC_DEBUG: Creating agency response:', data);
     
     try {
-      // Create the agency response record
-      const agencyResponse = await prisma.agencyResponse.create({
-        data: {
-          tripId: data.tripId,
-          agencyId: data.agencyId,
-          response: data.response, // ACCEPTED or DECLINED
-          responseNotes: data.responseNotes || null,
-          estimatedArrival: data.estimatedArrival ? new Date(data.estimatedArrival) : null,
-          responseTimestamp: new Date(),
-          isSelected: false // Will be set to true when healthcare provider selects this agency
-        }
+      // If a record already exists for this (tripId, agencyId) pair (e.g. a PENDING created at dispatch),
+      // update it instead of creating a duplicate.
+      const existing = await prisma.agencyResponse.findFirst({
+        where: { tripId: data.tripId, agencyId: data.agencyId }
       });
+
+      let agencyResponse;
+      if (existing) {
+        console.log('TCC_DEBUG: Updating existing agency response:', existing.id);
+        agencyResponse = await prisma.agencyResponse.update({
+          where: { id: existing.id },
+          data: {
+            response: data.response,
+            responseNotes: data.responseNotes || existing.responseNotes,
+            estimatedArrival: data.estimatedArrival ? new Date(data.estimatedArrival) : existing.estimatedArrival,
+            responseTimestamp: new Date(),
+          }
+        });
+      } else {
+        console.log('TCC_DEBUG: No existing record found, creating new agency response');
+        agencyResponse = await prisma.agencyResponse.create({
+          data: {
+            tripId: data.tripId,
+            agencyId: data.agencyId,
+            response: data.response,
+            responseNotes: data.responseNotes || null,
+            estimatedArrival: data.estimatedArrival ? new Date(data.estimatedArrival) : null,
+            responseTimestamp: new Date(),
+            isSelected: false
+          }
+        });
+      }
       
-      console.log('TCC_DEBUG: Agency response created successfully:', agencyResponse.id);
+      console.log('TCC_DEBUG: Agency response saved successfully:', agencyResponse.id);
       
       // DO NOT update trip status here - leave it as PENDING
       // Only update status when healthcare provider selects an agency
@@ -1761,7 +1848,7 @@ export class TripService {
       // Get unique trip IDs to fetch trip details
       const tripIds = [...new Set(agencyResponses.map(r => r.tripId))];
       
-      // Fetch trip details - check both transport_requests and trips tables
+      // Fetch trip details from transport_requests
       const transportRequests = await prisma.transportRequest.findMany({
         where: { id: { in: tripIds } },
         include: {
@@ -1771,11 +1858,7 @@ export class TripService {
         }
       });
       
-      const tripsData = await prisma.trip.findMany({
-        where: { id: { in: tripIds } }
-      });
-      
-      // Combine both sources into a single map
+      // Build trip map from transport requests
       const tripMap = new Map<string, any>();
       
       transportRequests.forEach(trip => {
@@ -1788,20 +1871,6 @@ export class TripService {
           urgencyLevel: trip.urgencyLevel,
           assignedUnit: trip.assignedUnit
         });
-      });
-      
-      tripsData.forEach(trip => {
-        if (!tripMap.has(trip.id)) {
-          tripMap.set(trip.id, {
-            id: trip.id,
-            patientId: trip.patientId,
-            fromLocation: trip.fromLocation,
-            toLocation: trip.toLocation,
-            transportLevel: trip.transportLevel,
-            urgencyLevel: trip.urgencyLevel,
-            assignedUnit: null
-          });
-        }
       });
       
       // Get agency names for all agencies in responses
@@ -1910,16 +1979,6 @@ export class TripService {
           status: 'ACCEPTED',
           acceptedTimestamp: new Date()
         }
-      }).catch(() => {
-        // If transportRequest doesn't exist, try updating Trip table
-        return prisma.trip.update({
-          where: { id: tripId },
-          data: {
-            assignedAgencyId: agencyResponse.agencyId,
-            status: 'ACCEPTED',
-            acceptedTimestamp: new Date()
-          }
-        });
       });
       
       console.log('TCC_DEBUG: Agency selected successfully for trip:', tripId);

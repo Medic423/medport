@@ -15,7 +15,6 @@ import {
   Share2,
   X
 } from 'lucide-react';
-import { analyticsAPI, tccAnalyticsAPI } from '../services/api';
 import { 
   LineChart, 
   Line, 
@@ -180,28 +179,12 @@ const FinancialDashboard: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      console.log('TCC_DEBUG: FinancialDashboard.loadFinancialData() fetching analytics', {
-        period: selectedPeriod,
-        startDate: selectedDateRange.start,
-        endDate: selectedDateRange.end
-      });
-      const [costAnalysisResponse, profitabilityResponse, breakdownsResponse] = await Promise.all([
-        analyticsAPI.getCostAnalysis({ startDate: selectedDateRange.start, endDate: selectedDateRange.end }),
-        analyticsAPI.getProfitability({ period: selectedPeriod }),
-        tccAnalyticsAPI.getCostBreakdowns({ limit: 50 })
-      ]);
-
-      if (costAnalysisResponse.data?.success) {
-        setCostAnalysis(costAnalysisResponse.data.data);
-      }
-
-      if (profitabilityResponse.data?.success) {
-        setProfitabilityAnalysis(profitabilityResponse.data.data);
-      }
-
-      if (breakdownsResponse.data?.success) {
-        setTripCostBreakdowns(breakdownsResponse.data.data);
-      }
+      console.log('TCC_DEBUG: FinancialDashboard.loadFinancialData() - cost analysis routes removed');
+      // Cost analysis, profitability, and cost breakdown APIs have been removed
+      // This dashboard is currently non-functional pending reimplementation
+      setCostAnalysis(null);
+      setProfitabilityAnalysis(null);
+      setTripCostBreakdowns([]);
     } catch (err: any) {
       console.error('Error loading financial data:', err);
       setError(err.response?.data?.error || 'Failed to load financial data');

@@ -22,6 +22,7 @@ interface User {
   email: string;
   name: string;
   userType: 'SYSTEM_ADMIN' | 'HEALTHCARE_ORGANIZATION_USER' | 'EMS_ORGANIZATION_USER';
+  organizationId?: string;
   facilityName?: string;
   facilityType?: string;
   agencyName?: string;
