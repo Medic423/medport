@@ -41,14 +41,12 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
     #region Transport DbSets
     public DbSet<TransportRequest> TransportRequests { get; set; }
-    public DbSet<Trip> Trips { get; set; }
     public DbSet<AgencyResponse> AgencyResponses { get; set; }
     public DbSet<NotificationLog> NotificationLogs { get; set; }
     #endregion
 
     #region Analytics & Cost DbSets
     public DbSet<SystemAnalytics> SystemAnalytics { get; set; }
-    public DbSet<TripCostBreakdown> TripCostBreakdowns { get; set; }
     public DbSet<CostCenter> CostCenters { get; set; }
     public DbSet<BackhaulOpportunity> BackhaulOpportunities { get; set; }
     #endregion

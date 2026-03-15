@@ -31,6 +31,4 @@ public class PickupLocation
     public virtual Facility Facility { get; set; }
 
     public virtual ICollection<TransportRequest> Trips { get; set; } = new List<TransportRequest>();
-
-    public virtual ICollection<Trip> LegacyTrips { get; set; } = new List<Trip>();
 }

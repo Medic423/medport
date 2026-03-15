@@ -30,14 +30,12 @@ public interface IApplicationDbContext
 
     #region Transport DbSets
     DbSet<TransportRequest> TransportRequests { get; set; }
-    DbSet<Trip> Trips { get; set; }
     DbSet<AgencyResponse> AgencyResponses { get; set; }
     DbSet<NotificationLog> NotificationLogs { get; set; }
     #endregion
 
     #region Analytics & Cost DbSets
     DbSet<SystemAnalytics> SystemAnalytics { get; set; }
-    DbSet<TripCostBreakdown> TripCostBreakdowns { get; set; }
     DbSet<CostCenter> CostCenters { get; set; }
     DbSet<BackhaulOpportunity> BackhaulOpportunities { get; set; }
     #endregion
