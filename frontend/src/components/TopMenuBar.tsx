@@ -86,7 +86,7 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
       hasDropdown: false,
       path: 'HELP' // Special path to trigger help modal
     },
-    ...(user.userType === 'ADMIN' ? [{
+    ...((user.userType === 'SYSTEM_ADMIN') ? [{
       label: 'Admin Users',
       icon: Settings,
       hasDropdown: true,
@@ -273,7 +273,7 @@ const TopMenuBar: React.FC<TopMenuBarProps> = ({ user, onLogout, onClearSession 
                     try {
                       const raw = localStorage.getItem('user');
                       const u = raw ? JSON.parse(raw) : null;
-                      const isOrgAdmin = !!u?.orgAdmin && (u?.userType === 'HEALTHCARE' || u?.userType === 'EMS');
+                      const isOrgAdmin = !!u?.orgAdmin && (u?.userType === 'HEALTHCARE_ORGANIZATION_USER' || u?.userType === 'EMS_ORGANIZATION_USER');
                       return isOrgAdmin ? (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-purple-100 text-purple-800">Org Admin</span>
                       ) : null;

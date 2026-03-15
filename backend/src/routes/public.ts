@@ -100,8 +100,8 @@ router.get('/hospitals', async (req, res) => {
   try {
     const prisma = databaseManager.getPrismaClient();
     
-    // Only query hospitals table for production data (schema uses Hospital model)
-    const hospitals = await prisma.hospital.findMany({
+    // Query facilities table for hospital data
+    const hospitals = await prisma.facility.findMany({
       where: { isActive: true },
       select: {
         id: true,
@@ -112,7 +112,7 @@ router.get('/hospitals', async (req, res) => {
         zipCode: true,
         phone: true,
         email: true,
-        type: true,
+        facilityType: true,
         latitude: true,
         longitude: true
       }

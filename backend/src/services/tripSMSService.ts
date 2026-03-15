@@ -116,7 +116,7 @@ class TripSMSService {
       console.log('TCC_DEBUG: Trip origin coordinates:', originCoords, 'Radius:', radius, 'miles');
 
       // Get all active EMS agencies that accept notifications
-      const agencies = await prisma.eMSAgency.findMany({
+      const agencies = await prisma.organization.findMany({
         where: {
           isActive: true,
           acceptsNotifications: true

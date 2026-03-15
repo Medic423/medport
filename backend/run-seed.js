@@ -8,6 +8,7 @@ const dotenv = require('dotenv');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
 dotenv.config({ path: path.join(__dirname, 'prisma', '.env'), override: true });
+ 
 
 function buildDatabaseUrl() {
   const user = process.env.DB_USER;
@@ -20,8 +21,10 @@ function buildDatabaseUrl() {
   return `postgresql://${encodeURIComponent(user)}:${encodeURIComponent(password)}@${host}:${port}/${db}?schema=${schema}`;
 }
 
+ 
 const url = buildDatabaseUrl();
 if (url) process.env.DATABASE_URL = url;
+ 
 
 const result = spawnSync('npx', ['ts-node', 'prisma/seed.ts'], {
   stdio: 'inherit',

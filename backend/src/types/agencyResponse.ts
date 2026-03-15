@@ -52,6 +52,10 @@ export interface TripWithResponses {
   patientId: string;
   fromLocation: string;
   toLocation: string;
+  fromLatitude?: number | null;
+  fromLongitude?: number | null;
+  toLatitude?: number | null;
+  toLongitude?: number | null;
   scheduledTime: Date;
   transportLevel: string;
   urgencyLevel: string;

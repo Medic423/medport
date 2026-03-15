@@ -1,4 +1,4 @@
-import express from 'express';
+﻿import express from 'express';
 import { RevenueOptimizer } from '../services/revenueOptimizer';
 import { BackhaulDetector } from '../services/backhaulDetector';
 import { MultiUnitOptimizer } from '../services/multiUnitOptimizer';
@@ -243,7 +243,7 @@ router.post('/backhaul', async (req, res) => {
 
 /**
  * GET /api/optimize/return-trips
- * Find return trip opportunities in the system (e.g., Altoona → Pittsburgh → Altoona)
+ * Find return trip opportunities in the system (e.g., Altoona â†’ Pittsburgh â†’ Altoona)
  */
 router.get('/return-trips', async (req, res) => {
   try {
@@ -872,7 +872,7 @@ async function getUnitsByIds(unitIds: string[]): Promise<any[]> {
 
     return units.map((unit: any) => ({
       id: unit.id,
-      agencyId: unit.agencyId,
+      agencyId: unit.organizationId,
       unitNumber: unit.unitNumber,
       type: unit.type,
       capabilities: unit.capabilities || [],
@@ -1429,18 +1429,18 @@ async function resolveEMSAgencyContext(req: AuthenticatedRequest): Promise<{ age
 
   try {
     // If user is EMS type, id should be agencyId
-    if (req.user?.userType === 'EMS') {
-      agencyId = req.user.id || req.user.agencyId || null;
+    if (req.user?.userType === 'EMS_ORGANIZATION_USER') {
+      agencyId = req.user.id || req.user.organizationId || null;
     } else if (!agencyId && req.user?.email) {
       // Fallback: find EMS user by email
-      const emsUser = await prisma.eMSUser.findUnique({ 
+      const emsUser = await prisma.user.findUnique({ 
         where: { email: req.user.email } 
       });
-      agencyId = emsUser?.agencyId || null;
+      agencyId = emsUser?.organizationId || null;
     }
 
     if (agencyId) {
-      const agency = await prisma.eMSAgency.findUnique({ 
+      const agency = await prisma.organization.findUnique({ 
         where: { id: agencyId },
         select: { id: true, name: true }
       });
@@ -1460,7 +1460,7 @@ async function resolveEMSAgencyContext(req: AuthenticatedRequest): Promise<{ age
 router.get('/agency/home-base', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     // Check if agencyId is provided as query parameter (for TCC/Admin users)
-    const queryAgencyId = req.query.agencyId as string | undefined;
+    const queryAgencyId = req.query.organizationId as string | undefined;
     
     console.log('TCC_DEBUG: /agency/home-base called with queryAgencyId:', queryAgencyId);
     console.log('TCC_DEBUG: req.query:', req.query);
@@ -1491,7 +1491,7 @@ router.get('/agency/home-base', authenticateAdmin, async (req: AuthenticatedRequ
     const prisma = databaseManager.getPrismaClient();
     console.log('TCC_DEBUG: Looking up agency with id:', agencyId);
     
-    const agency = await prisma.eMSAgency.findUnique({
+    const agency = await prisma.organization.findUnique({
       where: { id: agencyId },
       select: {
         id: true,
@@ -1559,7 +1559,7 @@ router.get('/agency/home-base', authenticateAdmin, async (req: AuthenticatedRequ
 router.get('/agency/current-trips', authenticateAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     // Check if agencyId is provided as query parameter (for TCC/Admin users)
-    const queryAgencyId = req.query.agencyId as string | undefined;
+    const queryAgencyId = req.query.organizationId as string | undefined;
     
     let agencyId: string | null = null;
     let agencyName: string | null = null;
@@ -1584,7 +1584,7 @@ router.get('/agency/current-trips', authenticateAdmin, async (req: Authenticated
     // Get agency name if not already resolved
     if (!agencyName) {
       const prisma = databaseManager.getPrismaClient();
-      const agency = await prisma.eMSAgency.findUnique({
+      const agency = await prisma.organization.findUnique({
         where: { id: agencyId },
         select: { name: true }
       });
@@ -1616,10 +1616,10 @@ router.get('/agency/current-trips', authenticateAdmin, async (req: Authenticated
                 state: true
               }
             },
-            healthcareLocation: {
+            fromFacility: {
               select: {
                 id: true,
-                locationName: true,
+                name: true,
                 latitude: true,
                 longitude: true,
                 city: true,
@@ -1659,11 +1659,11 @@ router.get('/agency/current-trips', authenticateAdmin, async (req: Authenticated
           destinationLat = trip.destinationFacility.latitude;
           destinationLng = trip.destinationFacility.longitude;
           destinationName = trip.destinationFacility.name || 'Unknown';
-        } else if (trip.healthcareLocation?.latitude && trip.healthcareLocation?.longitude) {
-          // Fallback to healthcare location if facility doesn't have coordinates
-          destinationLat = trip.healthcareLocation.latitude;
-          destinationLng = trip.healthcareLocation.longitude;
-          destinationName = trip.healthcareLocation.locationName || 'Unknown';
+        } else if (trip.fromFacility?.latitude && trip.fromFacility?.longitude) {
+          // Fallback to origin facility if destination doesn't have coordinates
+          destinationLat = trip.fromFacility.latitude;
+          destinationLng = trip.fromFacility.longitude;
+          destinationName = trip.fromFacility.name || 'Unknown';
         }
 
         return {
@@ -1775,10 +1775,10 @@ router.post('/return-opportunities', authenticateAdmin, async (req: Authenticate
             state: true
           }
         },
-        healthcareLocation: {
+        fromFacility: {
           select: {
             id: true,
-            locationName: true,
+            name: true,
             latitude: true,
             longitude: true,
             city: true,

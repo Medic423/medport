@@ -294,7 +294,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
     // Note: loadHealthcareLocations is now handled within loadFormOptions
     
     // TCC Command: Load all healthcare facilities for admin/user
-    if (user.userType === 'ADMIN' || user.userType === 'USER') {
+    if (user.userType === 'SYSTEM_ADMIN') {
       loadTCCHealthcareFacilities();
     }
   }, [user.id]); // Re-run if user changes (e.g., switching accounts/tabs)
@@ -338,13 +338,13 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
 
   // Load pickup locations when fromLocation is set (including pre-selected facility)
   useEffect(() => {
-    // For multi-location users, use healthcare location ID
-    if (user.manageMultipleLocations && formData.fromLocationId) {
-      console.log('MULTI_LOC: Loading pickup locations for healthcare location:', formData.fromLocationId);
+    // Use fromLocationId (facility ID) when available
+    if (formData.fromLocationId) {
+      console.log('MULTI_LOC: Loading pickup locations for facility:', formData.fromLocationId);
       loadPickupLocationsForHospital(formData.fromLocationId);
     }
-    // For single-location users, use their hospital ID
-    else if (!user.manageMultipleLocations && formData.fromLocation && formOptions.facilities.length > 0) {
+    // Fallback: for legacy facility name lookup
+    else if (formData.fromLocation && formOptions.facilities.length > 0) {
       const selectedFacility = formOptions.facilities.find(f => f.name === formData.fromLocation);
       if (selectedFacility) {
         // Use hospital ID for pickup locations if available, otherwise use facility ID
@@ -355,11 +355,11 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
         console.log('SINGLE_LOC: Facility not found in options yet:', formData.fromLocation, 'Available:', formOptions.facilities.map(f => f.name));
       }
     }
-  }, [formData.fromLocation, formData.fromLocationId, formOptions.facilities, user.manageMultipleLocations]);
+  }, [formData.fromLocation, formData.fromLocationId, formOptions.facilities, formOptions.healthcareLocations]);
 
   // Load pickup locations when TCC facility is selected
   useEffect(() => {
-    if (selectedTCCFacilityId && (user.userType === 'ADMIN' || user.userType === 'USER')) {
+    if (selectedTCCFacilityId && (user.userType === 'SYSTEM_ADMIN')) {
       console.log('TCC_COMMAND: Loading pickup locations for selected TCC facility:', selectedTCCFacilityId);
       loadPickupLocationsForHospital(selectedTCCFacilityId);
     }
@@ -417,10 +417,13 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
         const cacheBuster = `_t=${Date.now()}`;
         const healthcareLocationsResponse = await api.get(`/api/healthcare/locations/active?${cacheBuster}`);
         if (healthcareLocationsResponse.data?.success && Array.isArray(healthcareLocationsResponse.data.data)) {
-          healthcareLocations = healthcareLocationsResponse.data.data;
-          console.log('MULTI_LOC: Loaded', healthcareLocations.length, 'healthcare locations for form options:', healthcareLocations.map(l => l.locationName));
+          healthcareLocations = healthcareLocationsResponse.data.data.map((loc: any) => ({
+            ...loc,
+            locationName: loc.locationName ?? loc.name,
+          }));
+          console.log('MULTI_LOC: Loaded', healthcareLocations.length, 'healthcare locations for form options:', healthcareLocations.map((l: any) => l.locationName));
           
-          const primaryLocation = healthcareLocations.find(loc => loc.isPrimary) || healthcareLocations[0];
+          const primaryLocation = healthcareLocations.find((loc: any) => loc.isPrimary) || healthcareLocations[0];
           
           if (primaryLocation && primaryLocation.latitude && primaryLocation.longitude) {
             console.log('PHASE_A: Using primary location as origin:', primaryLocation.locationName);
@@ -487,7 +490,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
             }
           }
         }
-      } else if (user.userType === 'ADMIN' || user.userType === 'USER') {
+      } else if (user.userType === 'SYSTEM_ADMIN') {
         // ✅ TCC Command: Load ALL facilities and healthcare locations for destination selection
         console.log('TCC_COMMAND: Loading all facilities and healthcare locations for destination options');
         
@@ -564,8 +567,20 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
           console.warn('SINGLE_LOC: User facility not found in hospitals list:', user.facilityName);
         }
         
-        // Ensure healthcareLocations is empty for single-location users
-        healthcareLocations = [];
+        // Load this org user's facilities so they can pick a From Location
+        try {
+          const orgLocResponse = await api.get(`/api/healthcare/locations/active?_t=${Date.now()}`);
+          if (orgLocResponse.data?.success && Array.isArray(orgLocResponse.data.data)) {
+            healthcareLocations = orgLocResponse.data.data.map((loc: any) => ({
+              ...loc,
+              locationName: loc.locationName ?? loc.name,
+            }));
+            console.log('SINGLE_LOC: Loaded', healthcareLocations.length, 'org facilities for From Location dropdown');
+          }
+        } catch (e) {
+          console.warn('SINGLE_LOC: Could not load org facilities for From Location:', e);
+          healthcareLocations = [];
+        }
       }
       
       // ✅ Phase 3: Load healthcare locations (9 Penn Highlands locations) and healthcare destinations (Maybrook Hills)
@@ -578,7 +593,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
         // Load healthcare locations
         // For TCC Command, load ALL locations; for others, load active locations
         const cacheBuster2 = `_t=${Date.now()}`;
-        const locationsEndpoint = (user.userType === 'ADMIN' || user.userType === 'USER') 
+        const locationsEndpoint = (user.userType === 'SYSTEM_ADMIN') 
           ? `/api/healthcare/locations/all?${cacheBuster2}` 
           : `/api/healthcare/locations/active?${cacheBuster2}`;
         
@@ -737,17 +752,16 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
       console.log('MULTI_LOC: Healthcare locations being set in formOptions:', healthcareLocations.length, 'locations');
       setFormOptions(options);
       
-      // Set default fromLocation and fromLocationId for multi-location users
-      if (isMultiLocationUser && healthcareLocations.length > 0) {
-        const primaryLocation = healthcareLocations.find(loc => loc.isPrimary);
-        console.log('MULTI_LOC: Primary location found:', primaryLocation);
+      // Pre-select primary/first org facility as the default From Location for all ORGANIZATION_USER accounts
+      if (healthcareLocations.length > 0) {
+        const primaryLocation = healthcareLocations.find((loc: any) => loc.isPrimary) || healthcareLocations[0];
+        console.log('MULTI_LOC: Pre-selecting default location:', primaryLocation?.locationName);
         if (primaryLocation) {
           setFormData(prev => ({
             ...prev,
             fromLocation: primaryLocation.locationName,
             fromLocationId: primaryLocation.id
           }));
-          console.log('MULTI_LOC: Set default location:', primaryLocation.locationName);
         }
       }
  
@@ -932,8 +946,8 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     
-    // Handle healthcare location selection for multi-location users
-    if (name === 'fromLocation' && (user.manageMultipleLocations || (typeof window !== 'undefined' && localStorage.getItem('tcc_multi_loc') === 'true'))) {
+    // Handle healthcare location selection for org users (single or multi-location)
+    if (name === 'fromLocation' && formOptions.healthcareLocations.length > 0) {
       const selectedLocation = formOptions.healthcareLocations.find(loc => loc.locationName === value);
       if (selectedLocation) {
         setFormData(prev => ({
@@ -962,7 +976,8 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
     }
 
     // Load pickup locations when fromLocation changes (for regular facilities)
-    if (name === 'fromLocation' && value && !user.manageMultipleLocations) {
+    // Skip this block if the first block already handled fromLocation via healthcareLocations dropdown
+    if (name === 'fromLocation' && value && !user.manageMultipleLocations && formOptions.healthcareLocations.length === 0) {
       const selectedFacility = formOptions.facilities.find(f => f.name === value);
       if (selectedFacility) {
         loadPickupLocationsForHospital(selectedFacility.id);
@@ -1155,7 +1170,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
       // Find the selected facility for fromLocation
       // For TCC Command users, check tccHealthcareFacilities first; for multi-location users, search in healthcareLocations; otherwise use facilities
       let selectedFacility;
-      if (user.userType === 'ADMIN' || user.userType === 'USER') {
+      if (user.userType === 'SYSTEM_ADMIN') {
         // ✅ TCC Command: Check tccHealthcareFacilities first (the facility they selected)
         if (selectedTCCFacilityId) {
           selectedFacility = tccHealthcareFacilities.find(f => f.id === selectedTCCFacilityId);
@@ -1234,14 +1249,14 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
         notes: formData.notes || '',
         // ✅ Multi-location support for healthcare users
         // ✅ TCC Command: Use selectedTCCFacilityId (the healthcare location ID) if available
-        fromLocationId: (user.userType === 'ADMIN' || user.userType === 'USER') ? 
+        fromLocationId: (user.userType === 'SYSTEM_ADMIN') ? 
                        (selectedTCCFacilityId || selectedFacility?.id || formData.fromLocationId) :
                        (user.manageMultipleLocations ? formData.fromLocationId : undefined),
         healthcareUserId: user.manageMultipleLocations ? user.id : undefined,
         // ✅ TCC Command: Audit trail for trips created by admin/user
-        createdByTCCUserId: (user.userType === 'ADMIN' || user.userType === 'USER') ? user.id : undefined,
-        createdByTCCUserEmail: (user.userType === 'ADMIN' || user.userType === 'USER') ? user.email : undefined,
-        createdVia: (user.userType === 'ADMIN' || user.userType === 'USER') ? 'TCC_ADMIN_PORTAL' : 'HEALTHCARE_PORTAL',
+        createdByTCCUserId: (user.userType === 'SYSTEM_ADMIN') ? user.id : undefined,
+        createdByTCCUserEmail: (user.userType === 'SYSTEM_ADMIN') ? user.email : undefined,
+        createdVia: (user.userType === 'SYSTEM_ADMIN') ? 'TCC_ADMIN_PORTAL' : 'HEALTHCARE_PORTAL',
         assignedUnitId: formData.assignedUnitId // Optional unit assignment
       };
 
@@ -1259,13 +1274,12 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
             patientAgeCategory: ageCategory as any,
             patientAgeYears: ageYears,
             fromLocation: formData.fromLocation,
-            fromLocationId: (user.userType === 'ADMIN' || user.userType === 'USER') ? 
+            fromLocationId: (user.userType === 'SYSTEM_ADMIN') ? 
                            (selectedTCCFacilityId || selectedFacility?.id || formData.fromLocationId) :
                            (formData.fromLocationId || undefined),
+            originFacilityId: selectedFacility?.id || undefined,
             pickupLocationId: formData.pickupLocationId || undefined,
             toLocation: formData.toLocation,
-            // ✅ FIX: Include destinationFacilityId in enhanced payload
-            // Use the destination facility ID (already in correct format)
             destinationFacilityId: destinationFacility?.id || undefined,
             scheduledTime: new Date(formData.scheduledTime).toISOString(),
             transportLevel: formData.transportLevel as any,
@@ -1281,9 +1295,9 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
             priority: (tripData as any).priority,
             status: 'PENDING_DISPATCH', // Phase 3: Set status to PENDING_DISPATCH for dispatch workflow
             // ✅ TCC Command: Audit trail
-            createdByTCCUserId: (user.userType === 'ADMIN' || user.userType === 'USER') ? user.id : undefined,
-            createdByTCCUserEmail: (user.userType === 'ADMIN' || user.userType === 'USER') ? user.email : undefined,
-            createdVia: (user.userType === 'ADMIN' || user.userType === 'USER') ? 'TCC_ADMIN_PORTAL' : 'HEALTHCARE_PORTAL'
+            createdByTCCUserId: (user.userType === 'SYSTEM_ADMIN') ? user.id : undefined,
+            createdByTCCUserEmail: (user.userType === 'SYSTEM_ADMIN') ? user.email : undefined,
+            createdVia: (user.userType === 'SYSTEM_ADMIN') ? 'TCC_ADMIN_PORTAL' : 'HEALTHCARE_PORTAL'
           };
       
       console.log('TCC_DEBUG: Enhanced payload being sent:', enhancedPayload);
@@ -1482,21 +1496,8 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   From Location *
                 </label>
-                {!user.manageMultipleLocations ? (
-                  /* Single-location users: Show facility name as disabled input */
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={user.facilityName || 'Your Facility'}
-                      disabled
-                      className="w-full px-3 py-2 border border-gray-300 bg-gray-100 rounded-md shadow-sm text-gray-700 cursor-not-allowed"
-                    />
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                      <MapPin className="h-5 w-5 text-gray-400" />
-                    </div>
-                  </div>
-                ) : (
-                  /* Multi-location users: Show dropdown to select location */
+                {formOptions.healthcareLocations.length > 0 ? (
+                  /* Org users: dropdown of their org's facilities */
                   <select
                     name="fromLocation"
                     value={formData.fromLocation}
@@ -1505,13 +1506,25 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
                   >
                     <option value="">Select origin facility</option>
-                    {console.log('MULTI_LOC: Rendering healthcare locations dropdown with', formOptions.healthcareLocations.length, 'locations:', formOptions.healthcareLocations)}
                     {formOptions.healthcareLocations.map((location) => (
                       <option key={location.id} value={location.locationName}>
-                        {location.locationName} - {location.city}, {location.state}
+                        {location.locationName}{location.city ? ` - ${location.city}, ${location.state}` : ''}
                       </option>
                     ))}
                   </select>
+                ) : (
+                  /* Fallback: locked input when no org facilities loaded yet */
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={formData.fromLocation || user.facilityName || 'Your Facility'}
+                      disabled
+                      className="w-full px-3 py-2 border border-gray-300 bg-gray-100 rounded-md shadow-sm text-gray-700 cursor-not-allowed"
+                    />
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      <MapPin className="h-5 w-5 text-gray-400" />
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -1943,7 +1956,7 @@ const EnhancedTripForm: React.FC<EnhancedTripFormProps> = ({ user, onTripCreated
   return (
     <div className="max-w-4xl mx-auto">
       {/* TCC Command: Facility Context Selector */}
-      {(user.userType === 'ADMIN' || user.userType === 'USER') && (
+      {(user.userType === 'SYSTEM_ADMIN') && (
         <div className="mb-6 bg-blue-50 border-2 border-blue-300 rounded-lg p-5 shadow-sm">
           <div className="flex items-center mb-3">
             <div className="flex-shrink-0">

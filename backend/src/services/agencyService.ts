@@ -1,4 +1,4 @@
-import { databaseManager } from './databaseManager';
+﻿import { databaseManager } from './databaseManager';
 
 // Use databaseManager for all environments
 // Both databaseManager and productionDatabaseManager should work since they both
@@ -48,8 +48,9 @@ export class AgencyService {
   async createAgency(data: AgencyData): Promise<any> {
     const prisma = getDatabaseClient();
     
-    return await prisma.eMSAgency.create({
+    return await prisma.organization.create({
       data: {
+        organizationType: 'EMS',
         name: data.name,
         contactName: data.contactName,
         phone: data.phone,
@@ -96,7 +97,7 @@ export class AgencyService {
       console.log('TCC_DEBUG: Query params - skip:', skip, 'take:', limit);
 
       const [agencies, total] = await Promise.all([
-        prisma.eMSAgency.findMany({
+        prisma.organization.findMany({
           where,
           orderBy: { name: 'asc' },
           skip,
@@ -123,7 +124,7 @@ export class AgencyService {
             updatedAt: true
           }
         }),
-        prisma.eMSAgency.count({ where })
+        prisma.organization.count({ where })
       ]);
 
       console.log('TCC_DEBUG: Query completed - agencies found:', agencies.length, 'total:', total);
@@ -147,7 +148,7 @@ export class AgencyService {
 
   async getAgencyById(id: string): Promise<any | null> {
     const prisma = getDatabaseClient();
-    return await prisma.eMSAgency.findUnique({
+    return await prisma.organization.findUnique({
       where: { id },
     });
   }
@@ -187,7 +188,7 @@ export class AgencyService {
       };
     }
 
-    return await prisma.eMSAgency.update({
+    return await prisma.organization.update({
       where: { id },
       data: updateData,
     });
@@ -195,14 +196,14 @@ export class AgencyService {
 
   async deleteAgency(id: string): Promise<void> {
     const prisma = getDatabaseClient();
-    await prisma.eMSAgency.delete({
+    await prisma.organization.delete({
       where: { id }
     });
   }
 
   async searchAgencies(query: string): Promise<any[]> {
     const prisma = getDatabaseClient();
-    return await prisma.eMSAgency.findMany({
+    return await prisma.organization.findMany({
       where: {
         OR: [
           { name: { contains: query, mode: 'insensitive' } },

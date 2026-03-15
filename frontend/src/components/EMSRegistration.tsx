@@ -36,7 +36,8 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
       end: ''
     },
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    smsOptIn: false
   });
 
   const [loading, setLoading] = useState(false);
@@ -304,6 +305,7 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
         operatingHours: formData.operatingHours.start && formData.operatingHours.end 
           ? `${formData.operatingHours.start} - ${formData.operatingHours.end}`
           : '24/7',
+        smsOptIn: formData.smsOptIn,
       };
 
       console.log('TCC_DEBUG: Registration payload:', JSON.stringify(registrationPayload, null, 2));
@@ -578,6 +580,31 @@ const EMSRegistration: React.FC<EMSRegistrationProps> = ({ onBack, onSuccess }) 
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* SMS Opt-In - Consent at time of phone number collection (Azure TFV Code 1413 compliance) */}
+              <div className="rounded-lg border-2 border-orange-200 bg-orange-50 p-4">
+                <h4 className="text-sm font-semibold text-gray-900 mb-3">SMS Notifications</h4>
+                <label className="flex items-start space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="smsOptIn"
+                    checked={formData.smsOptIn}
+                    onChange={(e) => setFormData(prev => ({ ...prev, smsOptIn: e.target.checked }))}
+                    className="mt-1 h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">
+                      Receive SMS notifications for new trip requests
+                    </span>
+                    <p className="mt-1 text-xs text-gray-600">
+                      When enabled, you will receive SMS notifications when healthcare facilities create trips within your service area.
+                    </p>
+                    <p className="mt-2 text-xs text-gray-700 font-medium">
+                      By checking this box and providing your agency phone number above, you agree to receive SMS notifications from TraccEMS. Message and data rates may apply. Reply STOP to unsubscribe at any time.
+                    </p>
+                  </div>
+                </label>
               </div>
 
               <div>

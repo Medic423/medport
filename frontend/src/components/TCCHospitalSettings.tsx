@@ -50,7 +50,7 @@ interface User {
   id: string;
   email: string;
   name: string;
-  userType: 'ADMIN' | 'USER';
+  userType: 'SYSTEM_ADMIN' | 'HEALTHCARE_ORGANIZATION_USER' | 'EMS_ORGANIZATION_USER';
 }
 
 interface TCCHospitalSettingsProps {

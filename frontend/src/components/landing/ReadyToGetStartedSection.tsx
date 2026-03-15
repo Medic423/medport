@@ -25,25 +25,32 @@ const ReadyToGetStartedSection: React.FC<ReadyToGetStartedSectionProps> = ({
         backgroundPosition: 'center',
       }}
     >
-      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 className="font-serifa text-3xl sm:text-4xl font-medium text-white mb-4">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-left">
+        <h2
+          className="font-serifa font-medium text-white mb-0"
+          style={{ fontSize: 'clamp(2rem, 5vw, 78px)', lineHeight: 1.2 }}
+        >
           Ready to Get Started?
         </h2>
-        <p className="font-inter-tight text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+        <p
+          className="font-novatica font-medium text-white/90 mb-8 max-w-2xl mt-1"
+          style={{ fontSize: 'clamp(1rem, 2vw, 22px)', lineHeight: '100%' }}
+        >
           Create your account or explore the Quick Start guide.
         </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="flex flex-col sm:flex-row gap-4 justify-start">
           <button
             onClick={onShowRegistration}
-            style={{ backgroundColor: '#ff5700' }}
-            className="inline-flex items-center justify-center px-8 py-3 text-base font-inter-tight font-medium text-white hover:opacity-90 rounded-md shadow-lg transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-tracc-primary focus:ring-tracc-accent"
+            style={{ backgroundColor: '#ff5700', fontSize: '23px' }}
+            className="inline-flex items-center justify-center px-8 py-3 font-inter-tight font-normal text-white hover:opacity-90 rounded-[15px] shadow-lg transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-tracc-primary focus:ring-tracc-accent"
           >
             Create Account
             <ArrowRight className="ml-2 h-5 w-5" />
           </button>
           <button
             onClick={handleDownloadGuide}
-            className="inline-flex items-center justify-center px-8 py-3 text-base font-inter-tight font-medium text-tracc-primary bg-white border-2 border-tracc-primary-light hover:bg-tracc-neutral rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-tracc-primary focus:ring-white"
+            style={{ fontSize: '23px' }}
+            className="inline-flex items-center justify-center px-8 py-3 font-inter-tight font-normal text-tracc-primary bg-white border-[1.5px] border-[#F0F3FF] hover:bg-tracc-neutral rounded-[15px] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-tracc-primary focus:ring-white"
           >
             <Download className="mr-2 h-5 w-5" />
             Download Quick Start Guide

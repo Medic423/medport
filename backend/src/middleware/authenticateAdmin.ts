@@ -46,34 +46,11 @@ export const authenticateAdmin = async (
     // Update lastActivity timestamp
     try {
       const db = databaseManager.getPrismaClient();
-      const now = new Date();
-      
-      if (user.userType === 'ADMIN' || user.userType === 'USER') {
-        await db.centerUser.update({
-          where: { id: user.id },
-          data: { lastActivity: now }
-        }).catch(err => {
-          console.error('Error updating lastActivity for CenterUser:', err);
-          // Don't fail request if update fails
-        });
-      } else if (user.userType === 'HEALTHCARE') {
-        await db.healthcareUser.update({
-          where: { id: user.id },
-          data: { lastActivity: now }
-        }).catch(err => {
-          console.error('Error updating lastActivity for HealthcareUser:', err);
-        });
-      } else if (user.userType === 'EMS') {
-        await db.eMSUser.update({
-          where: { id: user.id },
-          data: { lastActivity: now }
-        }).catch(err => {
-          console.error('Error updating lastActivity for EMSUser:', err);
-        });
-      }
+      await db.user.update({ where: { id: user.id }, data: { lastActivity: new Date() } }).catch(err => {
+        console.error('Error updating lastActivity:', err);
+      });
     } catch (err) {
       console.error('Error updating lastActivity:', err);
-      // Don't fail request if activity tracking fails
     }
 
     req.user = user;

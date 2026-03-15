@@ -60,7 +60,7 @@ const AdminNotificationManagement: React.FC = () => {
   const [broadcastData, setBroadcastData] = useState({
     notificationType: 'trip_assignment',
     message: '',
-    userTypes: ['ADMIN', 'USER', 'HEALTHCARE', 'EMS'],
+    userTypes: ['SYSTEM_ADMIN', 'HEALTHCARE_ORGANIZATION_USER', 'EMS_ORGANIZATION_USER'],
     emailData: { subject: '', body: '' },
     smsData: { message: '' }
   });
@@ -208,7 +208,7 @@ const AdminNotificationManagement: React.FC = () => {
         setBroadcastData({
           notificationType: 'trip_assignment',
           message: '',
-          userTypes: ['ADMIN', 'USER', 'HEALTHCARE', 'EMS'],
+          userTypes: ['SYSTEM_ADMIN', 'HEALTHCARE_ORGANIZATION_USER', 'EMS_ORGANIZATION_USER'],
           emailData: { subject: '', body: '' },
           smsData: { message: '' }
         });
@@ -404,10 +404,9 @@ const AdminNotificationManagement: React.FC = () => {
             className="px-3 py-2 border border-gray-300 rounded-md"
           >
             <option value="">All User Types</option>
-            <option value="ADMIN">Admin</option>
-            <option value="USER">User</option>
-            <option value="HEALTHCARE">Healthcare</option>
-            <option value="EMS">EMS</option>
+            <option value="SYSTEM_ADMIN">System Admin</option>
+            <option value="HEALTHCARE_ORGANIZATION_USER">Healthcare Organization</option>
+            <option value="EMS_ORGANIZATION_USER">EMS Organization</option>
           </select>
           <button
             onClick={fetchUsers}
@@ -487,7 +486,7 @@ const AdminNotificationManagement: React.FC = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Target User Types</label>
             <div className="space-y-2">
-              {['ADMIN', 'USER', 'HEALTHCARE', 'EMS'].map(type => (
+              {['SYSTEM_ADMIN', 'HEALTHCARE_ORGANIZATION_USER', 'EMS_ORGANIZATION_USER'].map(type => (
                 <label key={type} className="flex items-center">
                   <input
                     type="checkbox"

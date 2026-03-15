@@ -9,6 +9,7 @@ const dotenv = require('dotenv');
 dotenv.config({ path: path.join(__dirname, '.env') });
 dotenv.config({ path: path.join(__dirname, 'prisma', '.env'), override: true });
 
+
 // Build URL from DB_* if set (same logic as run-prisma.js and databaseManager)
 if (process.env.DB_USER != null && process.env.DB_PASSWORD !== undefined) {
   const enc = (s) => encodeURIComponent(String(s == null ? '' : s));
@@ -56,4 +57,6 @@ client
       console.error('   - If the password has special characters, try URL-encoding in backend/prisma/.env (e.g. ! → %21).');
     }
     process.exit(1);
+
   });
+

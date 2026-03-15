@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 230 420" aria-hidden="true">
+  <!-- Connector 1: Bracket shape  top bar + vertical + bottom bar + ellipse -->
+  <path d="M 20 0 L 102 0 L 102 20 L 0 20 Q 0 0 20 0 Z" fill="#006AC6"/>
+  <rect x="0" y="20" width="20" height="333" fill="#006AC6"/>
+  <rect x="0" y="353" width="182" height="20" fill="#006AC6"/>
+  <ellipse cx="198" cy="363" rx="23" ry="24" fill="#006AC6"/>
+</svg>

@@ -76,6 +76,7 @@ prisma/migrations/*.sql.backup
 # External documentation (symlinked)
 docs/tcc-project-docs
 /MedportAPI/Medport.Infrastructure/appsettings.json
+
 .vs/CopilotSnapshots/BC8695E19D667940AC61DEE9AB7A094B/29F7AE2113AD694AAACD4FF8EC1ECC6B/09C2D5A344E03BB291460E069E34AFE2
 .vs/CopilotSnapshots/BC8695E19D667940AC61DEE9AB7A094B/29F7AE2113AD694AAACD4FF8EC1ECC6B/0B63DA4BF24B3317F2B3EBD881FCD755
 .vs/CopilotSnapshots/BC8695E19D667940AC61DEE9AB7A094B/29F7AE2113AD694AAACD4FF8EC1ECC6B/0D275A9BE168401555AF6223695A4306
@@ -1009,3 +1010,5 @@ docs/tcc-project-docs
 .vs/medport/CopilotIndices/18.3.508.13148/CodeChunks.db-wal
 .vs/medport/CopilotIndices/18.3.508.13148/SemanticSymbols.db-shm
 .vs/medport/CopilotIndices/18.3.508.13148/SemanticSymbols.db-wal
+frontend/.env.example
+

@@ -10,88 +10,60 @@ async function main() {
     // Clean up existing test data (idempotent seeding)
     console.log('🧹 Cleaning up existing test data...');
     await prisma.transportRequest.deleteMany({ where: { patientId: 'PAT-001' } });
-    await prisma.pickup_locations.deleteMany();
+    await prisma.pickupLocation.deleteMany();
     await prisma.dropdownOption.deleteMany();
-    await prisma.healthcareLocation.deleteMany();
-    await prisma.healthcareAgencyPreference.deleteMany();
+    await prisma.organizationPreference.deleteMany();
+    await prisma.userPreference.deleteMany();
+    await prisma.userRole.deleteMany();
     await prisma.facility.deleteMany();
-    await prisma.eMSAgency.deleteMany();
-    await prisma.hospital.deleteMany();
-    await prisma.eMSUser.deleteMany();
-    await prisma.healthcareUser.deleteMany();
-    await prisma.centerUser.deleteMany();
+    await prisma.user.deleteMany();
+    await prisma.organization.deleteMany();
+    await prisma.role.deleteMany();
     console.log('✅ Cleanup complete');
+
+    // Seed roles
+    console.log('🌱 Seeding roles...');
+    const roles = await Promise.all([
+      prisma.role.create({ data: { name: 'ADMIN', description: 'Organization-level administrator' } }),
+      prisma.role.create({ data: { name: 'DISPATCHER', description: 'Dispatcher with trip management access' } }),
+      prisma.role.create({ data: { name: 'FACILITY_USER', description: 'Healthcare facility sub-user' } }),
+      prisma.role.create({ data: { name: 'EMS_SUBUSER', description: 'EMS agency sub-user' } }),
+    ]);
+    const roleMap = Object.fromEntries(roles.map(r => [r.name, r]));
+    console.log('✅ Roles seeded:', roles.map(r => r.name).join(', '));
 
     // Create admin user
     const hashedPassword = await bcrypt.hash('admin123', 12);
-    const adminUser = await prisma.centerUser.upsert({
+    const adminUser = await prisma.user.upsert({
       where: { email: 'admin@tcc.com' },
       update: {},
       create: {
         email: 'admin@tcc.com',
         password: hashedPassword,
         name: 'TCC Administrator',
-        userType: 'ADMIN'
-      }
+        userType: 'SYSTEM_ADMIN',
+      },
     });
     console.log('✅ Admin user created:', adminUser.email);
 
     // Create regular user
-    const regularUser = await prisma.centerUser.upsert({
+    const regularUser = await prisma.user.upsert({
       where: { email: 'user@tcc.com' },
       update: {},
       create: {
         email: 'user@tcc.com',
         password: hashedPassword,
         name: 'TCC User',
-        userType: 'USER'
-      }
+        userType: 'SYSTEM_ADMIN',
+      },
     });
     console.log('✅ Regular user created:', regularUser.email);
 
-    // Create sample hospitals
-    const hospital1 = await prisma.hospital.create({
-      data: {
-        name: 'Altoona Regional Health System',
-        address: '620 Howard Ave',
-        city: 'Altoona',
-        state: 'PA',
-        zipCode: '16601',
-        phone: '(814) 889-2011',
-        email: 'info@altoonaregional.org',
-        type: 'HOSPITAL',
-        capabilities: ['EMERGENCY', 'SURGERY', 'ICU', 'RADIOLOGY'],
-        region: 'ALTOONA',
-        coordinates: { lat: 40.5187, lng: -78.3947 },
-        operatingHours: '24/7',
-        isActive: true
-      }
-    });
-    console.log('✅ Hospital created:', hospital1.name);
-
-    const hospital2 = await prisma.hospital.create({
-      data: {
-        name: 'UPMC Bedford',
-        address: '10455 Lincoln Hwy',
-        city: 'Everett',
-        state: 'PA',
-        zipCode: '15537',
-        phone: '(814) 623-3331',
-        email: 'info@upmc.edu',
-        type: 'HOSPITAL',
-        capabilities: ['EMERGENCY', 'SURGERY', 'ICU'],
-        region: 'BEDFORD',
-        coordinates: { lat: 40.0115, lng: -78.3734 },
-        operatingHours: '24/7',
-        isActive: true
-      }
-    });
-    console.log('✅ Hospital created:', hospital2.name);
-
-    // Create sample EMS agencies
-    const agency1 = await prisma.eMSAgency.create({
+    // Create EMS organizations (replaces eMSAgency)
+    const agency1 = await prisma.organization.create({
       data: {
         name: 'Altoona EMS',
+        organizationType: 'EMS',
         contactName: 'John Smith',
         phone: '(814) 555-0101',
         email: 'dispatch@altoonaems.com',
@@ -104,14 +76,16 @@ async function main() {
         capabilities: ['BLS', 'ALS', 'CCT'],
         pricingStructure: { baseRate: 150, perMileRate: 2.50 },
         isActive: true,
-        status: 'ACTIVE'
-      }
+        status: 'ACTIVE',
+        acceptsNotifications: true,
+      },
     });
-    console.log('✅ EMS Agency created:', agency1.name);
+    console.log('✅ EMS Organization created:', agency1.name);
 
-    const agency2 = await prisma.eMSAgency.create({
+    const agency2 = await prisma.organization.create({
       data: {
         name: 'Bedford Ambulance Service',
+        organizationType: 'EMS',
         contactName: 'Jane Doe',
         phone: '(814) 555-0202',
         email: 'info@bedfordambulance.com',
@@ -124,15 +98,16 @@ async function main() {
         capabilities: ['BLS', 'ALS'],
         pricingStructure: { baseRate: 125, perMileRate: 2.25 },
         isActive: true,
-        status: 'ACTIVE'
-      }
+        status: 'ACTIVE',
+        acceptsNotifications: true,
+      },
     });
-    console.log('✅ EMS Agency created:', agency2.name);
+    console.log('✅ EMS Organization created:', agency2.name);
 
-    // Create Elk County EMS Agency
-    const agency3 = await prisma.eMSAgency.create({
+    const agency3 = await prisma.organization.create({
       data: {
         name: 'Elk County EMS',
+        organizationType: 'EMS',
         contactName: 'John Doer',
         phone: '(814) 555-0303',
         email: 'doe@elkcoems.com',
@@ -145,15 +120,16 @@ async function main() {
         capabilities: ['BLS', 'ALS'],
         pricingStructure: { baseRate: 175, perMileRate: 2.75 },
         isActive: true,
-        status: 'ACTIVE'
-      }
+        status: 'ACTIVE',
+        acceptsNotifications: true,
+      },
     });
-    console.log('✅ EMS Agency created:', agency3.name);
+    console.log('✅ EMS Organization created:', agency3.name);
 
-    // Create Duncansville EMS Agency
-    const agency4 = await prisma.eMSAgency.create({
+    const agency4 = await prisma.organization.create({
       data: {
         name: 'Duncansville EMS',
+        organizationType: 'EMS',
         contactName: 'Test User',
         phone: '(814) 555-0404',
         email: 'test@duncansvilleems.org',
@@ -168,168 +144,211 @@ async function main() {
         latitude: 40.4250,
         longitude: -78.4333,
         isActive: true,
-        status: 'ACTIVE'
-      }
+        status: 'ACTIVE',
+        acceptsNotifications: true,
+      },
     });
-    console.log('✅ EMS Agency created:', agency4.name);
+    console.log('✅ EMS Organization created:', agency4.name);
 
-    // Create EMS users
-    const emsUser1 = await prisma.eMSUser.upsert({
+    // Create EMS users (linked to their organization)
+    const emsUser1 = await prisma.user.upsert({
       where: { email: 'doe@elkcoems.com' },
       update: {},
       create: {
         email: 'doe@elkcoems.com',
         password: await bcrypt.hash('password', 12),
         name: 'John Doer',
-        agencyName: 'Elk County EMS',
-        agencyId: agency3.id,
+        userType: 'EMS_ORGANIZATION_USER',
+        organizationId: agency3.id,
         isActive: true,
-        userType: 'EMS'
-      }
+      },
     });
+    await prisma.userRole.create({ data: { userId: emsUser1.id, roleId: roleMap['ADMIN'].id, organizationId: agency3.id } });
     console.log('✅ EMS User created:', emsUser1.email);
 
-    const emsUser2 = await prisma.eMSUser.upsert({
+    const emsUser2 = await prisma.user.upsert({
       where: { email: 'test@ems.com' },
       update: {},
       create: {
         email: 'test@ems.com',
         password: await bcrypt.hash('testpassword', 12),
         name: 'Test EMS User',
-        agencyName: 'Altoona EMS',
-        agencyId: agency1.id,
+        userType: 'EMS_ORGANIZATION_USER',
+        organizationId: agency1.id,
         isActive: true,
-        userType: 'EMS'
-      }
+      },
     });
+    await prisma.userRole.create({ data: { userId: emsUser2.id, roleId: roleMap['ADMIN'].id, organizationId: agency1.id } });
     console.log('✅ EMS User created:', emsUser2.email);
 
-    const emsUser3 = await prisma.eMSUser.upsert({
+    const emsUser3 = await prisma.user.upsert({
       where: { email: 'fferguson@movalleyems.com' },
       update: {},
       create: {
         email: 'fferguson@movalleyems.com',
         password: await bcrypt.hash('movalley123', 12),
         name: 'Frank Ferguson',
-        agencyName: 'Mountain Valley EMS',
-        agencyId: agency1.id,
+        userType: 'EMS_ORGANIZATION_USER',
+        organizationId: agency1.id,
         isActive: true,
-        userType: 'EMS'
-      }
+      },
     });
+    await prisma.userRole.create({ data: { userId: emsUser3.id, roleId: roleMap['ADMIN'].id, organizationId: agency1.id } });
     console.log('✅ EMS User created:', emsUser3.email);
 
-    const emsUser4 = await prisma.eMSUser.upsert({
+    const emsUser4 = await prisma.user.upsert({
       where: { email: 'test@duncansvilleems.org' },
       update: {},
       create: {
         email: 'test@duncansvilleems.org',
         password: await bcrypt.hash('duncansville123', 12),
         name: 'Test Duncansville User',
-        agencyName: 'Duncansville EMS',
-        agencyId: agency4.id,
+        userType: 'EMS_ORGANIZATION_USER',
+        organizationId: agency4.id,
         isActive: true,
-        userType: 'EMS'
-      }
+      },
     });
+    await prisma.userRole.create({ data: { userId: emsUser4.id, roleId: roleMap['ADMIN'].id, organizationId: agency4.id } });
     console.log('✅ EMS User created:', emsUser4.email);
 
-    // Create sample facilities
-    const facility1 = await prisma.facility.create({
+    // Create healthcare organizations
+    const altoonaOrg = await prisma.organization.create({
       data: {
-        name: 'Altoona Regional Emergency Department',
-        type: 'HOSPITAL',
+        name: 'Altoona Regional Health System',
+        organizationType: 'HEALTHCARE',
+        phone: '(814) 889-2011',
+        email: 'info@altoonaregional.org',
         address: '620 Howard Ave',
         city: 'Altoona',
         state: 'PA',
         zipCode: '16601',
-        phone: '(814) 889-2011',
-        email: 'emergency@altoonaregional.org',
-        region: 'Central PA',
-        coordinates: { lat: 40.5187, lng: -78.3947 },
-        isActive: true
-      }
+        isActive: true,
+        status: 'ACTIVE',
+      },
     });
-    console.log('✅ Facility created:', facility1.name);
+    console.log('✅ Healthcare Organization created:', altoonaOrg.name);
 
-    const facility2 = await prisma.facility.create({
+    const ferrellOrg = await prisma.organization.create({
       data: {
-        name: 'UPMC Bedford Emergency Department',
-        type: 'HOSPITAL',
-        address: '10455 Lincoln Hwy',
-        city: 'Everett',
-        state: 'PA',
-        zipCode: '15537',
-        phone: '(814) 623-3331',
-        email: 'emergency@upmc.edu',
-        region: 'Central PA',
-        coordinates: { lat: 40.0115, lng: -78.3734 },
-        isActive: true
-      }
+        name: 'Ferrell Hospitals',
+        organizationType: 'HEALTHCARE',
+        isActive: true,
+        status: 'ACTIVE',
+      },
     });
-    console.log('✅ Facility created:', facility2.name);
+    console.log('✅ Healthcare Organization created:', ferrellOrg.name);
 
-    // Create sample healthcare user
-    const healthcareUser = await prisma.healthcareUser.upsert({
+    // Create healthcare users (linked to their organization)
+    const healthcareUser = await prisma.user.upsert({
       where: { email: 'nurse@altoonaregional.org' },
       update: {},
       create: {
         email: 'nurse@altoonaregional.org',
         password: await bcrypt.hash('nurse123', 12),
         name: 'Sarah Johnson',
-        facilityName: 'Altoona Regional Health System',
-        facilityType: 'HOSPITAL',
-        isActive: true
-      }
+        userType: 'HEALTHCARE_ORGANIZATION_USER',
+        organizationId: altoonaOrg.id,
+        isActive: true,
+      },
     });
+    await prisma.userRole.create({ data: { userId: healthcareUser.id, roleId: roleMap['ADMIN'].id, organizationId: altoonaOrg.id } });
     console.log('✅ Healthcare user created:', healthcareUser.email);
 
-    // Create multi-location healthcare user (chuck@ferrellhospitals.com)
-    const chuckPassword = await bcrypt.hash('testpassword', 12);
-    const chuckUser = await prisma.healthcareUser.upsert({
+    const chuckUser = await prisma.user.upsert({
       where: { email: 'chuck@ferrellhospitals.com' },
       update: {},
       create: {
         email: 'chuck@ferrellhospitals.com',
-        password: chuckPassword,
+        password: await bcrypt.hash('testpassword', 12),
         name: 'Chuck Ferrell',
-        facilityName: 'Ferrell Hospitals',
-        facilityType: 'HOSPITAL',
-        manageMultipleLocations: true,
-        isActive: true
-      }
+        userType: 'HEALTHCARE_ORGANIZATION_USER',
+        organizationId: ferrellOrg.id,
+        isActive: true,
+      },
     });
+    await prisma.userRole.create({ data: { userId: chuckUser.id, roleId: roleMap['ADMIN'].id, organizationId: ferrellOrg.id } });
     console.log('✅ Multi-location healthcare user created:', chuckUser.email);
 
-    // Create locations for chuck@ferrellhospitals.com
+    // Create facilities for Altoona Regional (replaces hospital + old facility records)
+    const facility1 = await prisma.facility.create({
+      data: {
+        organizationId: altoonaOrg.id,
+        name: 'Altoona Regional Emergency Department',
+        facilityType: 'HOSPITAL',
+        address: '620 Howard Ave',
+        city: 'Altoona',
+        state: 'PA',
+        zipCode: '16601',
+        phone: '(814) 889-2011',
+        email: 'emergency@altoonaregional.org',
+        capabilities: ['EMERGENCY', 'SURGERY', 'ICU', 'RADIOLOGY'],
+        region: 'ALTOONA',
+        operatingHours: '24/7',
+        coordinates: { lat: 40.5187, lng: -78.3947 },
+        latitude: 40.5187,
+        longitude: -78.3947,
+        isPrimary: true,
+        isActive: true,
+      },
+    });
+    console.log('✅ Facility created:', facility1.name);
+
+    const facility2 = await prisma.facility.create({
+      data: {
+        organizationId: altoonaOrg.id,
+        name: 'UPMC Bedford Emergency Department',
+        facilityType: 'HOSPITAL',
+        address: '10455 Lincoln Hwy',
+        city: 'Everett',
+        state: 'PA',
+        zipCode: '15537',
+        phone: '(814) 623-3331',
+        email: 'emergency@upmc.edu',
+        capabilities: ['EMERGENCY', 'SURGERY', 'ICU'],
+        region: 'BEDFORD',
+        operatingHours: '24/7',
+        coordinates: { lat: 40.0115, lng: -78.3734 },
+        latitude: 40.0115,
+        longitude: -78.3734,
+        isActive: true,
+      },
+    });
+    console.log('✅ Facility created:', facility2.name);
+
+    // Create locations for chuck@ferrellhospitals.com (replaces healthcareLocation)
     const locations = [
-      { name: 'Penn Highlands Brookville', address: '100 Hospital Road', city: 'Brookville', state: 'PA', zip: '15825', phone: '(814) 849-1852', primary: true },
-      { name: 'Penn Highlands DuBois', address: '100 Hospital Avenue', city: 'DuBois', state: 'PA', zip: '15801', phone: '(814) 371-2200', primary: false },
-      { name: 'Penn Highlands Mon Valley', address: '1163 Country Club Road', city: 'Monongahela', state: 'PA', zip: '15063', phone: '(724) 258-1000', primary: false },
-      { name: 'Penn Highlands Clearfield', address: '809 Turnpike Avenue', city: 'Clearfield', state: 'PA', zip: '16830', phone: '(814) 765-5300', primary: false },
-      { name: 'Penn Highlands Elk', address: '763 Johnsonburg Road', city: 'St. Marys', state: 'PA', zip: '15857', phone: '(814) 834-4200', primary: false },
-      { name: 'Penn Highlands State College', address: '239 Colonnade Boulevard', city: 'State College', state: 'PA', zip: '16803', phone: '(814) 231-7000', primary: false },
-      { name: 'Penn Highlands Connellsville', address: '401 East Murphy Avenue', city: 'Connellsville', state: 'PA', zip: '15425', phone: '(724) 628-1500', primary: false },
-      { name: 'Penn Highlands Huntingdon', address: '1225 Warm Springs Avenue', city: 'Huntingdon', state: 'PA', zip: '16652', phone: '(814) 643-3300', primary: false },
-      { name: 'Penn Highlands Tyrone', address: '187 Hospital Drive', city: 'Tyrone', state: 'PA', zip: '16686', phone: '(814) 684-1255', primary: false },
+      { name: 'Penn Highlands Brookville', address: '100 Hospital Road', city: 'Brookville', zip: '15825', phone: '(814) 849-1852', primary: true, latitude: 40.9547, longitude: -78.5678 },
+      { name: 'Penn Highlands DuBois', address: '100 Hospital Avenue', city: 'DuBois', zip: '15801', phone: '(814) 371-2200', primary: false, latitude: 41.1069, longitude: -78.7596 },
+      { name: 'Penn Highlands Mon Valley', address: '1163 Country Club Road', city: 'Monongahela', zip: '15063', phone: '(724) 258-1000', primary: false, latitude: 40.2167, longitude: -79.9186 },
+      { name: 'Penn Highlands Clearfield', address: '809 Turnpike Avenue', city: 'Clearfield', zip: '16830', phone: '(814) 765-5300', primary: false, latitude: 41.0307, longitude: -78.4408 },
+      { name: 'Penn Highlands Elk', address: '763 Johnsonburg Road', city: 'St. Marys', zip: '15857', phone: '(814) 834-4200', primary: false, latitude: 41.4369, longitude: -78.5997 },
+      { name: 'Penn Highlands State College', address: '239 Colonnade Boulevard', city: 'State College', zip: '16803', phone: '(814) 231-7000', primary: false, latitude: 40.7980, longitude: -77.8634 },
+      { name: 'Penn Highlands Connellsville', address: '401 East Murphy Avenue', city: 'Connellsville', zip: '15425', phone: '(724) 628-1500', primary: false, latitude: 40.0194, longitude: -79.5905 },
+      { name: 'Penn Highlands Huntingdon', address: '1225 Warm Springs Avenue', city: 'Huntingdon', zip: '16652', phone: '(814) 643-3300', primary: false, latitude: 40.4854, longitude: -77.9928 },
+      { name: 'Penn Highlands Tyrone', address: '187 Hospital Drive', city: 'Tyrone', zip: '16686', phone: '(814) 684-1255', primary: false, latitude: 40.6820, longitude: -78.2434 },
     ];
 
+    const ferrellFacilities: { id: string; name: string; phone: string }[] = [];
     for (const loc of locations) {
-      await prisma.healthcareLocation.create({
+      const ferrellFacility = await prisma.facility.create({
         data: {
-          healthcareUserId: chuckUser.id,
-          locationName: loc.name,
+          organizationId: ferrellOrg.id,
+          name: loc.name,
+          facilityType: 'HOSPITAL',
           address: loc.address,
           city: loc.city,
-          state: loc.state,
+          state: 'PA',
           zipCode: loc.zip,
           phone: loc.phone,
-          facilityType: 'HOSPITAL',
           isPrimary: loc.primary,
-          isActive: true
-        }
+          latitude: loc.latitude,
+          longitude: loc.longitude,
+          coordinates: { lat: loc.latitude, lng: loc.longitude },
+          isActive: true,
+        },
       });
-      console.log(`✅ Location created: ${loc.name}`);
+      ferrellFacilities.push({ id: ferrellFacility.id, name: ferrellFacility.name, phone: loc.phone });
+      console.log(`✅ Facility created: ${loc.name}`);
     }
 
     // Ensure dropdown categories exist (idempotent)
@@ -456,88 +475,46 @@ async function main() {
     }
     console.log(`✅ ${dropdownCount} dropdown options created/updated`);
 
-    // Create pickup locations for hospitals
+    // Create pickup locations for facilities
     console.log('🌱 Creating pickup locations...');
     const pickupLocations = [
-      // Altoona Regional Health System pickup locations
-      { hospitalId: hospital1.id, name: 'Emergency Department Main Entrance', description: 'Main ED entrance', contactPhone: '(814) 889-2011', floor: '1', room: 'Main Entrance' },
-      { hospitalId: hospital1.id, name: 'Emergency Department Alternate', description: 'Alternate ED entrance for stretchers', contactPhone: '(814) 889-2011', floor: '1', room: 'ED Bay' },
-      { hospitalId: hospital1.id, name: 'Main Hospital Entrance', description: 'Main hospital entrance', contactPhone: '(814) 889-2011', floor: '1', room: 'Lobby' },
-      { hospitalId: hospital1.id, name: 'ICU Floor', description: 'ICU pickup location', contactPhone: '(814) 889-2011', floor: '3', room: 'ICU Wing' },
-      { hospitalId: hospital1.id, name: 'Surgery Recovery', description: 'Post-surgical recovery pickup', contactPhone: '(814) 889-2011', floor: '2', room: 'PACU' },
-      
-      // UPMC Bedford pickup locations
-      { hospitalId: hospital2.id, name: 'Emergency Department', description: 'Main ED entrance', contactPhone: '(814) 623-3331', floor: '1', room: 'ED Lobby' },
-      { hospitalId: hospital2.id, name: 'Main Entrance', description: 'Main hospital entrance', contactPhone: '(814) 623-3331', floor: '1', room: 'Front Lobby' },
-      { hospitalId: hospital2.id, name: 'ICU Entrance', description: 'ICU transfer location', contactPhone: '(814) 623-3331', floor: '2', room: 'ICU' },
+      // Altoona Regional ED pickup locations
+      { facilityId: facility1.id, name: 'Emergency Department Main Entrance', description: 'Main ED entrance', contactPhone: '(814) 889-2011', floor: '1', room: 'Main Entrance' },
+      { facilityId: facility1.id, name: 'Emergency Department Alternate', description: 'Alternate ED entrance for stretchers', contactPhone: '(814) 889-2011', floor: '1', room: 'ED Bay' },
+      { facilityId: facility1.id, name: 'Main Hospital Entrance', description: 'Main hospital entrance', contactPhone: '(814) 889-2011', floor: '1', room: 'Lobby' },
+      { facilityId: facility1.id, name: 'ICU Floor', description: 'ICU pickup location', contactPhone: '(814) 889-2011', floor: '3', room: 'ICU Wing' },
+      { facilityId: facility1.id, name: 'Surgery Recovery', description: 'Post-surgical recovery pickup', contactPhone: '(814) 889-2011', floor: '2', room: 'PACU' },
+
+      // UPMC Bedford ED pickup locations
+      { facilityId: facility2.id, name: 'Emergency Department', description: 'Main ED entrance', contactPhone: '(814) 623-3331', floor: '1', room: 'ED Lobby' },
+      { facilityId: facility2.id, name: 'Main Entrance', description: 'Main hospital entrance', contactPhone: '(814) 623-3331', floor: '1', room: 'Front Lobby' },
+      { facilityId: facility2.id, name: 'ICU Entrance', description: 'ICU transfer location', contactPhone: '(814) 623-3331', floor: '2', room: 'ICU' },
     ];
+
+    // Ferrell Hospitals pickup locations (2 per facility)
+    for (const f of ferrellFacilities) {
+      pickupLocations.push(
+        { facilityId: f.id, name: 'Emergency Department', description: 'Main ED entrance', contactPhone: f.phone, floor: '1', room: 'ED Lobby' },
+        { facilityId: f.id, name: 'Main Entrance', description: 'Main hospital entrance', contactPhone: f.phone, floor: '1', room: 'Front Lobby' },
+      );
+    }
 
     let pickupCount = 0;
     for (const loc of pickupLocations) {
-      await prisma.pickup_locations.create({
+      await prisma.pickupLocation.create({
         data: {
-          id: `pickup-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          hospitalId: loc.hospitalId,
+          facilityId: loc.facilityId,
           name: loc.name,
           description: loc.description,
           contactPhone: loc.contactPhone,
           floor: loc.floor,
           room: loc.room,
           isActive: true,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
+        },
       });
       pickupCount++;
     }
     console.log(`✅ ${pickupCount} pickup locations created`);
-
-    // Create pickup locations for healthcare locations (multi-location users)
-    const chuckPickupLocations = [
-      { healthcareUserId: chuckUser.id, name: 'Emergency Department', description: 'Main ED', contactPhone: '(814) 849-1852', locationName: 'Penn Highlands Brookville' },
-      { healthcareUserId: chuckUser.id, name: 'Main Entrance', description: 'Main hospital entrance', contactPhone: '(814) 849-1852', locationName: 'Penn Highlands Brookville' },
-      { healthcareUserId: chuckUser.id, name: 'Emergency Department', description: 'Main ED', contactPhone: '(814) 371-2200', locationName: 'Penn Highlands DuBois' },
-      { healthcareUserId: chuckUser.id, name: 'Main Entrance', description: 'Main entrance', contactPhone: '(814) 371-2200', locationName: 'Penn Highlands DuBois' },
-      { healthcareUserId: chuckUser.id, name: 'Emergency Department', description: 'Main ED', contactPhone: '(724) 258-1000', locationName: 'Penn Highlands Mon Valley' },
-      { healthcareUserId: chuckUser.id, name: 'Patient Tower', description: 'Patient tower entrance', contactPhone: '(724) 258-1000', locationName: 'Penn Highlands Mon Valley' },
-      { healthcareUserId: chuckUser.id, name: 'Emergency Department', description: 'Main ED', contactPhone: '(814) 765-5300', locationName: 'Penn Highlands Clearfield' },
-      { healthcareUserId: chuckUser.id, name: 'Main Entrance', description: 'Main entrance', contactPhone: '(814) 765-5300', locationName: 'Penn Highlands Clearfield' },
-      { healthcareUserId: chuckUser.id, name: 'Emergency Department', description: 'Main ED', contactPhone: '(814) 834-4200', locationName: 'Penn Highlands Elk' },
-      { healthcareUserId: chuckUser.id, name: 'Main Entrance', description: 'Main entrance', contactPhone: '(814) 834-4200', locationName: 'Penn Highlands Elk' },
-      { healthcareUserId: chuckUser.id, name: 'Emergency Department', description: 'Main ED', contactPhone: '(814) 231-7000', locationName: 'Penn Highlands State College' },
-      { healthcareUserId: chuckUser.id, name: 'Main Entrance', description: 'Main entrance', contactPhone: '(814) 231-7000', locationName: 'Penn Highlands State College' },
-      { healthcareUserId: chuckUser.id, name: 'Emergency Department', description: 'Main ED', contactPhone: '(724) 628-1500', locationName: 'Penn Highlands Connellsville' },
-      { healthcareUserId: chuckUser.id, name: 'Main Entrance', description: 'Main entrance', contactPhone: '(724) 628-1500', locationName: 'Penn Highlands Connellsville' },
-      { healthcareUserId: chuckUser.id, name: 'Emergency Department', description: 'Main ED', contactPhone: '(814) 643-3300', locationName: 'Penn Highlands Huntingdon' },
-      { healthcareUserId: chuckUser.id, name: 'Main Entrance', description: 'Main entrance', contactPhone: '(814) 643-3300', locationName: 'Penn Highlands Huntingdon' },
-      { healthcareUserId: chuckUser.id, name: 'Emergency Department', description: 'Main ED', contactPhone: '(814) 684-1255', locationName: 'Penn Highlands Tyrone' },
-      { healthcareUserId: chuckUser.id, name: 'Main Entrance', description: 'Main entrance', contactPhone: '(814) 684-1255', locationName: 'Penn Highlands Tyrone' },
-    ];
-
-    // Get chuck's healthcare locations
-    const chuckHealthcareLocations = await prisma.healthcareLocation.findMany({
-      where: { healthcareUserId: chuckUser.id }
-    });
-
-    for (const loc of chuckPickupLocations) {
-      const healthcareLocation = chuckHealthcareLocations.find(h => h.locationName === loc.locationName);
-      if (healthcareLocation) {
-        await prisma.pickup_locations.create({
-          data: {
-            id: `pickup-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            hospitalId: healthcareLocation.id, // Use healthcare location ID as hospitalId
-            name: loc.name,
-            description: loc.description,
-            contactPhone: loc.contactPhone,
-            isActive: true,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          }
-        });
-        pickupCount++;
-      }
-    }
-    console.log(`✅ ${pickupCount} total pickup locations created`);
 
     // Create sample transport request
     const transportRequest = await prisma.transportRequest.create({
@@ -549,8 +526,8 @@ async function main() {
         priority: 'MEDIUM',
         status: 'PENDING',
         specialRequirements: 'Oxygen required',
-        createdById: healthcareUser.id
-      }
+        createdByUserId: healthcareUser.id,
+      },
     });
     console.log('✅ Transport request created:', transportRequest.id);
 

@@ -137,7 +137,7 @@ export const authAPI = {
   verify: () =>
     api.get('/api/auth/verify'),
 
-  register: (userData: { email: string; password: string; name: string; userType: 'ADMIN' | 'USER' }) =>
+  register: (userData: { email: string; password: string; name: string; userType: 'SYSTEM_ADMIN' | 'HEALTHCARE_ORGANIZATION_USER' | 'EMS_ORGANIZATION_USER' }) =>
     api.post('/api/auth/register', userData),
 
   healthcareRegister: (userData: { email: string; password: string; name: string; facilityName: string; facilityType: string }) =>

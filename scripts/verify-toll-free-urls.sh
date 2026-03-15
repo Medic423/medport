@@ -19,6 +19,7 @@ URLS=(
     "Website:https://traccems.com"
     "Privacy Policy:https://traccems.com/privacy-policy"
     "Terms:https://traccems.com/terms"
+    "Opt-in URL:https://traccems.com/ems-register"
 )
 
 # Track results

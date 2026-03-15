@@ -1,4 +1,4 @@
-import { databaseManager } from './databaseManager';
+﻿import { databaseManager } from './databaseManager';
 import { Prisma } from '@prisma/client';
 
 // SIMPLIFIED: Basic interfaces for Phase 3 simplification
@@ -79,10 +79,10 @@ export class AnalyticsService {
             }
           }
         }),
-        prisma.hospital.count(),
-        prisma.hospital.count({ where: { isActive: true } }),
-        prisma.eMSAgency.count(),
-        prisma.eMSAgency.count({ where: { isActive: true } }),
+        prisma.facility.count(),
+        prisma.facility.count({ where: { isActive: true } }),
+        prisma.organization.count(),
+        prisma.organization.count({ where: { isActive: true } }),
         prisma.unit.count(),
         prisma.unit.count({ where: { isActive: true } })
       ]);
@@ -185,7 +185,7 @@ export class AnalyticsService {
     const prisma = databaseManager.getPrismaClient();
 
     try {
-      const agencies = await prisma.eMSAgency.findMany({
+      const agencies = await prisma.organization.findMany({
         where: { isActive: true },
         include: {
           units: {
@@ -316,7 +316,7 @@ export class AnalyticsService {
 
       const [healthcare, ems, admin] = await Promise.all([
         // Healthcare users: no lastLogin or lastLogin before cutoff, active and not deleted
-        prisma.healthcareUser.count({
+        prisma.user.count({
           where: {
             isActive: true,
             isDeleted: false,
@@ -327,7 +327,7 @@ export class AnalyticsService {
           }
         }),
         // EMS users: no lastLogin or lastLogin before cutoff, active and not deleted
-        prisma.eMSUser.count({
+        prisma.user.count({
           where: {
             isActive: true,
             isDeleted: false,
@@ -338,7 +338,7 @@ export class AnalyticsService {
           }
         }),
         // Admin/Center users: no lastLogin or lastLogin before cutoff, active and not deleted
-        prisma.centerUser.count({
+        prisma.user.count({
           where: {
             isActive: true,
             isDeleted: false,
@@ -379,7 +379,7 @@ export class AnalyticsService {
 
       const [healthcare, ems, admin] = await Promise.all([
         // Healthcare users: no lastLogin or lastLogin before cutoff, active and not deleted
-        prisma.healthcareUser.findMany({
+        prisma.user.findMany({
           where: {
             isActive: true,
             isDeleted: false,
@@ -392,7 +392,7 @@ export class AnalyticsService {
             id: true,
             email: true,
             name: true,
-            facilityName: true,
+            organization: { select: { name: true } },
             lastLogin: true,
             createdAt: true
           },
@@ -401,7 +401,7 @@ export class AnalyticsService {
           }
         }),
         // EMS users: no lastLogin or lastLogin before cutoff, active and not deleted
-        prisma.eMSUser.findMany({
+        prisma.user.findMany({
           where: {
             isActive: true,
             isDeleted: false,
@@ -414,7 +414,7 @@ export class AnalyticsService {
             id: true,
             email: true,
             name: true,
-            agencyName: true,
+            organization: { select: { name: true } },
             lastLogin: true,
             createdAt: true
           },
@@ -423,7 +423,7 @@ export class AnalyticsService {
           }
         }),
         // Admin/Center users: no lastLogin or lastLogin before cutoff, active and not deleted
-        prisma.centerUser.findMany({
+        prisma.user.findMany({
           where: {
             isActive: true,
             isDeleted: false,
@@ -450,7 +450,7 @@ export class AnalyticsService {
           id: u.id,
           email: u.email,
           name: u.name,
-          facilityName: u.facilityName,
+          facilityName: u.organization?.name,
           lastLogin: u.lastLogin ? u.lastLogin.toISOString() : null,
           createdAt: u.createdAt.toISOString()
         })),
@@ -458,7 +458,7 @@ export class AnalyticsService {
           id: u.id,
           email: u.email,
           name: u.name,
-          agencyName: u.agencyName,
+          agencyName: u.organization?.name,
           lastLogin: u.lastLogin ? u.lastLogin.toISOString() : null,
           createdAt: u.createdAt.toISOString()
         })),
@@ -489,7 +489,7 @@ export class AnalyticsService {
 
       if (type === 'facilities') {
         // Return hospitals/facilities registered in the time period
-        const facilities = await prisma.hospital.findMany({
+        const facilities = await prisma.facility.findMany({
           where: {
             createdAt: { gte: cutoffDate }
           },
@@ -520,7 +520,7 @@ export class AnalyticsService {
         }));
       } else {
         // Return EMS agencies registered in the time period
-        const agencies = await prisma.eMSAgency.findMany({
+        const agencies = await prisma.organization.findMany({
           where: {
             createdAt: { gte: cutoffDate }
           },
@@ -581,25 +581,25 @@ export class AnalyticsService {
         idle90
       ] = await Promise.all([
         // Facilities (Hospitals) - last 60 days
-        prisma.hospital.count({
+        prisma.facility.count({
           where: {
             createdAt: { gte: days60Ago }
           }
         }),
         // Facilities (Hospitals) - last 90 days
-        prisma.hospital.count({
+        prisma.facility.count({
           where: {
             createdAt: { gte: days90Ago }
           }
         }),
         // EMS Agencies - last 60 days
-        prisma.eMSAgency.count({
+        prisma.organization.count({
           where: {
             createdAt: { gte: days60Ago }
           }
         }),
         // EMS Agencies - last 90 days
-        prisma.eMSAgency.count({
+        prisma.organization.count({
           where: {
             createdAt: { gte: days90Ago }
           }
@@ -677,7 +677,7 @@ export class AnalyticsService {
 
     // Get active healthcare users with location data
     // Order by lastActivity DESC to get most recent first
-    const activeHealthcare = await db.healthcareUser.findMany({
+    const activeHealthcare = await db.user.findMany({
       where: {
         ...excludeWhere,
         isActive: true,
@@ -689,19 +689,8 @@ export class AnalyticsService {
       select: {
         id: true,
         name: true,
-        facilityName: true,
-        lastActivity: true,
-        locations: {
-          where: {
-            isActive: true,
-            isPrimary: true  // Get primary location first
-          },
-          select: {
-            city: true,
-            state: true
-          },
-          take: 1
-        }
+        organization: { select: { name: true, city: true, state: true } },
+        lastActivity: true
       },
       orderBy: {
         lastActivity: 'desc'
@@ -710,7 +699,7 @@ export class AnalyticsService {
 
     // Get active EMS users with agency location data
     console.log('TCC_DEBUG: Querying active EMS users with threshold:', threshold);
-    const activeEMS = await db.eMSUser.findMany({
+    const activeEMS = await db.user.findMany({
       where: {
         ...excludeWhere,
         isActive: true,
@@ -722,25 +711,19 @@ export class AnalyticsService {
       select: {
         id: true,
         name: true,
-        agencyName: true,
-        lastActivity: true,
-        agency: {
-          select: {
-            city: true,
-            state: true
-          }
-        }
+        organization: { select: { name: true, city: true, state: true } },
+        lastActivity: true
       },
       orderBy: {
         lastActivity: 'desc'
       }
     });
-    console.log('TCC_DEBUG: Found active EMS users:', activeEMS.length, activeEMS.map(u => ({ name: u.name, agencyName: u.agencyName, lastActivity: u.lastActivity, hasAgency: !!u.agency })));
+    console.log('TCC_DEBUG: Found active EMS users:', activeEMS.length, activeEMS.map(u => ({ name: u.name, agencyName: u.organization?.name, lastActivity: u.lastActivity })));
 
-    // OPTION B: Group by facilityName/agencyName and keep only most recent user per facility/agency
+    // OPTION B: Group by org name and keep only most recent user per facility/agency
     const healthcareByFacility = new Map<string, any>();
     activeHealthcare.forEach(user => {
-      const facilityName = user.facilityName;
+      const facilityName = user.organization?.name || 'unknown';
       const existing = healthcareByFacility.get(facilityName);
       if (!existing || new Date(user.lastActivity || 0) > new Date(existing.lastActivity || 0)) {
         healthcareByFacility.set(facilityName, user);
@@ -749,7 +732,7 @@ export class AnalyticsService {
 
     const emsByAgency = new Map<string, any>();
     activeEMS.forEach(user => {
-      const agencyName = user.agencyName;
+      const agencyName = user.organization?.name || 'unknown';
       const existing = emsByAgency.get(agencyName);
       if (!existing || new Date(user.lastActivity || 0) > new Date(existing.lastActivity || 0)) {
         emsByAgency.set(agencyName, user);
@@ -769,9 +752,9 @@ export class AnalyticsService {
       return {
         id: user.id,
         name: user.name,
-        facilityName: user.facilityName,
-        city: location?.city || 'N/A',
-        state: location?.state || 'N/A',
+        facilityName: user.organization?.name,
+        city: user.organization?.city || 'N/A',
+        state: user.organization?.state || 'N/A',
         lastActivity: user.lastActivity?.toISOString() || '',
         minutesAgo
       };
@@ -784,9 +767,9 @@ export class AnalyticsService {
       return {
         id: user.id,
         name: user.name,
-        agencyName: user.agencyName,
-        city: user.agency?.city || 'N/A',
-        state: user.agency?.state || 'N/A',
+        agencyName: user.organization?.name,
+        city: user.organization?.city || 'N/A',
+        state: user.organization?.state || 'N/A',
         lastActivity: user.lastActivity?.toISOString() || '',
         minutesAgo
       };
@@ -822,53 +805,53 @@ export class AnalyticsService {
     const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
     // Healthcare: Count distinct facilities with at least one active user
-    const healthcare24h = await db.healthcareUser.findMany({
+    const healthcare24h = await db.user.findMany({
       where: {
         isActive: true,
         isDeleted: false,
         lastActivity: { gte: last24Hours }
       },
       select: {
-        facilityName: true
+        organizationId: true
       },
-      distinct: ['facilityName']
+      distinct: ['organizationId']
     });
 
-    const healthcareWeek = await db.healthcareUser.findMany({
+    const healthcareWeek = await db.user.findMany({
       where: {
         isActive: true,
         isDeleted: false,
         lastActivity: { gte: lastWeek }
       },
       select: {
-        facilityName: true
+        organizationId: true
       },
-      distinct: ['facilityName']
+      distinct: ['organizationId']
     });
 
     // EMS: Count distinct agencies with at least one active user
-    const ems24h = await db.eMSUser.findMany({
+    const ems24h = await db.user.findMany({
       where: {
         isActive: true,
         isDeleted: false,
         lastActivity: { gte: last24Hours }
       },
       select: {
-        agencyName: true
+        organizationId: true
       },
-      distinct: ['agencyName']
+      distinct: ['organizationId']
     });
 
-    const emsWeek = await db.eMSUser.findMany({
+    const emsWeek = await db.user.findMany({
       where: {
         isActive: true,
         isDeleted: false,
         lastActivity: { gte: lastWeek }
       },
       select: {
-        agencyName: true
+        organizationId: true
       },
-      distinct: ['agencyName']
+      distinct: ['organizationId']
     });
 
     return {

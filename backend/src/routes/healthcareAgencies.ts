@@ -18,7 +18,7 @@ router.use(authenticateAdmin);
 router.get('/available', async (req: AuthenticatedRequest, res) => {
   try {
     // Verify user is healthcare type
-    if (req.user?.userType !== 'HEALTHCARE') {
+    if (req.user?.userType !== 'HEALTHCARE_ORGANIZATION_USER') {
       return res.status(403).json({
         success: false,
         error: 'Access denied: Healthcare users only',
@@ -72,7 +72,7 @@ router.get('/available', async (req: AuthenticatedRequest, res) => {
 router.get('/', async (req: AuthenticatedRequest, res) => {
   try {
     // Verify user is healthcare type
-    if (req.user?.userType !== 'HEALTHCARE') {
+    if (req.user?.userType !== 'HEALTHCARE_ORGANIZATION_USER') {
       return res.status(403).json({
         success: false,
         error: 'Access denied: Healthcare users only',
@@ -121,7 +121,7 @@ router.get('/', async (req: AuthenticatedRequest, res) => {
 router.post('/', async (req: AuthenticatedRequest, res) => {
   try {
     // Verify user is healthcare type
-    if (req.user?.userType !== 'HEALTHCARE') {
+    if (req.user?.userType !== 'HEALTHCARE_ORGANIZATION_USER') {
       return res.status(403).json({
         success: false,
         error: 'Access denied: Healthcare users only',
@@ -186,48 +186,47 @@ router.get('/trip-agencies', authenticateAdmin, async (req: AuthenticatedRequest
     let healthcareUserId: string | null = null;
     const prisma = (await import('../services/databaseManager')).databaseManager.getPrismaClient();
     
-    if (req.user!.userType === 'HEALTHCARE') {
+    if (req.user!.userType === 'HEALTHCARE_ORGANIZATION_USER') {
       // For HEALTHCARE users, use the trip's creator if it exists, otherwise use their own ID
       healthcareUserId = req.user!.id;
       const trip = await prisma.transportRequest.findUnique({
         where: { id: tripId },
-        select: { healthcareCreatedById: true }
+        select: { createdByUserId: true }
       });
       
-      if (trip?.healthcareCreatedById && trip.healthcareCreatedById !== healthcareUserId) {
+      if (trip?.createdByUserId && trip.createdByUserId !== healthcareUserId) {
         console.log('🚨 HEALTHCARE user accessing trip created by different user:', {
-          tripCreator: trip.healthcareCreatedById,
+          tripCreator: trip.createdByUserId,
           currentUser: healthcareUserId
         });
         // Use the trip's creator ID instead
-        healthcareUserId = trip.healthcareCreatedById;
+        healthcareUserId = trip.createdByUserId;
         console.log('🚨 Using trip creator ID:', healthcareUserId);
       }
     } else {
-      // For ADMIN, USER, EMS, or any other user type, use the trip's healthcareCreatedById
+      // For ADMIN, USER, EMS, or any other user type, use the trip's createdByUserId
       const trip = await prisma.transportRequest.findUnique({
         where: { id: tripId },
-        select: { healthcareCreatedById: true, fromLocationId: true }
+        select: { createdByUserId: true, fromLocationId: true }
       });
       
-      if (trip?.healthcareCreatedById) {
-        healthcareUserId = trip.healthcareCreatedById;
-        console.log('🚨 Non-HEALTHCARE user accessing trip, using healthcareCreatedById:', healthcareUserId);
+      if (trip?.createdByUserId) {
+        healthcareUserId = trip.createdByUserId;
+        console.log('🚨 Non-HEALTHCARE user accessing trip, using createdByUserId:', healthcareUserId);
       } else if (trip?.fromLocationId) {
-        // For old trips without healthcareCreatedById, try to find a healthcare user from the location
-        const location = await prisma.healthcareLocation.findUnique({
+        // For old trips without createdByUserId, try to find the org from the location
+        const location = await prisma.facility.findUnique({
           where: { id: trip.fromLocationId },
-          select: { healthcareUserId: true }
+          select: { organizationId: true }
         });
-        if (location?.healthcareUserId) {
-          healthcareUserId = location.healthcareUserId;
-          console.log('🚨 Non-HEALTHCARE user accessing old trip, using location healthcareUserId:', healthcareUserId);
-        } else {
-          return res.status(400).json({
-            success: false,
-            error: 'Trip does not have a healthcare creator assigned and could not determine from location',
-          });
+        if (location?.organizationId) {
+          // organizationId is on the facility, not a user id � skip and fall through
+          console.log('Non-HEALTHCARE user accessing old trip, facility organizationId:', location.organizationId);
         }
+        return res.status(400).json({
+          success: false,
+          error: 'Trip does not have a healthcare creator assigned and could not determine from location',
+        });
       } else {
         return res.status(400).json({
           success: false,
@@ -271,7 +270,7 @@ router.get('/trip-agencies', authenticateAdmin, async (req: AuthenticatedRequest
 router.get('/search/:query', async (req: AuthenticatedRequest, res) => {
   try {
     // Verify user is healthcare type
-    if (req.user?.userType !== 'HEALTHCARE') {
+    if (req.user?.userType !== 'HEALTHCARE_ORGANIZATION_USER') {
       return res.status(403).json({
         success: false,
         error: 'Access denied: Healthcare users only',
@@ -311,7 +310,7 @@ router.get('/search/:query', async (req: AuthenticatedRequest, res) => {
  */
 router.get('/registered/search', async (req: AuthenticatedRequest, res) => {
   try {
-    if (req.user?.userType !== 'HEALTHCARE') {
+    if (req.user?.userType !== 'HEALTHCARE_ORGANIZATION_USER') {
       return res.status(403).json({
         success: false,
         error: 'Access denied: Healthcare users only',
@@ -349,7 +348,7 @@ router.get('/registered/search', async (req: AuthenticatedRequest, res) => {
  */
 router.post('/add-existing', async (req: AuthenticatedRequest, res) => {
   try {
-    if (req.user?.userType !== 'HEALTHCARE') {
+    if (req.user?.userType !== 'HEALTHCARE_ORGANIZATION_USER') {
       return res.status(403).json({
         success: false,
         error: 'Access denied: Healthcare users only',
@@ -398,7 +397,7 @@ router.post('/add-existing', async (req: AuthenticatedRequest, res) => {
 router.get('/:id', async (req: AuthenticatedRequest, res) => {
   try {
     // Verify user is healthcare type
-    if (req.user?.userType !== 'HEALTHCARE') {
+    if (req.user?.userType !== 'HEALTHCARE_ORGANIZATION_USER') {
       return res.status(403).json({
         success: false,
         error: 'Access denied: Healthcare users only',
@@ -445,7 +444,7 @@ router.get('/:id', async (req: AuthenticatedRequest, res) => {
 router.put('/:id', async (req: AuthenticatedRequest, res) => {
   try {
     // Verify user is healthcare type
-    if (req.user?.userType !== 'HEALTHCARE') {
+    if (req.user?.userType !== 'HEALTHCARE_ORGANIZATION_USER') {
       return res.status(403).json({
         success: false,
         error: 'Access denied: Healthcare users only',
@@ -491,7 +490,7 @@ router.put('/:id', async (req: AuthenticatedRequest, res) => {
 router.patch('/:id/preferred', async (req: AuthenticatedRequest, res) => {
   try {
     // Verify user is healthcare type
-    if (req.user?.userType !== 'HEALTHCARE') {
+    if (req.user?.userType !== 'HEALTHCARE_ORGANIZATION_USER') {
       return res.status(403).json({
         success: false,
         error: 'Access denied: Healthcare users only',
@@ -544,7 +543,7 @@ router.patch('/:id/preferred', async (req: AuthenticatedRequest, res) => {
 router.delete('/:id', async (req: AuthenticatedRequest, res) => {
   try {
     // Verify user is healthcare type
-    if (req.user?.userType !== 'HEALTHCARE') {
+    if (req.user?.userType !== 'HEALTHCARE_ORGANIZATION_USER') {
       return res.status(403).json({
         success: false,
         error: 'Access denied: Healthcare users only',

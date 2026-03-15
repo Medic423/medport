@@ -8,8 +8,6 @@ import {
   AlertTriangle,
   User,
   LogOut,
-  Bell,
-  X,
   Edit,
   Trash2,
   Truck,
@@ -28,6 +26,7 @@ import HealthcareDestinations from './HealthcareDestinations';
 import HealthcareSubUsersPanel from './HealthcareSubUsersPanel';
 import TripDispatchScreen from './TripDispatchScreen'; // Phase 3
 import AvailableAgencies from './AvailableAgencies';
+import TripsView from './TripsView';
 import { tripsAPI, unitsAPI } from '../services/api';
 import { categorizeTripByDate, formatSectionHeader, DateCategory } from '../utils/dateUtils';
 import { HelpModal } from './HelpSystem';
@@ -53,7 +52,6 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
   const [completedTrips, setCompletedTrips] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [trips, setTrips] = useState<any[]>([]);
-  const [filteredTrips, setFilteredTrips] = useState<any[]>([]);
   const [editingTrip, setEditingTrip] = useState<any>(null);
   const [editFormData, setEditFormData] = useState<any>({});
   const [updating, setUpdating] = useState(false);
@@ -67,8 +65,8 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
   });
 
   // Agency Responses state
-  const [agencyResponses, setAgencyResponses] = useState<any[]>([]);
-  const [loadingResponses, setLoadingResponses] = useState(false);
+  const [, setAgencyResponses] = useState<any[]>([]);
+  const [, setLoadingResponses] = useState(false);
 
   // Date-based trip categorization
   const [todayTrips, setTodayTrips] = useState<any[]>([]);
@@ -148,30 +146,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
     return () => clearInterval(interval);
   }, []);
 
-  // Apply status filter when trips or filter changes
-  useEffect(() => {
-    if (statusFilter === 'ALL') {
-      setFilteredTrips(trips);
-    } else {
-      const filtered = trips.filter(trip => trip.status === statusFilter);
-      setFilteredTrips(filtered);
-    }
-  }, [trips, statusFilter]);
 
-
-  // Function to get urgency level styling
-  const getUrgencyLevelStyle = (urgencyLevel: string) => {
-    switch (urgencyLevel) {
-      case 'Routine':
-        return 'text-black bg-transparent';
-      case 'Urgent':
-        return 'text-black bg-orange-200';
-      case 'Emergent':
-        return 'text-black bg-red-200';
-      default:
-        return 'text-black bg-transparent';
-    }
-  };
 
   const loadTrips = async () => {
     try {
@@ -282,7 +257,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
           // Exclude HEALTHCARE_COMPLETED (Healthcare's own completion) and CANCELLED
           // IMPORTANT: Keep ACCEPTED, IN_PROGRESS, and COMPLETED trips visible if healthcare hasn't completed them
           // COMPLETED status means EMS completed it, but healthcare may not have completed it yet
-          let activeTrips = transformedTrips.filter(trip => {
+          let activeTrips = transformedTrips.filter((trip: any) => {
             // Exclude if healthcare has completed it OR if it's cancelled
             if (trip.status === 'HEALTHCARE_COMPLETED' || trip.status === 'CANCELLED') {
               return false;
@@ -321,20 +296,20 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
           try {
             const missingUnitIds = Array.from(new Set(
               activeTrips
-                .filter(t => !t.assignedUnitNumber && t.assignedUnitId)
-                .map(t => t.assignedUnitId)
+                .filter((t: any) => !t.assignedUnitNumber && t.assignedUnitId)
+                .map((t: any) => t.assignedUnitId)
                 .filter(Boolean)
             ));
             console.log('TCC_DEBUG: Healthcare unit hydration - missingUnitIds', missingUnitIds);
-            console.log('TCC_DEBUG: Healthcare unit hydration - assigned fields sample', activeTrips.slice(0,3).map(t => ({ id: t.id, assignedUnitId: t.assignedUnitId, assignedUnitNumber: t.assignedUnitNumber, assignedUnitType: t.assignedUnitType })));
+            console.log('TCC_DEBUG: Healthcare unit hydration - assigned fields sample', activeTrips.slice(0,3).map((t: any) => ({ id: t.id, assignedUnitId: t.assignedUnitId, assignedUnitNumber: t.assignedUnitNumber, assignedUnitType: t.assignedUnitType })));
             if (missingUnitIds.length > 0) {
-              const results = await Promise.all(missingUnitIds.map((id: string) => 
+              const results = await Promise.all((missingUnitIds as string[]).map((id) => 
                 unitsAPI.getById(id).then(r => ({ id, unit: r.data?.data || null })).catch(() => ({ id, unit: null }))
               ));
               console.log('TCC_DEBUG: Healthcare unit hydration - fetched units', results);
               const idToUnit: Record<string, any> = {};
               results.forEach(({ id, unit }) => { if (unit) idToUnit[id] = unit; });
-              activeTrips = activeTrips.map(t => {
+              activeTrips = activeTrips.map((t: any) => {
                 if (!t.assignedUnitNumber && t.assignedUnitId && idToUnit[t.assignedUnitId]) {
                   const u = idToUnit[t.assignedUnitId];
                   return {
@@ -345,14 +320,13 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                 }
                 return t;
               });
-              console.log('TCC_DEBUG: Healthcare unit hydration - after merge sample', activeTrips.slice(0,3).map(t => ({ id: t.id, assignedUnitId: t.assignedUnitId, assignedUnitNumber: t.assignedUnitNumber, assignedUnitType: t.assignedUnitType })));
+              console.log('TCC_DEBUG: Healthcare unit hydration - after merge sample', activeTrips.slice(0,3).map((t: any) => ({ id: t.id, assignedUnitId: t.assignedUnitId, assignedUnitNumber: t.assignedUnitNumber, assignedUnitType: t.assignedUnitType })));
             }
           } catch (e) {
             console.log('TCC_DEBUG: unit hydration skipped due to error', e);
           }
 
           setTrips(activeTrips);
-          setFilteredTrips(activeTrips); // Initialize filtered trips
 
           // Categorize trips by date for four sections
           const today: any[] = [];
@@ -386,8 +360,8 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
           // Set completed/cancelled trips for the completed tab with wait time and acceptance time calculation
           // Filter by healthcareCompletionTimestamp (Healthcare's own completion) or CANCELLED status
           const completed = transformedTrips
-            .filter(trip => trip.healthcareCompletionTimestampISO !== null || trip.status === 'CANCELLED')
-            .map(trip => {
+            .filter((trip: any) => trip.healthcareCompletionTimestampISO !== null || trip.status === 'CANCELLED')
+            .map((trip: any) => {
               // Find the selected agency response to get its acceptance time
               const selectedResponse = trip.agencyResponses?.find((r: any) => r.isSelected === true);
               let acceptanceTime = null;
@@ -431,7 +405,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
       // Ensure urgency always has baseline defaults merged with hospital settings
       const urgencyDefaults = ['Routine', 'Urgent', 'Emergent'];
       const urgencyFromAPI = toValues(urgRes, []);
-      const urgencyOptions = [...urgencyDefaults, ...urgencyFromAPI.filter(val => !urgencyDefaults.includes(val))];
+      const urgencyOptions = [...urgencyDefaults, ...urgencyFromAPI.filter((val: string) => !urgencyDefaults.includes(val))];
 
       const options = {
         transportLevel: toValues(tlRes, ['BLS', 'ALS', 'CCT', 'Other']),
@@ -474,7 +448,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
     }
   };
 
-  const handleSelectAgency = async (tripId: string, responseId: string) => {
+  const handleSelectAgency = async (_tripId: string, responseId: string) => {
     try {
       const response = await api.post(`/api/agency-responses/${responseId}/select`);
       if (response.data && response.data.success) {
@@ -489,7 +463,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
     }
   };
 
-  const handleRejectAgency = async (tripId: string, responseId: string, agencyName: string) => {
+  const handleRejectAgency = async (_tripId: string, responseId: string, agencyName: string) => {
     if (!confirm(`Are you sure you want to reject ${agencyName}? They will be removed from consideration for this trip.`)) {
       return;
     }
@@ -541,9 +515,9 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
   };
 
   const handleEditSpecialNeedsChange = (need: string, checked: boolean) => {
-    setEditFormData(prev => {
+    setEditFormData((prev: any) => {
       const currentNeeds = prev.specialNeeds 
-        ? prev.specialNeeds.split(',').map(n => n.trim()).filter(n => n !== '')
+        ? prev.specialNeeds.split(',').map((n: string) => n.trim()).filter((n: string) => n !== '')
         : [];
       
       let newNeeds: string[];
@@ -554,7 +528,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
           : [...currentNeeds, need];
       } else {
         // Remove
-        newNeeds = currentNeeds.filter(n => n !== need);
+        newNeeds = currentNeeds.filter((n: string) => n !== need);
       }
       
       return {
@@ -815,14 +789,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'HIGH': return 'text-red-600 bg-red-100';
-      case 'MEDIUM': return 'text-yellow-600 bg-yellow-100';
-      case 'LOW': return 'text-green-600 bg-green-100';
-      default: return 'text-gray-600 bg-gray-100';
-    }
-  };
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -931,6 +898,10 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
         )}
 
         {activeTab === 'trips' && (
+          <TripsView user={{ id: user.id, userType: user.userType as 'HEALTHCARE_ORGANIZATION_USER' }} />
+        )}
+
+        {false && activeTab === 'trips-legacy' && (
           <div className="space-y-6">
             {/* Summary Tiles */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1694,7 +1665,7 @@ const HealthcareDashboard: React.FC<HealthcareDashboardProps> = ({ user, onLogou
                             <input
                               type="checkbox"
                               id={`edit-special-need-${need}`}
-                              checked={editFormData.specialNeeds ? editFormData.specialNeeds.split(',').map(n => n.trim()).includes(need) : false}
+                              checked={editFormData.specialNeeds ? editFormData.specialNeeds.split(',').map((n: string) => n.trim()).includes(need) : false}
                               onChange={(e) => handleEditSpecialNeedsChange(need, e.target.checked)}
                               className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                             />

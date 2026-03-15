@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocat
 import TCCDashboard from './components/TCCDashboard';
 import HealthcareDashboard from './components/HealthcareDashboard';
 import EMSDashboard from './components/EMSDashboard';
-import UniversalLogin from './components/UniversalLogin';
 import LandingPage from './components/LandingPage';
 import RegistrationChoiceModal from './components/RegistrationChoiceModal';
 import HealthcareRegistration from './components/HealthcareRegistration';
@@ -16,12 +15,13 @@ import TermsAndConditions from './components/TermsAndConditions';
 import PricingPage from './components/PricingPage';
 import AboutPage from './components/AboutPage';
 import ContactPage from './components/ContactPage';
+import ConnectorDemo from './components/landing/ConnectorDemo';
 
 interface User {
   id: string;
   email: string;
   name: string;
-  userType: 'ADMIN' | 'USER' | 'HEALTHCARE' | 'EMS';
+  userType: 'SYSTEM_ADMIN' | 'HEALTHCARE_ORGANIZATION_USER' | 'EMS_ORGANIZATION_USER';
   facilityName?: string;
   facilityType?: string;
   agencyName?: string;
@@ -84,8 +84,8 @@ function AppContent() {
     console.log('TCC_DEBUG: User state set, localStorage updated');
     
     // Use React Router navigation instead of window.location
-    if (userData.userType === 'ADMIN' || userData.userType === 'USER') {
-      console.log('TCC_DEBUG: Redirecting to root for admin/user');
+    if (userData.userType === 'SYSTEM_ADMIN') {
+      console.log('TCC_DEBUG: Redirecting to root for system admin');
       navigate('/', { replace: true });
     } else {
       console.log('TCC_DEBUG: No redirect needed for healthcare/EMS - component should re-render');
@@ -177,9 +177,9 @@ function AppContent() {
   // If user is logged in, show appropriate dashboard based on user type
   if (user) {
     // Show different dashboards based on user type
-    if (user.userType === 'HEALTHCARE') {
+    if (user.userType === 'HEALTHCARE_ORGANIZATION_USER') {
       return <HealthcareDashboard user={user} onLogout={handleLogout} />;
-    } else if (user.userType === 'EMS') {
+    } else if (user.userType === 'EMS_ORGANIZATION_USER') {
       return <EMSDashboard user={user as any} onLogout={handleLogout} onUserUpdate={handleUserUpdate as any} />;
     } else {
       // ADMIN and USER types go to TCC Dashboard
@@ -223,6 +223,9 @@ function AppContent() {
             onShowRegistration={handleShowRegistrationModal}
           />
         } />
+
+        <Route path="/login" element={<Navigate to="/" replace />} />
+
         <Route path="/healthcare-register" element={
           <HealthcareRegistration 
             key="healthcare-register"
@@ -236,6 +239,7 @@ function AppContent() {
             onSuccess={handleRegistrationSuccess}
           />
         } />
+        <Route path="/connector-demo" element={<ConnectorDemo />} />
         <Route path="/test-trip-acceptance" element={
           <div className="min-h-screen bg-gray-50">
             <div className="container mx-auto py-8">

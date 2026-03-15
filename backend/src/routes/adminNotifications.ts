@@ -16,7 +16,7 @@ router.get('/stats', authenticateAdmin, async (req: AuthenticatedRequest, res) =
     console.log('TCC_DEBUG: Get admin notification stats');
     
     // Check if user is admin
-    if (req.user?.userType !== 'ADMIN') {
+    if (req.user?.userType !== 'SYSTEM_ADMIN') {
       return res.status(403).json({
         success: false,
         error: 'Admin access required'
@@ -50,7 +50,7 @@ router.post('/broadcast', authenticateAdmin, async (req: AuthenticatedRequest, r
     console.log('TCC_DEBUG: Admin broadcast notification request');
     
     // Check if user is admin
-    if (req.user?.userType !== 'ADMIN') {
+    if (req.user?.userType !== 'SYSTEM_ADMIN') {
       return res.status(403).json({
         success: false,
         error: 'Admin access required'
@@ -61,7 +61,7 @@ router.post('/broadcast', authenticateAdmin, async (req: AuthenticatedRequest, r
       notificationType, 
       emailData, 
       smsData, 
-      userTypes = ['ADMIN', 'USER', 'HEALTHCARE', 'EMS'] 
+      userTypes = ['SYSTEM_ADMIN', 'HEALTHCARE_ORGANIZATION_USER', 'EMS_ORGANIZATION_USER'] 
     } = req.body;
 
     if (!notificationType) {
@@ -72,9 +72,9 @@ router.post('/broadcast', authenticateAdmin, async (req: AuthenticatedRequest, r
     }
 
     // Get all users of specified types
-    const users = await prisma.centerUser.findMany({
+    const users = await prisma.user.findMany({
       where: {
-        userType: { in: userTypes },
+        userType: { in: userTypes as any[] },
         isActive: true
       },
       select: {
@@ -129,7 +129,7 @@ router.get('/templates', authenticateAdmin, async (req: AuthenticatedRequest, re
     console.log('TCC_DEBUG: Get notification templates');
     
     // Check if user is admin
-    if (req.user?.userType !== 'ADMIN') {
+    if (req.user?.userType !== 'SYSTEM_ADMIN') {
       return res.status(403).json({
         success: false,
         error: 'Admin access required'
@@ -195,7 +195,7 @@ router.get('/users', authenticateAdmin, async (req: AuthenticatedRequest, res) =
     console.log('TCC_DEBUG: Get users for notification management');
     
     // Check if user is admin
-    if (req.user?.userType !== 'ADMIN') {
+    if (req.user?.userType !== 'SYSTEM_ADMIN') {
       return res.status(403).json({
         success: false,
         error: 'Admin access required'
@@ -204,21 +204,16 @@ router.get('/users', authenticateAdmin, async (req: AuthenticatedRequest, res) =
 
     const { userType, limit = 100 } = req.query;
 
-    const whereClause = userType ? { userType: userType as string } : {};
+    const whereClause: any = { isActive: true };
+    if (userType) whereClause.userType = userType as string;
 
-    const users = await prisma.centerUser.findMany({
-      where: {
-        ...whereClause,
-        isActive: true
-      },
+    const users = await prisma.user.findMany({
+      where: whereClause,
       select: {
         id: true,
         email: true,
         name: true,
         userType: true,
-        phone: true,
-        emailNotifications: true,
-        smsNotifications: true,
         createdAt: true
       },
       take: parseInt(limit as string),
@@ -250,7 +245,7 @@ router.get('/sms-stats', authenticateAdmin, async (req: AuthenticatedRequest, re
     console.log('TCC_DEBUG: Get SMS stats for admin');
     
     // Check if user is admin
-    if (req.user?.userType !== 'ADMIN') {
+    if (req.user?.userType !== 'SYSTEM_ADMIN') {
       return res.status(403).json({
         success: false,
         error: 'Admin access required'
@@ -288,7 +283,7 @@ router.get('/carriers', authenticateAdmin, async (req: AuthenticatedRequest, res
     console.log('TCC_DEBUG: Get carrier information');
     
     // Check if user is admin
-    if (req.user?.userType !== 'ADMIN') {
+    if (req.user?.userType !== 'SYSTEM_ADMIN') {
       return res.status(403).json({
         success: false,
         error: 'Admin access required'
@@ -320,7 +315,7 @@ router.post('/test-system', authenticateAdmin, async (req: AuthenticatedRequest,
     console.log('TCC_DEBUG: Test notification system');
     
     // Check if user is admin
-    if (req.user?.userType !== 'ADMIN') {
+    if (req.user?.userType !== 'SYSTEM_ADMIN') {
       return res.status(403).json({
         success: false,
         error: 'Admin access required'
@@ -356,7 +351,7 @@ router.get('/logs', authenticateAdmin, async (req: AuthenticatedRequest, res) =>
     console.log('TCC_DEBUG: Get admin notification logs');
     
     // Check if user is admin
-    if (req.user?.userType !== 'ADMIN') {
+    if (req.user?.userType !== 'SYSTEM_ADMIN') {
       return res.status(403).json({
         success: false,
         error: 'Admin access required'
