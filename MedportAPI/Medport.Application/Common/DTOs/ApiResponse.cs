@@ -34,3 +34,34 @@ public class ApiResponse<T>
         string? message = null)
         => new ApiResponse<T>(false, default, message);
 }
+
+public class ApiResponse
+{
+    public bool Success { get; set; }
+
+
+    public string? Message { get; set; }
+
+    public PaginationDto? Pagination { get; set; }
+
+    public ApiResponse() { }
+
+    public ApiResponse(
+        bool success,
+        string? message = null,
+        PaginationDto? pagination = null)
+    {
+        Success = success;
+        Message = message;
+        Pagination = pagination;
+    }
+
+    public static ApiResponse Ok(
+        string? message = null,
+        PaginationDto? pagination = null)
+        => new ApiResponse(true, message, pagination);
+
+    public static ApiResponse Fail(
+        string? message = null)
+        => new ApiResponse(false, message);
+}

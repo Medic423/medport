@@ -98,7 +98,7 @@ public class FacilityController : ApiControllerBase
     {
         await Mediator.Send(new DeleteFacilityCommand(id));
 
-        var response = ApiResponse<object>.Ok(null, FacilityConstants.Messages.Deleted);
+        var response = ApiResponse.Ok(FacilityConstants.Messages.Deleted);
 
         return Ok(response);
     }
