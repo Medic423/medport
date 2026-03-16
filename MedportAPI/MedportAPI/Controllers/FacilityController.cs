@@ -45,6 +45,26 @@ public class FacilityController : ApiControllerBase
         return Ok(ApiResponse<FacilityDto>.Ok(data));
     }
 
+    [HttpGet("search")]
+    public async Task<ActionResult<ApiResponse<List<FacilityDto>>>> SearchFacilities(
+            [FromBody] SearchFacilityQuery request,
+            CancellationToken cancellationToken)
+    {
+        var data = await Mediator.Send(request, cancellationToken);
+
+        var pagination = new PaginationDto
+        {
+            Limit = request.Limit,
+            Page = request.Page,
+            TotalPages = data.TotalPages,
+            Total = data.TotalCount
+        };
+
+        var response = ApiResponse<List<FacilityDto>>.Ok([.. data.Items], null, pagination);
+
+        return Ok(response);
+    }
+
     [HttpPost]
     public async Task<ActionResult<ApiResponse<FacilityDto>>> Create(
         [FromBody] CreateFacilityCommand command, CancellationToken cancellationToken)
