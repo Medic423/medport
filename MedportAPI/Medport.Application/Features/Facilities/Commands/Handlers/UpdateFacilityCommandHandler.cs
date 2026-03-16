@@ -1,60 +1,43 @@
+using AutoMapper;
 using MediatR;
-using Medport.Domain.Interfaces;
+using Medport.Application.Common.Common.Dtos;
+using Medport.Application.Common.Common.Responses;
+using Medport.Application.Common.Exceptions;
 using Medport.Application.Tracc.Features.Facilities.Commands.Requests;
-using Medport.Application.Tracc.Features.Facilities.Queries.Dtos;
-using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
-using System.Threading;
+using Medport.Application.Tracc.Features.Facilities.Errors;
+using Medport.Application.Tracc.Features.Facilities.Queries.Requests;
+using Medport.Domain.Interfaces;
 
 namespace Medport.Application.Tracc.Features.Facilities.Commands.Handlers;
 
-public class UpdateFacilityCommandHandler : IRequestHandler<UpdateFacilityCommand, FacilityDto>
+public class UpdateFacilityCommandHandler(
+    IApplicationDbContext context,
+    IMediator mediator,
+    IMapper mapper
+) :
+    IRequestHandler<UpdateFacilityCommand, FacilityDto>
 {
-    private readonly IApplicationDbContext _context;
-
-    public UpdateFacilityCommandHandler(IApplicationDbContext context)
-    {
-        _context = context;
-    }
+    private readonly IApplicationDbContext _context = context;
+    private readonly IMediator _mediator = mediator;
+    private readonly IMapper _mapper = mapper;
 
     public async Task<FacilityDto> Handle(UpdateFacilityCommand request, CancellationToken cancellationToken)
     {
-        //var entity = await _context.HealthcareLocations.FirstOrDefaultAsync(h => h.Id == request.Id, cancellationToken);
-        //if (entity == null) return null;
+        var facility = await _context.Facilities.FindAsync([request.Id], cancellationToken);
+        
+        if (facility == null)
+        {
+            throw new ErrorException(ErrorResult.Failure([FacilityErrors.NotFound(
+                Constants.FacilityConstants.Error.UpdateFacilityCommandHandlerNotFound,
+                request.Id)]));
+        }
 
-        //entity.LocationName = request.LocationName;
-        //entity.Address = request.Address;
-        //entity.City = request.City;
-        //entity.State = request.State;
-        //entity.ZipCode = request.ZipCode;
-        //entity.Phone = request.Phone;
-        //entity.FacilityType = request.FacilityType;
-        //entity.IsPrimary = request.IsPrimary;
-        //entity.IsActive = request.IsActive;
-        //entity.Latitude = request.Latitude;
-        //entity.Longitude = request.Longitude;
+        _mapper.Map(request, facility);
 
-        //await _context.SaveChangesAsync(cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
 
-        //return new FacilityDto
-        //{
-        //    Id = entity.Id,
-        //    HealthcareUserId = entity.HealthcareUserId,
-        //    LocationName = entity.LocationName,
-        //    Address = entity.Address,
-        //    City = entity.City,
-        //    State = entity.State,
-        //    ZipCode = entity.ZipCode,
-        //    Phone = entity.Phone,
-        //    FacilityType = entity.FacilityType,
-        //    IsPrimary = entity.IsPrimary,
-        //    IsActive = entity.IsActive,
-        //    Latitude = entity.Latitude,
-        //    Longitude = entity.Longitude,
-        //    CreatedAt = entity.CreatedAt,
-        //    UpdatedAt = entity.UpdatedAt
-        //};
+        var mappedDto = await _mediator.Send(new MapEntityToFacilityDtoQuery(facility), cancellationToken);
 
-        return null;
+        return mappedDto;
     }
 }

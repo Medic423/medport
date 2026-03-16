@@ -1,9 +1,13 @@
 using MediatR;
-using Medport.Application.Tracc.Features.Facilities.Queries.Dtos;
 using System.Diagnostics.CodeAnalysis;
-using System;
+using Medport.Application.Common.Common.Dtos;
+using Medport.Application.Tracc.Features.Facilities.Queries.Handlers;
 
 namespace Medport.Application.Tracc.Features.Facilities.Queries.Requests;
 
-[ExcludeFromCodeCoverage]
+/// <summary>
+/// See <see cref="GetFacilityByIdQueryHandler"/>
+/// </summary>
+
+[ExcludeFromCodeCoverage] 
 public record GetFacilityByIdQuery(Guid Id) : IRequest<FacilityDto>;

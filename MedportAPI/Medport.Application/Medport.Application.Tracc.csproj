@@ -22,7 +22,7 @@
     <Folder Include="Features\EMSSubUsers\Commands\Requests\" />
     <Folder Include="Features\EMSSubUsers\Queries\Requests\" />
     <Folder Include="Features\Facilities\Commands\Requests\" />
-    <Folder Include="Features\Facilities\Queries\Requests\" />
+    <Folder Include="Features\Facilities\Queries\Dtos\" />
     <Folder Include="Features\HealthcareAgencies\Commands\Requests\" />
     <Folder Include="Features\HealthcareAgencies\Queries\Requests\" />
     <Folder Include="Features\HealthcareDestinations\Commands\Requests\" />

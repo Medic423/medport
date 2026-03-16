@@ -1,9 +1,10 @@
 using MediatR;
-using Medport.Domain.Interfaces;
+using Medport.Application.Common.Common.Responses;
+using Medport.Application.Common.Exceptions;
 using Medport.Application.Tracc.Features.Facilities.Commands.Requests;
-using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
-using System.Threading;
+using Medport.Application.Tracc.Features.Facilities.Errors;
+using Medport.Application.Tracc.Features.Hospitals.Errors;
+using Medport.Domain.Interfaces;
 
 namespace Medport.Application.Tracc.Features.Facilities.Commands.Handlers;
 
@@ -13,13 +14,17 @@ public class DeleteFacilityCommandHandler(IApplicationDbContext context) : IRequ
 
     public async Task Handle(DeleteFacilityCommand request, CancellationToken cancellationToken)
     {
-        //var entity = await _context.HealthcareLocations.FirstOrDefaultAsync(h => h.Id == request.Id, cancellationToken);
-        //if (entity != null)
-        //{
-        //    _context.HealthcareLocations.Remove(entity);
-        //    await _context.SaveChangesAsync(cancellationToken);
-        //}
+        var entity = await _context.Facilities.FindAsync([request.Id], cancellationToken);
 
-        return;
+        if (entity == null)
+        {
+            throw new ErrorException(ErrorResult.Failure([FacilityErrors.NotFound(
+                Constants.FacilityConstants.Error.DeleteFacilityCommandHandlerNotFound,
+                request.Id)]));
+        }
+
+        _context.Facilities.Remove(entity);
+
+        await _context.SaveChangesAsync(cancellationToken);
     }
 }

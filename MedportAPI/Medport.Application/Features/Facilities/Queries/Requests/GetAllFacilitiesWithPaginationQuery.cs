@@ -1,11 +1,12 @@
 using MediatR;
+using Medport.Application.Common.Common.Dtos;
 using Medport.Common.DTOs;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Medport.Application.Tracc.Features.Facilities.Queries.Requests;
 
 [ExcludeFromCodeCoverage]
-public class GetAllFacilitiesWithPaginationQuery : IRequest<PaginatedList<Medport.Application.Tracc.Features.Facilities.Queries.Dtos.FacilityDto>>
+public class GetAllFacilitiesWithPaginationQuery : IRequest<PaginatedList<FacilityDto>>
 {
     public string Name { get; set; }
     public string Type { get; set; }

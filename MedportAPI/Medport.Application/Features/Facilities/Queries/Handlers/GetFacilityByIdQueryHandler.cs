@@ -1,50 +1,38 @@
 using MediatR;
-using Medport.Domain.Interfaces;
+using Medport.Application.Common.Common.Dtos;
+using Medport.Application.Common.Common.Responses;
+using Medport.Application.Common.Exceptions;
+using Medport.Application.Tracc.Features.Facilities.Errors;
 using Medport.Application.Tracc.Features.Facilities.Queries.Requests;
-using Medport.Application.Tracc.Features.Facilities.Queries.Dtos;
+using Medport.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
-using System.Threading;
-using System.Linq;
 
 namespace Medport.Application.Tracc.Features.Facilities.Queries.Handlers;
 
-public class GetFacilityByIdQueryHandler : IRequestHandler<GetFacilityByIdQuery, FacilityDto>
+public class GetFacilityByIdQueryHandler(
+    IApplicationDbContext context,
+    IMediator mediator
+) : 
+    IRequestHandler<GetFacilityByIdQuery, FacilityDto>
 {
-    private readonly IApplicationDbContext _context;
-
-    public GetFacilityByIdQueryHandler(IApplicationDbContext context)
-    {
-        _context = context;
-    }
+    private readonly IApplicationDbContext _context = context;
+    private readonly IMediator _mediator = mediator;
 
     public async Task<FacilityDto> Handle(GetFacilityByIdQuery request, CancellationToken cancellationToken)
     {
-        //var facility = await _context.HealthcareLocations
-        //    .AsNoTracking()
-        //    .Where(h => h.Id == request.Id)
-        //    .Select(h => new FacilityDto
-        //    {
-        //        Id = h.Id,
-        //        HealthcareUserId = h.HealthcareUserId,
-        //        LocationName = h.LocationName,
-        //        Address = h.Address,
-        //        City = h.City,
-        //        State = h.State,
-        //        ZipCode = h.ZipCode,
-        //        Phone = h.Phone,
-        //        FacilityType = h.FacilityType,
-        //        IsPrimary = h.IsPrimary,
-        //        IsActive = h.IsActive,
-        //        Latitude = h.Latitude,
-        //        Longitude = h.Longitude,
-        //        CreatedAt = h.CreatedAt,
-        //        UpdatedAt = h.UpdatedAt
-        //    })
-        //    .FirstOrDefaultAsync(cancellationToken);
+        var facility = await _context.Facilities
+            .AsNoTracking()
+            .FirstOrDefaultAsync(h => h.Id == request.Id);
 
-        //return facility;
+        if (facility == null)
+        {
+            throw new ErrorException(ErrorResult.Failure([FacilityErrors.NotFound(
+                Constants.FacilityConstants.Error.GetFacilityByIdQueryHandlerNotFound,
+                request.Id)]));
+        }
 
-        return null;
+        var mappedDto = await _mediator.Send(new MapEntityToFacilityDtoQuery(facility), cancellationToken);
+
+        return mappedDto;
     }
 }
